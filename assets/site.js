@@ -88,6 +88,10 @@
     el.addEventListener("click", closeEnrolModal);
   });
 
+  if (successCloseBtn) {
+    successCloseBtn.addEventListener("click", closeEnrolModal);
+  }
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
       closeEnrolModal();
@@ -127,6 +131,8 @@
 
       form.hidden = true;
       successEl.hidden = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Notify Me";
     } catch (err) {
       errorEl.textContent = err.message || "Something went wrong. Please try again.";
     } finally {
@@ -159,4 +165,3 @@
     });
   }
 })();
-  successCloseBtn.addEventListener("click", closeEnrolModal);
