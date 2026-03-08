@@ -32,7 +32,7 @@ async function paystackInitialize({ email, amountMinor, reference, metadata }) {
       email,
       amount: amountMinor,
       reference,
-      callback_url: `${siteBaseUrl()}/courses/prompt-to-profit?payment=paystack_pending`,
+      callback_url: `${siteBaseUrl()}/.netlify/functions/paystack-return`,
       metadata,
     }),
   });
@@ -46,6 +46,28 @@ async function paystackInitialize({ email, amountMinor, reference, metadata }) {
     checkoutUrl: json.data.authorization_url,
     providerReference: json.data.reference || reference,
   };
+}
+
+async function paystackVerifyTransaction(reference) {
+  const secret = paystackSecret();
+  const ref = String(reference || "").trim();
+  if (!ref) throw new Error("Missing Paystack reference");
+
+  const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(ref)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.status || !json.data) {
+    throw new Error((json && json.message) || `Paystack verify failed (${res.status})`);
+  }
+
+  return json.data;
 }
 
 function paypalBaseUrl() {
@@ -173,6 +195,7 @@ module.exports = {
   siteBaseUrl,
   verifyPaystackSignature,
   paystackInitialize,
+  paystackVerifyTransaction,
   paypalCreateOrder,
   paypalCaptureOrder,
   paypalVerifyWebhook,
