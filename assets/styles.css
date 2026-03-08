@@ -243,49 +243,68 @@ p {
 }
 
 .course-hero {
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
-  gap: 38px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+  gap: 44px;
   align-items: start;
 }
 
 .course-hero .course-hero-copy {
-  padding-top: 2px;
+  padding-top: 6px;
 }
 
 .course-hero .course-hero-copy h1 {
-  max-width: 10.5ch;
+  max-width: 13.5ch;
+  font-size: clamp(2.7rem, 5vw, 4.25rem);
+  line-height: 1.06;
+}
+
+.course-hero .course-hero-copy > p {
+  max-width: 28ch;
+  margin-top: 16px;
+  font-size: 1.04rem;
+  line-height: 1.58;
+}
+
+.course-hero .course-hero-copy .cta-row {
+  margin-top: 22px;
 }
 
 .course-hero .hero-card {
   align-self: start;
+  justify-self: end;
+  width: 100%;
+  max-width: 560px;
   margin-top: 0;
-  padding: 22px 22px 18px;
+  padding: 24px 24px 20px;
+  background: linear-gradient(180deg, #ffffff, #fcfbf8);
+  border-color: #e2e5ee;
+  box-shadow: 0 14px 34px rgba(20, 33, 61, 0.08);
 }
 
 .course-hero-card::before {
   content: "";
   display: block;
-  width: 72px;
+  width: 92px;
   height: 4px;
   border-radius: 999px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   background: linear-gradient(90deg, var(--muted-teal), var(--soft-amber));
 }
 
 .course-hero .hero-points {
-  gap: 7px;
+  gap: 10px;
 }
 
 .course-hero .hero-points span {
   align-items: flex-start;
-  font-size: 0.98rem;
-  line-height: 1.38;
+  font-size: 0.95rem;
+  line-height: 1.42;
   font-weight: 700;
 }
 
 .course-hero .hero-proof {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--light-border);
   font-size: 0.92rem;
   color: #455066;
@@ -860,6 +879,7 @@ body.modal-open {
 
   .course-hero .hero-card {
     padding: 24px;
+    max-width: none;
   }
 
   .snapshot-card {
