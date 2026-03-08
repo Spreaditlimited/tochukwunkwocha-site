@@ -243,28 +243,51 @@ p {
 }
 
 .course-hero {
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  gap: 38px;
   align-items: start;
 }
 
+.course-hero .course-hero-copy {
+  padding-top: 2px;
+}
+
+.course-hero .course-hero-copy h1 {
+  max-width: 10.5ch;
+}
+
 .course-hero .hero-card {
-  padding: 22px;
+  align-self: start;
+  margin-top: 0;
+  padding: 22px 22px 18px;
+}
+
+.course-hero-card::before {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 4px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--muted-teal), var(--soft-amber));
 }
 
 .course-hero .hero-points {
-  gap: 8px;
+  gap: 7px;
 }
 
 .course-hero .hero-points span {
   align-items: flex-start;
-  font-size: 1.05rem;
-  line-height: 1.45;
+  font-size: 0.98rem;
+  line-height: 1.38;
+  font-weight: 700;
 }
 
 .course-hero .hero-proof {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--light-border);
-  font-size: 0.96rem;
+  font-size: 0.92rem;
   color: #455066;
 }
 
