@@ -690,7 +690,7 @@ body.modal-open {
   z-index: 300;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: clamp(12px, 3.5vw, 20px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
@@ -709,7 +709,7 @@ body.modal-open {
 
 .enrol-modal__panel {
   position: relative;
-  width: min(560px, 94vw);
+  width: min(560px, 100%);
   max-height: min(86vh, 760px);
   overflow-y: auto;
   scrollbar-width: none;
@@ -786,10 +786,17 @@ body.modal-open {
   border-color: var(--muted-teal);
 }
 
-.enrol-form .btn {
-  margin-top: 8px;
+.enrol-form__actions {
   position: sticky;
   bottom: 0;
+  margin-top: 8px;
+  padding-top: 14px;
+  padding-bottom: 2px;
+  background: linear-gradient(to top, #fff 72%, rgba(255, 255, 255, 0.96) 88%, rgba(255, 255, 255, 0));
+}
+
+.enrol-form__actions .btn {
+  margin-top: 0;
 }
 
 .enrol-form__error {
@@ -1151,6 +1158,15 @@ body.modal-open {
 }
 
 @media (max-width: 620px) {
+  .enrol-modal {
+    padding: 12px;
+  }
+
+  .enrol-modal__panel {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .hero {
     padding-top: 36px;
   }
