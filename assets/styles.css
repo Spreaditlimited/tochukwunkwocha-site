@@ -243,39 +243,39 @@ p {
 }
 
 .course-hero {
-  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
-  gap: 44px;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.9fr);
+  gap: 34px;
   align-items: start;
 }
 
 .course-hero .course-hero-copy {
-  padding-top: 6px;
+  padding-top: 4px;
 }
 
 .course-hero .course-hero-copy h1 {
-  max-width: 13.5ch;
-  font-size: clamp(2.7rem, 5vw, 4.25rem);
-  line-height: 1.06;
+  max-width: 15ch;
+  font-size: clamp(2.35rem, 4.25vw, 3.55rem);
+  line-height: 1.1;
 }
 
 .course-hero .course-hero-copy > p {
-  max-width: 28ch;
-  margin-top: 16px;
-  font-size: 1.04rem;
-  line-height: 1.58;
+  max-width: 40ch;
+  margin-top: 14px;
+  font-size: 1.02rem;
+  line-height: 1.6;
 }
 
 .course-hero .course-hero-copy .cta-row {
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .course-hero .hero-card {
   align-self: start;
   justify-self: end;
   width: 100%;
-  max-width: 560px;
+  max-width: 520px;
   margin-top: 0;
-  padding: 24px 24px 20px;
+  padding: 22px 22px 18px;
   background: linear-gradient(180deg, #ffffff, #fcfbf8);
   border-color: #e2e5ee;
   box-shadow: 0 14px 34px rgba(20, 33, 61, 0.08);
