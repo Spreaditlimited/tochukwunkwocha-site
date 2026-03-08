@@ -783,6 +783,21 @@ body.modal-open {
   font-size: 0.88rem;
 }
 
+.enrol-success h3 {
+  margin-top: 10px;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+.enrol-success p {
+  margin-top: 10px;
+  color: var(--muted-text);
+  max-width: 40ch;
+}
+
+.enrol-success .btn {
+  margin-top: 16px;
+}
+
 .footer-inner {
   width: var(--container);
   margin: 0 auto;

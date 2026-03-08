@@ -1,7 +1,4 @@
 (function () {
-  const FLODESK_REDIRECT_URL =
-    "https://app.flodesk.com/segment/69ad60e952e4ac8ca746bb53?backTo=L3NlZ21lbnRz";
-
   const navToggle = document.querySelector(".nav-toggle");
   const navLinks = document.querySelector(".nav-links");
 
@@ -45,6 +42,18 @@
   const form = document.getElementById("enrolForm");
   const errorEl = document.getElementById("enrolError");
   const submitBtn = document.getElementById("enrolSubmit");
+  const panel = modal.querySelector(".enrol-modal__panel");
+
+  const successMarkup = [
+    '<div id="enrolSuccess" class="enrol-success" hidden>',
+    "  <h3>Thank you</h3>",
+    "  <p>We have received your detail and will notify you when we launch.</p>",
+    '  <button class="btn btn-primary" type="button" id="enrolSuccessClose">Close</button>',
+    "</div>",
+  ].join("");
+  panel.insertAdjacentHTML("beforeend", successMarkup);
+  const successEl = document.getElementById("enrolSuccess");
+  const successCloseBtn = document.getElementById("enrolSuccessClose");
 
   function openEnrolModal() {
     if (!modal) return;
@@ -59,6 +68,11 @@
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
     if (errorEl) errorEl.textContent = "";
+    form.hidden = false;
+    successEl.hidden = true;
+    form.reset();
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Notify Me";
   }
 
   document
@@ -111,10 +125,12 @@
         throw new Error(msg);
       }
 
-      window.location.href = json.redirectUrl || FLODESK_REDIRECT_URL;
+      form.hidden = true;
+      successEl.hidden = false;
     } catch (err) {
       errorEl.textContent = err.message || "Something went wrong. Please try again.";
     } finally {
+      if (!successEl.hidden) return;
       submitBtn.disabled = false;
       submitBtn.textContent = "Notify Me";
     }
@@ -143,3 +159,4 @@
     });
   }
 })();
+  successCloseBtn.addEventListener("click", closeEnrolModal);
