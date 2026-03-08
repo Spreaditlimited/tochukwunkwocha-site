@@ -710,11 +710,19 @@ body.modal-open {
 .enrol-modal__panel {
   position: relative;
   width: min(560px, 94vw);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  scrollbar-width: none;
   border-radius: var(--radius-lg);
   border: 1px solid var(--light-border);
   background: #fff;
   box-shadow: 0 24px 60px rgba(20, 33, 61, 0.2);
   padding: 24px;
+}
+
+.enrol-modal__panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .enrol-modal__close {
@@ -780,6 +788,8 @@ body.modal-open {
 
 .enrol-form .btn {
   margin-top: 8px;
+  position: sticky;
+  bottom: 0;
 }
 
 .enrol-form__error {
