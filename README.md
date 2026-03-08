@@ -24,12 +24,32 @@ Open `http://localhost:8080`.
 3. Update nameservers at Hosting.com to Netlify nameservers.
 
 ## Enrol modal + Flodesk
-This site now uses a Netlify Function at `/.netlify/functions/flodesk-subscribe`.
+This site now uses checkout + webhook functions:
+- `/.netlify/functions/create-order`
+- `/.netlify/functions/paystack-webhook`
+- `/.netlify/functions/paypal-webhook`
+- `/.netlify/functions/paypal-return`
 
 To make this work in production:
-1. In Netlify site settings, add environment variable `FLODESK_API_KEY`.
-2. Optional: add `FLODESK_TOCHUKWU_SEGMENT_ID` (defaults to `69ad60e952e4ac8ca746bb53`).
-3. Deploy from Git or use Netlify CLI deploy so the function is included.
+1. Add environment variables:
+   - `DB_HOST`
+   - `DB_USER`
+   - `DB_PASSWORD`
+   - `DB_NAME`
+   - `SITE_BASE_URL` (for example `https://tochukwunkwocha.com`)
+   - `PAYSTACK_SECRET_KEY`
+   - `PAYPAL_CLIENT_ID`
+   - `PAYPAL_CLIENT_SECRET`
+   - `PAYPAL_WEBHOOK_ID`
+   - `FLODESK_API_KEY`
+   - `FLODESK_ENROL_SEGMENT_ID`
+2. Optional pricing vars:
+   - `PROMPT_TO_PROFIT_PRICE_NGN_MINOR` (default `5000000`)
+   - `PROMPT_TO_PROFIT_PRICE_USD` (default `99.00`)
+3. In Paystack dashboard, set webhook URL:
+   - `https://tochukwunkwocha.com/.netlify/functions/paystack-webhook`
+4. In PayPal dashboard, set webhook URL:
+   - `https://tochukwunkwocha.com/.netlify/functions/paypal-webhook`
 
 ## After Deploy
 - Keep Selar courses as external links only.

@@ -1,0 +1,9 @@
+{
+  "name": "tochukwunkwocha-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "mysql2": "^3.11.3"
+  }
+}

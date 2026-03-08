@@ -1,7 +1,4 @@
-const FLODESK_SEGMENT_URL =
-  "https://app.flodesk.com/segment/69ad60e952e4ac8ca746bb53?backTo=L3NlZ21lbnRz";
-
-const DEFAULT_SEGMENT_ID = "69ad60e952e4ac8ca746bb53";
+const DEFAULT_SEGMENT_ID = "69ad9a50568c36094377ea96";
 
 function json(statusCode, payload) {
   return {
@@ -21,7 +18,7 @@ exports.handler = async function (event) {
 
   const apiKey = process.env.FLODESK_API_KEY && process.env.FLODESK_API_KEY.trim();
   const segmentId =
-    (process.env.FLODESK_TOCHUKWU_SEGMENT_ID && process.env.FLODESK_TOCHUKWU_SEGMENT_ID.trim()) ||
+    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
     DEFAULT_SEGMENT_ID;
 
   if (!apiKey) {
@@ -71,7 +68,7 @@ exports.handler = async function (event) {
       return json(502, { ok: false, error: message });
     }
 
-    return json(200, { ok: true, redirectUrl: FLODESK_SEGMENT_URL });
+    return json(200, { ok: true });
   } catch (_error) {
     return json(502, { ok: false, error: "Could not reach Flodesk" });
   }
