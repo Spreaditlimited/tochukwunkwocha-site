@@ -2,6 +2,74 @@
   const navToggle = document.querySelector(".nav-toggle");
   const navLinks = document.querySelector(".nav-links");
 
+  const META_PIXEL_ID = "197692536710001";
+
+  function initMetaPixel() {
+    if (!META_PIXEL_ID || window.fbq) return;
+
+    !(function (f, b, e, v, n, t, s) {
+      if (f.fbq) return;
+      n = f.fbq = function () {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      if (!f._fbq) f._fbq = n;
+      n.push = n;
+      n.loaded = true;
+      n.version = "2.0";
+      n.queue = [];
+      t = b.createElement(e);
+      t.async = true;
+      t.src = v;
+      s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s);
+    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+
+    window.fbq("init", META_PIXEL_ID);
+    window.fbq("track", "PageView");
+  }
+
+  async function fetchPaidOrderSummary(orderUuid) {
+    const res = await fetch(`/.netlify/functions/order-summary?order_uuid=${encodeURIComponent(orderUuid)}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!json || !json.ok || !json.order) return null;
+    return json.order;
+  }
+
+  async function trackPurchase(orderUuid) {
+    if (!orderUuid) return;
+    if (typeof window.fbq !== "function") return;
+
+    const storageKey = `meta_purchase_sent_${orderUuid}`;
+    if (window.localStorage && window.localStorage.getItem(storageKey) === "1") return;
+
+    const order = await fetchPaidOrderSummary(orderUuid);
+    if (!order || !Number.isFinite(Number(order.value)) || !order.currency) return;
+
+    const eventId = `ptp_${orderUuid}`;
+    window.fbq(
+      "track",
+      "Purchase",
+      {
+        value: Number(order.value),
+        currency: String(order.currency).toUpperCase(),
+        content_name: "Prompt to Profit",
+        content_type: "product",
+        content_ids: [String(order.course_slug || "prompt-to-profit")],
+      },
+      { eventID: eventId }
+    );
+
+    if (window.localStorage) window.localStorage.setItem(storageKey, "1");
+  }
+
+  initMetaPixel();
+
   if (navToggle && navLinks) {
     navToggle.addEventListener("click", function () {
       const expanded = navToggle.getAttribute("aria-expanded") === "true";
@@ -210,9 +278,16 @@
     }
   });
 
-  const payment = new URLSearchParams(window.location.search).get("payment");
+  const search = new URLSearchParams(window.location.search);
+  const payment = search.get("payment");
+  const paidOrderUuid = search.get("order_uuid");
   if (payment === "success") {
     openPaymentFeedbackModal("success");
+    if (paidOrderUuid) {
+      trackPurchase(paidOrderUuid).catch(function () {
+        return null;
+      });
+    }
   } else if (payment === "failed") {
     openPaymentFeedbackModal("failed");
   } else if (payment === "cancelled") {
@@ -222,6 +297,7 @@
   if (payment) {
     const url = new URL(window.location.href);
     url.searchParams.delete("payment");
+    url.searchParams.delete("order_uuid");
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
 

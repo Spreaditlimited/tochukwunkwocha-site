@@ -36,7 +36,7 @@ exports.handler = async function (event) {
     const orderUuid = tx.metadata && tx.metadata.order_uuid ? String(tx.metadata.order_uuid) : null;
 
     const pool = getPool();
-    await markOrderPaidBy({
+    const result = await markOrderPaidBy({
       pool,
       provider: "paystack",
       providerReference: reference,
@@ -46,7 +46,7 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=success` },
+      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=success${result.orderUuid ? `&order_uuid=${encodeURIComponent(result.orderUuid)}` : ''}` },
       body: "",
     };
   } catch (_error) {

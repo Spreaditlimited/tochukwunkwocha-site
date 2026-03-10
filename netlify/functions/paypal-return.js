@@ -24,7 +24,7 @@ exports.handler = async function (event) {
     await paypalCaptureOrder(orderId);
 
     const pool = getPool();
-    await markOrderPaidBy({
+    const result = await markOrderPaidBy({
       pool,
       provider: "paypal",
       providerOrderId: String(orderId),
@@ -32,7 +32,7 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=success` },
+      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=success${result.orderUuid ? `&order_uuid=${encodeURIComponent(result.orderUuid)}` : ''}` },
       body: "",
     };
   } catch (_error) {

@@ -1,0 +1,9 @@
+# Local Netlify folder
+.netlify
+
+# Local brand asset (not for git)
+assets/tochukwunkwocha logo.png
+
+# Local machine/generated files
+deno.lock
+.DS_Store
