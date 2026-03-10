@@ -334,13 +334,13 @@ p {
 }
 
 .promise-section {
-  padding-top: 34px;
+  padding-top: 78px;
 }
 
 
 .tutor-bridge {
-  padding-top: 22px;
-  padding-bottom: 10px;
+  padding-top: 78px;
+  padding-bottom: 78px;
 }
 
 .tutor-bridge__card {
@@ -1252,11 +1252,12 @@ body.modal-open {
   }
 
   .promise-section {
-    padding-top: 26px;
+    padding-top: 56px;
   }
 
   .tutor-bridge {
-    padding-top: 12px;
+    padding-top: 56px;
+    padding-bottom: 56px;
   }
 
   .tutor-bridge__card {
