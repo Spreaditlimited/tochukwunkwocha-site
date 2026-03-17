@@ -20,7 +20,7 @@ async function ensureManualPaymentsTable(pool) {
       country VARCHAR(120) NULL,
       currency VARCHAR(12) NOT NULL DEFAULT 'NGN',
       amount_minor INT NOT NULL,
-      transfer_reference VARCHAR(190) NOT NULL,
+      transfer_reference VARCHAR(190) NULL,
       proof_url TEXT NOT NULL,
       proof_public_id VARCHAR(255) NULL,
       status VARCHAR(32) NOT NULL DEFAULT 'pending_verification',
@@ -38,6 +38,8 @@ async function ensureManualPaymentsTable(pool) {
       KEY idx_manual_payment_course (course_slug)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await pool.query(`ALTER TABLE course_manual_payments MODIFY transfer_reference VARCHAR(190) NULL`);
 }
 
 async function createManualPayment(pool, input) {
@@ -56,7 +58,7 @@ async function createManualPayment(pool, input) {
       input.country || null,
       input.currency,
       input.amountMinor,
-      input.transferReference,
+      input.transferReference || null,
       input.proofUrl,
       input.proofPublicId || null,
       STATUS_PENDING,

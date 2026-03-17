@@ -14,10 +14,15 @@
     <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body>
-    <main class="internal-shell">
-      <section class="internal-card" id="adminLoginCard">
-        <h1>Manual Payment Review</h1>
-        <p class="internal-subtitle">Sign in with your internal password.</p>
+    <main class="internal-shell internal-shell--auth" id="internalShell">
+      <a class="internal-home-link" href="/">← Back to home</a>
+      <section class="internal-card internal-card--auth" id="adminLoginCard">
+        <div class="internal-auth-head">
+          <div>
+            <h1>Manual Payment Review</h1>
+            <p class="internal-subtitle">Sign in with your internal password.</p>
+          </div>
+        </div>
 
         <form id="adminLoginForm" class="internal-form" novalidate>
           <label for="adminPassword">Password</label>
@@ -39,16 +44,16 @@
         <div class="internal-controls">
           <label>
             Status
-            <select id="adminStatusFilter">
-              <option value="pending_verification">Pending verification</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="all">All</option>
-            </select>
+            <div class="status-filter" id="adminStatusFilter" role="tablist" aria-label="Filter by status">
+              <button type="button" class="status-filter__btn is-active" data-status="pending_verification">Pending</button>
+              <button type="button" class="status-filter__btn" data-status="approved">Approved</button>
+              <button type="button" class="status-filter__btn" data-status="rejected">Rejected</button>
+              <button type="button" class="status-filter__btn" data-status="all">All</button>
+            </div>
           </label>
           <label>
             Search
-            <input id="adminSearchInput" type="text" placeholder="email, name, transfer ref" />
+            <input id="adminSearchInput" type="text" placeholder="email or name" />
           </label>
           <button class="btn btn-outline" id="adminRefreshBtn" type="button">Refresh</button>
         </div>
@@ -63,7 +68,6 @@
                 <th>Payer</th>
                 <th>Course</th>
                 <th>Amount</th>
-                <th>Reference</th>
                 <th>Status</th>
                 <th>Proof</th>
                 <th>Action</th>

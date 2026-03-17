@@ -1,6 +1,7 @@
 (function () {
   const loginCard = document.getElementById("adminLoginCard");
   const appCard = document.getElementById("adminAppCard");
+  const internalShell = document.getElementById("internalShell");
 
   const loginForm = document.getElementById("adminLoginForm");
   const loginBtn = document.getElementById("adminLoginBtn");
@@ -14,6 +15,26 @@
   const messageEl = document.getElementById("adminMessage");
 
   let debounceTimer = null;
+
+  function setAuthMode(isAuthMode) {
+    if (!internalShell) return;
+    internalShell.classList.toggle("internal-shell--auth", !!isAuthMode);
+  }
+
+  function selectedStatus() {
+    if (!statusFilter) return "pending_verification";
+    const active = statusFilter.querySelector(".status-filter__btn.is-active");
+    return active && active.getAttribute("data-status")
+      ? String(active.getAttribute("data-status"))
+      : "pending_verification";
+  }
+
+  function statusLabel(status) {
+    if (status === "pending_verification") return "Pending";
+    if (status === "approved") return "Approved";
+    if (status === "rejected") return "Rejected";
+    return String(status || "").replace(/_/g, " ");
+  }
 
   function setMessage(text, type) {
     if (!messageEl) return;
@@ -66,8 +87,7 @@
         <td>${payer}</td>
         <td>${escapeHtml(item.course_slug || "")}</td>
         <td>${escapeHtml(amount)}</td>
-        <td>${escapeHtml(item.transfer_reference || "")}</td>
-        <td><span class="status-pill status-${escapeHtml(status)}">${escapeHtml(status.replace(/_/g, " "))}</span></td>
+        <td><span class="status-pill status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></td>
         <td>${
           item.proof_url
             ? `<a href="${escapeHtml(item.proof_url)}" target="_blank" rel="noopener noreferrer">View proof</a>`
@@ -76,7 +96,7 @@
         <td>
           ${
             canReview
-              ? '<button type="button" class="btn-small" data-action="approve">Approve</button> <button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button>'
+              ? '<div class="action-buttons"><button type="button" class="btn-small btn-small-approve" data-action="approve">Approve</button><button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button></div>'
               : `<small>${escapeHtml(item.reviewed_by || "reviewed")}</small>`
           }
         </td>
@@ -87,7 +107,7 @@
   async function loadItems() {
     setMessage("", "");
 
-    const status = statusFilter ? statusFilter.value : "pending_verification";
+    const status = selectedStatus();
     const search = searchInput ? searchInput.value.trim() : "";
     const qs = new URLSearchParams({ status, search, limit: "100" });
 
@@ -99,6 +119,7 @@
     if (res.status === 401) {
       if (appCard) appCard.hidden = true;
       if (loginCard) loginCard.hidden = false;
+      setAuthMode(true);
       return;
     }
 
@@ -114,11 +135,12 @@
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="8"><small>No records found.</small></td></tr>';
+        : '<tr><td colspan="7"><small>No records found.</small></td></tr>';
     }
 
     if (appCard) appCard.hidden = false;
     if (loginCard) loginCard.hidden = true;
+    setAuthMode(false);
   }
 
   async function handleReview(paymentUuid, action) {
@@ -194,6 +216,7 @@
       if (appCard) appCard.hidden = true;
       if (loginCard) loginCard.hidden = false;
       setMessage("", "");
+      setAuthMode(true);
     });
   }
 
@@ -206,7 +229,14 @@
   }
 
   if (statusFilter) {
-    statusFilter.addEventListener("change", function () {
+    statusFilter.addEventListener("click", function (event) {
+      const btn = event.target.closest(".status-filter__btn");
+      if (!btn || !statusFilter.contains(btn)) return;
+
+      statusFilter.querySelectorAll(".status-filter__btn").forEach(function (item) {
+        item.classList.toggle("is-active", item === btn);
+      });
+
       loadItems().catch(function (error) {
         setMessage(error.message || "Could not filter", "error");
       });
@@ -243,5 +273,6 @@
   loadItems().catch(function (_error) {
     if (appCard) appCard.hidden = true;
     if (loginCard) loginCard.hidden = false;
+    setAuthMode(true);
   });
 })();

@@ -38,10 +38,6 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "First name and valid email are required" });
   }
 
-  if (!transferReference) {
-    return json(400, { ok: false, error: "Transfer reference is required" });
-  }
-
   if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
     return json(400, { ok: false, error: "Valid payment proof is required" });
   }

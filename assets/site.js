@@ -121,8 +121,6 @@
     '          <p class="manual-transfer__title">Bank details</p>',
     '          <p>Bank details will appear here.</p>',
     "        </div>",
-    '        <label for="manualTransferReference">Transfer reference</label>',
-    '        <input id="manualTransferReference" name="manualTransferReference" type="text" placeholder="Transaction reference from your bank app" />',
     '        <label for="manualProofFile">Payment proof (image/PDF)</label>',
     '        <input id="manualProofFile" name="manualProofFile" type="file" accept="image/*,.pdf" />',
     '        <p class="manual-transfer__hint">After upload and confirm, you will be added to pre-enrolment while payment is manually verified.</p>',
@@ -146,7 +144,6 @@
   const paymentOptions = document.querySelectorAll(".payment-option");
   const manualTransferBlock = document.getElementById("manualTransferBlock");
   const manualBankDetails = document.getElementById("manualBankDetails");
-  const manualTransferReferenceInput = document.getElementById("manualTransferReference");
   const manualProofFileInput = document.getElementById("manualProofFile");
 
   const paymentFeedbackMarkup = [
@@ -386,12 +383,7 @@
 
     try {
       if (provider === "manual_transfer") {
-        const transferReference = String((manualTransferReferenceInput && manualTransferReferenceInput.value) || "").trim();
         const proofFile = manualProofFileInput && manualProofFileInput.files ? manualProofFileInput.files[0] : null;
-
-        if (!transferReference) {
-          throw new Error("Transfer reference is required for manual bank transfer.");
-        }
 
         if (!proofFile) {
           throw new Error("Please attach your payment proof file.");
@@ -409,7 +401,6 @@
             email,
             country,
             courseSlug: "prompt-to-profit",
-            transferReference,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
