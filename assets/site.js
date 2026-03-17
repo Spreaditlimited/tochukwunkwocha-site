@@ -3,6 +3,7 @@
   const navLinks = document.querySelector(".nav-links");
 
   const META_PIXEL_ID = "197692536710001";
+  const COOKIE_CONSENT_KEY = "tws_cookie_consent";
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -26,6 +27,65 @@
 
     window.fbq("init", META_PIXEL_ID);
     window.fbq("track", "PageView");
+  }
+
+  function getCookieConsent() {
+    try {
+      return String(window.localStorage.getItem(COOKIE_CONSENT_KEY) || "").trim();
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function setCookieConsent(value) {
+    try {
+      window.localStorage.setItem(COOKIE_CONSENT_KEY, String(value || ""));
+    } catch (_error) {
+      return;
+    }
+  }
+
+  function openCookieBanner() {
+    if (getCookieConsent()) return;
+    if (document.getElementById("cookieConsentBanner")) return;
+
+    const markup = [
+      '<div class="cookie-consent" id="cookieConsentBanner" role="dialog" aria-live="polite" aria-label="Cookie preferences">',
+      '  <div class="cookie-consent__copy">',
+      "    <strong>Cookies on this site</strong>",
+      "    <p>We use essential cookies for core functionality and optional analytics/marketing cookies only with your permission.</p>",
+      '    <a href="/privacy-policy">Read Privacy Policy</a>',
+      "  </div>",
+      '  <div class="cookie-consent__actions">',
+      '    <button type="button" class="btn btn-outline cookie-consent__btn" id="cookieDeclineBtn">Decline</button>',
+      '    <button type="button" class="btn btn-primary cookie-consent__btn" id="cookieAcceptBtn">Accept</button>',
+      "  </div>",
+      "</div>",
+    ].join("");
+
+    document.body.insertAdjacentHTML("beforeend", markup);
+    const banner = document.getElementById("cookieConsentBanner");
+    const acceptBtn = document.getElementById("cookieAcceptBtn");
+    const declineBtn = document.getElementById("cookieDeclineBtn");
+
+    function closeBanner() {
+      if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
+    }
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener("click", function () {
+        setCookieConsent("granted");
+        closeBanner();
+        initMetaPixel();
+      });
+    }
+
+    if (declineBtn) {
+      declineBtn.addEventListener("click", function () {
+        setCookieConsent("denied");
+        closeBanner();
+      });
+    }
   }
 
   async function fetchPaidOrderSummary(orderUuid) {
@@ -68,7 +128,11 @@
     if (window.localStorage) window.localStorage.setItem(storageKey, "1");
   }
 
-  initMetaPixel();
+  if (getCookieConsent() === "granted") {
+    initMetaPixel();
+  } else if (!getCookieConsent()) {
+    openCookieBanner();
+  }
 
   if (navToggle && navLinks) {
     navToggle.addEventListener("click", function () {
