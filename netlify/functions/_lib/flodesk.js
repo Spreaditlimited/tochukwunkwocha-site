@@ -1,19 +1,21 @@
-const DEFAULT_SEGMENT_ID = "69ad9a50568c36094377ea96";
+const DEFAULT_ENROL_SEGMENT_ID = "69ad9a50568c36094377ea96";
+const DEFAULT_PRE_ENROL_SEGMENT_ID = "69ad60e952e4ac8ca746bb53";
 
-async function syncFlodeskSubscriber({ firstName, email }) {
+async function syncFlodeskSubscriberToSegment({ firstName, email, segmentId }) {
   const apiKey = process.env.FLODESK_API_KEY && process.env.FLODESK_API_KEY.trim();
   if (!apiKey) {
     return { ok: false, error: "Missing FLODESK_API_KEY" };
   }
 
-  const segmentId =
-    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
-    DEFAULT_SEGMENT_ID;
+  const segment = String(segmentId || "").trim();
+  if (!segment) {
+    return { ok: false, error: "Missing segmentId" };
+  }
 
   const payload = {
     email: String(email || "").trim().toLowerCase(),
     first_name: String(firstName || "").trim() || undefined,
-    segment_ids: [segmentId],
+    segment_ids: [segment],
     double_optin: false,
   };
 
@@ -42,4 +44,26 @@ async function syncFlodeskSubscriber({ firstName, email }) {
   }
 }
 
-module.exports = { syncFlodeskSubscriber };
+async function syncFlodeskSubscriber({ firstName, email }) {
+  const segmentId =
+    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
+    DEFAULT_ENROL_SEGMENT_ID;
+
+  return syncFlodeskSubscriberToSegment({ firstName, email, segmentId });
+}
+
+async function syncFlodeskPreEnrolSubscriber({ firstName, email }) {
+  const segmentId =
+    (process.env.FLODESK_PRE_ENROL_SEGMENT_ID && process.env.FLODESK_PRE_ENROL_SEGMENT_ID.trim()) ||
+    DEFAULT_PRE_ENROL_SEGMENT_ID;
+
+  return syncFlodeskSubscriberToSegment({ firstName, email, segmentId });
+}
+
+module.exports = {
+  syncFlodeskSubscriber,
+  syncFlodeskPreEnrolSubscriber,
+  syncFlodeskSubscriberToSegment,
+  DEFAULT_ENROL_SEGMENT_ID,
+  DEFAULT_PRE_ENROL_SEGMENT_ID,
+};

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual Course Payments | Internal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="internal-shell">
+      <section class="internal-card" id="adminLoginCard">
+        <h1>Manual Payment Review</h1>
+        <p class="internal-subtitle">Sign in with your internal password.</p>
+
+        <form id="adminLoginForm" class="internal-form" novalidate>
+          <label for="adminPassword">Password</label>
+          <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
+          <p id="adminLoginError" class="internal-error" role="alert"></p>
+          <button class="btn btn-primary" type="submit" id="adminLoginBtn">Sign in</button>
+        </form>
+      </section>
+
+      <section class="internal-card" id="adminAppCard" hidden>
+        <div class="internal-toolbar">
+          <div>
+            <h1>Manual Payment Queue</h1>
+            <p class="internal-subtitle">Approve only after confirming transfer in your bank app.</p>
+          </div>
+          <button class="btn btn-outline" id="adminLogoutBtn" type="button">Sign out</button>
+        </div>
+
+        <div class="internal-controls">
+          <label>
+            Status
+            <select id="adminStatusFilter">
+              <option value="pending_verification">Pending verification</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+          <label>
+            Search
+            <input id="adminSearchInput" type="text" placeholder="email, name, transfer ref" />
+          </label>
+          <button class="btn btn-outline" id="adminRefreshBtn" type="button">Refresh</button>
+        </div>
+
+        <p id="adminMessage" class="internal-note"></p>
+
+        <div class="internal-table-wrap">
+          <table class="internal-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Payer</th>
+                <th>Course</th>
+                <th>Amount</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Proof</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/admin-manual-payments.js" defer></script>
+  </body>
+</html>

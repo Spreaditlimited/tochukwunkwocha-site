@@ -81,7 +81,7 @@
   document.querySelectorAll(".faq-question").forEach(function (button) {
     button.addEventListener("click", function () {
       const item = button.closest(".faq-item");
-      item.classList.toggle("open");
+      if (item) item.classList.toggle("open");
     });
   });
 
@@ -111,7 +111,22 @@
     '          <span class="payment-option__title">PayPal</span>',
     '          <span class="payment-option__meta">£20 + 20% VAT (Total: £24)</span>',
     "        </button>",
+    '        <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">',
+    '          <span class="payment-option__title">Manual bank transfer</span>',
+    '          <span class="payment-option__meta">Transfer N10,750 and upload proof</span>',
+    "        </button>",
     "      </div>",
+    '      <section id="manualTransferBlock" class="manual-transfer" hidden>',
+    '        <div class="manual-transfer__bank" id="manualBankDetails">',
+    '          <p class="manual-transfer__title">Bank details</p>',
+    '          <p>Bank details will appear here.</p>',
+    "        </div>",
+    '        <label for="manualTransferReference">Transfer reference</label>',
+    '        <input id="manualTransferReference" name="manualTransferReference" type="text" placeholder="Transaction reference from your bank app" />',
+    '        <label for="manualProofFile">Payment proof (image/PDF)</label>',
+    '        <input id="manualProofFile" name="manualProofFile" type="file" accept="image/*,.pdf" />',
+    '        <p class="manual-transfer__hint">After upload and confirm, you will be added to pre-enrolment while payment is manually verified.</p>',
+    "      </section>",
     '      <p id="enrolError" class="enrol-form__error" role="alert"></p>',
     '      <div class="enrol-form__actions">',
     '        <button id="enrolSubmit" class="btn btn-primary" type="submit">Proceed to Payment</button>',
@@ -129,6 +144,10 @@
   const submitBtn = document.getElementById("enrolSubmit");
   const providerInput = document.getElementById("enrolProvider");
   const paymentOptions = document.querySelectorAll(".payment-option");
+  const manualTransferBlock = document.getElementById("manualTransferBlock");
+  const manualBankDetails = document.getElementById("manualBankDetails");
+  const manualTransferReferenceInput = document.getElementById("manualTransferReference");
+  const manualProofFileInput = document.getElementById("manualProofFile");
 
   const paymentFeedbackMarkup = [
     '<div class="payment-feedback-modal" id="paymentFeedbackModal" aria-hidden="true">',
@@ -149,16 +168,120 @@
   const paymentMessage = document.getElementById("paymentFeedbackMessage");
   const paymentCloseBtn = document.getElementById("paymentFeedbackBtn");
 
+  let manualConfigLoaded = false;
+
+  function setActiveProvider(provider) {
+    providerInput.value = provider;
+    paymentOptions.forEach(function (el) {
+      const isActive = el.getAttribute("data-provider") === provider;
+      el.classList.toggle("is-active", isActive);
+      el.setAttribute("aria-checked", isActive ? "true" : "false");
+    });
+
+    const isManual = provider === "manual_transfer";
+    if (manualTransferBlock) manualTransferBlock.hidden = !isManual;
+    submitBtn.textContent = isManual ? "Upload proof and confirm" : "Proceed to Payment";
+
+    if (isManual) {
+      ensureManualConfigLoaded().catch(function () {
+        return null;
+      });
+    }
+  }
+
+  async function ensureManualConfigLoaded() {
+    if (manualConfigLoaded) return;
+    manualConfigLoaded = true;
+
+    try {
+      const res = await fetch("/.netlify/functions/manual-payment-config", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+
+      const json = await res.json().catch(function () {
+        return null;
+      });
+
+      if (!res.ok || !json || !json.ok || !json.details) {
+        throw new Error((json && json.error) || "Could not load bank details");
+      }
+
+      const details = json.details || {};
+      const accountName = String(details.accountName || "").trim();
+      const accountNumber = String(details.accountNumber || "").trim();
+      const bankName = String(details.bankName || "").trim();
+      const amountLabel = String(details.amountLabel || "N10,750").trim();
+      const note = String(details.note || "").trim();
+
+      manualBankDetails.innerHTML = [
+        '<p class="manual-transfer__title">Bank details</p>',
+        `<p><strong>Bank:</strong> ${bankName || "-"}</p>`,
+        `<p><strong>Account name:</strong> ${accountName || "-"}</p>`,
+        `<p><strong>Account number:</strong> ${accountNumber || "-"}</p>`,
+        `<p><strong>Amount:</strong> ${amountLabel}</p>`,
+        note ? `<p class="manual-transfer__note">${note}</p>` : "",
+      ].join("");
+    } catch (_error) {
+      manualBankDetails.innerHTML =
+        '<p class="manual-transfer__title">Bank details</p><p>Bank details unavailable. Please try again shortly.</p>';
+    }
+  }
+
+  async function getUploadSignature() {
+    const res = await fetch("/.netlify/functions/upload-signature", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purpose: "manual_payment" }),
+    });
+
+    const json = await res.json().catch(function () {
+      return null;
+    });
+
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not prepare upload");
+    }
+
+    return json;
+  }
+
+  async function uploadProofToCloudinary(file) {
+    const uploadConfig = await getUploadSignature();
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("api_key", uploadConfig.apiKey);
+    fd.append("timestamp", String(uploadConfig.timestamp));
+    fd.append("folder", uploadConfig.folder);
+    fd.append("signature", uploadConfig.signature);
+
+    const endpoint = `https://api.cloudinary.com/v1_1/${encodeURIComponent(uploadConfig.cloudName)}/auto/upload`;
+    const res = await fetch(endpoint, {
+      method: "POST",
+      body: fd,
+    });
+
+    const json = await res.json().catch(function () {
+      return null;
+    });
+
+    if (!res.ok || !json || !json.secure_url) {
+      const message = (json && (json.error && json.error.message)) || "Could not upload proof";
+      throw new Error(message);
+    }
+
+    return {
+      proofUrl: String(json.secure_url || ""),
+      proofPublicId: String(json.public_id || ""),
+    };
+  }
+
   paymentOptions.forEach(function (option) {
     option.addEventListener("click", function () {
       const provider = option.getAttribute("data-provider");
       if (!provider) return;
-      providerInput.value = provider;
-      paymentOptions.forEach(function (el) {
-        const isActive = el === option;
-        el.classList.toggle("is-active", isActive);
-        el.setAttribute("aria-checked", isActive ? "true" : "false");
-      });
+      setActiveProvider(provider);
     });
   });
 
@@ -176,6 +299,7 @@
     document.body.classList.remove("modal-open");
     if (errorEl) errorEl.textContent = "";
     form.reset();
+    setActiveProvider("paystack");
     submitBtn.disabled = false;
     submitBtn.textContent = "Proceed to Payment";
   }
@@ -187,6 +311,12 @@
       paymentTitle.textContent = "Payment successful";
       paymentMessage.textContent =
         "Payment received. We have added you to the enrolment list. Launch is Monday, 23rd of March, 2026 at 8:00 PM WAT and 7:00 PM UK time.";
+      paymentModal.classList.remove("is-error");
+      paymentModal.classList.add("is-success");
+    } else if (status === "manual_submitted") {
+      paymentTitle.textContent = "Payment proof submitted";
+      paymentMessage.textContent =
+        "Thanks. We have added you to the pre-enrolment list. Our team will manually verify your transfer before full enrolment in the main class list.";
       paymentModal.classList.remove("is-error");
       paymentModal.classList.add("is-success");
     } else if (status === "cancelled") {
@@ -252,9 +382,53 @@
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting...";
+    submitBtn.textContent = provider === "manual_transfer" ? "Uploading proof..." : "Submitting...";
 
     try {
+      if (provider === "manual_transfer") {
+        const transferReference = String((manualTransferReferenceInput && manualTransferReferenceInput.value) || "").trim();
+        const proofFile = manualProofFileInput && manualProofFileInput.files ? manualProofFileInput.files[0] : null;
+
+        if (!transferReference) {
+          throw new Error("Transfer reference is required for manual bank transfer.");
+        }
+
+        if (!proofFile) {
+          throw new Error("Please attach your payment proof file.");
+        }
+
+        submitBtn.textContent = "Uploading proof...";
+        const uploaded = await uploadProofToCloudinary(proofFile);
+
+        submitBtn.textContent = "Submitting confirmation...";
+        const manualRes = await fetch("/.netlify/functions/manual-payment-submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName,
+            email,
+            country,
+            courseSlug: "prompt-to-profit",
+            transferReference,
+            proofUrl: uploaded.proofUrl,
+            proofPublicId: uploaded.proofPublicId,
+          }),
+        });
+
+        const manualJson = await manualRes.json().catch(function () {
+          return null;
+        });
+
+        if (!manualRes.ok || !manualJson || !manualJson.ok) {
+          const msg = (manualJson && manualJson.error) || "Could not submit manual payment.";
+          throw new Error(msg);
+        }
+
+        closeEnrolModal();
+        openPaymentFeedbackModal("manual_submitted");
+        return;
+      }
+
       const res = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -274,7 +448,7 @@
     } catch (err) {
       errorEl.textContent = err.message || "Something went wrong. Please try again.";
       submitBtn.disabled = false;
-      submitBtn.textContent = "Proceed to Payment";
+      submitBtn.textContent = provider === "manual_transfer" ? "Upload proof and confirm" : "Proceed to Payment";
     }
   });
 
