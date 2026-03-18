@@ -1362,8 +1362,21 @@ body.modal-open {
 }
 
 @media (max-width: 760px) {
+  .hero:not(.course-hero) > div {
+    text-align: left;
+  }
+
+  .hero:not(.course-hero) h1,
+  .hero:not(.course-hero) p {
+    margin-inline: 0;
+  }
+
   .hero:not(.course-hero) h1 {
     max-width: 14ch;
+  }
+
+  .hero:not(.course-hero) .cta-row {
+    justify-content: flex-start;
   }
 
   .course-hero {
