@@ -4,6 +4,7 @@
 
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
+  const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -64,12 +65,14 @@
     ].join("");
 
     document.body.insertAdjacentHTML("beforeend", markup);
+    document.body.classList.add("has-cookie-consent");
     const banner = document.getElementById("cookieConsentBanner");
     const acceptBtn = document.getElementById("cookieAcceptBtn");
     const declineBtn = document.getElementById("cookieDeclineBtn");
 
     function closeBanner() {
       if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
+      document.body.classList.remove("has-cookie-consent");
     }
 
     if (acceptBtn) {
@@ -86,6 +89,20 @@
         closeBanner();
       });
     }
+  }
+
+  function mountWhatsAppFloat() {
+    if (document.getElementById("whatsAppFloatBtn")) return;
+
+    const markup = [
+      `<a class="whatsapp-float" id="whatsAppFloatBtn" href="${WHATSAPP_CHAT_URL}" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">`,
+      '  <svg class="whatsapp-float__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">',
+      '    <path d="M19.1 4.9A9.94 9.94 0 0 0 12.03 2C6.53 2 2.05 6.47 2.05 11.98c0 1.76.46 3.49 1.33 5.02L2 22l5.12-1.34a9.9 9.9 0 0 0 4.9 1.26h.01c5.5 0 9.98-4.48 9.98-9.99 0-2.67-1.04-5.19-2.9-7.03Zm-7.08 15.32h-.01a8.2 8.2 0 0 1-4.17-1.14l-.3-.18-3.04.8.81-2.96-.2-.31a8.24 8.24 0 0 1-1.27-4.43c0-4.56 3.71-8.27 8.28-8.27a8.2 8.2 0 0 1 5.86 2.43 8.2 8.2 0 0 1 2.42 5.84c0 4.57-3.71 8.28-8.28 8.28Zm4.54-6.2c-.25-.13-1.48-.73-1.7-.81-.23-.08-.39-.13-.56.12-.16.25-.64.81-.79.98-.14.17-.29.19-.54.06-.25-.13-1.04-.38-1.99-1.21-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.38.11-.51.12-.11.25-.29.37-.43.12-.14.16-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.4-.41-.56-.42h-.48c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.08s.89 2.42 1.02 2.59c.12.17 1.74 2.65 4.21 3.71.59.26 1.05.42 1.41.54.59.19 1.12.16 1.54.1.47-.07 1.48-.6 1.69-1.18.21-.58.21-1.08.14-1.18-.06-.1-.22-.16-.46-.29Z" fill="currentColor"/>',
+      "  </svg>",
+      "</a>",
+    ].join("");
+
+    document.body.insertAdjacentHTML("beforeend", markup);
   }
 
   async function fetchPaidOrderSummary(orderUuid) {
@@ -133,6 +150,7 @@
   } else if (!getCookieConsent()) {
     openCookieBanner();
   }
+  mountWhatsAppFloat();
 
   if (navToggle && navLinks) {
     navToggle.addEventListener("click", function () {
