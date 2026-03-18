@@ -13,8 +13,18 @@
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const rowsEl = document.getElementById("adminRows");
   const messageEl = document.getElementById("adminMessage");
+  const reviewModal = document.getElementById("reviewModal");
+  const reviewModalEyebrow = document.getElementById("reviewModalEyebrow");
+  const reviewModalTitle = document.getElementById("reviewModalTitle");
+  const reviewModalDesc = document.getElementById("reviewModalDesc");
+  const reviewModalWarning = document.getElementById("reviewModalWarning");
+  const reviewNoteLabel = document.getElementById("reviewNoteLabel");
+  const reviewNoteInput = document.getElementById("reviewNoteInput");
+  const reviewModalError = document.getElementById("reviewModalError");
+  const reviewModalConfirmBtn = document.getElementById("reviewModalConfirmBtn");
 
   let debounceTimer = null;
+  let pendingReviewAction = null;
 
   function setAuthMode(isAuthMode) {
     if (!internalShell) return;
@@ -42,6 +52,49 @@
     messageEl.classList.remove("is-error", "is-ok");
     if (type === "error") messageEl.classList.add("is-error");
     if (type === "ok") messageEl.classList.add("is-ok");
+  }
+
+  function openReviewModal(payload) {
+    pendingReviewAction = payload;
+    if (!reviewModal) return;
+
+    const approve = payload && payload.action === "approve";
+    if (reviewModalEyebrow) reviewModalEyebrow.textContent = approve ? "Approve payment" : "Reject payment";
+    if (reviewModalTitle) reviewModalTitle.textContent = approve ? "Confirm approval" : "Confirm rejection";
+    reviewModal.classList.toggle("review-modal--reject", !approve);
+    if (reviewModalDesc) {
+      reviewModalDesc.textContent = approve
+        ? "This will mark the payment as approved and sync the contact to the main enrolment segment."
+        : "Reject only when transfer cannot be verified in your bank app.";
+    }
+    if (reviewModalWarning) reviewModalWarning.hidden = approve;
+    if (reviewNoteLabel) reviewNoteLabel.textContent = approve ? "Optional approval note" : "Rejection reason";
+    if (reviewModalConfirmBtn) {
+      reviewModalConfirmBtn.textContent = approve ? "Approve payment" : "Reject payment";
+      reviewModalConfirmBtn.classList.toggle("review-confirm-reject", !approve);
+    }
+    if (reviewNoteInput) {
+      reviewNoteInput.value = "";
+      reviewNoteInput.placeholder = approve
+        ? "Add context for your records (optional)"
+        : "State why this payment is being rejected";
+    }
+    if (reviewModalError) reviewModalError.textContent = "";
+    reviewModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (reviewNoteInput) reviewNoteInput.focus();
+  }
+
+  function closeReviewModal() {
+    pendingReviewAction = null;
+    if (!reviewModal) return;
+    reviewModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (reviewModalError) reviewModalError.textContent = "";
+    if (reviewNoteInput) reviewNoteInput.value = "";
+    if (reviewModalConfirmBtn) reviewModalConfirmBtn.classList.remove("review-confirm-reject");
+    if (reviewModalWarning) reviewModalWarning.hidden = true;
+    reviewModal.classList.remove("review-modal--reject");
   }
 
   function fmtDate(value) {
@@ -143,14 +196,13 @@
     setAuthMode(false);
   }
 
-  async function handleReview(paymentUuid, action) {
-    const note = window.prompt(action === "approve" ? "Optional approval note" : "Optional rejection note", "");
-    if (note === null) return;
+  async function handleReview(paymentUuid, action, note) {
+    const safeNote = String(note || "").trim().slice(0, 500);
 
     const res = await fetch("/.netlify/functions/admin-manual-payments-review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentUuid, action, reviewNote: note }),
+      body: JSON.stringify({ paymentUuid, action, reviewNote: safeNote }),
     });
 
     const json = await res.json().catch(function () {
@@ -263,12 +315,48 @@
       const paymentUuid = row.getAttribute("data-payment-uuid");
       const action = btn.getAttribute("data-action");
       if (!paymentUuid || !action) return;
-
-      handleReview(paymentUuid, action).catch(function (error) {
-        setMessage(error.message || "Could not update payment", "error");
-      });
+      openReviewModal({ paymentUuid, action });
     });
   }
+
+  if (reviewModal) {
+    reviewModal.querySelectorAll("[data-review-close]").forEach(function (el) {
+      el.addEventListener("click", closeReviewModal);
+    });
+  }
+
+  if (reviewModalConfirmBtn) {
+    reviewModalConfirmBtn.addEventListener("click", function () {
+      if (!pendingReviewAction || !pendingReviewAction.paymentUuid || !pendingReviewAction.action) return;
+
+      const payload = pendingReviewAction;
+      const note = reviewNoteInput ? reviewNoteInput.value : "";
+      reviewModalConfirmBtn.disabled = true;
+      reviewModalConfirmBtn.textContent = payload.action === "approve" ? "Approving..." : "Rejecting...";
+
+      handleReview(payload.paymentUuid, payload.action, note)
+        .then(function () {
+          closeReviewModal();
+        })
+        .catch(function (error) {
+          if (reviewModalError) reviewModalError.textContent = error.message || "Could not update payment";
+        })
+        .finally(function () {
+          reviewModalConfirmBtn.disabled = false;
+          if (payload.action === "approve") {
+            reviewModalConfirmBtn.textContent = "Approve payment";
+          } else {
+            reviewModalConfirmBtn.textContent = "Reject payment";
+          }
+        });
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && reviewModal && reviewModal.getAttribute("aria-hidden") === "false") {
+      closeReviewModal();
+    }
+  });
 
   loadItems().catch(function (_error) {
     if (appCard) appCard.hidden = true;

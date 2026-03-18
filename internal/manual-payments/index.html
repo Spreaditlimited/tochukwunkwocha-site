@@ -77,6 +77,29 @@
           </table>
         </div>
       </section>
+
+      <div class="review-modal" id="reviewModal" aria-hidden="true">
+        <button type="button" class="review-modal__backdrop" data-review-close aria-label="Close"></button>
+        <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+          <button type="button" class="review-modal__close modal-close" data-review-close aria-label="Close dialog">&times;</button>
+          <div class="review-modal__header">
+            <p class="review-modal__eyebrow" id="reviewModalEyebrow">Manual payment review</p>
+            <h3 id="reviewModalTitle">Confirm action</h3>
+            <p id="reviewModalDesc"></p>
+          </div>
+          <div class="review-modal__warning" id="reviewModalWarning" role="status" aria-live="polite" hidden>
+            <span class="review-modal__warning-icon" aria-hidden="true">!</span>
+            <p>This will remove this payment from pending and the learner will not move to the enrolment segment.</p>
+          </div>
+          <label for="reviewNoteInput" id="reviewNoteLabel">Optional note</label>
+          <textarea id="reviewNoteInput" rows="4" placeholder="Add context for your records (optional)"></textarea>
+          <p class="review-modal__error" id="reviewModalError" role="alert"></p>
+          <div class="review-modal__actions">
+            <button type="button" class="btn btn-outline" data-review-close>Cancel</button>
+            <button type="button" class="btn btn-primary" id="reviewModalConfirmBtn">Confirm</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script src="/assets/admin-manual-payments.js" defer></script>

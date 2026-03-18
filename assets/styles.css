@@ -11,6 +11,9 @@
   --radius-lg: 22px;
   --radius-md: 16px;
   --shadow-soft: 0 10px 30px rgba(20, 33, 61, 0.07);
+  --modal-border: #d7deee;
+  --modal-shadow: 0 28px 64px rgba(18, 31, 63, 0.24);
+  --modal-backdrop: rgba(20, 33, 61, 0.48);
   --container: min(1120px, 92vw);
 }
 
@@ -812,7 +815,8 @@ body.modal-open {
 .enrol-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(20, 33, 61, 0.42);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(2px);
 }
 
 .enrol-modal__panel {
@@ -822,10 +826,13 @@ body.modal-open {
   overflow-y: auto;
   scrollbar-width: none;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--light-border);
+  border: 1px solid var(--modal-border);
   background: #fff;
-  box-shadow: 0 24px 60px rgba(20, 33, 61, 0.2);
+  box-shadow: var(--modal-shadow);
   padding: 24px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .enrol-modal__panel::-webkit-scrollbar {
@@ -833,21 +840,9 @@ body.modal-open {
   height: 0;
 }
 
-.enrol-modal__close {
-  margin-left: auto;
-  display: block;
-  border: 1px solid var(--light-border);
-  background: #fff;
-  color: var(--deep-ink);
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .enrol-modal__label {
-  margin-top: 6px;
+  margin-top: 0;
+  margin-right: 46px;
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -855,22 +850,35 @@ body.modal-open {
   font-weight: 700;
 }
 
+.enrol-modal__close,
+.payment-feedback-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
 .enrol-modal h3 {
   margin-top: 8px;
+  margin-right: 46px;
   font-size: clamp(1.5rem, 3.5vw, 2rem);
   line-height: 1.25;
 }
 
+.enrol-modal[aria-hidden="false"] .enrol-modal__panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 .enrol-modal__intro {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--muted-text);
   max-width: 44ch;
 }
 
 .enrol-form {
-  margin-top: 16px;
+  margin-top: 18px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .enrol-form label {
@@ -900,7 +908,7 @@ body.modal-open {
   left: 0;
   right: 0;
   z-index: 4;
-  margin-top: 10px;
+  margin-top: 12px;
   margin-left: -24px;
   margin-right: -24px;
   padding: 10px 24px 20px;
@@ -994,34 +1002,31 @@ body.modal-open {
 .payment-feedback-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(20, 33, 61, 0.45);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(2px);
 }
 
 .payment-feedback-modal__panel {
   position: relative;
   width: min(560px, 94vw);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--light-border);
+  border: 1px solid var(--modal-border);
   background: #fff;
-  box-shadow: 0 24px 60px rgba(20, 33, 61, 0.2);
+  box-shadow: var(--modal-shadow);
   padding: 24px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.payment-feedback-modal__close {
-  margin-left: auto;
-  display: block;
-  border: 1px solid var(--light-border);
-  background: #fff;
-  color: var(--deep-ink);
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
+.payment-feedback-modal[aria-hidden="false"] .payment-feedback-modal__panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .payment-feedback-modal__label {
-  margin-top: 6px;
+  margin-top: 0;
+  margin-right: 46px;
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1031,18 +1036,19 @@ body.modal-open {
 
 .payment-feedback-modal h3 {
   margin-top: 8px;
+  margin-right: 46px;
   font-size: clamp(1.55rem, 3.3vw, 2rem);
 }
 
 .payment-feedback-modal p {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--muted-text);
   line-height: 1.6;
   max-width: 44ch;
 }
 
 .payment-feedback-modal .btn {
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .payment-feedback-modal.is-success h3 {
@@ -1051,6 +1057,34 @@ body.modal-open {
 
 .payment-feedback-modal.is-error h3 {
   color: #8f2720;
+}
+
+.modal-close {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d4dbec;
+  background: #fff;
+  color: #2b3d6d;
+  border-radius: 999px;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.modal-close:hover {
+  background: #f2f5ff;
+  border-color: #c1cae4;
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid rgba(42, 157, 143, 0.35);
+  outline-offset: 2px;
 }
 
 .footer-inner {
@@ -1328,9 +1362,67 @@ body.modal-open {
     padding: 12px;
   }
 
-  .enrol-modal__panel {
+  .payment-feedback-modal,
+  .review-modal {
+    padding: 12px;
+  }
+
+  .enrol-modal__panel,
+  .payment-feedback-modal__panel,
+  .review-modal__panel {
     width: 100%;
     max-width: 100%;
+    padding: 20px;
+  }
+
+  .modal-close {
+    width: 30px;
+    height: 30px;
+    font-size: 1.08rem;
+  }
+
+  .enrol-modal__close,
+  .payment-feedback-modal__close,
+  .review-modal__close {
+    top: 10px;
+    right: 10px;
+  }
+
+  .enrol-modal__label,
+  .payment-feedback-modal__label,
+  .review-modal__eyebrow {
+    margin-right: 38px;
+    font-size: 0.74rem;
+    letter-spacing: 0.09em;
+  }
+
+  .enrol-modal h3,
+  .payment-feedback-modal h3,
+  .review-modal__header h3 {
+    margin-top: 6px;
+    margin-right: 38px;
+    font-size: clamp(1.3rem, 6.1vw, 1.72rem);
+  }
+
+  .enrol-modal__intro,
+  .payment-feedback-modal p,
+  .review-modal__header p {
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .review-modal__warning {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    padding: 9px 10px;
+  }
+
+  .review-modal__panel label {
+    margin-top: 10px;
+  }
+
+  .review-modal__actions {
+    margin-top: 12px;
   }
 
   .hero {
@@ -1520,7 +1612,7 @@ body.modal-open {
   margin-top: 14px;
   display: grid;
   gap: 10px;
-  grid-template-columns: 200px minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(290px, 1fr) minmax(280px, 1fr) auto;
   align-items: end;
 }
 
@@ -1532,7 +1624,8 @@ body.modal-open {
 }
 
 .status-filter {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 4px;
   border: 1px solid #d6dbeb;
@@ -1551,6 +1644,7 @@ body.modal-open {
   padding: 8px 12px;
   cursor: pointer;
   transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .status-filter__btn:hover {
@@ -1642,6 +1736,7 @@ body.modal-open {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .btn-small-approve {
@@ -1654,6 +1749,167 @@ body.modal-open {
   border-color: #f3b9b5;
   color: #8f2720;
   background: #fff7f7;
+}
+
+.review-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 550;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.review-modal[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.review-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--modal-backdrop);
+  border: 0;
+  backdrop-filter: blur(2px);
+}
+
+.review-modal__panel {
+  position: relative;
+  width: min(560px, 94vw);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--modal-border);
+  background: #fff;
+  box-shadow: var(--modal-shadow);
+  padding: 20px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.review-modal[aria-hidden="false"] .review-modal__panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.review-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.review-modal__header {
+  margin-top: 8px;
+}
+
+.review-modal__header h3 {
+  margin: 4px 0 0;
+  margin-right: 46px;
+  font-size: 1.34rem;
+}
+
+.review-modal__eyebrow {
+  margin: 0;
+  margin-right: 46px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: #495d91;
+}
+
+.review-modal__header p {
+  margin-top: 12px;
+  color: #556385;
+  line-height: 1.55;
+}
+
+.review-modal__warning {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #f3d2cf;
+  background: #fff6f5;
+}
+
+.review-modal__warning p {
+  margin: 0;
+  color: #81261f;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.review-modal__warning-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #e08f88;
+  color: #8f2720;
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex: 0 0 20px;
+}
+
+.review-modal__panel label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #2d3f70;
+}
+
+.review-modal__panel textarea {
+  width: 100%;
+  border: 1px solid #d4daeb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #243158;
+  resize: vertical;
+}
+
+.review-modal__error {
+  margin: 8px 0 0;
+  min-height: 1.2em;
+  color: #b32828;
+  font-size: 0.86rem;
+}
+
+.review-modal__actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#reviewModalConfirmBtn.review-confirm-reject {
+  background: #8f2720;
+  border-color: #8f2720;
+  box-shadow: 0 8px 18px rgba(143, 39, 32, 0.2);
+}
+
+#reviewModalConfirmBtn.review-confirm-reject:hover {
+  background: #7c201a;
+  border-color: #7c201a;
+}
+
+.review-modal--reject .review-modal__panel {
+  border-color: #efc3be;
+  box-shadow: 0 30px 62px rgba(77, 18, 13, 0.24);
+}
+
+.review-modal--reject .review-modal__eyebrow {
+  color: #7f221b;
 }
 
 .cookie-consent {
@@ -1732,5 +1988,24 @@ body.modal-open {
 
   .cookie-consent__actions .cookie-consent__btn {
     flex: 1;
+  }
+
+  .review-modal__actions {
+    justify-content: stretch;
+  }
+
+  .review-modal__actions .btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1100px) {
+  .internal-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #adminRefreshBtn {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }
