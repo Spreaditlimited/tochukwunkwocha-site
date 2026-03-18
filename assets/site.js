@@ -346,6 +346,8 @@
     });
   });
 
+  setActiveProvider((providerInput && providerInput.value) || "paystack");
+
   function openEnrolModal() {
     if (!modal) return;
     modal.setAttribute("aria-hidden", "false");
