@@ -561,10 +561,16 @@
           }
         });
       },
-      { threshold: 0.14 }
+      { threshold: 0.01, rootMargin: "0px 0px -8% 0px" }
     );
 
     revealItems.forEach(function (item) {
+      // Very tall sections on small screens can fail higher visibility thresholds.
+      // Mark them visible immediately to prevent blank sections.
+      if (item.offsetHeight > window.innerHeight * 1.6) {
+        item.classList.add("in");
+        return;
+      }
       observer.observe(item);
     });
   } else {
