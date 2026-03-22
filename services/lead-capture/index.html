@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lead Capture Page Setup | Tochukwu Nkwocha</title>
+    <meta
+      name="description"
+      content="We build high-converting lead capture pages for service businesses within 24 hours. Full setup for ₦1,000."
+    />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style type="text/tailwindcss">
+      @layer utilities {
+        /* Modal visibility logic for JS */
+        .service-details-modal {
+          @apply fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300;
+        }
+        .service-details-modal[aria-hidden="true"] {
+          @apply opacity-0 pointer-events-none;
+        }
+        .service-details-modal[aria-hidden="false"] {
+          @apply opacity-100 pointer-events-auto;
+        }
+        .service-details-modal__backdrop {
+          @apply absolute inset-0 bg-gray-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default;
+        }
+        .service-details-modal__panel {
+          @apply relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 transform transition-transform duration-300 mx-4;
+        }
+        .service-details-modal[aria-hidden="true"] .service-details-modal__panel {
+          @apply translate-y-4 scale-95;
+        }
+        .service-details-modal[aria-hidden="false"] .service-details-modal__panel {
+          @apply translate-y-0 scale-100;
+        }
+        
+        /* Reveal animation utility */
+        .reveal {
+          @apply animate-[fadeIn_0.8s_ease-out_forwards];
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      }
+      
+      /* Form Input styling to keep HTML clean */
+      .form-input {
+        @apply mt-2 block w-full rounded-lg border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 bg-white transition-shadow;
+      }
+      .form-label {
+        @apply block text-sm font-semibold leading-6 text-gray-900;
+      }
+
+      .form-select {
+        @apply appearance-none cursor-pointer pr-10;
+        background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
+        background-position:
+          calc(100% - 22px) calc(50% - 2px),
+          calc(100% - 16px) calc(50% - 2px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+      }
+
+      .form-select:hover {
+        @apply ring-gray-400 shadow;
+      }
+
+      .form-select:focus {
+        @apply ring-brand-600 shadow-md;
+      }
+
+      .site-btn-primary {
+        @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+      }
+
+      .site-btn-outline {
+        @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+      }
+
+      .field-help {
+        @apply relative inline-flex items-center ml-2 align-middle;
+      }
+
+      .field-help__btn {
+        @apply inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white bg-brand-500 cursor-help transition-colors hover:bg-brand-600;
+      }
+
+      .field-help__tip {
+        @apply pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2.5 text-xs font-normal leading-relaxed text-white opacity-0 shadow-xl transition-opacity;
+      }
+
+      .field-help:hover .field-help__tip,
+      .field-help:focus-within .field-help__tip {
+        @apply opacity-100;
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f6f1] text-gray-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full flex flex-col items-center">
+      
+      <section class="w-full bg-white border-b border-gray-200 pt-16 pb-20 lg:pt-24 lg:pb-28 reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            
+            <div class="lg:col-span-7">
+              <p class="inline-block rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-600 ring-1 ring-inset ring-brand-500/20 mb-6">Service Offer</p>
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-[1.1]">
+                A Simple Page That Helps You Get More Customers
+              </h1>
+              <p class="mt-6 text-lg leading-8 text-gray-600 max-w-2xl">
+                Most small businesses don't need a big website. We offer you a professionally designed page that clearly presents your offer, helps interested people contact you, and follows up with them automatically.
+              </p>
+              <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                <a href="#leadpage-details" class="site-btn-primary">
+                  Start My Setup
+                </a>
+                <a href="#what-you-get" class="site-btn-outline">
+                  See What Is Included
+                </a>
+              </div>
+            </div>
+
+            <aside class="mt-12 lg:mt-0 lg:col-span-5 relative">
+              <div class="rounded-2xl bg-gray-900 p-8 shadow-2xl ring-1 ring-white/10 relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-500 rounded-full blur-3xl opacity-20"></div>
+                <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-brand-500 rounded-full blur-3xl opacity-20"></div>
+                
+                <h3 class="text-xl font-heading font-bold text-white mb-2 relative z-10">Simple and clear offer</h3>
+                <p class="text-gray-400 text-sm mb-8 relative z-10">Done-for-you setup delivered within 24 hours for one fixed price.</p>
+                
+                <div class="space-y-4 relative z-10">
+                  <div class="flex items-center gap-3 text-white">
+                    <svg class="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="font-medium">Delivery in 24 hours</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-white">
+                    <svg class="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="font-medium">₦1,000 fixed price</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-white">
+                    <svg class="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                    <span class="font-medium">One clear page for your business</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-white">
+                    <svg class="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <span class="font-medium">Made to help people contact you</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-white">
+                    <svg class="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="font-medium">Follows up with them automatically</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+            
+          </div>
+        </div>
+      </section>
+
+      <section id="what-you-get" class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 reveal">
+        <div class="text-center max-w-2xl mx-auto mb-16">
+          <p class="text-sm font-bold uppercase tracking-widest text-brand-600">What You Get</p>
+          <h2 class="mt-2 text-3xl font-heading font-bold tracking-tight text-gray-900 sm:text-4xl">What we will set up for you</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <article class="bg-white rounded-2xl p-8 shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md">
+            <div class="w-12 h-12 rounded-lg bg-brand-50 flex items-center justify-center mb-6">
+              <svg class="w-6 h-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Clear Page Message</h3>
+            <p class="text-gray-600 leading-relaxed">We write simple page text that tells people what you do, why it matters, and what to do next.</p>
+          </article>
+          
+          <article class="bg-white rounded-2xl p-8 shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md">
+            <div class="w-12 h-12 rounded-lg bg-brand-50 flex items-center justify-center mb-6">
+              <svg class="w-6 h-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Lead Form + Email Follow-up</h3>
+            <p class="text-gray-600 leading-relaxed">We add a form to collect name, email, and phone number, set up your email marketing, and write a 5-email follow-up series.</p>
+          </article>
+          
+          <article class="bg-white rounded-2xl p-8 shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md">
+            <div class="w-12 h-12 rounded-lg bg-brand-50 flex items-center justify-center mb-6">
+              <svg class="w-6 h-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Tracking + Setup Help</h3>
+            <p class="text-gray-600 leading-relaxed">We set up Facebook Pixel and Google Analytics Tag, and we handle the domain, hosting, and page launch for you.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="w-full bg-gray-900 py-20 reveal">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <p class="text-sm font-bold uppercase tracking-widest text-brand-400 mb-4">Scope Rules</p>
+          <h2 class="text-3xl font-heading font-bold tracking-tight text-white sm:text-4xl mb-12">One service. One page. One outcome.</h2>
+          
+          <div class="bg-gray-800 rounded-2xl p-8 sm:p-10 text-left ring-1 ring-white/10 max-w-2xl mx-auto shadow-xl">
+            <ul class="space-y-4">
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">Single lead-capture page only</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">One primary service offer</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">One revision round</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">Free hosting setup included</span>
+              </li>
+              <li class="flex items-start opacity-70">
+                <svg class="h-6 w-6 text-gray-500 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <span class="text-gray-400 text-lg">No full website build in this package</span>
+              </li>
+              <li class="flex items-start opacity-70">
+                <svg class="h-6 w-6 text-gray-500 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <span class="text-gray-400 text-lg">Payment integration and SLA automation comes in Phase 2</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="leadpage-details" class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 reveal scroll-mt-10">
+        
+        <div class="mb-10 text-center">
+          <p class="inline-flex items-center justify-center rounded-full bg-brand-100/50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4">
+            Setup Form
+          </p>
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            Submit your business details
+          </h2>
+          <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            Give us clear information about your business. The more detail you provide, the better your page will convert. Free hosting is included for this setup.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-[24px] shadow-xl ring-1 ring-gray-900/5 overflow-hidden p-6 sm:p-10">
+          <form id="leadpageDetailsForm" novalidate>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
+              <div data-wizard-indicator="1" class="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 shadow-sm text-center">1) Tell us about yourself</div>
+              <div data-wizard-indicator="2" class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-400 text-center">2) Your business</div>
+              <div data-wizard-indicator="3" class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-400 text-center">3) Technical Details</div>
+            </div>
+
+            <div class="wizard-step" data-step="1">
+              <div class="mb-8">
+                <h3 class="text-2xl font-heading font-bold text-gray-900">Tell us about yourself</h3>
+                <p class="mt-2 text-sm text-gray-500">We use this to set up your account where you can track the progress of your project.</p>
+              </div>
+              
+              <div class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div class="sm:col-span-2">
+                    <label class="form-label">Full name</label>
+                    <input type="text" name="fullName" required class="form-input" placeholder="e.g. Jane Doe" />
+                  </div>
+                  <div>
+                    <label class="form-label">Email address</label>
+                    <input type="email" name="email" required class="form-input" placeholder="you@company.com" />
+                  </div>
+                  <div>
+                    <label class="form-label">Phone number</label>
+                    <input type="text" name="phone" required class="form-input" placeholder="+234..." />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-10 flex justify-end pt-6 border-t border-gray-100">
+                <button type="button" data-step-next class="site-btn-primary group">
+                  Continue to Business
+                  <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="wizard-step hidden" data-step="2">
+              <div class="mb-8">
+                <h3 class="text-2xl font-heading font-bold text-gray-900">Tell us about your business</h3>
+                <p class="mt-2 text-sm text-gray-500">We strongly recommend you include true and strong testimonials to boost conversion rates.</p>
+              </div>
+
+              <div class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label class="form-label">Business name</label>
+                    <input type="text" name="businessName" required class="form-input" />
+                  </div>
+                  <div>
+                    <label class="form-label">Business type / Industry</label>
+                    <input type="text" name="businessType" placeholder="e.g. Real Estate, Legal, Beauty" class="form-input" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label">What exactly are you selling?</label>
+                  <input type="text" name="serviceOffer" required placeholder="Describe your main service offer clearly" class="form-input" />
+                </div>
+
+                <div>
+                  <label class="form-label">What sets your business apart?</label>
+                  <textarea name="whatSetsYouApart" rows="3" required placeholder="Tell us why people should choose you over competitors." class="form-input"></textarea>
+                </div>
+
+                <div>
+                  <label class="form-label flex items-center justify-between">
+                    Testimonials
+                    <span class="text-xs font-normal text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">Highly Recommended</span>
+                  </label>
+                  <textarea name="testimonials" rows="3" placeholder="Paste real quotes or links to reviews here." class="form-input"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
+                  <div>
+                    <label class="form-label">Target location</label>
+                    <input type="text" name="targetLocation" placeholder="e.g. Lagos, Abuja, Nationwide" class="form-input" />
+                  </div>
+                  <div>
+                    <label class="form-label">Primary goal</label>
+                    <input type="text" name="primaryGoal" placeholder="e.g. Book consultations, WhatsApp leads" class="form-input" />
+                  </div>
+                  <div>
+                    <label class="form-label">Preferred Button (CTA) text</label>
+                    <input type="text" name="ctaText" placeholder="e.g. Book Free Consultation" class="form-input" />
+                  </div>
+                  <div>
+                    <label class="form-label">Tone preference</label>
+                    <input type="text" name="tone" placeholder="e.g. Professional, friendly, urgent" class="form-input" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-gray-100">
+                <button type="button" data-step-prev class="site-btn-outline group">
+                  <svg class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                  Back
+                </button>
+                <button type="button" data-step-next class="site-btn-primary group">
+                  Continue to Tech Details
+                  <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="wizard-step hidden" data-step="3">
+              <div class="mb-8 flex items-start justify-between">
+                <div>
+                  <h3 class="text-2xl font-heading font-bold text-gray-900">Technical Details</h3>
+                  <p class="mt-2 text-sm text-gray-500">If you don't have tracking IDs yet, you can leave them blank.</p>
+                </div>
+              </div>
+
+              <div class="space-y-8">
+                <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <h4 class="text-base font-heading font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    Tracking & Analytics
+                  </h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label class="form-label">
+                        Facebook Pixel ID
+                        <span class="field-help" tabindex="0">
+                          <span class="field-help__btn" aria-hidden="true">?</span>
+                          <span class="field-help__tip">In Meta Ads Manager, go to Events Manager, open your Pixel (Dataset), and copy the ID.</span>
+                        </span>
+                      </label>
+                      <input type="text" name="facebookPixelId" placeholder="Optional" class="form-input" />
+                    </div>
+                    <div>
+                      <label class="form-label">
+                        Google Analytics Tag
+                        <span class="field-help" tabindex="0">
+                          <span class="field-help__btn" aria-hidden="true">?</span>
+                          <span class="field-help__tip">In Google Analytics, go to Data Streams, and copy the Measurement ID (starts with G-).</span>
+                        </span>
+                      </label>
+                      <input type="text" name="googleTagId" placeholder="Optional" class="form-input" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-brand-200 bg-brand-50/50 p-6 shadow-sm">
+                  <h4 class="text-base font-heading font-bold text-gray-900 mb-1 flex items-center gap-2">
+                    <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                    Domain Details
+                  </h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                    <div class="sm:col-span-2 md:col-span-1">
+                      <label class="form-label">Domain status</label>
+                      <select id="domainStatusField" name="domainStatus" class="form-input form-select">
+                        <option value="">Select an option...</option>
+                        <option value="has_domain">I already have a domain</option>
+                        <option value="needs_domain">I need a domain</option>
+                      </select>
+                    </div>
+                    <div id="domainNameFieldWrap" class="sm:col-span-2 md:col-span-1 hidden">
+                      <label class="form-label">What is your domain name?</label>
+                      <input id="domainNameField" type="text" name="domainName" placeholder="e.g. mybusiness.com" class="form-input" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label flex items-center gap-2">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Final notes or special requests
+                  </label>
+                  <textarea name="notes" rows="3" placeholder="Anything else we should know?" class="form-input"></textarea>
+                </div>
+              </div>
+
+              <div class="mt-10 pt-6 border-t border-gray-100 flex flex-col items-center">
+                <p id="leadpageDetailsError" class="text-sm font-medium text-red-600 mb-4 hidden w-full text-center bg-red-50 p-3 rounded-lg border border-red-100" role="alert"></p>
+                
+                <div class="w-full flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <button type="button" data-step-prev class="site-btn-outline group">
+                    <svg class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    Back
+                  </button>
+                  <button id="leadpageDetailsSubmitBtn" type="submit" class="site-btn-primary px-8 py-4 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-lg">
+                    Submit Details to Begin
+                    <svg class="ml-2 -mr-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+          <div id="leadpagePaymentStage" class="hidden mt-10 rounded-2xl border border-brand-200 bg-brand-50/60 p-6 sm:p-8">
+            <p class="text-sm font-bold uppercase tracking-widest text-brand-700">Step 4</p>
+            <h3 class="mt-1 text-2xl font-heading font-bold text-gray-900">Make payment to start your project</h3>
+            <p class="mt-3 text-sm text-gray-700">
+              Your details are now saved. Please make payment so we can activate your project dashboard and start your page build.
+            </p>
+
+            <div class="mt-5 rounded-xl border border-gray-200 bg-white p-5">
+              <p class="text-sm text-gray-500">Project fee</p>
+              <p class="mt-1 text-3xl font-heading font-bold text-gray-900">N1,000</p>
+              <ul class="mt-3 space-y-2 text-sm text-gray-700">
+                <li>1. Payment is confirmed securely.</li>
+                <li>2. Your project dashboard is activated.</li>
+                <li>3. We begin work and update your progress there.</li>
+              </ul>
+            </div>
+
+            <p id="leadpagePaymentRef" class="mt-4 text-sm text-gray-600"></p>
+            <p id="leadpagePaymentError" class="hidden mt-3 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700"></p>
+
+            <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+              <button id="leadpagePaymentBtn" type="button" class="site-btn-primary px-8 py-4 shadow-lg hover:shadow-xl">
+                Continue to Secure Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">Tochukwu Nkwocha</div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-and-conditions">Terms & Conditions</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <div class="service-details-modal" id="leadpageDetailsModal" aria-hidden="true">
+      <button class="service-details-modal__backdrop" type="button" data-details-close aria-label="Close"></button>
+      
+      <div class="service-details-modal__panel" role="dialog" aria-modal="true" aria-labelledby="leadpageDetailsModalTitle">
+        <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" type="button" data-details-close aria-label="Close dialog">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-brand-100 mb-4">
+            <svg class="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <p class="text-sm font-bold uppercase tracking-wider text-brand-600 mb-1">Leadpage Service</p>
+          <h3 id="leadpageDetailsModalTitle" class="text-2xl font-heading font-bold text-gray-900 mb-3"></h3>
+          <p id="leadpageDetailsModalMessage" class="text-gray-600 mb-8"></p>
+          
+          <button id="leadpageDetailsModalBtn" class="site-btn-primary w-full px-4 py-3 text-sm" type="button" data-details-close>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/site.js"></script>
+    <script src="/assets/leadpage-service.js" defer></script>
+  </body>
+</html>

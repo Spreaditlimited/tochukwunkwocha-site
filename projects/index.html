@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Page</title>
+    <meta name="description" content="Client project page." />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero reveal" style="padding-top: 90px">
+        <div>
+          <p class="section-label" id="projectLabel">Project</p>
+          <h1 id="projectHeadline">Loading project...</h1>
+          <p id="projectSubheadline"></p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#contact" id="projectCta">Contact Us</a>
+          </div>
+        </div>
+        <aside class="hero-card">
+          <h3>Offer Summary</h3>
+          <p id="projectOffer">Please wait...</p>
+        </aside>
+      </section>
+
+      <section class="section reveal">
+        <p class="section-label">Testimonials</p>
+        <div class="course-highlight">
+          <p class="section-intro" id="projectTestimonials">No testimonials available yet.</p>
+        </div>
+      </section>
+
+      <section class="section reveal" id="contact">
+        <p class="section-label">Contact</p>
+        <div class="course-highlight">
+          <h2 class="section-headline" style="max-width: 100%">Get in touch</h2>
+          <p class="section-intro" id="projectContactNote">Please reach out for more details.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/site.js"></script>
+    <script src="/assets/project-public.js" defer></script>
+  </body>
+</html>

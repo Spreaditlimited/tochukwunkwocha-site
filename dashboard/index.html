@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Dashboard | Tochukwu Nkwocha</title>
+    <meta
+      name="description"
+      content="Track your lead capture page project, edit your page content, and publish updates."
+    />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <style>
+      .form-input {
+        width: 100%;
+        margin-top: 6px;
+        border: 1px solid #d6dbe7;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font: inherit;
+        color: #222;
+        background: #fff;
+      }
+      .form-input:focus {
+        outline: 2px solid #22345f;
+        outline-offset: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero reveal">
+        <p class="section-label">Client Dashboard</p>
+        <h1>Track your project and manage your page content.</h1>
+        <p>
+          This dashboard helps you monitor progress, update your page messaging, and publish changes.
+        </p>
+      </section>
+
+      <section class="section reveal" style="padding-top: 20px">
+        <div id="dashboardUsageNotice" class="course-highlight" style="display:none; margin-bottom: 16px; border-color: #f1b23b; background: #fff6e5;">
+          <h3 style="font-size: 1.1rem; margin-bottom: 6px; color: #7a4a00;">Publishing Notice</h3>
+          <p id="dashboardUsageNoticeText" class="section-intro" style="margin-top: 0; color: #7a4a00;"></p>
+        </div>
+
+        <div class="card-grid-2">
+          <article class="card">
+            <h3>Project Status</h3>
+            <p id="dashboardProjectMeta" class="section-intro">Loading project details...</p>
+            <div class="hero-points" style="margin-top: 14px">
+              <span id="dashboardPaymentStatus">Payment: --</span>
+              <span id="dashboardBuildStatus">Build status: --</span>
+              <span id="dashboardPublishStatus">Publish status: --</span>
+              <span id="dashboardPublishedUrl">Published URL: --</span>
+              <span id="dashboardUsageStats">Monthly publish usage: --</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3>Recent Activity</h3>
+            <div id="dashboardEvents" class="section-intro">No activity yet.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section reveal" style="padding-top: 12px">
+        <div class="course-highlight">
+          <h2 class="section-headline" style="max-width: 100%">Edit Your Page Content</h2>
+          <p class="section-intro" style="margin-top: 10px">
+            Update this content and save. Your updates are stored and used in your page build/publish process.
+          </p>
+
+          <form id="dashboardContentForm" style="margin-top: 18px; display: grid; gap: 14px">
+            <label>
+              Headline
+              <input class="form-input" type="text" name="headline" required />
+            </label>
+            <label>
+              Subheadline
+              <textarea class="form-input" name="subheadline" rows="3" required></textarea>
+            </label>
+            <label>
+              Offer Summary
+              <textarea class="form-input" name="offer" rows="3" required></textarea>
+            </label>
+            <label>
+              Primary CTA Text
+              <input class="form-input" type="text" name="cta" />
+            </label>
+            <label>
+              Testimonials
+              <textarea class="form-input" name="testimonials" rows="4"></textarea>
+            </label>
+            <label>
+              Contact Note
+              <textarea class="form-input" name="contactNote" rows="3"></textarea>
+            </label>
+            <p id="dashboardFormError" class="section-intro" style="color: #b91c1c"></p>
+            <div class="cta-row">
+              <button id="dashboardSaveBtn" type="submit" class="btn btn-outline">Save Changes</button>
+              <button id="dashboardPublishBtn" type="button" class="btn btn-primary">Publish Updates</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">Tochukwu Nkwocha</div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-and-conditions">Terms & Conditions</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js"></script>
+    <script src="/assets/dashboard-client.js" defer></script>
+  </body>
+</html>

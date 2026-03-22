@@ -19,8 +19,10 @@ function verifyPaystackSignature(rawBody, signature) {
   return hash === String(signature || "").trim();
 }
 
-async function paystackInitialize({ email, amountMinor, reference, metadata }) {
+async function paystackInitialize({ email, amountMinor, reference, metadata, callbackUrl }) {
   const secret = paystackSecret();
+  const safeCallbackUrl =
+    String(callbackUrl || "").trim() || `${siteBaseUrl()}/.netlify/functions/paystack-return`;
   const res = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",
     headers: {
@@ -32,7 +34,7 @@ async function paystackInitialize({ email, amountMinor, reference, metadata }) {
       email,
       amount: amountMinor,
       reference,
-      callback_url: `${siteBaseUrl()}/.netlify/functions/paystack-return`,
+      callback_url: safeCallbackUrl,
       metadata,
     }),
   });
