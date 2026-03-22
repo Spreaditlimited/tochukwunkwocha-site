@@ -11,37 +11,102 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
   </head>
-  <body class="internal-admin-page">
-    <main class="internal-shell">
-      <section class="internal-card">
-        <a class="internal-home-link" href="/">← Back to home</a>
-        <div class="internal-toolbar">
+  <body class="bg-[#f8f6f1] text-gray-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900">
+    
+    <main class="flex-1 w-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+      
+      <section class="w-full max-w-4xl bg-white rounded-2xl shadow-xl ring-1 ring-gray-900/5 p-6 sm:p-10 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-brand-600"></div>
+
+        <div class="mb-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1>Internal Tools</h1>
-            <p class="internal-subtitle">Operational tools for course and leadpage workflows.</p>
+            <a href="/" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-6">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              Back to home
+            </a>
+            <h1 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900">Internal Tools</h1>
+            <p class="mt-2 text-base text-gray-500 max-w-xl">Operational workspace for managing course enrollments and leadpage service workflows.</p>
+          </div>
+          
+          <div class="hidden sm:block">
+            <span class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-brand-50 text-brand-600 font-bold font-heading ring-1 ring-brand-100">
+              TN
+            </span>
           </div>
         </div>
 
-        <div class="card-grid-2" style="margin-top: 12px">
-          <article class="card">
-            <h3>Manual Course Payments</h3>
-            <p>Review pending manual transfer proofs, approve/reject, and keep enrolment records clean.</p>
-            <div class="cta-row" style="margin-top: 14px">
-              <a class="btn btn-primary" href="/internal/manual-payments/">Open Queue</a>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          
+          <article class="group relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-brand-200">
+            <div>
+              <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 ring-1 ring-green-100 group-hover:bg-green-100 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Manual Course Payments</h3>
+              <p class="text-sm text-gray-500 leading-relaxed">
+                Review pending manual transfer proofs, approve or reject transactions, and keep your course enrolment records clean.
+              </p>
+            </div>
+            <div class="mt-8">
+              <a href="/internal/manual-payments/" class="inline-flex w-full items-center justify-center rounded-xl bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 transition-all group-hover:bg-brand-600 group-hover:text-white group-hover:ring-brand-600">
+                Open Payment Queue
+                <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </a>
             </div>
           </article>
 
-          <article class="card">
-            <h3>Lead Capture Jobs</h3>
-            <p>Track leadpage service jobs from details through build, QA, and delivery states.</p>
-            <div class="cta-row" style="margin-top: 14px">
-              <a class="btn btn-primary" href="/internal/leadpage-jobs/">Open Queue</a>
+          <article class="group relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-brand-200">
+            <div>
+              <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-100 group-hover:bg-brand-100 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Lead Capture Jobs</h3>
+              <p class="text-sm text-gray-500 leading-relaxed">
+                Track leadpage service jobs from client intake details through page build, QA processes, and final delivery states.
+              </p>
+            </div>
+            <div class="mt-8">
+              <a href="/internal/leadpage-jobs/" class="inline-flex w-full items-center justify-center rounded-xl bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 transition-all group-hover:bg-brand-600 group-hover:text-white group-hover:ring-brand-600">
+                Open Job Queue
+                <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </a>
             </div>
           </article>
+
         </div>
       </section>
+
+      <footer class="mt-8 text-center text-xs text-gray-400">
+        &copy; 2026 Tochukwu Nkwocha. Internal Workspace.
+      </footer>
     </main>
   </body>
 </html>

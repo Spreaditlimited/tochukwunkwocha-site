@@ -134,7 +134,7 @@
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="6"><small>No jobs found.</small></td></tr>';
+        : '<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">No jobs found.</td></tr>';
     }
 
     if (appCard) appCard.hidden = false;

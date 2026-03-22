@@ -11,95 +11,268 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css" />
-  </head>
-  <body class="internal-admin-page">
-    <main class="internal-shell internal-shell--auth" id="internalShell">
-      <section class="internal-card internal-card--auth" id="adminLoginCard">
-        <a class="internal-home-link" href="/internal/">← Back to internal tools</a>
-        <div class="internal-auth-head">
-          <div>
-            <h1>Manual Payment Review</h1>
-            <p class="internal-subtitle">Sign in with your internal password.</p>
-          </div>
-        </div>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style type="text/tailwindcss">
+      @layer utilities {
+        /* Filter Button Logic */
+        .status-filter__btn.is-active {
+          @apply bg-white text-gray-900 shadow-sm ring-1 ring-gray-200;
+        }
+        .status-filter__btn:not(.is-active) {
+          @apply text-gray-500 hover:text-gray-700 hover:bg-gray-50;
+        }
+        [hidden] {
+          display: none !important;
+        }
 
-        <form id="adminLoginForm" class="internal-form" novalidate>
-          <label for="adminPassword">Password</label>
-          <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
-          <p id="adminLoginError" class="internal-error" role="alert"></p>
-          <button class="btn btn-primary" type="submit" id="adminLoginBtn">Sign in</button>
-        </form>
+        /* Force separation and styling on JS-injected action buttons 
+          Assuming your JS injects an Approve and Reject button in the last column
+        */
+        #adminRows td:last-child {
+          @apply whitespace-nowrap px-4 py-4 text-right text-sm font-medium;
+        }
+        #adminRows td:last-child > div,
+        #adminRows td:last-child {
+          @apply flex items-center justify-end gap-3;
+        }
+        #adminRows td:last-child button:nth-of-type(1) {
+          @apply inline-flex items-center rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20 hover:bg-green-100 transition-colors;
+        }
+        #adminRows td:last-child button:nth-of-type(2) {
+          @apply inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/20 hover:bg-red-100 transition-colors;
+        }
+
+        /* Standardize injected table cells */
+        #adminRows td {
+          @apply whitespace-nowrap px-4 py-4 text-sm text-gray-600;
+        }
+
+        /* Modal Logic */
+        .review-modal {
+          @apply fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300;
+        }
+        .review-modal[aria-hidden="true"] {
+          @apply opacity-0 pointer-events-none;
+        }
+        .review-modal[aria-hidden="false"] {
+          @apply opacity-100 pointer-events-auto;
+        }
+        .review-modal__backdrop {
+          @apply absolute inset-0 bg-gray-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default;
+        }
+        .review-modal__panel {
+          @apply relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 transform transition-transform duration-300 mx-4;
+        }
+        .review-modal[aria-hidden="true"] .review-modal__panel {
+          @apply translate-y-4 scale-95;
+        }
+        .review-modal[aria-hidden="false"] .review-modal__panel {
+          @apply translate-y-0 scale-100;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f6f1] text-gray-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900">
+    
+    <main id="internalShell" class="flex-1 w-full flex flex-col">
+      
+      <section id="adminLoginCard" class="flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl ring-1 ring-gray-900/5 p-8 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-brand-600"></div>
+
+          <a href="/internal/" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to internal tools
+          </a>
+          
+          <div class="mb-8">
+            <h1 class="text-2xl font-heading font-extrabold tracking-tight text-gray-900">Manual Payment Review</h1>
+            <p class="mt-2 text-sm text-gray-500">Sign in with your internal admin password.</p>
+          </div>
+
+          <form id="adminLoginForm" novalidate class="space-y-6">
+            <div>
+              <label for="adminPassword" class="block text-sm font-medium text-gray-700">Password</label>
+              <div class="mt-2">
+                <input 
+                  id="adminPassword" 
+                  name="password" 
+                  type="password" 
+                  autocomplete="current-password" 
+                  required 
+                  class="block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            
+            <p id="adminLoginError" class="text-sm text-red-600 hidden" role="alert"></p>
+            
+            <button 
+              type="submit" 
+              id="adminLoginBtn"
+              class="flex w-full justify-center rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors"
+            >
+              Sign in to queue
+            </button>
+          </form>
+        </div>
       </section>
 
-      <section class="internal-card" id="adminAppCard" hidden>
-        <div class="internal-toolbar">
-          <div>
-            <h1>Manual Payment Queue</h1>
-            <p class="internal-subtitle">Approve only after confirming transfer in your bank app.</p>
+      <section id="adminAppCard" class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" hidden>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-6 gap-4">
+          <div class="min-w-0 flex-1">
+            <h1 class="text-2xl sm:text-3xl font-heading font-bold leading-7 text-gray-900 sm:truncate sm:tracking-tight">
+              Manual Payment Queue
+            </h1>
+            <p class="mt-2 text-sm text-gray-500 flex items-center gap-2">
+              <svg class="h-4 w-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              Approve only after confirming transfer in your bank app.
+            </p>
           </div>
-          <button class="btn btn-outline" id="adminLogoutBtn" type="button">Sign out</button>
+          <div>
+            <button 
+              id="adminLogoutBtn" 
+              type="button" 
+              class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
-        <div class="internal-controls">
-          <label>
-            Status
-            <div class="status-filter" id="adminStatusFilter" role="tablist" aria-label="Filter by status">
-              <button type="button" class="status-filter__btn is-active" data-status="pending_verification">Pending</button>
-              <button type="button" class="status-filter__btn" data-status="approved">Approved</button>
-              <button type="button" class="status-filter__btn" data-status="rejected">Rejected</button>
-              <button type="button" class="status-filter__btn" data-status="all">All</button>
+        <div class="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          <div class="w-full md:w-auto">
+            <div id="adminStatusFilter" role="tablist" aria-label="Filter by status" class="inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-gray-100/80 ring-1 ring-gray-200 w-full sm:w-auto">
+              <button type="button" class="status-filter__btn is-active flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="pending_verification">Pending</button>
+              <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="approved">Approved</button>
+              <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="rejected">Rejected</button>
+              <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="all">All</button>
             </div>
-          </label>
-          <label>
-            Search
-            <input id="adminSearchInput" type="text" placeholder="email or name" />
-          </label>
-          <button class="btn btn-outline" id="adminRefreshBtn" type="button">Refresh</button>
+          </div>
+
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="relative rounded-md shadow-sm flex-1 sm:w-64">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input 
+                id="adminSearchInput" 
+                type="text" 
+                placeholder="Search email or name..." 
+                class="block w-full rounded-lg border-0 py-2 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all"
+              />
+            </div>
+            <button 
+              id="adminRefreshBtn" 
+              type="button" 
+              class="inline-flex items-center justify-center rounded-lg bg-white p-2 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors shrink-0"
+              title="Refresh Data"
+            >
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p id="adminMessage" class="internal-note"></p>
+        <p id="adminMessage" class="mt-4 text-sm text-gray-500 hidden"></p>
 
-        <div class="internal-table-wrap">
-          <table class="internal-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Payer</th>
-                <th>Course</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Proof</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="adminRows"></tbody>
-          </table>
+        <div class="mt-6 flex flex-col">
+          <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+              <div class="overflow-hidden shadow-sm ring-1 ring-gray-200 sm:rounded-xl bg-white">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payer</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Course</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Proof</th>
+                      <th scope="col" class="px-4 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminRows" class="divide-y divide-gray-200 bg-white">
+                    </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <div class="review-modal" id="reviewModal" aria-hidden="true">
         <button type="button" class="review-modal__backdrop" data-review-close aria-label="Close"></button>
+        
         <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
-          <button type="button" class="review-modal__close modal-close" data-review-close aria-label="Close dialog">&times;</button>
-          <div class="review-modal__header">
-            <p class="review-modal__eyebrow" id="reviewModalEyebrow">Manual payment review</p>
-            <h3 id="reviewModalTitle">Confirm action</h3>
-            <p id="reviewModalDesc"></p>
+          <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" data-review-close aria-label="Close dialog">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          
+          <div class="mb-6">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-1" id="reviewModalEyebrow">Manual payment review</p>
+            <h3 class="text-2xl font-heading font-bold text-gray-900" id="reviewModalTitle">Confirm action</h3>
+            <p class="mt-2 text-sm text-gray-600" id="reviewModalDesc"></p>
           </div>
-          <div class="review-modal__warning" id="reviewModalWarning" role="status" aria-live="polite" hidden>
-            <span class="review-modal__warning-icon" aria-hidden="true">!</span>
-            <p>This will remove this payment from pending and the learner will not move to the enrolment segment.</p>
+
+          <div class="mb-6 rounded-lg bg-amber-50 p-4 border border-amber-200 flex items-start" id="reviewModalWarning" role="status" aria-live="polite" hidden>
+            <svg class="h-5 w-5 text-amber-500 shrink-0 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <p class="text-sm text-amber-800">
+              This will remove this payment from pending and the learner will not move to the enrolment segment.
+            </p>
           </div>
-          <label for="reviewNoteInput" id="reviewNoteLabel">Optional note</label>
-          <textarea id="reviewNoteInput" rows="4" placeholder="Add context for your records (optional)"></textarea>
-          <p class="review-modal__error" id="reviewModalError" role="alert"></p>
-          <div class="review-modal__actions">
-            <button type="button" class="btn btn-outline" data-review-close>Cancel</button>
-            <button type="button" class="btn btn-primary" id="reviewModalConfirmBtn">Confirm</button>
+
+          <div class="mb-6">
+            <label for="reviewNoteInput" class="block text-sm font-semibold leading-6 text-gray-900" id="reviewNoteLabel">Optional note</label>
+            <textarea 
+              id="reviewNoteInput" 
+              rows="3" 
+              class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-shadow" 
+              placeholder="Add context for your records (optional)"></textarea>
+          </div>
+
+          <p class="text-sm text-red-600 mb-4 hidden" id="reviewModalError" role="alert"></p>
+          
+          <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-review-close>
+              Cancel
+            </button>
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors" id="reviewModalConfirmBtn">
+              Confirm Action
+            </button>
           </div>
         </div>
       </div>
+
     </main>
 
     <script src="/assets/admin-manual-payments.js" defer></script>
