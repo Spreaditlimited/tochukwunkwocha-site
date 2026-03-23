@@ -36,7 +36,7 @@ exports.handler = async function (event) {
   const email = (body.email || "").trim().toLowerCase();
 
   if (!firstName || !email) {
-    return json(400, { ok: false, error: "First name and email are required" });
+    return json(400, { ok: false, error: "Full Name and email are required" });
   }
 
   const payload = {

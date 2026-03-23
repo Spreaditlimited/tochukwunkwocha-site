@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
+const { listCourseBatches, getCourseBatchByKey, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 
 const STATUS_PENDING = "pending_verification";
 const STATUS_APPROVED = "approved";
@@ -40,6 +41,28 @@ async function ensureManualPaymentsTable(pool) {
   `);
 
   await pool.query(`ALTER TABLE course_manual_payments MODIFY transfer_reference VARCHAR(190) NULL`);
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN batch_key VARCHAR(64) NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN batch_label VARCHAR(120) NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD KEY idx_manual_payment_batch_created (batch_key, created_at)`);
+  } catch (_error) {
+    // no-op
+  }
+  await pool.query(
+    `UPDATE course_manual_payments
+     SET batch_key = 'ptp-batch-1',
+         batch_label = 'Batch 1'
+     WHERE course_slug = 'prompt-to-profit'
+       AND (batch_key IS NULL OR batch_key = '')`
+  );
 }
 
 async function createManualPayment(pool, input) {
@@ -48,11 +71,13 @@ async function createManualPayment(pool, input) {
 
   await pool.query(
     `INSERT INTO course_manual_payments
-     (payment_uuid, course_slug, first_name, email, country, currency, amount_minor, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       paymentUuid,
       input.courseSlug,
+      input.batchKey || null,
+      input.batchLabel || null,
       input.firstName,
       input.email,
       input.country || null,
@@ -95,6 +120,8 @@ async function findManualPaymentByUuid(pool, paymentUuid) {
     `SELECT id,
             payment_uuid,
             course_slug,
+            batch_key,
+            batch_label,
             first_name,
             email,
             country,
@@ -193,8 +220,9 @@ function normalizeQueueStatusForOrder(rawStatus) {
   return "";
 }
 
-async function listPaymentsQueue(pool, { status, search, limit }) {
+async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
   const desiredStatus = String(status || "").trim().toLowerCase();
+  const desiredBatchKey = normalizeBatchKey(batchKey || "");
   const q = String(search || "").trim();
   const like = `%${q}%`;
   const safeLimit = Math.max(1, Math.min(Number(limit) || 80, 200));
@@ -202,6 +230,8 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
   let manualSql = `
     SELECT payment_uuid AS payment_uuid,
            course_slug AS course_slug,
+           batch_key AS batch_key,
+           batch_label AS batch_label,
            first_name AS first_name,
            email AS email,
            country AS country,
@@ -226,6 +256,10 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
     manualWhere.push("status = ?");
     manualParams.push(desiredStatus);
   }
+  if (desiredBatchKey && desiredBatchKey !== "all") {
+    manualWhere.push("batch_key = ?");
+    manualParams.push(desiredBatchKey);
+  }
   if (q) {
     manualWhere.push("(payment_uuid LIKE ? OR first_name LIKE ? OR email LIKE ? OR transfer_reference LIKE ?)");
     manualParams.push(like, like, like, like);
@@ -244,6 +278,8 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
     let orderSql = `
       SELECT order_uuid AS payment_uuid,
              course_slug AS course_slug,
+             batch_key AS batch_key,
+             batch_label AS batch_label,
              first_name AS first_name,
              email AS email,
              country AS country,
@@ -258,6 +294,10 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
       WHERE status = 'paid'
     `;
     const orderParams = [];
+    if (desiredBatchKey && desiredBatchKey !== "all") {
+      orderSql += " AND batch_key = ?";
+      orderParams.push(desiredBatchKey);
+    }
     if (q) {
       orderSql += " AND (order_uuid LIKE ? OR first_name LIKE ? OR email LIKE ? OR provider_reference LIKE ?)";
       orderParams.push(like, like, like, like);
@@ -272,6 +312,8 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
     return {
       payment_uuid: row.payment_uuid,
       course_slug: row.course_slug,
+      batch_key: row.batch_key,
+      batch_label: row.batch_label,
       first_name: row.first_name,
       email: row.email,
       country: row.country,
@@ -298,6 +340,8 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
     return {
       payment_uuid: row.payment_uuid,
       course_slug: row.course_slug,
+      batch_key: row.batch_key,
+      batch_label: row.batch_label,
       first_name: row.first_name,
       email: row.email,
       country: row.country,
@@ -326,31 +370,50 @@ async function listPaymentsQueue(pool, { status, search, limit }) {
     .slice(0, safeLimit);
 }
 
-async function getPaymentsQueueSummary(pool) {
+async function getPaymentsQueueSummary(pool, opts) {
+  await ensureCourseBatchesTable(pool);
+  const desiredBatchKey = normalizeBatchKey((opts && opts.batchKey) || "");
+  const scopedBatch = desiredBatchKey && desiredBatchKey !== "all" ? desiredBatchKey : "";
+  const availableBatches = await listCourseBatches(pool, "prompt-to-profit");
+  const batchConfig = scopedBatch ? await getCourseBatchByKey(pool, "prompt-to-profit", scopedBatch) : null;
+
+  const manualBatchClause = scopedBatch ? " AND batch_key = ? " : "";
+  const manualBatchParams = scopedBatch ? [scopedBatch] : [];
+  const ordersBatchClause = scopedBatch ? " AND batch_key = ? " : "";
+  const ordersBatchParams = scopedBatch ? [scopedBatch] : [];
+
   const [manualApprovedRows] = await pool.query(
     `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_manual_payments
      WHERE course_slug = 'prompt-to-profit'
        AND status = 'approved'
-     GROUP BY currency`
+       ${manualBatchClause}
+     GROUP BY currency`,
+    manualBatchParams
   );
   const [manualPendingRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
      WHERE course_slug = 'prompt-to-profit'
-       AND status = 'pending_verification'`
+       AND status = 'pending_verification'
+       ${manualBatchClause}`,
+    manualBatchParams
   );
   const [manualAllRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
-     WHERE course_slug = 'prompt-to-profit'`
+     WHERE course_slug = 'prompt-to-profit'
+       ${manualBatchClause}`,
+    manualBatchParams
   );
   const [paidOrderRows] = await pool.query(
     `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_orders
      WHERE course_slug = 'prompt-to-profit'
        AND status = 'paid'
-     GROUP BY currency, provider`
+       ${ordersBatchClause}
+     GROUP BY currency, provider`,
+    ordersBatchParams
   );
 
   const totalsByCurrency = {};
@@ -391,14 +454,23 @@ async function getPaymentsQueueSummary(pool) {
 
   return {
     courseName: "Prompt to Profit",
-    batchLabel: "Batch 1",
-    registrationStatus: "Closed",
+    batchKey: scopedBatch || "all",
+    batchLabel: batchConfig ? batchConfig.batch_label : "All Batches",
+    registrationStatus: batchConfig ? (String(batchConfig.status || "").toLowerCase() === "open" ? "Open" : "Closed") : "Mixed",
     totalStudents: paidApprovedCount,
     totalRegistrations,
     paidApprovedCount,
     totalsByCurrency,
     providerCounts,
     manualPendingCount,
+    availableBatches: (availableBatches || []).map(function (item) {
+      return {
+        batchKey: item.batch_key,
+        batchLabel: item.batch_label,
+        status: item.status,
+        isActive: Number(item.is_active || 0) === 1,
+      };
+    }),
   };
 }
 

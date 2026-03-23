@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Installment Wallet | Tochukwu Nkwocha</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    
+    <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      /* BULLETPROOF JS TOGGLING: Prevents cards from squashing together */
+      [hidden] {
+        display: none !important;
+      }
+
+      .wallet-plan-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: nowrap;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .wallet-plan-actions .wallet-topup-input {
+        margin-top: 0;
+        flex: 1 1 220px;
+        min-width: 180px;
+      }
+
+      .wallet-plan-actions .wallet-plan-btn {
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
+
+      @media (max-width: 760px) {
+        .wallet-plan-actions {
+          flex-wrap: wrap;
+        }
+
+        .wallet-plan-actions .wallet-topup-input {
+          flex: 1 1 100%;
+          min-width: 0;
+        }
+
+        .wallet-plan-actions .wallet-plan-btn {
+          flex: 1 1 calc(50% - 4px);
+        }
+      }
+    </style>
+
+    <style type="text/tailwindcss">
+      @layer utilities {
+        /* Tailwind abstraction for the content area to keep HTML clean */
+        .tw-input {
+          @apply mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-brand-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 bg-white transition-shadow;
+        }
+        
+        .tw-select {
+          @apply appearance-none cursor-pointer pr-10;
+          background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
+          background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
+          background-size: 6px 6px, 6px 6px;
+          background-repeat: no-repeat;
+        }
+
+        .tw-label {
+          @apply block text-sm font-semibold leading-6 text-gray-900;
+        }
+
+        .tw-btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+
+        .tw-btn-outline {
+          @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+
+        /* Injected Plan Card Styling */
+        .wallet-plan {
+          @apply rounded-xl border border-gray-200 bg-white p-5 shadow-sm mb-4 transition-all hover:shadow-md;
+        }
+        .wallet-progress {
+          @apply mt-4 w-full h-2.5 rounded-full bg-brand-50 overflow-hidden ring-1 ring-inset ring-brand-100;
+        }
+        .wallet-progress > span {
+          @apply block h-full bg-brand-600 transition-all duration-500 ease-out;
+        }
+
+        .wallet-topup-input::-webkit-outer-spin-button,
+        .wallet-topup-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .wallet-topup-input[type="number"] {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 flex flex-col gap-8">
+      
+      <section class="bg-white rounded-3xl p-8 sm:p-10 shadow-sm ring-1 ring-gray-200 relative overflow-hidden text-center sm:text-left">
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+        
+        <div class="relative z-10">
+          <p class="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            Installment Wallet
+          </p>
+          <h1 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-4xl leading-tight">
+            Pay Toward a Batch in Parts
+          </h1>
+          <p class="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed">
+            Create your secure account, choose a course and batch, then pay in flexible installments. Once complete, your access unlocks automatically.
+          </p>
+        </div>
+      </section>
+
+      <div class="w-full relative">
+        
+        <article class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletAuthCard">
+          <div class="mb-8 text-center sm:text-left">
+            <h2 class="text-2xl font-heading font-bold text-gray-900">Access Wallet</h2>
+            <p class="mt-2 text-sm text-gray-500">Sign in or create a new account to track your payments.</p>
+          </div>
+          
+          <form id="walletRegisterForm" class="wallet-row space-y-6" novalidate>
+            <div>
+              <label class="tw-label" for="walletFullName">Full Name</label>
+              <input id="walletFullName" name="fullName" class="tw-input wallet-input" placeholder="e.g. Jane Doe" required />
+            </div>
+            
+            <div>
+              <label class="tw-label" for="walletEmail">Email Address</label>
+              <input id="walletEmail" name="email" type="email" class="tw-input wallet-input" placeholder="you@example.com" required />
+            </div>
+            
+            <div>
+              <label class="tw-label flex items-center justify-between" for="walletPassword">
+                Password
+                <span class="text-xs font-normal text-gray-500">8+ chars</span>
+              </label>
+              <input id="walletPassword" name="password" type="password" class="tw-input wallet-input" placeholder="••••••••" required minlength="8" />
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-100">
+              <button type="submit" class="tw-btn-primary flex-1" id="walletRegisterBtn">Create Account</button>
+              <button type="button" class="tw-btn-outline flex-1" id="walletLoginBtn">Sign In</button>
+            </div>
+            
+            <p class="text-sm mt-3" id="walletAuthMsg"></p>
+          </form>
+        </article>
+
+        <article class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletPlanCard" hidden>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
+            <div>
+              <h2 class="text-2xl font-heading font-bold text-gray-900 flex items-center gap-3">
+                <svg class="w-6 h-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                Your Wallet
+              </h2>
+              <p class="mt-2 text-sm text-gray-600 font-medium wallet-msg" id="walletAccountMeta"></p>
+            </div>
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" id="walletLogoutBtn">
+              Sign out
+            </button>
+          </div>
+
+          <div class="bg-gray-50 rounded-2xl p-6 ring-1 ring-inset ring-gray-200 mb-8">
+            <h3 class="text-base font-heading font-bold text-gray-900 mb-4">Start a new installment plan</h3>
+            <form id="walletCreatePlanForm" class="wallet-row grid grid-cols-1 gap-4" novalidate>
+              <div>
+                <label class="tw-label" for="walletCourse">Course</label>
+                <select id="walletCourse" class="tw-input tw-select wallet-select">
+                  <option value="prompt-to-profit">Prompt to Profit</option>
+                </select>
+              </div>
+              <div>
+                <label class="tw-label" for="walletBatch">Batch Target</label>
+                <select id="walletBatch" class="tw-input tw-select wallet-select"></select>
+              </div>
+              <div class="mt-2">
+                <button type="submit" class="tw-btn-primary w-full" id="walletCreatePlanBtn">Create Plan</button>
+              </div>
+            </form>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-heading font-bold text-gray-900 mb-4">Active Plans</h3>
+            <div id="walletPlans" class="space-y-4">
+              </div>
+            <p class="text-sm mt-3" id="walletPlanMsg"></p>
+          </div>
+
+        </article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">Tochukwu Nkwocha</div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-and-conditions">Terms & Conditions</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js"></script>
+    <script src="https://js.paystack.co/v1/inline.js" defer></script>
+    <script src="/assets/installments.js" defer></script>
+  </body>
+</html>

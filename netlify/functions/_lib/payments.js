@@ -14,6 +14,23 @@ function paystackSecret() {
   return required("PAYSTACK_SECRET_KEY");
 }
 
+function paystackPublicKey() {
+  const candidates = [
+    "PAYSTACK_PUBLIC_KEY",
+    "PAYSTACK_PUBLIC",
+    "PAYSTACK_KEY",
+    "NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY",
+    "NEXT_PUBLIC_PAYSTACK_KEY",
+  ];
+
+  for (const name of candidates) {
+    const value = process.env[name] && String(process.env[name]).trim();
+    if (value) return value;
+  }
+
+  throw new Error(`Missing Paystack public key. Set one of: ${candidates.join(", ")}`);
+}
+
 function verifyPaystackSignature(rawBody, signature) {
   const hash = crypto.createHmac("sha512", paystackSecret()).update(String(rawBody || "")).digest("hex");
   return hash === String(signature || "").trim();
@@ -40,12 +57,13 @@ async function paystackInitialize({ email, amountMinor, reference, metadata, cal
   });
 
   const json = await res.json().catch(() => null);
-  if (!res.ok || !json || !json.status || !json.data || !json.data.authorization_url) {
+  if (!res.ok || !json || !json.status || !json.data) {
     throw new Error((json && json.message) || `Paystack initialize failed (${res.status})`);
   }
 
   return {
-    checkoutUrl: json.data.authorization_url,
+    checkoutUrl: json.data.authorization_url || null,
+    accessCode: json.data.access_code || null,
     providerReference: json.data.reference || reference,
   };
 }
@@ -195,6 +213,7 @@ async function paypalVerifyWebhook({ body, headers }) {
 
 module.exports = {
   siteBaseUrl,
+  paystackPublicKey,
   verifyPaystackSignature,
   paystackInitialize,
   paystackVerifyTransaction,

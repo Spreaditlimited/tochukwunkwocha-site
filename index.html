@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,9 +15,66 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
+    
     <link rel="stylesheet" href="/assets/styles.css" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .reveal {
+          @apply animate-[fadeIn_0.8s_ease-out_forwards];
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Reusable UI Components */
+        .tw-section-label {
+          @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4;
+        }
+        .tw-h2 {
+          @apply text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-4xl;
+        }
+        .tw-btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        .tw-btn-outline {
+          @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 hover:shadow hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        
+        /* Ensures original JS FAQ works smoothly while looking modern */
+        .faq-answer {
+          @apply mt-2 text-gray-600 leading-relaxed pr-8;
+        }
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
@@ -36,288 +93,427 @@
       </div>
     </header>
 
-    <main>
-      <section class="hero reveal">
-        <div>
-          <p class="section-label">Practical AI. Real-world building.</p>
-          <h1>I build real systems and teach people how to use AI for real work.</h1>
-          <p>
-            I am Tochukwu Nkwocha, founder, builder, and practical educator. Over the years, I have built platforms across sourcing, education technology, digital commerce, and real-world decision systems. Today, I teach people how to use AI in a useful way, not just to generate text, but to think clearly, solve problems, and build simple things that actually work.
-          </p>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="/courses/prompt-to-profit">Explore Prompt to Profit</a>
-            <a class="btn btn-outline" href="/courses">View All Courses</a>
-          </div>
-        </div>
-        <aside class="hero-card">
-          <h3>A better way to learn AI</h3>
-          <p>
-            This platform is built for beginners, professionals, and business owners who want clear guidance, useful skills, and a practical path into building with AI.
-          </p>
-          <div class="hero-points">
-            <span>Beginner-friendly</span>
-            <span>No coding background required</span>
-            <span>Real-world use cases</span>
-            <span>Simple, practical teaching</span>
-          </div>
-          <div class="hero-media">
-            <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" />
-          </div>
-        </aside>
-      </section>
+    <main class="flex-1 w-full">
+      
+      <section class="relative overflow-hidden pt-16 pb-20 lg:pt-24 lg:pb-28 reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            
+            <div class="lg:col-span-7 text-center sm:text-left">
+              <p class="tw-section-label">Practical AI. Real-world building.</p>
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-[1.1]">
+                I build real systems and teach people how to use AI for real work.
+              </h1>
+              <p class="mt-6 text-lg leading-relaxed text-gray-600 max-w-2xl mx-auto sm:mx-0">
+                I am Tochukwu Nkwocha, founder, builder, and practical educator. Over the years, I have built platforms across sourcing, ed-tech, and commerce. Today, I teach people how to use AI in a useful way—not just to generate text, but to think clearly, solve problems, and build simple things that actually work.
+              </p>
+              <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+                <a class="tw-btn-primary" href="/courses/prompt-to-profit">Explore Prompt to Profit</a>
+                <a class="tw-btn-outline" href="/courses">View All Courses</a>
+              </div>
+            </div>
 
-      <section class="cred-strip reveal" aria-label="Credibility strip">
-        <article class="cred-card">
-          <h3>Founder</h3>
-          <p>Sure Imports and LineScout</p>
-        </article>
-        <article class="cred-card">
-          <h3>Builder</h3>
-          <p>Real products, systems, and workflows</p>
-        </article>
-        <article class="cred-card">
-          <h3>Educator</h3>
-          <p>Practical teaching for real-world use</p>
-        </article>
-        <article class="cred-card">
-          <h3>Focus</h3>
-          <p>AI, systems, business, and execution</p>
-        </article>
-      </section>
+            <aside class="mt-16 lg:mt-0 lg:col-span-5 relative">
+              <div class="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-gray-900/5 relative overflow-hidden">
+                <div class="absolute -right-20 -top-20 w-48 h-48 bg-brand-100 rounded-full blur-3xl opacity-50"></div>
+                
+                <div class="mb-8 aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
+                  <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'%23eef2fb\'/%3E%3C/svg%3E'" />
+                </div>
 
-      <section id="about" class="section reveal">
-        <p class="section-label">About</p>
-        <div class="grid-2" style="margin-top: 18px">
-          <div>
-            <h2 class="section-headline">A practical builder, not a theory-first teacher.</h2>
-            <p class="section-intro">
-              My work sits at the intersection of technology, clarity, and execution. I have spent years building useful systems, leading product ideas from concept to reality, and learning how technology becomes valuable only when it helps real people solve real problems.
-            </p>
-            <p class="section-intro">
-              That is the mindset behind this platform. I do not teach for hype. I teach for usefulness. My goal is to help people understand tools properly, reduce fear, and start building with confidence.
-            </p>
-          </div>
-          <aside class="quote-card snapshot-card">
-            <p class="snapshot-label">Builder profile</p>
-            <p class="snapshot-quote">
-              Clarity matters more than noise. Once people learn how to think clearly and communicate properly with AI, they can begin to build far more than they thought possible.
-            </p>
-            <div class="snapshot-stats">
-              <div class="snapshot-stat">
-                <strong>40,000+</strong>
-                <span>Users across Sure Imports and LineScout</span>
-              </div>
-              <div class="snapshot-stat">
-                <strong>500,000+</strong>
-                <span>Annual impressions via Effikos.com</span>
-              </div>
-              <div class="snapshot-stat">
-                <strong>10,000+</strong>
-                <span>Play Store downloads for Effiko GPA Calculator</span>
-              </div>
-              <div class="snapshot-stat snapshot-stat--social">
-                <strong>100,000+</strong>
-                <span>Combined followers across Facebook and TikTok</span>
-                <div class="social-proof-links" aria-label="Social profiles">
-                  <a href="https://www.facebook.com/tnkwocha" target="_blank" rel="noopener noreferrer" aria-label="Facebook profile">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.5 22v-8h2.7l.5-3.2h-3.2V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.5c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.4v2h-2.8V14h2.8v8h3.4z"/></svg>
-                    <span>Facebook</span>
-                  </a>
-                  <a href="https://www.tiktok.com/@tochukwunkwocha" target="_blank" rel="noopener noreferrer" aria-label="TikTok profile">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 4c.7 1.6 1.9 2.8 3.4 3.5v2.9a8.2 8.2 0 0 1-3.3-.8v5.8c0 3.2-2.5 5.6-5.7 5.6S4.3 18.6 4.3 15.5 6.8 10 10 10c.2 0 .4 0 .6.1v3c-.2-.1-.4-.1-.6-.1-1.4 0-2.5 1.1-2.5 2.5S8.6 18 10 18s2.5-1.1 2.5-2.5V4h3.1z"/></svg>
-                    <span>TikTok</span>
-                  </a>
+                <h3 class="text-xl font-heading font-bold text-gray-900 mb-2">A better way to learn AI</h3>
+                <p class="text-sm text-gray-600 leading-relaxed mb-6">
+                  This platform is built for beginners, professionals, and business owners who want clear guidance, useful skills, and a practical path into building with AI.
+                </p>
+                
+                <div class="space-y-3">
+                  <div class="flex items-center gap-3">
+                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    <span class="text-sm font-medium text-gray-700">Beginner-friendly approach</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    <span class="text-sm font-medium text-gray-700">No coding background required</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    <span class="text-sm font-medium text-gray-700">Real-world practical use cases</span>
+                  </div>
                 </div>
               </div>
+            </aside>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="border-y border-gray-200 bg-white py-8 reveal" aria-label="Credibility strip">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 divide-x-0 lg:divide-x divide-gray-100">
+            <article class="text-center px-4">
+              <h3 class="text-lg font-heading font-bold text-gray-900">Founder</h3>
+              <p class="mt-1 text-sm text-gray-500">Sure Imports & LineScout</p>
+            </article>
+            <article class="text-center px-4">
+              <h3 class="text-lg font-heading font-bold text-gray-900">Builder</h3>
+              <p class="mt-1 text-sm text-gray-500">Real products & workflows</p>
+            </article>
+            <article class="text-center px-4">
+              <h3 class="text-lg font-heading font-bold text-gray-900">Educator</h3>
+              <p class="mt-1 text-sm text-gray-500">Practical, no-fluff teaching</p>
+            </article>
+            <article class="text-center px-4">
+              <h3 class="text-lg font-heading font-bold text-gray-900">Focus</h3>
+              <p class="mt-1 text-sm text-gray-500">AI, systems, & execution</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28 reveal">
+        <p class="tw-section-label">About</p>
+        
+        <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-start mt-2">
+          <div class="lg:col-span-7">
+            <h2 class="tw-h2">A practical builder, not a theory-first teacher.</h2>
+            <div class="mt-6 space-y-6 text-lg leading-relaxed text-gray-600">
+              <p>
+                My work sits at the intersection of technology, clarity, and execution. I have spent years building useful systems, leading product ideas from concept to reality, and learning how technology becomes valuable only when it helps real people solve real problems.
+              </p>
+              <p>
+                That is the mindset behind this platform. I do not teach for hype. I teach for usefulness. My goal is to help people understand tools properly, reduce fear, and start building with confidence.
+              </p>
             </div>
-            <div class="snapshot-chips">
-              <span>Founder</span>
-              <span>Builder</span>
-              <span>Educator</span>
-              <span>Digital Marketing Executive (UK)</span>
+          </div>
+          
+          <aside class="mt-12 lg:mt-0 lg:col-span-5">
+            <div class="rounded-3xl bg-gray-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden text-white">
+              <div class="absolute -right-20 -top-20 w-48 h-48 bg-brand-500 rounded-full blur-3xl opacity-30"></div>
+              
+              <p class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-6">Builder profile</p>
+              <p class="text-xl font-heading font-medium leading-relaxed mb-10 italic">
+                "Clarity matters more than noise. Once people learn how to think clearly and communicate properly with AI, they can begin to build far more than they thought possible."
+              </p>
+              
+              <div class="grid grid-cols-2 gap-6 mb-10">
+                <div>
+                  <strong class="block text-2xl font-heading font-bold text-white mb-1">40,000+</strong>
+                  <span class="text-sm text-gray-400 leading-snug block">Users across platforms</span>
+                </div>
+                <div>
+                  <strong class="block text-2xl font-heading font-bold text-white mb-1">500k+</strong>
+                  <span class="text-sm text-gray-400 leading-snug block">Annual web impressions</span>
+                </div>
+                <div>
+                  <strong class="block text-2xl font-heading font-bold text-white mb-1">10,000+</strong>
+                  <span class="text-sm text-gray-400 leading-snug block">Play Store downloads</span>
+                </div>
+                <div>
+                  <strong class="block text-2xl font-heading font-bold text-white mb-1">100k+</strong>
+                  <span class="text-sm text-gray-400 leading-snug block">Social followers</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 mb-8" aria-label="Social profiles">
+                <a href="https://www.facebook.com/tnkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors" aria-label="Facebook profile">
+                  <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.5 22v-8h2.7l.5-3.2h-3.2V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.5c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.4v2h-2.8V14h2.8v8h3.4z"/></svg>
+                </a>
+                <a href="https://www.tiktok.com/@tochukwunkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors" aria-label="TikTok profile">
+                  <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 4c.7 1.6 1.9 2.8 3.4 3.5v2.9a8.2 8.2 0 0 1-3.3-.8v5.8c0 3.2-2.5 5.6-5.7 5.6S4.3 18.6 4.3 15.5 6.8 10 10 10c.2 0 .4 0 .6.1v3c-.2-.1-.4-.1-.6-.1-1.4 0-2.5 1.1-2.5 2.5S8.6 18 10 18s2.5-1.1 2.5-2.5V4h3.1z"/></svg>
+                </a>
+              </div>
+
+              <a class="inline-flex items-center justify-center rounded-xl bg-white/10 px-6 py-3 text-sm font-bold text-white ring-1 ring-inset ring-white/20 hover:bg-white/20 transition-all w-full" href="/courses/prompt-to-profit">
+                View Courses
+              </a>
             </div>
-            <a class="btn btn-outline snapshot-link" href="/courses/prompt-to-profit">View Courses</a>
           </aside>
         </div>
       </section>
 
-      <section class="section reveal">
-        <p class="section-label">What I have built</p>
-        <h2 class="section-headline">Real platforms. Real systems. Real-world experience.</h2>
-        <div class="card-grid-3">
-          <article class="card">
-            <h3>Sure Imports and LineScout</h3>
-            <p>
-              I built sourcing-focused systems that help users move from confusion to clarity when dealing with products, machinery, and structured workflows. Today, over 40,000 individuals and businesses use Sure Imports and LineScout.
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 reveal">
+        <div class="mb-12 text-center max-w-3xl mx-auto">
+          <p class="tw-section-label">What I have built</p>
+          <h2 class="tw-h2">Real platforms. Real systems. Real-world experience.</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
+            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Sure Imports & LineScout</h3>
+            <p class="text-sm leading-relaxed text-gray-600">
+              I built sourcing-focused systems that help users move from confusion to clarity when dealing with products, machinery, and structured workflows. Today, over 40,000 individuals and businesses use these platforms.
             </p>
           </article>
-          <article class="card">
-            <h3>Education Technology</h3>
-            <p>
+
+          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
+            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Education Technology</h3>
+            <p class="text-sm leading-relaxed text-gray-600">
               I built the Effiko GPA Calculator and the Effikos.com website. Together, they have generated over 500,000 impressions annually, with the app recording over 10,000 downloads on the Play Store.
             </p>
           </article>
-          <article class="card">
-            <h3>Applied Digital and Financial Systems</h3>
-            <p>
-              My work also includes enterprise banking applications and digital financial systems, including work with leading technology companies such as Zone. In the UK, I also work as a Digital Marketing Executive with a technology consulting company.
+
+          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
+            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Applied Financial Systems</h3>
+            <p class="text-sm leading-relaxed text-gray-600">
+              My work includes enterprise banking applications and digital financial systems with leading technology companies like Zone. In the UK, I work as a Digital Marketing Executive with a tech consulting firm.
             </p>
           </article>
         </div>
       </section>
 
-      <section class="section reveal">
-        <p class="section-label">What I teach</p>
-        <h2 class="section-headline">Useful skills for people who want to think better and build better.</h2>
-        <p class="section-intro">
-          My teaching is built around practical application. The goal is not to impress people with jargon. The goal is to help ordinary people use modern tools in a clear and useful way.
-        </p>
-        <div class="card-grid-4">
-          <article class="card">
-            <h3>AI for Real Work</h3>
-            <p>Learn how to use AI as a tool for clarity, planning, problem-solving, and execution.</p>
-          </article>
-          <article class="card">
-            <h3>Beginner-Friendly Building</h3>
-            <p>Start with simple websites and useful web tools before moving into more advanced systems later.</p>
-          </article>
-          <article class="card">
-            <h3>Business and Growth Thinking</h3>
-            <p>Understand how digital tools can support visibility, sales, business systems, and better decision-making.</p>
-          </article>
-          <article class="card">
-            <h3>Practical Learning</h3>
-            <p>Everything is designed to be useful, understandable, and tied to real output.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section reveal">
-        <p class="section-label">Start here</p>
-        <div class="course-highlight">
-          <h2 class="section-headline" style="max-width: 100%">Prompt to Profit</h2>
-          <h3 style="margin-top: 10px; color: var(--muted-teal); font-size: 1.28rem">
-            A 5-day beginner-friendly intensive on how to use AI properly and build simple real-world websites and web tools.
-          </h3>
-          <p class="section-intro" style="margin-top: 14px">
-            This is the best place to start if you are new to AI, not very technical, or tired of hearing about AI without understanding how to actually use it. The course is designed to help you move from confusion to confidence in a practical way.
-          </p>
-          <ul class="feature-list">
-            <li>5-day intensive</li>
-            <li>2 live sessions and 3 recorded training days</li>
-            <li>1-year replay access</li>
-            <li>Built for complete beginners</li>
-            <li>Real project-based learning</li>
-          </ul>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="/courses/prompt-to-profit">View Course Details</a>
-            <a class="btn btn-outline" href="/courses">See All Courses</a>
+      <section class="bg-gray-900 py-24 text-white reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-16 text-center max-w-3xl mx-auto">
+            <p class="inline-flex items-center gap-2 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-gray-300 mb-4">What I teach</p>
+            <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-4xl">
+              Useful skills for people who want to think better and build better.
+            </h2>
+            <p class="mt-6 text-lg text-gray-400">
+              My teaching is built around practical application. The goal is not to impress people with jargon. The goal is to help ordinary people use modern tools in a clear and useful way.
+            </p>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+              <h3 class="text-lg font-heading font-bold text-white mb-3">AI for Real Work</h3>
+              <p class="text-sm text-gray-400 leading-relaxed">Learn how to use AI as a tool for clarity, planning, problem-solving, and execution.</p>
+            </article>
+            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+              <h3 class="text-lg font-heading font-bold text-white mb-3">Beginner-Friendly Building</h3>
+              <p class="text-sm text-gray-400 leading-relaxed">Start with simple websites and useful web tools before moving into more advanced systems later.</p>
+            </article>
+            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+              <h3 class="text-lg font-heading font-bold text-white mb-3">Business & Growth Thinking</h3>
+              <p class="text-sm text-gray-400 leading-relaxed">Understand how digital tools can support visibility, sales, business systems, and better decision-making.</p>
+            </article>
+            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+              <h3 class="text-lg font-heading font-bold text-white mb-3">Practical Learning</h3>
+              <p class="text-sm text-gray-400 leading-relaxed">Everything is designed to be useful, understandable, and tied to real output.</p>
+            </article>
           </div>
         </div>
       </section>
 
-      <section class="section reveal">
-        <p class="section-label">Other courses</p>
-        <h2 class="section-headline">More learning options</h2>
-        <p class="section-intro">These courses are currently available through Selar.</p>
-        <div class="card-grid-2">
-          <article class="card">
-            <span class="badge badge-external">External Course</span>
-            <h3 style="margin-top: 10px">TikTok For Business Growth Fundamentals and Engineering for Beginners</h3>
-            <p>
-              A practical training offer covering business growth on TikTok and a beginner-friendly introduction to engineering concepts.
-            </p>
-            <div class="cta-row" style="margin-top: 18px">
-              <a class="btn btn-outline" href="https://spreadit.selar.com/tiktokmastery" target="_blank" rel="noopener noreferrer">View on Selar</a>
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 reveal">
+        <div class="mb-8 text-center">
+          <p class="tw-section-label">Start here</p>
+        </div>
+        
+        <div class="rounded-3xl bg-brand-50 border border-brand-200 p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-sm">
+          <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+            <div>
+              <h2 class="tw-h2 text-brand-900">Prompt to Profit</h2>
+              <h3 class="mt-4 text-xl font-heading font-bold text-brand-600 leading-snug">
+                A 5-day beginner-friendly intensive on how to use AI properly and build simple real-world websites and web tools.
+              </h3>
+              <p class="mt-6 text-base text-gray-700 leading-relaxed">
+                This is the best place to start if you are new to AI, not very technical, or tired of hearing about AI without understanding how to actually use it. The course is designed to help you move from confusion to confidence in a practical way.
+              </p>
             </div>
+            <div class="mt-10 lg:mt-0">
+              <ul class="space-y-4 mb-8">
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  <span class="text-gray-800 font-medium">5-day intensive</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  <span class="text-gray-800 font-medium">2 live sessions and 3 recorded training days</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  <span class="text-gray-800 font-medium">1-year replay access</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  <span class="text-gray-800 font-medium">Built for complete beginners</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                  <span class="text-gray-800 font-medium">Real project-based learning</span>
+                </li>
+              </ul>
+              <div class="flex flex-col sm:flex-row gap-4">
+                <a class="tw-btn-primary" href="/courses/prompt-to-profit">View Course Details</a>
+                <a class="tw-btn-outline" href="/courses">See All Courses</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-t border-gray-200 bg-white py-24 reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-12 text-center max-w-2xl mx-auto">
+            <p class="tw-section-label">Other courses</p>
+            <h2 class="tw-h2">More learning options</h2>
+            <p class="mt-4 text-gray-600 text-lg">These specialized courses are currently available through Selar.</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <article class="rounded-3xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 flex flex-col justify-between">
+              <div>
+                <span class="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">External Course</span>
+                <h3 class="text-xl font-heading font-bold text-gray-900 leading-snug">TikTok For Business Growth Fundamentals & Engineering</h3>
+                <p class="mt-4 text-sm text-gray-600 leading-relaxed">
+                  A practical training offer covering business growth on TikTok and a beginner-friendly introduction to engineering concepts.
+                </p>
+              </div>
+              <div class="mt-8 pt-6 border-t border-gray-200">
+                <a class="tw-btn-outline w-full" href="https://spreadit.selar.com/tiktokmastery" target="_blank" rel="noopener noreferrer">
+                  View on Selar
+                  <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              </div>
+            </article>
+
+            <article class="rounded-3xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 flex flex-col justify-between">
+              <div>
+                <span class="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">External Course</span>
+                <h3 class="text-xl font-heading font-bold text-gray-900 leading-snug">The Ultimate Facebook Ads Mastery Course</h3>
+                <p class="mt-4 text-sm text-gray-600 leading-relaxed">
+                  A practical training focused on helping people understand Facebook advertising in a clearer and more useful way.
+                </p>
+              </div>
+              <div class="mt-8 pt-6 border-t border-gray-200">
+                <a class="tw-btn-outline w-full" href="https://spreadit.selar.com/facebookadscourse" target="_blank" rel="noopener noreferrer">
+                  View on Selar
+                  <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 reveal">
+        <div class="mb-16 text-center max-w-3xl mx-auto">
+          <p class="tw-section-label">Why learn from me</p>
+          <h2 class="tw-h2">Because this is built on real work, not recycled theory.</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <article class="text-center sm:text-left">
+            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            </div>
+            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Real-world experience</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">The teaching comes from years of building, testing, fixing, and learning through actual products and systems.</p>
           </article>
-          <article class="card">
-            <span class="badge badge-external">External Course</span>
-            <h3 style="margin-top: 10px">The Ultimate Facebook Ads Mastery Course</h3>
-            <p>
-              A practical training focused on helping people understand Facebook advertising in a clearer and more useful way.
-            </p>
-            <div class="cta-row" style="margin-top: 18px">
-              <a class="btn btn-outline" href="https://spreadit.selar.com/facebookadscourse" target="_blank" rel="noopener noreferrer">View on Selar</a>
+          
+          <article class="text-center sm:text-left">
+            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             </div>
+            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Clear explanations</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">The lessons are designed for people who need understanding, not unnecessary complexity or jargon.</p>
+          </article>
+          
+          <article class="text-center sm:text-left">
+            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Beginner-safe structure</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">The learning path is carefully designed to reduce intimidation and create exciting early wins.</p>
+          </article>
+          
+          <article class="text-center sm:text-left">
+            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+            </div>
+            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Practical outcomes</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">The aim is always real output and tangible skills that you can use immediately, not passive inspiration.</p>
           </article>
         </div>
       </section>
 
-      <section class="section reveal">
-        <p class="section-label">Why learn from me</p>
-        <h2 class="section-headline">Because this is built on real work, not recycled theory.</h2>
-        <div class="card-grid-4">
-          <article class="card">
-            <h3>Real-world experience</h3>
-            <p>The teaching comes from years of building, testing, fixing, and learning through actual products and systems.</p>
-          </article>
-          <article class="card">
-            <h3>Clear explanations</h3>
-            <p>The lessons are designed for people who need understanding, not unnecessary complexity.</p>
-          </article>
-          <article class="card">
-            <h3>Beginner-safe structure</h3>
-            <p>The learning path is designed to reduce intimidation and create early wins.</p>
-          </article>
-          <article class="card">
-            <h3>Practical outcomes</h3>
-            <p>The aim is always real output, not passive inspiration.</p>
-          </article>
+      <section id="faq" class="border-t border-gray-200 bg-white py-24 reveal">
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-12 text-center">
+            <p class="tw-section-label">FAQ</p>
+            <h2 class="tw-h2">A few common questions</h2>
+          </div>
+          
+          <div class="faq-wrap space-y-4">
+            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
+              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
+                <span>Do I need to know how to code before taking Prompt to Profit?</span>
+                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div class="faq-answer hidden">
+                <p>
+                  No. The course is designed for complete beginners. It starts from the basics and focuses on helping students understand how to communicate properly with AI and use that guidance to build simple websites and web tools.
+                </p>
+              </div>
+            </article>
+
+            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
+              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
+                <span>Is this course only for young people?</span>
+                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7-7-7-7" /></svg>
+              </button>
+              <div class="faq-answer hidden">
+                <p>
+                  No. It is designed for both younger learners and older adults who want a practical, non-intimidating entry into using AI and building simple things online.
+                </p>
+              </div>
+            </article>
+
+            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
+              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
+                <span>Will I still have access after the live sessions are over?</span>
+                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7-7-7-7" /></svg>
+              </button>
+              <div class="faq-answer hidden">
+                <p>
+                  Yes. The course includes replay access, and both the recorded lessons and the live sessions can be rewatched.
+                </p>
+              </div>
+            </article>
+
+            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
+              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
+                <span>Will there be more courses on this platform?</span>
+                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7-7-7-7" /></svg>
+              </button>
+              <div class="faq-answer hidden">
+                <p>
+                  Yes. Prompt to Profit is the first course here, and more practical courses will be added over time.
+                </p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
-      <section id="faq" class="section reveal">
-        <p class="section-label">FAQ</p>
-        <h2 class="section-headline">A few common questions</h2>
-        <div class="faq-wrap">
-          <article class="faq-item">
-            <button class="faq-question" type="button">Do I need to know how to code before taking Prompt to Profit?</button>
-            <div class="faq-answer">
-              <p>
-                No. The course is designed for complete beginners. It starts from the basics and focuses on helping students understand how to communicate properly with AI and use that guidance to build simple websites and web tools.
-              </p>
-            </div>
-          </article>
-          <article class="faq-item">
-            <button class="faq-question" type="button">Is this course only for young people?</button>
-            <div class="faq-answer">
-              <p>
-                No. It is designed for both younger learners and older adults who want a practical, non-intimidating entry into using AI and building simple things online.
-              </p>
-            </div>
-          </article>
-          <article class="faq-item">
-            <button class="faq-question" type="button">Will I still have access after the live sessions are over?</button>
-            <div class="faq-answer">
-              <p>
-                Yes. The course includes replay access, and both the recorded lessons and the live sessions can be rewatched.
-              </p>
-            </div>
-          </article>
-          <article class="faq-item">
-            <button class="faq-question" type="button">Will there be more courses on this platform?</button>
-            <div class="faq-answer">
-              <p>
-                Yes. Prompt to Profit is the first course here, and more practical courses will be added over time.
-              </p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="section reveal">
-        <div class="final-cta">
-          <h2 class="section-headline" style="max-width: 100%">Learn practical AI the useful way.</h2>
-          <p class="section-intro" style="margin-top: 12px">
+      <section class="bg-brand-600 py-24 text-center reveal">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl mb-6">
+            Learn practical AI the useful way.
+          </h2>
+          <p class="text-lg text-brand-100 mb-10 max-w-2xl mx-auto">
             If you want a clear, beginner-friendly path into using AI to build useful things, Prompt to Profit is the right place to start.
           </p>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="/courses/prompt-to-profit">Start with Prompt to Profit</a>
-            <a class="btn btn-outline" href="/courses">Browse Courses</a>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a class="inline-flex items-center justify-center rounded-xl bg-white px-8 py-4 text-sm font-bold text-brand-900 shadow-lg hover:bg-gray-50 hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-600" href="/courses/prompt-to-profit">
+              Start with Prompt to Profit
+            </a>
+            <a class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-8 py-4 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-brand-500 hover:bg-brand-800 transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-600" href="/courses">
+              Browse Courses
+            </a>
           </div>
         </div>
       </section>
+      
     </main>
 
     <footer class="site-footer">

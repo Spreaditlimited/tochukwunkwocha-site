@@ -5,6 +5,7 @@
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
   const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
+  let activePromptToProfitBatchKey = "ptp-batch-1";
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -175,8 +176,9 @@
     '    <p class="enrol-modal__label">Prompt to Profit</p>',
     '    <h3 id="enrolTitle">Secure your slot now</h3>',
     '    <p class="enrol-modal__intro">Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch on Monday, 23rd of March, 2026 at 8:00 PM WAT and 7:00 PM UK time.</p>',
+    '    <p class="enrol-modal__batch-badge" id="enrolActiveBatch">Active Batch: Batch 1</p>',
     '    <form id="enrolForm" class="enrol-form" novalidate>',
-    '      <label for="enrolFirstName">First Name</label>',
+    '      <label for="enrolFirstName">Full Name</label>',
     '      <input id="enrolFirstName" name="firstName" type="text" autocomplete="given-name" required />',
     '      <label for="enrolEmail">Email address</label>',
     '      <input id="enrolEmail" name="email" type="email" autocomplete="email" required />',
@@ -246,8 +248,30 @@
   const paymentTitle = document.getElementById("paymentFeedbackTitle");
   const paymentMessage = document.getElementById("paymentFeedbackMessage");
   const paymentCloseBtn = document.getElementById("paymentFeedbackBtn");
+  const enrolActiveBatchEl = document.getElementById("enrolActiveBatch");
 
   let manualConfigLoaded = false;
+
+  async function loadActiveBatch() {
+    try {
+      const res = await fetch("/.netlify/functions/course-active-batch?course_slug=prompt-to-profit", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok || !json.activeBatch) return;
+
+      const active = json.activeBatch;
+      if (active && active.batchKey) activePromptToProfitBatchKey = String(active.batchKey);
+      if (enrolActiveBatchEl && active) {
+        enrolActiveBatchEl.textContent = `Active Batch: ${String(active.batchLabel || "Current Batch")}`;
+      }
+    } catch (_error) {
+      return;
+    }
+  }
 
   function setActiveProvider(provider) {
     providerInput.value = provider;
@@ -368,6 +392,9 @@
 
   function openEnrolModal() {
     if (!modal) return;
+    loadActiveBatch().catch(function () {
+      return null;
+    });
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     const firstInput = document.getElementById("enrolFirstName");
@@ -458,7 +485,7 @@
     const provider = providerInput.value;
 
     if (!firstName || !email) {
-      errorEl.textContent = "Please enter your first name and email address.";
+      errorEl.textContent = "Please enter your full name and email address.";
       return;
     }
 
@@ -485,6 +512,7 @@
             email,
             country,
             courseSlug: "prompt-to-profit",
+            batchKey: activePromptToProfitBatchKey,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -507,7 +535,7 @@
       const res = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email, country, provider }),
+        body: JSON.stringify({ firstName, email, country, provider, batchKey: activePromptToProfitBatchKey }),
       });
 
       const json = await res.json().catch(function () {
@@ -549,6 +577,10 @@
     url.searchParams.delete("order_uuid");
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
+
+  loadActiveBatch().catch(function () {
+    return null;
+  });
 
   const revealItems = document.querySelectorAll(".reveal");
   if ("IntersectionObserver" in window && revealItems.length > 0) {

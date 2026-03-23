@@ -8,7 +8,14 @@
   const loginErr = document.getElementById("adminLoginError");
 
   const statusFilter = document.getElementById("adminStatusFilter");
+  const batchFilter = document.getElementById("adminBatchFilter");
   const searchInput = document.getElementById("adminSearchInput");
+  const reconcileBtn = document.getElementById("adminReconcileBtn");
+  const addStudentBtn = document.getElementById("adminAddStudentBtn");
+  const createBatchBtn = document.getElementById("adminCreateBatchBtn");
+  const activateBatchBtn = document.getElementById("adminActivateBatchBtn");
+  const activateBatchSelect = document.getElementById("adminActivateBatchSelect");
+  const activeBatchText = document.getElementById("adminActiveBatchText");
   const refreshBtn = document.getElementById("adminRefreshBtn");
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const rowsEl = document.getElementById("adminRows");
@@ -29,9 +36,20 @@
   const reviewNoteInput = document.getElementById("reviewNoteInput");
   const reviewModalError = document.getElementById("reviewModalError");
   const reviewModalConfirmBtn = document.getElementById("reviewModalConfirmBtn");
+  const addStudentModal = document.getElementById("addStudentModal");
+  const addStudentForm = document.getElementById("addStudentForm");
+  const addStudentBatch = document.getElementById("addStudentBatch");
+  const addStudentProofFile = document.getElementById("addStudentProofFile");
+  const addStudentError = document.getElementById("addStudentError");
+  const addStudentSubmitBtn = document.getElementById("addStudentSubmitBtn");
+  const createBatchModal = document.getElementById("createBatchModal");
+  const createBatchForm = document.getElementById("createBatchForm");
+  const createBatchError = document.getElementById("createBatchError");
+  const createBatchSubmitBtn = document.getElementById("createBatchSubmitBtn");
 
   let debounceTimer = null;
   let pendingReviewAction = null;
+  let latestBatches = [];
 
   function setAuthMode(isAuthMode) {
     if (!internalShell) return;
@@ -44,6 +62,11 @@
     return active && active.getAttribute("data-status")
       ? String(active.getAttribute("data-status"))
       : "pending_verification";
+  }
+
+  function selectedBatchKey() {
+    if (!batchFilter) return "";
+    return String(batchFilter.value || "").trim();
   }
 
   function statusLabel(status) {
@@ -104,6 +127,50 @@
     reviewModal.classList.remove("review-modal--reject");
   }
 
+  function openAddStudentModal() {
+    if (!addStudentModal) return;
+    if (addStudentError) {
+      addStudentError.textContent = "";
+      addStudentError.classList.add("hidden");
+    }
+    addStudentModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (addStudentForm && addStudentForm.firstName) addStudentForm.firstName.focus();
+  }
+
+  function closeAddStudentModal() {
+    if (!addStudentModal) return;
+    addStudentModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (addStudentError) {
+      addStudentError.textContent = "";
+      addStudentError.classList.add("hidden");
+    }
+    if (addStudentForm) addStudentForm.reset();
+  }
+
+  function openCreateBatchModal() {
+    if (!createBatchModal) return;
+    if (createBatchError) {
+      createBatchError.textContent = "";
+      createBatchError.classList.add("hidden");
+    }
+    createBatchModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (createBatchForm && createBatchForm.batchLabel) createBatchForm.batchLabel.focus();
+  }
+
+  function closeCreateBatchModal() {
+    if (!createBatchModal) return;
+    createBatchModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (createBatchError) {
+      createBatchError.textContent = "";
+      createBatchError.classList.add("hidden");
+    }
+    if (createBatchForm) createBatchForm.reset();
+  }
+
   function fmtDate(value) {
     if (!value) return "-";
     const d = new Date(value);
@@ -124,6 +191,45 @@
     } catch (_error) {
       return `${code} ${amount.toFixed(2)}`;
     }
+  }
+
+  async function getUploadSignature() {
+    const res = await fetch("/.netlify/functions/upload-signature", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purpose: "manual_payment" }),
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not prepare proof upload");
+    }
+    return json;
+  }
+
+  async function uploadProofToCloudinary(file) {
+    const uploadConfig = await getUploadSignature();
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("api_key", uploadConfig.apiKey);
+    fd.append("timestamp", String(uploadConfig.timestamp));
+    fd.append("folder", uploadConfig.folder);
+    fd.append("signature", uploadConfig.signature);
+
+    const endpoint = `https://api.cloudinary.com/v1_1/${encodeURIComponent(uploadConfig.cloudName)}/auto/upload`;
+    const res = await fetch(endpoint, { method: "POST", body: fd });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.secure_url) {
+      const msg = (json && json.error && json.error.message) || "Could not upload proof";
+      throw new Error(msg);
+    }
+    return {
+      proofUrl: String(json.secure_url || ""),
+      proofPublicId: String(json.public_id || ""),
+    };
   }
 
   function escapeHtml(value) {
@@ -148,6 +254,7 @@
         <td>${escapeHtml(fmtDate(item.created_at))}</td>
         <td>${payer}</td>
         <td>${escapeHtml(item.course_slug || "")}</td>
+        <td>${escapeHtml(item.batch_label || "-")}</td>
         <td><span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">${escapeHtml(providerLabel)}</span></td>
         <td>${escapeHtml(amount)}</td>
         <td><span class="status-pill status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></td>
@@ -165,6 +272,73 @@
         </td>
       </tr>
     `;
+  }
+
+  function renderBatchOptions(summary) {
+    if (!batchFilter || !summary) return;
+    const current = selectedBatchKey() || String(summary.batchKey || "");
+    const batches = Array.isArray(summary.availableBatches) ? summary.availableBatches : latestBatches;
+    const options = ['<option value="all">All batches</option>'];
+    batches.forEach(function (item) {
+      const key = String(item.batchKey || "").trim();
+      if (!key) return;
+      const label = String(item.batchLabel || key).trim();
+      const status = String(item.status || "").trim().toLowerCase();
+      const active = !!item.isActive;
+      const suffix = `${active ? " (active)" : ""}${status ? ` (${status})` : ""}`;
+      const selected = key === current ? " selected" : "";
+      options.push(`<option value="${escapeHtml(key)}"${selected}>${escapeHtml(label + suffix)}</option>`);
+    });
+    batchFilter.innerHTML = options.join("");
+    if (current) batchFilter.value = current;
+
+    if (addStudentBatch) {
+      addStudentBatch.innerHTML = options.filter(function (item) {
+        return item.indexOf('value="all"') === -1;
+      }).join("");
+      const addBatchCurrent = current && current !== "all" ? current : "";
+      if (addBatchCurrent) addStudentBatch.value = addBatchCurrent;
+    }
+
+    if (activateBatchSelect) {
+      const activeOptions = batches
+        .map(function (item) {
+          const key = String(item.batchKey || "").trim();
+          const label = String(item.batchLabel || key).trim();
+          if (!key) return "";
+          const selected = item.isActive ? " selected" : "";
+          return `<option value="${escapeHtml(key)}"${selected}>${escapeHtml(label)}</option>`;
+        })
+        .filter(Boolean)
+        .join("");
+      activateBatchSelect.innerHTML = activeOptions;
+    }
+
+    const activeBatch = (batches || []).find(function (item) {
+      return !!item.isActive;
+    });
+    if (activeBatchText) {
+      if (activeBatch) {
+        activeBatchText.textContent = `Active batch: ${activeBatch.batchLabel}`;
+      } else {
+        activeBatchText.textContent = "Active batch: --";
+      }
+    }
+  }
+
+  async function loadCourseBatches() {
+    const res = await fetch("/.netlify/functions/admin-course-batches-list?course_slug=prompt-to-profit", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load batches");
+    }
+    latestBatches = Array.isArray(json.batches) ? json.batches : [];
+    return latestBatches;
   }
 
   function formatSummaryCurrency(currency, totalMinor) {
@@ -213,12 +387,20 @@
     }
   }
 
-  async function loadItems() {
+  async function loadItems(options) {
     setMessage("", "");
+    const shouldReconcile = !!(options && options.reconcile);
 
     const status = selectedStatus();
+    const batchKey = selectedBatchKey();
     const search = searchInput ? searchInput.value.trim() : "";
-    const qs = new URLSearchParams({ status, search, limit: "100" });
+    const qs = new URLSearchParams({
+      status,
+      search,
+      limit: "100",
+      reconcile: shouldReconcile ? "1" : "0",
+      batch_key: batchKey || "all",
+    });
 
     const res = await fetch(`/.netlify/functions/admin-manual-payments-list?${qs.toString()}`, {
       method: "GET",
@@ -241,11 +423,25 @@
     }
 
     const items = Array.isArray(json.items) ? json.items : [];
-    renderSummary(json.summary || null);
+    const summaryObj = json.summary || null;
+    const summaryBatches = summaryObj && Array.isArray(summaryObj.availableBatches) ? summaryObj.availableBatches : [];
+    if (summaryBatches.length) latestBatches = summaryBatches;
+    renderSummary(summaryObj);
+    renderBatchOptions(summaryObj);
+    const reconcile = json.reconcile && typeof json.reconcile === "object" ? json.reconcile : null;
+    if (shouldReconcile && reconcile) {
+      const markedPaid = Number(reconcile.markedPaid || 0);
+      const checked = Number(reconcile.checked || 0);
+      if (markedPaid > 0) {
+        setMessage(`Synced ${markedPaid} Paystack payment(s). Checked ${checked} record(s).`, "ok");
+      } else {
+        setMessage(`Reconciliation complete. No new payments found. Checked ${checked} record(s).`, "ok");
+      }
+    }
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="8" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
+        : '<tr><td colspan="9" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
     }
 
     if (appCard) appCard.hidden = false;
@@ -276,7 +472,7 @@
       setMessage("Payment marked as rejected.", "ok");
     }
 
-    await loadItems();
+    await loadItems({ reconcile: false });
   }
 
   if (loginForm) {
@@ -307,7 +503,7 @@
         }
 
         loginForm.reset();
-        await loadItems();
+        await loadItems({ reconcile: false });
       } catch (error) {
         if (loginErr) loginErr.textContent = error.message || "Sign in failed";
       } finally {
@@ -331,9 +527,210 @@
 
   if (refreshBtn) {
     refreshBtn.addEventListener("click", function () {
-      loadItems().catch(function (error) {
+      loadItems({ reconcile: false }).catch(function (error) {
         setMessage(error.message || "Could not refresh", "error");
       });
+    });
+  }
+
+  if (reconcileBtn) {
+    reconcileBtn.addEventListener("click", function () {
+      reconcileBtn.disabled = true;
+      const prevText = reconcileBtn.textContent;
+      reconcileBtn.textContent = "Reconciling...";
+      loadItems({ reconcile: true })
+        .catch(function (error) {
+          setMessage(error.message || "Could not reconcile payments", "error");
+        })
+        .finally(function () {
+          reconcileBtn.disabled = false;
+          reconcileBtn.textContent = prevText || "Reconcile Now";
+        });
+    });
+  }
+
+  if (addStudentBtn) {
+    addStudentBtn.addEventListener("click", function () {
+      openAddStudentModal();
+    });
+  }
+
+  if (addStudentModal) {
+    addStudentModal.querySelectorAll("[data-add-student-close]").forEach(function (el) {
+      el.addEventListener("click", closeAddStudentModal);
+    });
+  }
+
+  if (createBatchBtn) {
+    createBatchBtn.addEventListener("click", function () {
+      openCreateBatchModal();
+    });
+  }
+
+  if (createBatchModal) {
+    createBatchModal.querySelectorAll("[data-create-batch-close]").forEach(function (el) {
+      el.addEventListener("click", closeCreateBatchModal);
+    });
+  }
+
+  if (createBatchForm) {
+    createBatchForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (createBatchError) {
+        createBatchError.textContent = "";
+        createBatchError.classList.add("hidden");
+      }
+
+      const payload = {
+        batchLabel: String((createBatchForm.batchLabel && createBatchForm.batchLabel.value) || "").trim(),
+        batchKey: String((createBatchForm.batchKey && createBatchForm.batchKey.value) || "").trim(),
+        paystackReferencePrefix: String(
+          (createBatchForm.paystackReferencePrefix && createBatchForm.paystackReferencePrefix.value) || ""
+        ).trim(),
+        paystackAmountMinor: Number(
+          String((createBatchForm.paystackAmountMinor && createBatchForm.paystackAmountMinor.value) || "").trim()
+        ),
+      };
+      if (!payload.batchLabel) {
+        if (createBatchError) {
+          createBatchError.textContent = "Batch label is required.";
+          createBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (createBatchSubmitBtn) {
+        createBatchSubmitBtn.disabled = true;
+        createBatchSubmitBtn.textContent = "Creating...";
+      }
+      try {
+        const res = await fetch("/.netlify/functions/admin-course-batches-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json().catch(function () {
+          return null;
+        });
+        if (!res.ok || !json || !json.ok) {
+          throw new Error((json && json.error) || "Could not create batch");
+        }
+        closeCreateBatchModal();
+        await loadCourseBatches();
+        await loadItems({ reconcile: false });
+        setMessage("Batch created successfully. Activate it when ready.", "ok");
+      } catch (error) {
+        if (createBatchError) {
+          createBatchError.textContent = error.message || "Could not create batch";
+          createBatchError.classList.remove("hidden");
+        }
+      } finally {
+        if (createBatchSubmitBtn) {
+          createBatchSubmitBtn.disabled = false;
+          createBatchSubmitBtn.textContent = "Create Batch";
+        }
+      }
+    });
+  }
+
+  if (activateBatchBtn) {
+    activateBatchBtn.addEventListener("click", async function () {
+      const batchKey = String((activateBatchSelect && activateBatchSelect.value) || "").trim();
+      if (!batchKey) {
+        setMessage("Select a batch to activate.", "error");
+        return;
+      }
+      activateBatchBtn.disabled = true;
+      const prevText = activateBatchBtn.textContent;
+      activateBatchBtn.textContent = "Activating...";
+      try {
+        const res = await fetch("/.netlify/functions/admin-course-batches-activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchKey }),
+        });
+        const json = await res.json().catch(function () {
+          return null;
+        });
+        if (!res.ok || !json || !json.ok) {
+          throw new Error((json && json.error) || "Could not activate batch");
+        }
+        await loadCourseBatches();
+        await loadItems({ reconcile: false });
+        setMessage("Batch activated successfully.", "ok");
+      } catch (error) {
+        setMessage(error.message || "Could not activate batch", "error");
+      } finally {
+        activateBatchBtn.disabled = false;
+        activateBatchBtn.textContent = prevText || "Activate Batch";
+      }
+    });
+  }
+
+  if (addStudentForm) {
+    addStudentForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (addStudentError) {
+        addStudentError.textContent = "";
+        addStudentError.classList.add("hidden");
+      }
+
+      const payload = {
+        firstName: String((addStudentForm.firstName && addStudentForm.firstName.value) || "").trim(),
+        email: String((addStudentForm.email && addStudentForm.email.value) || "").trim(),
+        country: String((addStudentForm.country && addStudentForm.country.value) || "").trim(),
+        batchKey: String((addStudentForm.batchKey && addStudentForm.batchKey.value) || "").trim(),
+        adminNote: String((addStudentForm.adminNote && addStudentForm.adminNote.value) || "").trim(),
+        proofUrl: "",
+        proofPublicId: "",
+      };
+
+      if (!payload.firstName || !payload.email) {
+        if (addStudentError) {
+          addStudentError.textContent = "Full Name and email are required.";
+          addStudentError.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (addStudentSubmitBtn) {
+        addStudentSubmitBtn.disabled = true;
+        addStudentSubmitBtn.textContent = "Adding...";
+      }
+      try {
+        const proofFile = addStudentProofFile && addStudentProofFile.files ? addStudentProofFile.files[0] : null;
+        if (proofFile) {
+          if (addStudentSubmitBtn) addStudentSubmitBtn.textContent = "Uploading proof...";
+          const uploaded = await uploadProofToCloudinary(proofFile);
+          payload.proofUrl = uploaded.proofUrl;
+          payload.proofPublicId = uploaded.proofPublicId;
+        }
+        const res = await fetch("/.netlify/functions/admin-payments-add-student", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json().catch(function () {
+          return null;
+        });
+        if (!res.ok || !json || !json.ok) {
+          throw new Error((json && json.error) || "Could not add student");
+        }
+
+        closeAddStudentModal();
+        setMessage("Student payment added successfully.", "ok");
+        await loadItems({ reconcile: false });
+      } catch (error) {
+        if (addStudentError) {
+          addStudentError.textContent = error.message || "Could not add student";
+          addStudentError.classList.remove("hidden");
+        }
+      } finally {
+        if (addStudentSubmitBtn) {
+          addStudentSubmitBtn.disabled = false;
+          addStudentSubmitBtn.textContent = "Add Student";
+        }
+      }
     });
   }
 
@@ -346,7 +743,7 @@
         item.classList.toggle("is-active", item === btn);
       });
 
-      loadItems().catch(function (error) {
+      loadItems({ reconcile: false }).catch(function (error) {
         setMessage(error.message || "Could not filter", "error");
       });
     });
@@ -356,10 +753,18 @@
     searchInput.addEventListener("input", function () {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(function () {
-        loadItems().catch(function (error) {
+        loadItems({ reconcile: false }).catch(function (error) {
           setMessage(error.message || "Could not search", "error");
         });
       }, 280);
+    });
+  }
+
+  if (batchFilter) {
+    batchFilter.addEventListener("change", function () {
+      loadItems({ reconcile: false }).catch(function (error) {
+        setMessage(error.message || "Could not filter by batch", "error");
+      });
     });
   }
 
@@ -413,9 +818,15 @@
     if (event.key === "Escape" && reviewModal && reviewModal.getAttribute("aria-hidden") === "false") {
       closeReviewModal();
     }
+    if (event.key === "Escape" && addStudentModal && addStudentModal.getAttribute("aria-hidden") === "false") {
+      closeAddStudentModal();
+    }
+    if (event.key === "Escape" && createBatchModal && createBatchModal.getAttribute("aria-hidden") === "false") {
+      closeCreateBatchModal();
+    }
   });
 
-  loadItems().catch(function (_error) {
+  Promise.all([loadCourseBatches().catch(function () { return []; }), loadItems({ reconcile: false })]).catch(function (_error) {
     if (appCard) appCard.hidden = true;
     if (loginCard) loginCard.hidden = false;
     setAuthMode(true);

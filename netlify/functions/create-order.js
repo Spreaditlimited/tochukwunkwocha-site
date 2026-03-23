@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
+const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
+const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -42,9 +44,8 @@ exports.handler = async function (event) {
   const email = normalizeEmail(body.email);
   const country = normalizeCountry(body.country);
   const provider = normalizeProvider(body.provider, country);
-
   if (!firstName || !email) {
-    return json(400, { ok: false, error: "First name and valid email are required" });
+    return json(400, { ok: false, error: "Full Name and valid email are required" });
   }
 
   if (provider !== "paystack" && provider !== "paypal") {
@@ -57,15 +58,21 @@ exports.handler = async function (event) {
   const pool = getPool();
 
   try {
+    await ensureCourseOrdersBatchColumns(pool);
+    await ensureCourseBatchesTable(pool);
+    const batch = await resolveCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey: body.batchKey });
+    if (!batch) return json(500, { ok: false, error: "No active batch configured" });
+
     await pool.query(
       `INSERT INTO course_orders
-       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, provider, status)
-       VALUES (?, 'prompt-to-profit', ?, ?, ?, ?, ?, ?, 'pending')`,
-      [orderUuid, firstName, email, country || null, price.currency, price.amountMinor, provider]
+       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, provider, status, batch_key, batch_label)
+       VALUES (?, 'prompt-to-profit', ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      [orderUuid, firstName, email, country || null, price.currency, price.amountMinor, provider, batch.batch_key, batch.batch_label]
     );
 
     if (provider === "paystack") {
-      const reference = `PTP_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
+      const prefix = String(batch.paystack_reference_prefix || "PTP").trim().toUpperCase();
+      const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
       const payment = await paystackInitialize({
         email,
         amountMinor: price.amountMinor,
@@ -74,6 +81,8 @@ exports.handler = async function (event) {
           order_uuid: orderUuid,
           first_name: firstName,
           course_slug: "prompt-to-profit",
+          batch_key: batch.batch_key,
+          batch_label: batch.batch_label,
         },
       });
 

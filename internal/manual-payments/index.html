@@ -92,6 +92,28 @@
         .review-modal[aria-hidden="false"] .review-modal__panel {
           @apply translate-y-0 scale-100;
         }
+        .add-student-modal__panel {
+          max-height: 90vh;
+          overflow-y: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .add-student-modal__panel::-webkit-scrollbar {
+          width: 0;
+          height: 0;
+          display: none;
+        }
+
+        .picker-wrap {
+          @apply relative;
+        }
+        .picker-select {
+          @apply block w-full appearance-none rounded-xl border-0 bg-white py-2.5 pl-3 pr-10 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all;
+          @apply hover:ring-brand-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-600;
+        }
+        .picker-wrap__icon {
+          @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-600;
+        }
       }
     </style>
   </head>
@@ -199,14 +221,57 @@
           </div>
         </section>
 
+        <section class="mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm ring-1 ring-gray-900/5 p-5 sm:p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Batch Manager</p>
+              <h3 class="mt-1 text-lg font-heading font-bold text-gray-900">Manage Prompt to Profit Batches</h3>
+              <p class="mt-1 text-sm text-gray-500">Active batch becomes the default for all new website payments.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="picker-wrap min-w-[12rem]">
+                <select id="adminActivateBatchSelect" class="picker-select" aria-label="Select batch to activate"></select>
+                <span class="picker-wrap__icon" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" />
+                  </svg>
+                </span>
+              </div>
+              <button id="adminActivateBatchBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors">
+                Activate Batch
+              </button>
+              <button id="adminCreateBatchBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
+                New Batch
+              </button>
+            </div>
+          </div>
+          <p id="adminActiveBatchText" class="mt-3 text-sm text-gray-600">Active batch: --</p>
+        </section>
+
         <div class="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           
           <div class="w-full md:w-auto">
-            <div id="adminStatusFilter" role="tablist" aria-label="Filter by status" class="inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-gray-100/80 ring-1 ring-gray-200 w-full sm:w-auto">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div class="picker-wrap">
+                <select
+                  id="adminBatchFilter"
+                  class="picker-select min-w-[13rem]"
+                  aria-label="Filter by batch"
+                >
+                  <option value="all">All batches</option>
+                </select>
+                <span class="picker-wrap__icon" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" />
+                  </svg>
+                </span>
+              </div>
+              <div id="adminStatusFilter" role="tablist" aria-label="Filter by status" class="inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-gray-100/80 ring-1 ring-gray-200 w-full sm:w-auto">
               <button type="button" class="status-filter__btn is-active flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="pending_verification">Pending</button>
               <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="approved">Approved</button>
               <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="rejected">Rejected</button>
               <button type="button" class="status-filter__btn flex-1 sm:flex-none px-3 py-1.5 text-sm font-medium rounded-md transition-all" data-status="all">All</button>
+              </div>
             </div>
           </div>
 
@@ -224,6 +289,22 @@
                 class="block w-full rounded-lg border-0 py-2 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all"
               />
             </div>
+            <button 
+              id="adminReconcileBtn" 
+              type="button" 
+              class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors shrink-0"
+              title="Reconcile pending Paystack payments"
+            >
+              Reconcile Now
+            </button>
+            <button 
+              id="adminAddStudentBtn" 
+              type="button" 
+              class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors shrink-0"
+              title="Add a student payment manually"
+            >
+              Add Student
+            </button>
             <button 
               id="adminRefreshBtn" 
               type="button" 
@@ -249,6 +330,7 @@
                       <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                       <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payer</th>
                       <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Course</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
                       <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Provider</th>
                       <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
                       <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -305,6 +387,109 @@
               Confirm Action
             </button>
           </div>
+        </div>
+      </div>
+
+      <div class="review-modal" id="addStudentModal" aria-hidden="true">
+        <button type="button" class="review-modal__backdrop" data-add-student-close aria-label="Close"></button>
+        
+        <div class="review-modal__panel add-student-modal__panel" role="dialog" aria-modal="true" aria-labelledby="addStudentTitle">
+          <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" data-add-student-close aria-label="Close dialog">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+
+          <div class="mb-6">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-1">Add Student</p>
+            <h3 class="text-2xl font-heading font-bold text-gray-900" id="addStudentTitle">Record External Payment</h3>
+            <p class="mt-2 text-sm text-gray-600">Use this when a student pays directly to your bank account without submitting on the website.</p>
+          </div>
+
+          <form id="addStudentForm" class="space-y-4" novalidate>
+            <div>
+              <label for="addStudentFirstName" class="block text-sm font-semibold leading-6 text-gray-900">Full Name</label>
+              <input id="addStudentFirstName" name="firstName" type="text" required class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="addStudentEmail" class="block text-sm font-semibold leading-6 text-gray-900">Email</label>
+              <input id="addStudentEmail" name="email" type="email" required class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="addStudentCountry" class="block text-sm font-semibold leading-6 text-gray-900">Country (optional)</label>
+              <input id="addStudentCountry" name="country" type="text" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="addStudentBatch" class="block text-sm font-semibold leading-6 text-gray-900">Batch</label>
+              <div class="picker-wrap mt-2">
+                <select id="addStudentBatch" name="batchKey" class="picker-select sm:text-sm">
+                  <option value="ptp-batch-1">Batch 1</option>
+                </select>
+                <span class="picker-wrap__icon" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label for="addStudentProofFile" class="block text-sm font-semibold leading-6 text-gray-900">Payment proof (optional image or PDF)</label>
+              <input id="addStudentProofFile" name="proofFile" type="file" accept="image/*,.pdf" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="addStudentNote" class="block text-sm font-semibold leading-6 text-gray-900">Admin note (optional)</label>
+              <textarea id="addStudentNote" name="adminNote" rows="3" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm"></textarea>
+            </div>
+            <p class="text-sm text-red-600 hidden" id="addStudentError" role="alert"></p>
+
+            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-add-student-close>
+                Cancel
+              </button>
+              <button type="submit" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors" id="addStudentSubmitBtn">
+                Add Student
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="review-modal" id="createBatchModal" aria-hidden="true">
+        <button type="button" class="review-modal__backdrop" data-create-batch-close aria-label="Close"></button>
+        <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="createBatchTitle">
+          <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" data-create-batch-close aria-label="Close dialog">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <div class="mb-6">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-1">New Batch</p>
+            <h3 class="text-2xl font-heading font-bold text-gray-900" id="createBatchTitle">Create Batch</h3>
+            <p class="mt-2 text-sm text-gray-600">Create a batch now, then activate when you are ready to accept payments for it.</p>
+          </div>
+          <form id="createBatchForm" class="space-y-4" novalidate>
+            <div>
+              <label for="createBatchLabel" class="block text-sm font-semibold leading-6 text-gray-900">Batch Label</label>
+              <input id="createBatchLabel" name="batchLabel" type="text" required placeholder="Batch 2" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="createBatchKey" class="block text-sm font-semibold leading-6 text-gray-900">Batch Key (optional)</label>
+              <input id="createBatchKey" name="batchKey" type="text" placeholder="ptp-batch-2" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="createBatchPrefix" class="block text-sm font-semibold leading-6 text-gray-900">Paystack Prefix</label>
+              <input id="createBatchPrefix" name="paystackReferencePrefix" type="text" value="PTP" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="createBatchAmount" class="block text-sm font-semibold leading-6 text-gray-900">Paystack Amount (minor units)</label>
+              <input id="createBatchAmount" name="paystackAmountMinor" type="number" min="1" step="1" value="1075000" class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <p class="text-sm text-red-600 hidden" id="createBatchError" role="alert"></p>
+            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-create-batch-close>
+                Cancel
+              </button>
+              <button type="submit" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors" id="createBatchSubmitBtn">
+                Create Batch
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 

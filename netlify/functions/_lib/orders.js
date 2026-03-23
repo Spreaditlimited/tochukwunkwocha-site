@@ -1,5 +1,8 @@
 const { nowSql } = require("./db");
 const { syncFlodeskSubscriber } = require("./flodesk");
+const { paystackVerifyTransaction } = require("./payments");
+const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
+const { ensureCourseOrdersBatchColumns } = require("./course-orders");
 
 async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider }) {
   if (!orderUuid && !providerReference && !providerOrderId) {
@@ -65,4 +68,84 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   return { ok: true, orderUuid: order.order_uuid, email: order.email };
 }
 
-module.exports = { markOrderPaidBy };
+async function reconcilePromptToProfitPaystackOrders(pool, input) {
+  await ensureCourseOrdersBatchColumns(pool);
+  await ensureCourseBatchesTable(pool);
+
+  const safeLimit = Math.max(1, Math.min(Number((input && input.limit) || 60), 300));
+  const requestedBatchKey = normalizeBatchKey(input && input.batchKey);
+  const batches =
+    !requestedBatchKey || requestedBatchKey === "all"
+      ? await listCourseBatches(pool, "prompt-to-profit")
+      : [await resolveCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey: requestedBatchKey })].filter(Boolean);
+
+  const items = [];
+  for (const batch of batches) {
+    const expectedAmountMinor = Number(
+      batch.paystack_amount_minor || Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000)
+    );
+    const batchKey = String(batch.batch_key || "").trim();
+    const prefix = String(batch.paystack_reference_prefix || "PTP").trim().toUpperCase();
+    const [rows] = await pool.query(
+      `SELECT order_uuid, provider_reference
+       FROM course_orders
+       WHERE course_slug = 'prompt-to-profit'
+         AND batch_key = ?
+         AND provider = 'paystack'
+         AND status <> 'paid'
+         AND amount_minor = ?
+         AND provider_reference IS NOT NULL
+         AND provider_reference LIKE ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      [batchKey, expectedAmountMinor, `${prefix}_%`, safeLimit]
+    );
+    (rows || []).forEach((row) => items.push(row));
+  }
+
+  let checked = 0;
+  let markedPaid = 0;
+  let notPaid = 0;
+  let failed = 0;
+
+  for (const row of items) {
+    const reference = String((row && row.provider_reference) || "").trim();
+    const orderUuid = String((row && row.order_uuid) || "").trim();
+    if (!reference || !orderUuid) continue;
+
+    try {
+      const tx = await paystackVerifyTransaction(reference);
+      checked += 1;
+      const status = String((tx && tx.status) || "").toLowerCase();
+      if (status !== "success") {
+        notPaid += 1;
+        continue;
+      }
+
+      const result = await markOrderPaidBy({
+        pool,
+        provider: "paystack",
+        providerReference: reference,
+        providerOrderId: tx && tx.id ? String(tx.id) : null,
+        orderUuid,
+      });
+      if (result.ok) markedPaid += 1;
+      else failed += 1;
+    } catch (_error) {
+      failed += 1;
+    }
+  }
+
+  return {
+    checked,
+    markedPaid,
+    notPaid,
+    failed,
+    candidateCount: items.length,
+  };
+}
+
+module.exports = {
+  markOrderPaidBy,
+  reconcilePromptToProfitPaystackOrders,
+};

@@ -14,7 +14,7 @@
   --modal-border: #d7deee;
   --modal-shadow: 0 28px 64px rgba(18, 31, 63, 0.24);
   --modal-backdrop: rgba(20, 33, 61, 0.48);
-  --container: min(1120px, 92vw);
+  --container: min(1280px, 92vw);
 }
 
 * {
@@ -253,23 +253,23 @@ p {
 }
 
 .course-hero {
-  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.9fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 34px;
-  align-items: start;
+  align-items: center;
 }
 
 .course-hero .course-hero-copy {
-  padding-top: 4px;
+  padding-top: 0;
 }
 
 .course-hero .course-hero-copy h1 {
-  max-width: 15ch;
+  max-width: 18ch;
   font-size: clamp(2.35rem, 4.25vw, 3.55rem);
   line-height: 1.1;
 }
 
 .course-hero .course-hero-copy > p {
-  max-width: 40ch;
+  max-width: 62ch;
   margin-top: 14px;
   font-size: 1.02rem;
   line-height: 1.6;
@@ -280,15 +280,19 @@ p {
 }
 
 .course-hero .hero-card {
-  align-self: start;
+  align-self: center;
   justify-self: end;
   width: 100%;
   max-width: 520px;
-  margin-top: 34px;
+  height: 100%;
+  margin-top: 0;
   padding: 24px 24px 20px;
   background: #fff;
   border-color: #e3e7f0;
   box-shadow: 0 10px 26px rgba(20, 33, 61, 0.07);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .course-hero-card::before {
@@ -397,17 +401,17 @@ p {
 
 .promise-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
   gap: 28px;
-  align-items: start;
+  align-items: center;
 }
 
 .promise-grid .section-headline {
-  max-width: 17ch;
+  max-width: 20ch;
 }
 
 .promise-grid .section-intro {
-  max-width: 62ch;
+  max-width: 66ch;
 }
 
 .promise-panel {
@@ -416,6 +420,10 @@ p {
   background: linear-gradient(180deg, #ffffff, #fcfbf7);
   box-shadow: var(--shadow-soft);
   padding: 22px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .promise-panel__label {
@@ -880,6 +888,22 @@ body.modal-open {
   margin-top: 12px;
   color: var(--muted-text);
   max-width: 44ch;
+}
+
+.enrol-modal__batch-badge {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 33, 61, 0.18);
+  background: #eef2fb;
+  color: #14213d;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px 12px;
 }
 
 .enrol-form {
@@ -1423,17 +1447,18 @@ body.modal-open {
 
   /* Keep Prompt to Profit hero premium on tablet widths */
   .course-hero {
-    grid-template-columns: minmax(0, 1.02fr) minmax(300px, 0.98fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
     gap: 24px;
+    align-items: center;
   }
 
   .course-hero .course-hero-copy h1 {
     font-size: clamp(2rem, 5vw, 2.95rem);
-    max-width: 14ch;
+    max-width: 17ch;
   }
 
   .course-hero .course-hero-copy > p {
-    max-width: 38ch;
+    max-width: 52ch;
     font-size: 1rem;
     line-height: 1.56;
   }
@@ -1443,7 +1468,7 @@ body.modal-open {
   }
 
   .course-hero .hero-card {
-    margin-top: 26px;
+    margin-top: 0;
     padding: 18px 18px 16px;
   }
 
@@ -1462,6 +1487,10 @@ body.modal-open {
 
   .tutor-bridge__card {
     padding: 22px;
+  }
+
+  .promise-panel {
+    height: auto;
   }
 
   .snapshot-card {
@@ -1525,6 +1554,7 @@ body.modal-open {
 
   .course-hero .hero-card {
     margin-top: 0;
+    justify-self: stretch;
   }
 }
 

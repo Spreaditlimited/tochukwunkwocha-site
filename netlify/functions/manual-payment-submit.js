@@ -6,6 +6,7 @@ const {
   markPreSynced,
 } = require("./_lib/manual-payments");
 const { syncFlodeskPreEnrolSubscriber } = require("./_lib/flodesk");
+const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -30,12 +31,10 @@ exports.handler = async function (event) {
   const transferReference = String(body.transferReference || "").trim().slice(0, 190);
   const proofUrl = String(body.proofUrl || "").trim();
   const proofPublicId = String(body.proofPublicId || "").trim().slice(0, 255);
-
   const currency = "NGN";
-  const amountMinor = Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
 
   if (!firstName || !email) {
-    return json(400, { ok: false, error: "First name and valid email are required" });
+    return json(400, { ok: false, error: "Full Name and valid email are required" });
   }
 
   if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
@@ -46,9 +45,15 @@ exports.handler = async function (event) {
 
   try {
     await ensureManualPaymentsTable(pool);
+    await ensureCourseBatchesTable(pool);
+    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
+    if (!batch) return json(500, { ok: false, error: "No active batch configured" });
+    const amountMinor = Number(batch.paystack_amount_minor || process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
 
     const paymentUuid = await createManualPayment(pool, {
       courseSlug,
+      batchKey: batch.batch_key,
+      batchLabel: batch.batch_label,
       firstName,
       email,
       country,

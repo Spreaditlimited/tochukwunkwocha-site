@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { verifyPaystackSignature } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
+const { ensureInstallmentTables, markInstallmentPaymentPaidByReference } = require("./_lib/installments");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -33,8 +34,21 @@ exports.handler = async function (event) {
   const data = body.data || {};
   const reference = String(data.reference || "").trim();
   const orderUuid = data.metadata && String(data.metadata.order_uuid || "").trim();
+  const installmentPlanUuid = data.metadata && String(data.metadata.installment_plan_uuid || "").trim();
 
   const pool = getPool();
+
+  if (installmentPlanUuid) {
+    await ensureInstallmentTables(pool);
+    const installmentResult = await markInstallmentPaymentPaidByReference(pool, {
+      providerReference: reference || null,
+      providerOrderId: data.id ? String(data.id) : null,
+    });
+    if (!installmentResult.ok) {
+      return json(404, { ok: false, error: installmentResult.error });
+    }
+    return json(200, { ok: true });
+  }
 
   const result = await markOrderPaidBy({
     pool,
