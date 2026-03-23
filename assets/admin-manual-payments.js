@@ -13,6 +13,13 @@
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const rowsEl = document.getElementById("adminRows");
   const messageEl = document.getElementById("adminMessage");
+  const summaryTitleEl = document.getElementById("paymentsSummaryTitle");
+  const summaryStatusEl = document.getElementById("paymentsSummaryStatus");
+  const summaryPendingEl = document.getElementById("paymentsSummaryPending");
+  const summaryCourseEl = document.getElementById("paymentsSummaryCourse");
+  const summaryStudentsEl = document.getElementById("paymentsSummaryStudents");
+  const summaryTotalEl = document.getElementById("paymentsSummaryTotal");
+  const summarySourcesEl = document.getElementById("paymentsSummarySources");
   const reviewModal = document.getElementById("reviewModal");
   const reviewModalEyebrow = document.getElementById("reviewModalEyebrow");
   const reviewModalTitle = document.getElementById("reviewModalTitle");
@@ -130,7 +137,9 @@
 
   function rowMarkup(item) {
     const status = String(item.status || "");
-    const canReview = status === "pending_verification";
+    const source = String(item.source || "").toLowerCase();
+    const providerLabel = String(item.provider_label || "").trim() || "Manual";
+    const canReview = status === "pending_verification" && source === "manual";
     const payer = `${escapeHtml(item.first_name || "")}<br /><small>${escapeHtml(item.email || "")}</small>`;
     const amount = fmtMoney(item.amount_minor, item.currency);
 
@@ -139,6 +148,7 @@
         <td>${escapeHtml(fmtDate(item.created_at))}</td>
         <td>${payer}</td>
         <td>${escapeHtml(item.course_slug || "")}</td>
+        <td><span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">${escapeHtml(providerLabel)}</span></td>
         <td>${escapeHtml(amount)}</td>
         <td><span class="status-pill status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></td>
         <td>${
@@ -155,6 +165,52 @@
         </td>
       </tr>
     `;
+  }
+
+  function formatSummaryCurrency(currency, totalMinor) {
+    const code = String(currency || "").toUpperCase();
+    if (!code) return "";
+    return fmtMoney(totalMinor, code);
+  }
+
+  function renderSummary(summary) {
+    if (!summary) return;
+
+    const courseName = String(summary.courseName || "Prompt to Profit").trim();
+    const batchLabel = String(summary.batchLabel || "Batch 1").trim();
+    const registrationStatus = String(summary.registrationStatus || "Closed").trim();
+    const totalStudents = Number(summary.totalStudents || 0);
+    const totalRegistrations = Number(summary.totalRegistrations || 0);
+    const paidApprovedCount = Number(summary.paidApprovedCount || totalStudents);
+    const manualPendingCount = Number(summary.manualPendingCount || 0);
+
+    const totalsByCurrency = summary.totalsByCurrency && typeof summary.totalsByCurrency === "object"
+      ? summary.totalsByCurrency
+      : {};
+    const totalTokens = Object.keys(totalsByCurrency)
+      .sort()
+      .map(function (currency) {
+        return formatSummaryCurrency(currency, totalsByCurrency[currency]);
+      })
+      .filter(Boolean);
+    const totalAmount = totalTokens.length ? totalTokens.join(" + ") : "--";
+
+    const providerCounts = summary.providerCounts && typeof summary.providerCounts === "object"
+      ? summary.providerCounts
+      : {};
+    const manualCount = Number(providerCounts.manual || 0);
+    const paystackCount = Number(providerCounts.paystack || 0);
+    const paypalCount = Number(providerCounts.paypal || 0);
+
+    if (summaryTitleEl) summaryTitleEl.textContent = `${courseName} - ${batchLabel}`;
+    if (summaryStatusEl) summaryStatusEl.textContent = `Registration: ${registrationStatus}`;
+    if (summaryPendingEl) summaryPendingEl.textContent = `Pending manual approvals: ${manualPendingCount}`;
+    if (summaryCourseEl) summaryCourseEl.textContent = `${courseName} (${batchLabel})`;
+    if (summaryStudentsEl) summaryStudentsEl.textContent = String(totalRegistrations || totalStudents);
+    if (summaryTotalEl) summaryTotalEl.textContent = totalAmount;
+    if (summarySourcesEl) {
+      summarySourcesEl.textContent = `Manual: ${manualCount}, Paystack: ${paystackCount}, PayPal: ${paypalCount} | Approved/Paid: ${paidApprovedCount}`;
+    }
   }
 
   async function loadItems() {
@@ -185,10 +241,11 @@
     }
 
     const items = Array.isArray(json.items) ? json.items : [];
+    renderSummary(json.summary || null);
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="7"><small>No records found.</small></td></tr>';
+        : '<tr><td colspan="8" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
     }
 
     if (appCard) appCard.hidden = false;

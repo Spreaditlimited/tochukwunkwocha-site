@@ -1,7 +1,11 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { ensureManualPaymentsTable, listManualPayments } = require("./_lib/manual-payments");
+const {
+  ensureManualPaymentsTable,
+  listPaymentsQueue,
+  getPaymentsQueueSummary,
+} = require("./_lib/manual-payments");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -23,13 +27,14 @@ exports.handler = async function (event) {
 
   try {
     await ensureManualPaymentsTable(pool);
-    const rows = await listManualPayments(pool, {
+    const rows = await listPaymentsQueue(pool, {
       status: status === "all" ? "" : status,
       search,
       limit,
     });
+    const summary = await getPaymentsQueueSummary(pool);
 
-    return json(200, { ok: true, items: rows || [] });
+    return json(200, { ok: true, items: rows || [], summary });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load manual payments" });
   }

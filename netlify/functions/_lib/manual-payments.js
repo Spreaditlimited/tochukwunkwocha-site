@@ -187,6 +187,221 @@ async function reviewManualPayment(pool, { paymentUuid, nextStatus, reviewedBy, 
   return Number(res && res.affectedRows ? res.affectedRows : 0);
 }
 
+function normalizeQueueStatusForOrder(rawStatus) {
+  const status = String(rawStatus || "").trim().toLowerCase();
+  if (status === "paid") return STATUS_APPROVED;
+  return "";
+}
+
+async function listPaymentsQueue(pool, { status, search, limit }) {
+  const desiredStatus = String(status || "").trim().toLowerCase();
+  const q = String(search || "").trim();
+  const like = `%${q}%`;
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 80, 200));
+
+  let manualSql = `
+    SELECT payment_uuid AS payment_uuid,
+           course_slug AS course_slug,
+           first_name AS first_name,
+           email AS email,
+           country AS country,
+           currency AS currency,
+           amount_minor AS amount_minor,
+           transfer_reference AS transfer_reference,
+           proof_url AS proof_url,
+           proof_public_id AS proof_public_id,
+           status AS queue_status,
+           flodesk_pre_synced AS flodesk_pre_synced,
+           flodesk_main_synced AS flodesk_main_synced,
+           reviewed_by AS reviewed_by,
+           review_note AS review_note,
+           reviewed_at AS reviewed_at,
+           created_at AS created_at,
+           updated_at AS updated_at
+    FROM course_manual_payments
+  `;
+  const manualParams = [];
+  const manualWhere = [];
+  if (desiredStatus && desiredStatus !== "all") {
+    manualWhere.push("status = ?");
+    manualParams.push(desiredStatus);
+  }
+  if (q) {
+    manualWhere.push("(payment_uuid LIKE ? OR first_name LIKE ? OR email LIKE ? OR transfer_reference LIKE ?)");
+    manualParams.push(like, like, like, like);
+  }
+  if (manualWhere.length) {
+    manualSql += ` WHERE ${manualWhere.join(" AND ")}`;
+  }
+  manualSql += " ORDER BY created_at DESC LIMIT ?";
+  manualParams.push(safeLimit);
+
+  const [manualRows] = await pool.query(manualSql, manualParams);
+
+  let orderRows = [];
+  const includeApprovedOrders = desiredStatus === "all" || desiredStatus === STATUS_APPROVED || !desiredStatus;
+  if (includeApprovedOrders) {
+    let orderSql = `
+      SELECT order_uuid AS payment_uuid,
+             course_slug AS course_slug,
+             first_name AS first_name,
+             email AS email,
+             country AS country,
+             currency AS currency,
+             amount_minor AS amount_minor,
+             provider AS provider,
+             provider_reference AS transfer_reference,
+             status AS order_status,
+             created_at AS created_at,
+             updated_at AS updated_at
+      FROM course_orders
+      WHERE status = 'paid'
+    `;
+    const orderParams = [];
+    if (q) {
+      orderSql += " AND (order_uuid LIKE ? OR first_name LIKE ? OR email LIKE ? OR provider_reference LIKE ?)";
+      orderParams.push(like, like, like, like);
+    }
+    orderSql += " ORDER BY created_at DESC LIMIT ?";
+    orderParams.push(safeLimit);
+    const [rows] = await pool.query(orderSql, orderParams);
+    orderRows = rows || [];
+  }
+
+  const manualItems = (manualRows || []).map(function (row) {
+    return {
+      payment_uuid: row.payment_uuid,
+      course_slug: row.course_slug,
+      first_name: row.first_name,
+      email: row.email,
+      country: row.country,
+      currency: row.currency,
+      amount_minor: row.amount_minor,
+      transfer_reference: row.transfer_reference,
+      proof_url: row.proof_url,
+      proof_public_id: row.proof_public_id,
+      status: row.queue_status,
+      reviewed_by: row.reviewed_by,
+      review_note: row.review_note,
+      reviewed_at: row.reviewed_at,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      source: "manual",
+      provider_label: "Manual",
+      can_review: row.queue_status === STATUS_PENDING,
+    };
+  });
+
+  const orderItems = (orderRows || []).map(function (row) {
+    const provider = String(row.provider || "").toLowerCase();
+    const providerLabel = provider === "paypal" ? "PayPal" : provider === "paystack" ? "Paystack" : "Online";
+    return {
+      payment_uuid: row.payment_uuid,
+      course_slug: row.course_slug,
+      first_name: row.first_name,
+      email: row.email,
+      country: row.country,
+      currency: row.currency,
+      amount_minor: row.amount_minor,
+      transfer_reference: row.transfer_reference,
+      proof_url: null,
+      proof_public_id: null,
+      status: normalizeQueueStatusForOrder(row.order_status),
+      reviewed_by: "system",
+      review_note: "Auto-approved after successful online payment",
+      reviewed_at: row.updated_at || row.created_at,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      source: provider || "online",
+      provider_label: providerLabel,
+      can_review: false,
+    };
+  });
+
+  return manualItems
+    .concat(orderItems)
+    .sort(function (a, b) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    })
+    .slice(0, safeLimit);
+}
+
+async function getPaymentsQueueSummary(pool) {
+  const [manualApprovedRows] = await pool.query(
+    `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
+     FROM course_manual_payments
+     WHERE course_slug = 'prompt-to-profit'
+       AND status = 'approved'
+     GROUP BY currency`
+  );
+  const [manualPendingRows] = await pool.query(
+    `SELECT COUNT(*) AS c
+     FROM course_manual_payments
+     WHERE course_slug = 'prompt-to-profit'
+       AND status = 'pending_verification'`
+  );
+  const [manualAllRows] = await pool.query(
+    `SELECT COUNT(*) AS c
+     FROM course_manual_payments
+     WHERE course_slug = 'prompt-to-profit'`
+  );
+  const [paidOrderRows] = await pool.query(
+    `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
+     FROM course_orders
+     WHERE course_slug = 'prompt-to-profit'
+       AND status = 'paid'
+     GROUP BY currency, provider`
+  );
+
+  const totalsByCurrency = {};
+  const providerCounts = { manual: 0, paystack: 0, paypal: 0 };
+  let paidApprovedCount = 0;
+  let paidOrderCount = 0;
+
+  (manualApprovedRows || []).forEach(function (row) {
+    const currency = String(row.currency || "NGN").toUpperCase();
+    const count = Number(row.c || 0);
+    const totalMinor = Number(row.t || 0);
+    if (!totalsByCurrency[currency]) totalsByCurrency[currency] = 0;
+    totalsByCurrency[currency] += totalMinor;
+    providerCounts.manual += count;
+    paidApprovedCount += count;
+  });
+
+  (paidOrderRows || []).forEach(function (row) {
+    const currency = String(row.currency || "").toUpperCase();
+    const provider = String(row.provider || "").toLowerCase();
+    const count = Number(row.c || 0);
+    const totalMinor = Number(row.t || 0);
+    if (!totalsByCurrency[currency]) totalsByCurrency[currency] = 0;
+    totalsByCurrency[currency] += totalMinor;
+    if (provider === "paystack") providerCounts.paystack += count;
+    if (provider === "paypal") providerCounts.paypal += count;
+    paidOrderCount += count;
+    paidApprovedCount += count;
+  });
+
+  const manualPendingCount = Number(
+    manualPendingRows && manualPendingRows[0] && manualPendingRows[0].c ? manualPendingRows[0].c : 0
+  );
+  const manualAllCount = Number(
+    manualAllRows && manualAllRows[0] && manualAllRows[0].c ? manualAllRows[0].c : 0
+  );
+  const totalRegistrations = manualAllCount + paidOrderCount;
+
+  return {
+    courseName: "Prompt to Profit",
+    batchLabel: "Batch 1",
+    registrationStatus: "Closed",
+    totalStudents: paidApprovedCount,
+    totalRegistrations,
+    paidApprovedCount,
+    totalsByCurrency,
+    providerCounts,
+    manualPendingCount,
+  };
+}
+
 module.exports = {
   STATUS_PENDING,
   STATUS_APPROVED,
@@ -197,5 +412,7 @@ module.exports = {
   markMainSynced,
   findManualPaymentByUuid,
   listManualPayments,
+  listPaymentsQueue,
+  getPaymentsQueueSummary,
   reviewManualPayment,
 };
