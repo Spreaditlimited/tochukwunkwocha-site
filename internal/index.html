@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Internal Tools | Tochukwu Nkwocha</title>
+    <title>Internal Dashboard | Tochukwu Nkwocha</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,88 +25,198 @@
               brand: {
                 50: '#eef2fb',
                 100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
                 500: '#22345f',
-                600: '#14213d',
-                900: '#0f1a33',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
               }
             }
           }
         }
       }
     </script>
+
+    <style type="text/tailwindcss">
+      @layer utilities {
+        /* Ensures JS can strictly hide the login/dashboard sections */
+        [hidden] {
+          display: none !important;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-[#f8f6f1] text-gray-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900">
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
     
-    <main class="flex-1 w-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-      
-      <section class="w-full max-w-4xl bg-white rounded-2xl shadow-xl ring-1 ring-gray-900/5 p-6 sm:p-10 relative overflow-hidden">
+    <section id="internalLoginCard" class="flex h-full w-full items-center justify-center p-4 sm:p-6 lg:p-8 relative" hidden>
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-xl ring-1 ring-gray-900/5 p-6 sm:p-8 relative overflow-hidden z-10">
         <div class="absolute top-0 left-0 w-full h-1.5 bg-brand-600"></div>
+        
+        <div class="mb-8">
+          <div class="h-10 w-10 bg-brand-50 rounded-lg flex items-center justify-center mb-4 ring-1 ring-brand-100">
+            <svg class="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h1 class="text-2xl font-heading font-extrabold tracking-tight text-gray-900">Admin Login</h1>
+          <p class="mt-2 text-sm text-gray-500">Sign in to access the internal workspace.</p>
+        </div>
 
-        <div class="mb-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <form id="internalLoginForm" novalidate class="space-y-6">
           <div>
-            <a href="/" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-6">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-              Back to home
-            </a>
-            <h1 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900">Internal Tools</h1>
-            <p class="mt-2 text-base text-gray-500 max-w-xl">Operational workspace for managing course enrollments and leadpage service workflows.</p>
+            <label for="internalPassword" class="block text-sm font-medium text-gray-700">Internal Password</label>
+            <input 
+              id="internalPassword" 
+              name="password" 
+              type="password" 
+              autocomplete="current-password" 
+              required 
+              class="mt-2 block w-full rounded-lg border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all"
+              placeholder="••••••••"
+            />
           </div>
           
-          <div class="hidden sm:block">
-            <span class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-brand-50 text-brand-600 font-bold font-heading ring-1 ring-brand-100">
-              TN
-            </span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <p id="internalLoginError" class="text-sm text-red-600 font-medium empty:hidden"></p>
           
-          <article class="group relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-brand-200">
-            <div>
-              <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 ring-1 ring-green-100 group-hover:bg-green-100 transition-colors">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Payments</h3>
-              <p class="text-sm text-gray-500 leading-relaxed">
-                View all payments in one queue. Paystack and PayPal are auto-approved, while manual transfers await review.
-              </p>
-            </div>
-            <div class="mt-8">
-              <a href="/internal/manual-payments/" class="inline-flex w-full items-center justify-center rounded-xl bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 transition-all group-hover:bg-brand-600 group-hover:text-white group-hover:ring-brand-600">
-                Open Payment Queue
-                <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-              </a>
-            </div>
-          </article>
+          <button 
+            id="internalLoginBtn" 
+            type="submit" 
+            class="flex w-full justify-center items-center rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors"
+          >
+            Authenticate
+          </button>
+        </form>
+      </div>
+    </section>
 
-          <article class="group relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-brand-200">
-            <div>
-              <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-100 group-hover:bg-brand-100 transition-colors">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Lead Capture Jobs</h3>
-              <p class="text-sm text-gray-500 leading-relaxed">
-                Track leadpage service jobs from client intake details through page build, QA processes, and final delivery states.
-              </p>
-            </div>
-            <div class="mt-8">
-              <a href="/internal/leadpage-jobs/" class="inline-flex w-full items-center justify-center rounded-xl bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 transition-all group-hover:bg-brand-600 group-hover:text-white group-hover:ring-brand-600">
-                Open Job Queue
-                <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-              </a>
-            </div>
-          </article>
+    <section id="internalToolsCard" class="flex h-full w-full" hidden>
+      
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
 
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        
+        <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+          <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+          <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
         </div>
-      </section>
 
-      <footer class="mt-8 text-center text-xs text-gray-400">
-        &copy; 2026 Tochukwu Nkwocha. Internal Workspace.
-      </footer>
-    </main>
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+          
+          <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            Dashboard Home
+          </a>
+
+          <a href="/internal/manual-payments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
+            <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Enrollments
+          </a>
+
+          <a href="/internal/installments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
+            <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Installments
+          </a>
+
+          <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
+            <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" /></svg>
+            Lead Capture Jobs
+          </a>
+        </div>
+
+        <div class="p-4 border-t border-white/10 shrink-0">
+          <a href="/" class="flex items-center gap-2 px-3 py-2 text-sm text-brand-300 hover:text-white transition-colors">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Back to public site
+          </a>
+        </div>
+      </aside>
+
+      <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+          
+          <div class="flex items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Dashboard Overview</h2>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <button 
+              id="internalLogoutBtn" 
+              type="button" 
+              class="hidden sm:inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              Sign out
+            </button>
+            <button type="button" class="sm:hidden p-2 text-gray-500 hover:text-gray-900">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          
+          <div class="max-w-6xl mx-auto">
+            <div class="mb-8">
+              <h3 class="text-lg font-heading font-bold text-gray-900">Welcome to your workspace</h3>
+              <p class="text-sm text-gray-500 mt-1">Select an operational queue below or from the menu to begin managing workflows.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              
+              <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="h-10 w-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center ring-1 ring-green-100 mb-4">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  </div>
+                  <h4 class="text-base font-bold text-gray-900 mb-1">Manual Enrollments</h4>
+                  <p class="text-sm text-gray-500 mb-6">Review and approve manual transfer proofs to keep records clean.</p>
+                </div>
+                <a href="/internal/manual-payments/" class="text-sm font-semibold text-brand-600 hover:text-brand-500 inline-flex items-center">
+                  Open Queue &rarr;
+                </a>
+              </article>
+
+              <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="h-10 w-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center ring-1 ring-amber-100 mb-4">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <h4 class="text-base font-bold text-gray-900 mb-1">Installment Tracking</h4>
+                  <p class="text-sm text-gray-500 mb-6">Track wallet plans and partial payments on a dedicated page.</p>
+                </div>
+                <a href="/internal/installments/" class="text-sm font-semibold text-brand-600 hover:text-brand-500 inline-flex items-center">
+                  Open Wallet Data &rarr;
+                </a>
+              </article>
+
+              <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100 mb-4">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" /></svg>
+                  </div>
+                  <h4 class="text-base font-bold text-gray-900 mb-1">Lead Capture Jobs</h4>
+                  <p class="text-sm text-gray-500 mb-6">Track client intake, page builds, QA, and delivery states.</p>
+                </div>
+                <a href="/internal/leadpage-jobs/" class="text-sm font-semibold text-brand-600 hover:text-brand-500 inline-flex items-center">
+                  Open Job Queue &rarr;
+                </a>
+              </article>
+
+            </div>
+          </div>
+
+        </main>
+      </div>
+
+    </section>
+
+    <script src="/assets/internal-auth.js" defer></script>
   </body>
 </html>

@@ -558,17 +558,18 @@
   const search = new URLSearchParams(window.location.search);
   const payment = search.get("payment");
   const paidOrderUuid = search.get("order_uuid");
-  if (payment === "success") {
-    openPaymentFeedbackModal("success");
-    if (paidOrderUuid) {
+  const isPromptToProfitPage = window.location.pathname.indexOf("/courses/prompt-to-profit") === 0;
+  if (isPromptToProfitPage) {
+    if (payment === "success" && paidOrderUuid) {
+      openPaymentFeedbackModal("success");
       trackPurchase(paidOrderUuid).catch(function () {
         return null;
       });
+    } else if (payment === "failed") {
+      openPaymentFeedbackModal("failed");
+    } else if (payment === "cancelled") {
+      openPaymentFeedbackModal("cancelled");
     }
-  } else if (payment === "failed") {
-    openPaymentFeedbackModal("failed");
-  } else if (payment === "cancelled") {
-    openPaymentFeedbackModal("cancelled");
   }
 
   if (payment) {

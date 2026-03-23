@@ -152,7 +152,7 @@
 
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 flex flex-col gap-8">
       
-      <section class="bg-white rounded-3xl p-8 sm:p-10 shadow-sm ring-1 ring-gray-200 relative overflow-hidden text-center sm:text-left">
+      <section class="w-full max-w-3xl mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-sm ring-1 ring-gray-200 relative overflow-hidden text-center sm:text-left">
         <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand-50 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
         
         <div class="relative z-10">
@@ -171,41 +171,77 @@
 
       <div class="w-full relative">
         
-        <article class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletAuthCard">
+        <article class="w-full max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletAuthCard">
           <div class="mb-8 text-center sm:text-left">
             <h2 class="text-2xl font-heading font-bold text-gray-900">Access Wallet</h2>
-            <p class="mt-2 text-sm text-gray-500">Sign in or create a new account to track your payments.</p>
+            <p class="mt-2 text-sm text-gray-500">Sign in to continue, or create a new account.</p>
           </div>
-          
-          <form id="walletRegisterForm" class="wallet-row space-y-6" novalidate>
+
+          <div class="mb-6 inline-flex w-full rounded-xl bg-gray-100 p-1 ring-1 ring-gray-200" role="tablist" aria-label="Wallet access mode">
+            <button
+              type="button"
+              id="walletShowSignInBtn"
+              class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-900 bg-white shadow-sm ring-1 ring-gray-200 transition-colors"
+              aria-selected="true"
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              id="walletShowSignUpBtn"
+              class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 transition-colors"
+              aria-selected="false"
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form id="walletSignInForm" class="wallet-row space-y-6" novalidate>
             <div>
-              <label class="tw-label" for="walletFullName">Full Name</label>
-              <input id="walletFullName" name="fullName" class="tw-input wallet-input" placeholder="e.g. Jane Doe" required />
+              <label class="tw-label" for="walletSignInEmail">Email Address</label>
+              <input id="walletSignInEmail" name="email" type="email" class="tw-input wallet-input" placeholder="you@example.com" required />
             </div>
-            
+
             <div>
-              <label class="tw-label" for="walletEmail">Email Address</label>
-              <input id="walletEmail" name="email" type="email" class="tw-input wallet-input" placeholder="you@example.com" required />
+              <label class="tw-label flex items-center justify-between" for="walletSignInPassword">
+                Password
+              </label>
+              <input id="walletSignInPassword" name="password" type="password" class="tw-input wallet-input" placeholder="••••••••" required minlength="8" />
             </div>
-            
+
+            <div class="pt-2">
+              <button type="submit" class="tw-btn-primary w-full" id="walletLoginBtn">Sign In</button>
+            </div>
+          </form>
+
+          <form id="walletSignUpForm" class="wallet-row space-y-6" novalidate hidden>
             <div>
-              <label class="tw-label flex items-center justify-between" for="walletPassword">
+              <label class="tw-label" for="walletSignUpFullName">Full Name</label>
+              <input id="walletSignUpFullName" name="fullName" class="tw-input wallet-input" placeholder="e.g. Jane Doe" required />
+            </div>
+
+            <div>
+              <label class="tw-label" for="walletSignUpEmail">Email Address</label>
+              <input id="walletSignUpEmail" name="email" type="email" class="tw-input wallet-input" placeholder="you@example.com" required />
+            </div>
+
+            <div>
+              <label class="tw-label flex items-center justify-between" for="walletSignUpPassword">
                 Password
                 <span class="text-xs font-normal text-gray-500">8+ chars</span>
               </label>
-              <input id="walletPassword" name="password" type="password" class="tw-input wallet-input" placeholder="••••••••" required minlength="8" />
+              <input id="walletSignUpPassword" name="password" type="password" class="tw-input wallet-input" placeholder="••••••••" required minlength="8" />
             </div>
-            
-            <div class="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-100">
-              <button type="submit" class="tw-btn-primary flex-1" id="walletRegisterBtn">Create Account</button>
-              <button type="button" class="tw-btn-outline flex-1" id="walletLoginBtn">Sign In</button>
+
+            <div class="pt-2">
+              <button type="submit" class="tw-btn-primary w-full" id="walletRegisterBtn">Create Account</button>
             </div>
-            
-            <p class="text-sm mt-3" id="walletAuthMsg"></p>
           </form>
+
+          <p class="text-sm mt-4" id="walletAuthMsg"></p>
         </article>
 
-        <article class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletPlanCard" hidden>
+        <article class="w-full max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-sm ring-1 ring-gray-200" id="walletPlanCard" hidden>
           
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
             <div>

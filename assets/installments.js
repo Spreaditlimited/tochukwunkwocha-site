@@ -2,7 +2,10 @@
   const authCard = document.getElementById("walletAuthCard");
   const planCard = document.getElementById("walletPlanCard");
 
-  const registerForm = document.getElementById("walletRegisterForm");
+  const signInForm = document.getElementById("walletSignInForm");
+  const signUpForm = document.getElementById("walletSignUpForm");
+  const showSignInBtn = document.getElementById("walletShowSignInBtn");
+  const showSignUpBtn = document.getElementById("walletShowSignUpBtn");
   const registerBtn = document.getElementById("walletRegisterBtn");
   const loginBtn = document.getElementById("walletLoginBtn");
   const authMsg = document.getElementById("walletAuthMsg");
@@ -16,6 +19,49 @@
   const planMsg = document.getElementById("walletPlanMsg");
 
   let dashboard = null;
+  let authMode = "signin";
+
+  function setWalletState(isAuthenticated) {
+    const showPlan = !!isAuthenticated;
+    if (authCard) {
+      authCard.hidden = showPlan;
+      authCard.style.display = showPlan ? "none" : "";
+    }
+    if (planCard) {
+      planCard.hidden = !showPlan;
+      planCard.style.display = showPlan ? "" : "none";
+    }
+  }
+
+  function setAuthView(mode) {
+    authMode = mode === "signup" ? "signup" : "signin";
+    if (signInForm) signInForm.hidden = authMode !== "signin";
+    if (signUpForm) signUpForm.hidden = authMode !== "signup";
+
+    if (showSignInBtn) {
+      const active = authMode === "signin";
+      showSignInBtn.setAttribute("aria-selected", active ? "true" : "false");
+      showSignInBtn.classList.toggle("bg-white", active);
+      showSignInBtn.classList.toggle("shadow-sm", active);
+      showSignInBtn.classList.toggle("ring-1", active);
+      showSignInBtn.classList.toggle("ring-gray-200", active);
+      showSignInBtn.classList.toggle("text-gray-900", active);
+      showSignInBtn.classList.toggle("text-gray-600", !active);
+    }
+
+    if (showSignUpBtn) {
+      const active = authMode === "signup";
+      showSignUpBtn.setAttribute("aria-selected", active ? "true" : "false");
+      showSignUpBtn.classList.toggle("bg-white", active);
+      showSignUpBtn.classList.toggle("shadow-sm", active);
+      showSignUpBtn.classList.toggle("ring-1", active);
+      showSignUpBtn.classList.toggle("ring-gray-200", active);
+      showSignUpBtn.classList.toggle("text-gray-900", active);
+      showSignUpBtn.classList.toggle("text-gray-600", !active);
+    }
+
+    setMsg(authMsg, "", "");
+  }
 
   function fmtMoney(minor, currency) {
     const amount = Number(minor || 0) / 100;
@@ -36,7 +82,8 @@
   }
 
   async function api(url, options) {
-    const res = await fetch(url, options || {});
+    const request = Object.assign({ credentials: "include" }, options || {});
+    const res = await fetch(url, request);
     const json = await res.json().catch(function () {
       return null;
     });
@@ -61,7 +108,12 @@
         const remaining = Math.max(0, target - paid);
         const progress = target > 0 ? Math.min(100, Math.round((paid / target) * 100)) : 0;
         const disabledPay = String(plan.status || "") !== "open";
-        const disableEnrol = !plan.canEnrolNow;
+        const canEnrolNow =
+          !!plan.canEnrolNow &&
+          target > 0 &&
+          paid >= target &&
+          String(plan.status || "").toLowerCase() === "open";
+        const disableEnrol = !canEnrolNow;
         return [
           `<article class="wallet-plan" data-plan-uuid="${plan.planUuid}">`,
           `<p class="wallet-pill">${plan.batchLabel}</p>`,
@@ -108,22 +160,21 @@
       if (accountMeta && json.account) {
         accountMeta.textContent = `${json.account.fullName} • ${json.account.email}`;
       }
-      if (authCard) authCard.hidden = true;
-      if (planCard) planCard.hidden = false;
+      setWalletState(true);
       renderPlans();
       setMsg(planMsg, "", "");
     } catch (_error) {
       dashboard = null;
-      if (authCard) authCard.hidden = false;
-      if (planCard) planCard.hidden = true;
+      setWalletState(false);
+      throw _error;
     }
   }
 
   async function handleRegister() {
     setMsg(authMsg, "", "");
-    const fullName = String((registerForm.fullName && registerForm.fullName.value) || "").trim();
-    const email = String((registerForm.email && registerForm.email.value) || "").trim();
-    const password = String((registerForm.password && registerForm.password.value) || "");
+    const fullName = String((signUpForm && signUpForm.fullName && signUpForm.fullName.value) || "").trim();
+    const email = String((signUpForm && signUpForm.email && signUpForm.email.value) || "").trim();
+    const password = String((signUpForm && signUpForm.password && signUpForm.password.value) || "");
     if (!fullName || !email || password.length < 8) {
       setMsg(authMsg, "Full Name, email and password (8+ chars) are required.", "error");
       return;
@@ -137,7 +188,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, email, password }),
       });
+      setWalletState(true);
       setMsg(authMsg, "Account created. Signed in.", "ok");
+      if (signUpForm) signUpForm.reset();
       await loadDashboard();
       await loadBatches();
     } catch (error) {
@@ -150,8 +203,8 @@
 
   async function handleLogin() {
     setMsg(authMsg, "", "");
-    const email = String((registerForm.email && registerForm.email.value) || "").trim();
-    const password = String((registerForm.password && registerForm.password.value) || "");
+    const email = String((signInForm && signInForm.email && signInForm.email.value) || "").trim();
+    const password = String((signInForm && signInForm.password && signInForm.password.value) || "");
     if (!email || !password) {
       setMsg(authMsg, "Enter email and password.", "error");
       return;
@@ -164,7 +217,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      setWalletState(true);
       setMsg(authMsg, "Signed in.", "ok");
+      if (signInForm) signInForm.reset();
       await loadDashboard();
       await loadBatches();
     } catch (error) {
@@ -256,8 +311,8 @@
     setMsg(planMsg, "Enrolment completed. Added to payments queue.", "ok");
   }
 
-  if (registerForm) {
-    registerForm.addEventListener("submit", function (event) {
+  if (signUpForm) {
+    signUpForm.addEventListener("submit", function (event) {
       event.preventDefault();
       handleRegister().catch(function () {
         return null;
@@ -265,23 +320,36 @@
     });
   }
 
-  if (loginBtn) {
-    loginBtn.addEventListener("click", function () {
+  if (signInForm) {
+    signInForm.addEventListener("submit", function (event) {
+      event.preventDefault();
       handleLogin().catch(function () {
         return null;
       });
     });
   }
 
+  if (showSignInBtn) {
+    showSignInBtn.addEventListener("click", function () {
+      setAuthView("signin");
+    });
+  }
+
+  if (showSignUpBtn) {
+    showSignUpBtn.addEventListener("click", function () {
+      setAuthView("signup");
+    });
+  }
+
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async function () {
-      await fetch("/.netlify/functions/student-auth-logout", { method: "POST" }).catch(function () {
+      await fetch("/.netlify/functions/student-auth-logout", { method: "POST", credentials: "include" }).catch(function () {
         return null;
       });
       dashboard = null;
-      if (authCard) authCard.hidden = false;
-      if (planCard) planCard.hidden = true;
+      setWalletState(false);
       setMsg(planMsg, "", "");
+      setAuthView("signin");
     });
   }
 
@@ -340,6 +408,9 @@
   }
 
   Promise.all([loadBatches(), loadDashboard()]).catch(function () {
+    setWalletState(false);
     return null;
   });
+  setWalletState(false);
+  setAuthView("signin");
 })();

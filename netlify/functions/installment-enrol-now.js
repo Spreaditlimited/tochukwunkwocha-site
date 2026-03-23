@@ -36,6 +36,9 @@ exports.handler = async function (event) {
 
     const target = Number(plan.target_amount_minor || 0);
     const paid = Number(plan.total_paid_minor || 0);
+    if (!Number.isFinite(target) || target <= 0) {
+      return json(400, { ok: false, error: "Target amount is not configured for this plan" });
+    }
     if (paid < target) {
       return json(400, { ok: false, error: "Target amount not yet completed" });
     }

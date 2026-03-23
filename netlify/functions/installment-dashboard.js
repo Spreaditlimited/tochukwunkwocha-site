@@ -28,7 +28,10 @@ exports.handler = async function (event) {
         remainingMinor: Math.max(0, Number(plan.target_amount_minor || 0) - Number(plan.total_paid_minor || 0)),
         status: plan.status,
         enrolledOrderUuid: plan.enrolled_order_uuid || null,
-        canEnrolNow: Number(plan.total_paid_minor || 0) >= Number(plan.target_amount_minor || 0) && String(plan.status) === "open",
+        canEnrolNow:
+          Number(plan.target_amount_minor || 0) > 0 &&
+          Number(plan.total_paid_minor || 0) >= Number(plan.target_amount_minor || 0) &&
+          String(plan.status || "").toLowerCase() === "open",
         payments: (payments || []).map((p) => ({
           paymentUuid: p.payment_uuid,
           provider: p.provider,

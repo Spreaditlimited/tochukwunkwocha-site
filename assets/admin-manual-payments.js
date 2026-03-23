@@ -1,11 +1,6 @@
 (function () {
-  const loginCard = document.getElementById("adminLoginCard");
   const appCard = document.getElementById("adminAppCard");
   const internalShell = document.getElementById("internalShell");
-
-  const loginForm = document.getElementById("adminLoginForm");
-  const loginBtn = document.getElementById("adminLoginBtn");
-  const loginErr = document.getElementById("adminLoginError");
 
   const statusFilter = document.getElementById("adminStatusFilter");
   const batchFilter = document.getElementById("adminBatchFilter");
@@ -51,9 +46,20 @@
   let pendingReviewAction = null;
   let latestBatches = [];
 
+  function redirectToInternalSignIn() {
+    const next = `${window.location.pathname}${window.location.search || ""}`;
+    window.location.href = `/internal/?next=${encodeURIComponent(next)}`;
+  }
+
   function setAuthMode(isAuthMode) {
     if (!internalShell) return;
     internalShell.classList.toggle("internal-shell--auth", !!isAuthMode);
+  }
+
+  function bootAppShell() {
+    if (appCard) appCard.hidden = false;
+    setAuthMode(false);
+    setMessage("Loading...", "ok");
   }
 
   function selectedStatus() {
@@ -73,6 +79,8 @@
     if (status === "pending_verification") return "Pending";
     if (status === "approved") return "Approved";
     if (status === "rejected") return "Rejected";
+    if (status === "paid") return "Approved";
+    if (status === "pending") return "Pending";
     return String(status || "").replace(/_/g, " ");
   }
 
@@ -283,11 +291,8 @@
       const key = String(item.batchKey || "").trim();
       if (!key) return;
       const label = String(item.batchLabel || key).trim();
-      const status = String(item.status || "").trim().toLowerCase();
-      const active = !!item.isActive;
-      const suffix = `${active ? " (active)" : ""}${status ? ` (${status})` : ""}`;
       const selected = key === current ? " selected" : "";
-      options.push(`<option value="${escapeHtml(key)}"${selected}>${escapeHtml(label + suffix)}</option>`);
+      options.push(`<option value="${escapeHtml(key)}"${selected}>${escapeHtml(label)}</option>`);
     });
     batchFilter.innerHTML = options.join("");
     if (current) batchFilter.value = current;
@@ -408,9 +413,7 @@
     });
 
     if (res.status === 401) {
-      if (appCard) appCard.hidden = true;
-      if (loginCard) loginCard.hidden = false;
-      setAuthMode(true);
+      redirectToInternalSignIn();
       return;
     }
 
@@ -445,7 +448,6 @@
     }
 
     if (appCard) appCard.hidden = false;
-    if (loginCard) loginCard.hidden = true;
     setAuthMode(false);
   }
 
@@ -475,53 +477,12 @@
     await loadItems({ reconcile: false });
   }
 
-  if (loginForm) {
-    loginForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      if (loginErr) loginErr.textContent = "";
-
-      const password = String((loginForm.password && loginForm.password.value) || "");
-      if (!password.trim()) {
-        if (loginErr) loginErr.textContent = "Password is required.";
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.textContent = "Signing in...";
-      try {
-        const res = await fetch("/.netlify/functions/admin-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password }),
-        });
-        const json = await res.json().catch(function () {
-          return null;
-        });
-
-        if (!res.ok || !json || !json.ok) {
-          throw new Error((json && json.error) || "Sign in failed");
-        }
-
-        loginForm.reset();
-        await loadItems({ reconcile: false });
-      } catch (error) {
-        if (loginErr) loginErr.textContent = error.message || "Sign in failed";
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Sign in";
-      }
-    });
-  }
-
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async function () {
       await fetch("/.netlify/functions/admin-logout", { method: "POST" }).catch(function () {
         return null;
       });
-      if (appCard) appCard.hidden = true;
-      if (loginCard) loginCard.hidden = false;
-      setMessage("", "");
-      setAuthMode(true);
+      window.location.href = "/internal/";
     });
   }
 
@@ -826,9 +787,8 @@
     }
   });
 
+  bootAppShell();
   Promise.all([loadCourseBatches().catch(function () { return []; }), loadItems({ reconcile: false })]).catch(function (_error) {
-    if (appCard) appCard.hidden = true;
-    if (loginCard) loginCard.hidden = false;
-    setAuthMode(true);
+    redirectToInternalSignIn();
   });
 })();

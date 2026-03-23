@@ -1,11 +1,6 @@
 (function () {
-  const loginCard = document.getElementById("adminLoginCard");
   const appCard = document.getElementById("adminAppCard");
   const internalShell = document.getElementById("internalShell");
-
-  const loginForm = document.getElementById("adminLoginForm");
-  const loginBtn = document.getElementById("adminLoginBtn");
-  const loginErr = document.getElementById("adminLoginError");
 
   const statusFilter = document.getElementById("adminStatusFilter");
   const searchInput = document.getElementById("adminSearchInput");
@@ -25,9 +20,20 @@
     "delivered",
   ];
 
+  function redirectToInternalSignIn() {
+    const next = `${window.location.pathname}${window.location.search || ""}`;
+    window.location.href = `/internal/?next=${encodeURIComponent(next)}`;
+  }
+
   function setAuthMode(isAuthMode) {
     if (!internalShell) return;
     internalShell.classList.toggle("internal-shell--auth", !!isAuthMode);
+  }
+
+  function bootAppShell() {
+    if (appCard) appCard.hidden = false;
+    setAuthMode(false);
+    setMessage("Loading...", "ok");
   }
 
   function selectedStatus() {
@@ -116,9 +122,7 @@
     });
 
     if (res.status === 401) {
-      if (appCard) appCard.hidden = true;
-      if (loginCard) loginCard.hidden = false;
-      setAuthMode(true);
+      redirectToInternalSignIn();
       return;
     }
 
@@ -138,7 +142,6 @@
     }
 
     if (appCard) appCard.hidden = false;
-    if (loginCard) loginCard.hidden = true;
     setAuthMode(false);
   }
 
@@ -183,53 +186,12 @@
     await loadItems();
   }
 
-  if (loginForm) {
-    loginForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      if (loginErr) loginErr.textContent = "";
-
-      const password = String((loginForm.password && loginForm.password.value) || "");
-      if (!password.trim()) {
-        if (loginErr) loginErr.textContent = "Password is required.";
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.textContent = "Signing in...";
-      try {
-        const res = await fetch("/.netlify/functions/admin-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password }),
-        });
-        const json = await res.json().catch(function () {
-          return null;
-        });
-
-        if (!res.ok || !json || !json.ok) {
-          throw new Error((json && json.error) || "Sign in failed");
-        }
-
-        loginForm.reset();
-        await loadItems();
-      } catch (error) {
-        if (loginErr) loginErr.textContent = error.message || "Sign in failed";
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Sign in";
-      }
-    });
-  }
-
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async function () {
       await fetch("/.netlify/functions/admin-logout", { method: "POST" }).catch(function () {
         return null;
       });
-      if (appCard) appCard.hidden = true;
-      if (loginCard) loginCard.hidden = false;
-      setMessage("", "");
-      setAuthMode(true);
+      window.location.href = "/internal/";
     });
   }
 
@@ -307,9 +269,13 @@
     });
   }
 
-  loadItems().catch(function () {
-    if (appCard) appCard.hidden = true;
-    if (loginCard) loginCard.hidden = false;
-    setAuthMode(true);
+  bootAppShell();
+  loadItems().catch(function (error) {
+    const text = String(error && error.message ? error.message : "");
+    if (/not signed in|unauthorized|session/i.test(text)) {
+      redirectToInternalSignIn();
+      return;
+    }
+    setMessage(text || "Could not load jobs", "error");
   });
 })();

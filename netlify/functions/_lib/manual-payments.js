@@ -292,6 +292,7 @@ async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
              updated_at AS updated_at
       FROM course_orders
       WHERE status = 'paid'
+        AND (provider IS NULL OR provider <> 'wallet_installment')
     `;
     const orderParams = [];
     if (desiredBatchKey && desiredBatchKey !== "all") {
@@ -307,6 +308,7 @@ async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
     const [rows] = await pool.query(orderSql, orderParams);
     orderRows = rows || [];
   }
+
 
   const manualItems = (manualRows || []).map(function (row) {
     return {
@@ -411,6 +413,7 @@ async function getPaymentsQueueSummary(pool, opts) {
      FROM course_orders
      WHERE course_slug = 'prompt-to-profit'
        AND status = 'paid'
+       AND (provider IS NULL OR provider <> 'wallet_installment')
        ${ordersBatchClause}
      GROUP BY currency, provider`,
     ordersBatchParams
@@ -443,6 +446,7 @@ async function getPaymentsQueueSummary(pool, opts) {
     paidOrderCount += count;
     paidApprovedCount += count;
   });
+
 
   const manualPendingCount = Number(
     manualPendingRows && manualPendingRows[0] && manualPendingRows[0].c ? manualPendingRows[0].c : 0
