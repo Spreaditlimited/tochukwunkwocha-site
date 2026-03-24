@@ -264,8 +264,11 @@ p {
 
 .course-hero .course-hero-copy h1 {
   max-width: 16ch;
-  font-size: clamp(2.25rem, 5.8vw, 4.5rem);
+  font-size: 3.75rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   line-height: 1.1;
+  color: #111827;
 }
 
 .course-hero .course-hero-copy > p {
@@ -285,15 +288,15 @@ p {
   justify-self: end;
   width: 100%;
   max-width: 520px;
-  height: 100%;
+  height: auto;
   margin-top: 0;
-  padding: 24px 24px 20px;
+  padding: 16px 20px 14px;
   background: #fff;
   border-color: #e3e7f0;
   box-shadow: 0 10px 26px rgba(20, 33, 61, 0.07);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .course-hero-card::before {
@@ -302,7 +305,7 @@ p {
   width: 62px;
   height: 3px;
   border-radius: 999px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   background: linear-gradient(90deg, var(--muted-teal), #78b8ae);
 }
 
@@ -312,15 +315,15 @@ p {
 }
 
 .course-hero-card__intro {
-  margin-top: 2px;
+  margin-top: 0;
   color: #4b556d;
   font-size: 0.98rem;
   line-height: 1.54;
 }
 
 .course-hero .hero-points.course-hero-card__points {
-  margin-top: 12px;
-  gap: 9px;
+  margin-top: 8px;
+  gap: 7px;
 }
 
 .course-hero .hero-points.course-hero-card__points span {
@@ -340,8 +343,8 @@ p {
 }
 
 .course-hero .hero-proof {
-  margin-top: 15px;
-  padding-top: 12px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #e8ecf3;
   font-size: 0.9rem;
   line-height: 1.52;
@@ -1514,8 +1517,8 @@ body.modal-open {
   }
 
   .course-hero .course-hero-copy h1 {
-    font-size: clamp(2.25rem, 5.8vw, 4.5rem);
-    max-width: 16ch;
+    font-size: 3rem;
+    max-width: 18ch;
   }
 
   .course-hero .course-hero-copy > p {
@@ -1620,9 +1623,9 @@ body.modal-open {
   }
 
   .course-hero .course-hero-copy h1 {
-    max-width: 18ch;
-    font-size: clamp(2.25rem, 5.8vw, 4.5rem);
+    max-width: 14ch;
     margin-inline: auto;
+    font-size: 2.25rem;
   }
 
   .course-hero .course-hero-copy > p {
