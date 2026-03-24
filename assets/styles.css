@@ -1657,6 +1657,24 @@ body.modal-open {
     height: auto;
     object-fit: contain;
   }
+
+
+  .course-highlight--media {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .course-highlight__content {
+    display: contents;
+  }
+
+  .course-highlight__media {
+    order: 2;
+  }
+
+  .course-highlight__content .cta-row {
+    order: 3;
+  }
 }
 
 @media (max-width: 620px) {
