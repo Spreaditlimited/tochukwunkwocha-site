@@ -3,6 +3,7 @@ const { syncFlodeskSubscriber } = require("./flodesk");
 const { paystackVerifyTransaction } = require("./payments");
 const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { ensureCourseOrdersBatchColumns } = require("./course-orders");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./course-config");
 
 async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider }) {
   if (!orderUuid && !providerReference && !providerOrderId) {
@@ -26,7 +27,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   }
 
   const [rows] = await pool.query(
-    `SELECT id, order_uuid, first_name, email, status, flodesk_synced
+    `SELECT id, order_uuid, course_slug, first_name, email, status, flodesk_synced
      FROM course_orders
      WHERE ${where.join(" OR ")}
      ORDER BY id DESC
@@ -65,31 +66,30 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     }
   }
 
-  return { ok: true, orderUuid: order.order_uuid, email: order.email };
+  return { ok: true, orderUuid: order.order_uuid, courseSlug: order.course_slug, email: order.email };
 }
 
-async function reconcilePromptToProfitPaystackOrders(pool, input) {
+async function reconcileCoursePaystackOrders(pool, input) {
   await ensureCourseOrdersBatchColumns(pool);
   await ensureCourseBatchesTable(pool);
 
   const safeLimit = Math.max(1, Math.min(Number((input && input.limit) || 60), 300));
   const requestedBatchKey = normalizeBatchKey(input && input.batchKey);
+  const courseSlug = normalizeCourseSlug(input && input.courseSlug, DEFAULT_COURSE_SLUG);
   const batches =
     !requestedBatchKey || requestedBatchKey === "all"
-      ? await listCourseBatches(pool, "prompt-to-profit")
-      : [await resolveCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey: requestedBatchKey })].filter(Boolean);
+      ? await listCourseBatches(pool, courseSlug)
+      : [await resolveCourseBatch(pool, { courseSlug, batchKey: requestedBatchKey })].filter(Boolean);
 
   const items = [];
   for (const batch of batches) {
-    const expectedAmountMinor = Number(
-      batch.paystack_amount_minor || Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000)
-    );
+    const expectedAmountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
     const batchKey = String(batch.batch_key || "").trim();
     const prefix = String(batch.paystack_reference_prefix || "PTP").trim().toUpperCase();
     const [rows] = await pool.query(
       `SELECT order_uuid, provider_reference
        FROM course_orders
-       WHERE course_slug = 'prompt-to-profit'
+       WHERE course_slug = ?
          AND batch_key = ?
          AND provider = 'paystack'
          AND status <> 'paid'
@@ -98,7 +98,7 @@ async function reconcilePromptToProfitPaystackOrders(pool, input) {
          AND provider_reference LIKE ?
        ORDER BY created_at DESC
        LIMIT ?`,
-      [batchKey, expectedAmountMinor, `${prefix}_%`, safeLimit]
+      [courseSlug, batchKey, expectedAmountMinor, `${prefix}_%`, safeLimit]
     );
     (rows || []).forEach((row) => items.push(row));
   }
@@ -147,5 +147,5 @@ async function reconcilePromptToProfitPaystackOrders(pool, input) {
 
 module.exports = {
   markOrderPaidBy,
-  reconcilePromptToProfitPaystackOrders,
+  reconcileCoursePaystackOrders,
 };

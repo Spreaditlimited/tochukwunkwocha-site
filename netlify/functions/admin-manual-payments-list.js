@@ -6,8 +6,9 @@ const {
   listPaymentsQueue,
   getPaymentsQueueSummary,
 } = require("./_lib/manual-payments");
-const { reconcilePromptToProfitPaystackOrders } = require("./_lib/orders");
+const { reconcileCoursePaystackOrders } = require("./_lib/orders");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -21,6 +22,7 @@ exports.handler = async function (event) {
   const limit = Number(qs.limit || 80);
   const reconcile = String(qs.reconcile || "1").trim() !== "0";
   const batchKey = String(qs.batch_key || "").trim();
+  const courseSlug = normalizeCourseSlug(qs.course_slug, DEFAULT_COURSE_SLUG);
 
   const allowedStatus = new Set(["pending_verification", "approved", "rejected", "all"]);
   if (!allowedStatus.has(status)) {
@@ -34,15 +36,16 @@ exports.handler = async function (event) {
     await ensureCourseOrdersBatchColumns(pool);
     let reconcileResult = null;
     if (reconcile) {
-      reconcileResult = await reconcilePromptToProfitPaystackOrders(pool, { limit: 80, batchKey });
+      reconcileResult = await reconcileCoursePaystackOrders(pool, { limit: 80, batchKey, courseSlug });
     }
     const rows = await listPaymentsQueue(pool, {
+      courseSlug,
       status: status === "all" ? "" : status,
       search,
       limit,
       batchKey,
     });
-    const summary = await getPaymentsQueueSummary(pool, { batchKey });
+    const summary = await getPaymentsQueueSummary(pool, { courseSlug, batchKey });
 
     return json(200, { ok: true, items: rows || [], summary, reconcile: reconcileResult });
   } catch (error) {

@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureCourseBatchesTable, listCourseBatches } = require("./_lib/batch-store");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -9,9 +10,10 @@ exports.handler = async function (event) {
   const auth = requireAdminSession(event);
   if (!auth.ok) return json(auth.statusCode || 401, { ok: false, error: auth.error || "Unauthorized" });
 
-  const courseSlug = String((event.queryStringParameters && event.queryStringParameters.course_slug) || "prompt-to-profit")
-    .trim()
-    .slice(0, 120) || "prompt-to-profit";
+  const courseSlug = normalizeCourseSlug(
+    event.queryStringParameters && event.queryStringParameters.course_slug,
+    DEFAULT_COURSE_SLUG
+  );
 
   const pool = getPool();
   try {
@@ -28,6 +30,7 @@ exports.handler = async function (event) {
         batchStartAt: item.batch_start_at || null,
         paystackReferencePrefix: item.paystack_reference_prefix,
         paystackAmountMinor: Number(item.paystack_amount_minor || 0),
+        paypalAmountMinor: Number(item.paypal_amount_minor || 0),
       })),
     });
   } catch (error) {

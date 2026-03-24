@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt to Production | Advanced AI App Building</title>
+    <meta
+      name="description"
+      content="Learn how to use VS Code and AI coding assistants to build, debug, and deploy fully functional web applications without a computer science degree."
+    />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    
+    <link rel="stylesheet" href="/assets/styles.css" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false, /* Protects Navbar/Footer */
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style type="text/tailwindcss">
+      @layer base {
+        main *, main ::before, main ::after {
+          box-sizing: border-box;
+          border-style: solid;
+          border-width: 0;
+        }
+        main h1, main h2, main h3, main p, main ul, main li, main button {
+          margin: 0;
+          padding: 0;
+        }
+      }
+
+      @layer utilities {
+        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tw-section-label {
+          @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4;
+        }
+        .tw-h2 {
+          @apply text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl leading-tight;
+        }
+        .tw-btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-4 text-sm font-bold text-white shadow-md transition-all hover:bg-brand-500 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        .tw-btn-outline {
+          @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-4 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 hover:shadow hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        
+        .faq-wrap { @apply space-y-4; }
+        .faq-item { @apply rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-brand-300; }
+        .faq-question { @apply flex w-full items-center justify-between text-left font-heading font-bold text-gray-900 text-lg focus:outline-none cursor-pointer bg-transparent; }
+        .faq-answer p { @apply mt-4 text-gray-600 leading-relaxed pr-8; }
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
+          <a href="#ENROL_LINK" class="nav-cta">Enrol Now</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full">
+      
+      <section class="relative overflow-hidden bg-brand-900 pt-16 pb-20 lg:pt-24 lg:pb-32 reveal border-b border-brand-800">
+        <div class="absolute inset-0 bg-[url('/assets/grid.svg')] bg-center opacity-10"></div>
+        <div class="absolute -right-40 -top-40 w-96 h-96 bg-blue-500 rounded-full blur-[120px] opacity-20"></div>
+        
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            
+            <div class="lg:col-span-7 text-center sm:text-left">
+              <p class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-blue-400 mb-4">
+                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+                Advanced AI Course
+              </p>
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[4rem] leading-[1.1]">
+                Prompt to Production. Build real apps with VS Code & AI.
+              </h1>
+              <p class="mt-6 text-lg leading-relaxed text-gray-300 max-w-2xl mx-auto sm:mx-0">
+                Move beyond simple static websites. Learn how to use professional tools—VS Code and AI coding assistants—to build, debug, and deploy fully functional web applications. No computer science degree required.
+              </p>
+              <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+                <a class="tw-btn-primary text-lg px-8 bg-blue-600 hover:bg-blue-500 focus:ring-blue-600" href="#ENROL_LINK">Enrol in the 4-Week Program</a>
+                <a class="tw-btn-outline text-lg px-8 !bg-transparent !text-white !ring-white/30 hover:!bg-white/10 hover:!text-white" href="/courses/installments/?course_slug=prompt-to-production">Pay in Installments</a>
+              </div>
+            </div>
+
+            <aside class="mt-16 lg:mt-0 lg:col-span-5 relative hidden md:block">
+              <div class="rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 overflow-hidden text-left flex flex-col">
+                <div class="h-8 bg-[#2d2d2d] flex items-center px-4 gap-2 border-b border-white/5">
+                  <div class="h-3 w-3 rounded-full bg-red-500"></div>
+                  <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+                  <div class="h-3 w-3 rounded-full bg-green-500"></div>
+                  <span class="ml-4 text-xs text-gray-400 font-mono">app.js - Prompt to Production</span>
+                </div>
+                <div class="p-6 font-mono text-sm text-gray-300 leading-relaxed">
+                  <p><span class="text-pink-400">const</span> <span class="text-blue-400">course</span> = {</p>
+                  <p class="ml-4"><span class="text-blue-300">name</span>: <span class="text-green-400">'Prompt to Production'</span>,</p>
+                  <p class="ml-4"><span class="text-blue-300">weeks</span>: <span class="text-orange-400">4</span>,</p>
+                  <p class="ml-4"><span class="text-blue-300">format</span>: <span class="text-green-400">'Hybrid (Live + Recorded)'</span>,</p>
+                  <p class="ml-4"><span class="text-blue-300">tools</span>: [<span class="text-green-400">'VS Code'</span>, <span class="text-green-400">'AI Copilot'</span>, <span class="text-green-400">'Git'</span>],</p>
+                  <p class="ml-4"><span class="text-blue-300">outcome</span>: <span class="text-yellow-300">()</span> <span class="text-pink-400">=></span> {</p>
+                  <p class="ml-8"><span class="text-pink-400">return</span> <span class="text-green-400">'Production-ready Web Apps'</span>;</p>
+                  <p class="ml-4">}</p>
+                  <p>};</p>
+                  <p class="mt-4 animate-pulse">_</p>
+                </div>
+              </div>
+            </aside>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 reveal">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+          <div class="lg:col-span-6">
+            <p class="tw-section-label">The Evolution</p>
+            <h2 class="tw-h2 mb-6">Stop just generating text. Start compiling software.</h2>
+            <p class="text-lg leading-relaxed text-gray-600 mb-6">
+              "Prompt to Profit" gave you the foundation. Now, it's time to step into the actual environment where real software is built: **The Code Editor**.
+            </p>
+            <p class="text-lg leading-relaxed text-gray-600 mb-8">
+              You don't need to memorize programming languages. You just need to know how to navigate VS Code, how to direct an AI coding assistant to write the logic for you, and how to fix errors when they inevitably happen.
+            </p>
+            <ul class="space-y-4">
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-800 font-medium">Master VS Code & AI Extensions (Cursor/Copilot)</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-800 font-medium">Build dynamic applications with user logins and databases</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-800 font-medium">Learn how to read code, spot bugs, and prompt AI to fix them</span>
+              </li>
+            </ul>
+          </div>
+          
+          <aside class="mt-12 lg:mt-0 lg:col-span-6">
+            <div class="grid grid-cols-2 gap-4">
+              <article class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Web Apps, not just Web Pages</h3>
+                <p class="text-sm text-gray-600 leading-relaxed">Move beyond static HTML. Build dashboards, directories, and tools that process real user data.</p>
+              </article>
+              <article class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 mt-8">
+                <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Professional Workflows</h3>
+                <p class="text-sm text-gray-600 leading-relaxed">Operate the exact same tools (VS Code, Git, Terminals) that professional engineers use daily.</p>
+              </article>
+              <article class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 -mt-8">
+                <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Debugging Mastery</h3>
+                <p class="text-sm text-gray-600 leading-relaxed">AI isn't perfect. Learn the critical skill of reading error logs and guiding AI to the solution.</p>
+              </article>
+              <article class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Live Deployment</h3>
+                <p class="text-sm text-gray-600 leading-relaxed">Take your app from your local computer and securely host it on the internet for users.</p>
+              </article>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="curriculum" class="bg-white border-y border-gray-200 py-24 reveal">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-16 text-center">
+            <p class="tw-section-label">4-Week Program</p>
+            <h2 class="tw-h2 mb-6">A hybrid curriculum built for serious execution.</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              We combine the flexibility of recorded weekday modules with the intensity of live weekend "Build-Along" sessions to ensure you never get stuck on a technical hurdle.
+            </p>
+          </div>
+
+          <div class="space-y-6">
+            <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-2 h-full bg-brand-400"></div>
+              <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 1</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">The AI Developer Environment</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">We strip away the mystery of the code editor. You will set up your professional environment and learn how to navigate it confidently.</p>
+              <ul class="space-y-3 mb-6">
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Installing and configuring VS Code & AI Extensions</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Understanding folders, files, and the terminal</li>
+              </ul>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend Setup Session</div>
+            </article>
+
+            <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-2 h-full bg-brand-500"></div>
+              <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 2</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Building the Interface (Frontend)</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Use AI to generate complex, modern user interfaces that look like professional SaaS products.</p>
+              <ul class="space-y-3 mb-6">
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Generating layouts and dashboards with Tailwind CSS</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Prompting for interactive components (modals, forms)</li>
+              </ul>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend UI Build</div>
+            </article>
+
+            <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-2 h-full bg-brand-600"></div>
+              <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 3</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">The Brains of the App (Backend & Logic)</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">This is where it becomes an app. We teach AI to handle logic, store data, and execute tasks.</p>
+              <ul class="space-y-3 mb-6">
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Storing user input into simple databases</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> How to feed error logs to AI to fix broken code</li>
+              </ul>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend Debugging Session</div>
+            </article>
+
+            <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-2 h-full bg-brand-800"></div>
+              <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 4</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Deployment & Launch</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Get your app out of your local editor and onto the live internet for users to access.</p>
+              <ul class="space-y-3 mb-6">
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Connecting your code to hosting platforms (Vercel/Netlify)</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Managing environment variables and live updates</li>
+              </ul>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Final Capstone Project & Live Review</div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 reveal">
+        <div class="rounded-[2.5rem] bg-brand-50 border border-brand-100 p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-sm">
+          <div class="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-200 rounded-full blur-3xl opacity-50"></div>
+          
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center relative z-10">
+            <div>
+              <p class="tw-section-label">Financial Flexibility</p>
+              <h2 class="text-3xl font-heading font-extrabold text-brand-900 sm:text-4xl mb-6">Pay in installments and start building today.</h2>
+              <p class="text-lg text-gray-700 leading-relaxed mb-8">
+                We believe advanced skills should be accessible. If you'd prefer not to pay the full tuition upfront, you can use our secure **Installment Wallet**.
+              </p>
+              <ul class="space-y-4 mb-8">
+                <li class="flex items-center gap-3 font-medium text-brand-800">
+                  <svg class="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Reserve your slot in the next batch
+                </li>
+                <li class="flex items-center gap-3 font-medium text-brand-800">
+                  <svg class="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Pay in flexible parts at your own pace
+                </li>
+              </ul>
+              <a class="tw-btn-primary px-8" href="/courses/installments/?course_slug=prompt-to-production">Open Installment Wallet</a>
+            </div>
+            <div class="mt-12 lg:mt-0 flex justify-center">
+              <div class="bg-white p-8 rounded-3xl shadow-xl ring-1 ring-gray-200 max-w-sm w-full text-center">
+                <div class="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-1 ring-green-100">
+                  <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h3 class="text-xl font-heading font-bold text-gray-900 mb-2">Secure & Automated</h3>
+                <p class="text-sm text-gray-500">Full access to the course and community unlocks automatically once your plan hits 100%.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 reveal">
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16">
+          <div>
+            <p class="tw-section-label">Prerequisites</p>
+            <h2 class="text-3xl font-heading font-extrabold text-gray-900 mb-6">Who is this for?</h2>
+            <p class="text-gray-600 leading-relaxed mb-8">This is a rigorous program. You do not need to be a software engineer, but you do need to be comfortable using a computer and willing to learn technical interfaces.</p>
+            <div class="space-y-4">
+              <article class="p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <h3 class="font-bold text-gray-900 mb-1">Prompt to Profit Graduates</h3>
+                <p class="text-sm text-gray-600">You built your first simple site and are hungry to build complex apps.</p>
+              </article>
+              <article class="p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <h3 class="font-bold text-gray-900 mb-1">Non-Technical Founders</h3>
+                <p class="text-sm text-gray-600">You have an idea for a software tool and want to build the MVP yourself.</p>
+              </article>
+              <article class="p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <h3 class="font-bold text-gray-900 mb-1">Ambitious Beginners</h3>
+                <p class="text-sm text-gray-600">You are willing to skip the 12-month coding bootcamps and learn the AI-assisted way.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="mt-16 lg:mt-0">
+            <p class="tw-section-label">Course Delivery</p>
+            <h2 class="text-3xl font-heading font-extrabold text-gray-900 mb-6">How it works</h2>
+            <div class="rounded-[2rem] bg-brand-900 p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-brand-600 rounded-full blur-[50px] opacity-50"></div>
+              <div class="relative z-10 space-y-8">
+                <div>
+                  <h3 class="text-xl font-heading font-bold text-white mb-2 flex items-center gap-2">Weekday Video Modules</h3>
+                  <p class="text-sm text-gray-400 leading-relaxed">High-quality, recorded tutorials dropped during the week. Watch, pause, and code along at your own pace.</p>
+                </div>
+                <div>
+                  <h3 class="text-xl font-heading font-bold text-white mb-2 flex items-center gap-2">Weekend Live Builds</h3>
+                  <p class="text-sm text-gray-400 leading-relaxed">Live group sessions where we tackle complex integrations, review student code, and debug together in real-time.</p>
+                </div>
+                <div>
+                  <h3 class="text-xl font-heading font-bold text-white mb-2 flex items-center gap-2">1-Year Access</h3>
+                  <p class="text-sm text-gray-400 leading-relaxed">You retain access to all recordings and replays so you can review setups whenever you build future projects.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="bg-gray-50 border-y border-gray-200 py-24 reveal">
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-12 text-center">
+            <p class="tw-section-label">FAQ</p>
+            <h2 class="tw-h2">Questions about the advanced program</h2>
+          </div>
+          <div class="faq-wrap">
+            <article class="faq-item">
+              <button class="faq-question" type="button">Do I need to take Prompt to Profit first?</button>
+              <div class="faq-answer"><p>If you have never used AI to build a simple webpage, we highly recommend taking Prompt to Profit first. This advanced course assumes you are ready to learn complex tools like VS Code and work with data.</p></div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">Will this teach me how to code manually?</button>
+              <div class="faq-answer"><p>No. This course teaches you how to act as a "Technical Director." You will learn how to read code structure, navigate a professional environment, and prompt AI to write and fix the actual syntax.</p></div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">What kind of computer do I need?</button>
+              <div class="faq-answer"><p>Any standard Mac or Windows PC from the last few years will work perfectly. You simply need to be able to install VS Code and have a stable internet connection.</p></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white py-24 text-center reveal">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-5xl mb-6">Ready to build real software?</h2>
+          <p class="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">Stop waiting for a technical co-founder. Learn to use the editor and AI tools to build your ideas yourself.</p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a class="tw-btn-primary px-8 bg-blue-600 hover:bg-blue-500 text-lg" href="#ENROL_LINK">Enrol in Prompt to Production</a>
+            <a class="tw-btn-outline px-8 text-lg" href="/courses/installments/?course_slug=prompt-to-production">Start Installment Plan</a>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">Tochukwu Nkwocha</div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-and-conditions">Terms & Conditions</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js"></script>
+  </body>
+</html>

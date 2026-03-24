@@ -5,8 +5,38 @@
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
   const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
-  let activePromptToProfitBatchKey = "ptp-batch-1";
-  let activePromptToProfitBatchStartAt = "";
+  const COURSE_CONFIGS = {
+    "prompt-to-profit": {
+      slug: "prompt-to-profit",
+      name: "Prompt to Profit",
+      landingPath: "/courses/prompt-to-profit",
+      defaultBatchKey: "ptp-batch-1",
+      intro:
+        "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
+    },
+    "prompt-to-production": {
+      slug: "prompt-to-production",
+      name: "Prompt to Production",
+      landingPath: "/courses/prompt-to-production",
+      defaultBatchKey: "ptprod-batch-1",
+      intro:
+        "Secure your seat for the next quarterly cohort. Once payment is confirmed, you will be added to the onboarding list immediately.",
+    },
+  };
+
+  function detectCourseSlug() {
+    const path = String(window.location.pathname || "").toLowerCase();
+    if (path.indexOf("/courses/prompt-to-production") === 0) return "prompt-to-production";
+    return "prompt-to-profit";
+  }
+
+  function currentCourseConfig() {
+    const slug = detectCourseSlug();
+    return COURSE_CONFIGS[slug] || COURSE_CONFIGS["prompt-to-profit"];
+  }
+
+  let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;
+  let activeCourseBatchStartAt = "";
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -129,6 +159,8 @@
 
     const order = await fetchPaidOrderSummary(orderUuid);
     if (!order || !Number.isFinite(Number(order.value)) || !order.currency) return;
+    const courseSlug = String(order.course_slug || "prompt-to-profit");
+    const courseName = (COURSE_CONFIGS[courseSlug] && COURSE_CONFIGS[courseSlug].name) || "Course";
 
     const eventId = `ptp_${orderUuid}`;
     window.fbq(
@@ -137,9 +169,9 @@
       {
         value: Number(order.value),
         currency: String(order.currency).toUpperCase(),
-        content_name: "Prompt to Profit",
+        content_name: courseName,
         content_type: "product",
-        content_ids: [String(order.course_slug || "prompt-to-profit")],
+        content_ids: [courseSlug],
       },
       { eventID: eventId }
     );
@@ -174,7 +206,7 @@
     '  <div class="enrol-modal__backdrop" data-enrol-close></div>',
     '  <div class="enrol-modal__panel" role="dialog" aria-modal="true" aria-labelledby="enrolTitle">',
     '    <button class="enrol-modal__close modal-close" type="button" aria-label="Close dialog" data-enrol-close>&times;</button>',
-    '    <p class="enrol-modal__label">Prompt to Profit</p>',
+    '    <p class="enrol-modal__label" id="enrolCourseLabel">Course</p>',
     '    <h3 id="enrolTitle">Secure your slot now</h3>',
     '    <p class="enrol-modal__intro">Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.</p>',
     '    <p class="enrol-modal__batch-badge" id="enrolActiveBatch">Active Batch: Batch 1</p>',
@@ -190,15 +222,15 @@
     '      <div class="payment-options" id="paymentOptions" role="radiogroup" aria-label="Payment method">',
     '        <button type="button" class="payment-option is-active" data-provider="paystack" role="radio" aria-checked="true">',
     '          <span class="payment-option__title">Paystack</span>',
-    '          <span class="payment-option__meta">N10,000 + 7.5% VAT (Total: N10,750)</span>',
+    '          <span class="payment-option__meta" id="paystackOptionMeta">Pay securely in Naira.</span>',
     "        </button>",
     '        <button type="button" class="payment-option" data-provider="paypal" role="radio" aria-checked="false">',
     '          <span class="payment-option__title">PayPal</span>',
-    '          <span class="payment-option__meta">£20 + 20% VAT (Total: £24)</span>',
+    '          <span class="payment-option__meta" id="paypalOptionMeta">International checkout (PayPal)</span>',
     "        </button>",
     '        <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">',
     '          <span class="payment-option__title">Manual bank transfer</span>',
-    '          <span class="payment-option__meta">Transfer N10,750 and upload proof</span>',
+    '          <span class="payment-option__meta" id="manualOptionMeta">Transfer and upload proof</span>',
     "        </button>",
     "      </div>",
     '      <section id="manualTransferBlock" class="manual-transfer" hidden>',
@@ -225,8 +257,12 @@
   const form = document.getElementById("enrolForm");
   const errorEl = document.getElementById("enrolError");
   const submitBtn = document.getElementById("enrolSubmit");
+  const enrolCourseLabel = document.getElementById("enrolCourseLabel");
   const providerInput = document.getElementById("enrolProvider");
   const paymentOptions = document.querySelectorAll(".payment-option");
+  const paystackOptionMeta = document.getElementById("paystackOptionMeta");
+  const paypalOptionMeta = document.getElementById("paypalOptionMeta");
+  const manualOptionMeta = document.getElementById("manualOptionMeta");
   const manualTransferBlock = document.getElementById("manualTransferBlock");
   const manualBankDetails = document.getElementById("manualBankDetails");
   const manualProofFileInput = document.getElementById("manualProofFile");
@@ -236,7 +272,7 @@
     '  <div class="payment-feedback-modal__backdrop" data-payment-close></div>',
     '  <div class="payment-feedback-modal__panel" role="dialog" aria-modal="true" aria-labelledby="paymentFeedbackTitle">',
     '    <button class="payment-feedback-modal__close modal-close" type="button" aria-label="Close dialog" data-payment-close>&times;</button>',
-    '    <p class="payment-feedback-modal__label">Prompt to Profit</p>',
+    '    <p class="payment-feedback-modal__label" id="paymentFeedbackCourseLabel">Course</p>',
     '    <h3 id="paymentFeedbackTitle"></h3>',
     '    <p id="paymentFeedbackMessage"></p>',
     '    <button class="btn btn-primary" type="button" id="paymentFeedbackBtn">Close</button>',
@@ -249,6 +285,7 @@
   const paymentTitle = document.getElementById("paymentFeedbackTitle");
   const paymentMessage = document.getElementById("paymentFeedbackMessage");
   const paymentCloseBtn = document.getElementById("paymentFeedbackBtn");
+  const paymentFeedbackCourseLabel = document.getElementById("paymentFeedbackCourseLabel");
   const enrolActiveBatchEl = document.getElementById("enrolActiveBatch");
   const enrolIntroEl = document.querySelector(".enrol-modal__intro");
 
@@ -288,25 +325,39 @@
     }).format(date);
   }
 
+  function formatGbpMinor(minor) {
+    const amount = Number(minor || 0) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) return "";
+    return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount);
+  }
+
   function launchScheduleText() {
-    const startDate = parseBatchStart(activePromptToProfitBatchStartAt);
+    const startDate = parseBatchStart(activeCourseBatchStartAt);
     if (!startDate) return "";
     const lagos = formatDayTime(startDate, "Africa/Lagos");
     return `Launch is ${lagos} WAT.`;
   }
 
+  function applyCourseLabels() {
+    const cfg = currentCourseConfig();
+    if (enrolCourseLabel) enrolCourseLabel.textContent = cfg.name;
+    if (paymentFeedbackCourseLabel) paymentFeedbackCourseLabel.textContent = cfg.name;
+  }
+
   function updateLaunchCopy() {
     if (enrolIntroEl) {
+      const cfg = currentCourseConfig();
       const schedule = launchScheduleText();
       enrolIntroEl.textContent = schedule
-        ? `Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch. ${schedule}`
-        : "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.";
+        ? `${cfg.intro} ${schedule}`
+        : cfg.intro;
     }
   }
 
   async function loadActiveBatch() {
     try {
-      const res = await fetch("/.netlify/functions/course-active-batch?course_slug=prompt-to-profit", {
+      const cfg = currentCourseConfig();
+      const res = await fetch(`/.netlify/functions/course-active-batch?course_slug=${encodeURIComponent(cfg.slug)}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -316,10 +367,16 @@
       if (!res.ok || !json || !json.ok || !json.activeBatch) return;
 
       const active = json.activeBatch;
-      if (active && active.batchKey) activePromptToProfitBatchKey = String(active.batchKey);
-      activePromptToProfitBatchStartAt = String((active && active.batchStartAt) || "").trim();
+      if (active && active.batchKey) activeCourseBatchKey = String(active.batchKey);
+      activeCourseBatchStartAt = String((active && active.batchStartAt) || "").trim();
       if (enrolActiveBatchEl && active) {
         enrolActiveBatchEl.textContent = `Active Batch: ${String(active.batchLabel || "Current Batch")}`;
+      }
+      const paypalLabel = formatGbpMinor(active && active.paypalAmountMinor);
+      if (paypalOptionMeta) {
+        paypalOptionMeta.textContent = paypalLabel
+          ? `Pay online (${paypalLabel})`
+          : "International checkout (PayPal)";
       }
       updateLaunchCopy();
     } catch (_error) {
@@ -347,11 +404,19 @@
   }
 
   async function ensureManualConfigLoaded() {
-    if (manualConfigLoaded) return;
+    const cfg = currentCourseConfig();
+    const cacheKey = `${cfg.slug}:${activeCourseBatchKey || ""}`;
+    if (manualConfigLoaded && manualBankDetails && manualBankDetails.getAttribute("data-course-loaded") === cacheKey) {
+      return;
+    }
     manualConfigLoaded = true;
 
     try {
-      const res = await fetch("/.netlify/functions/manual-payment-config", {
+      const params = new URLSearchParams({
+        course_slug: cfg.slug,
+        batch_key: activeCourseBatchKey || "",
+      });
+      const res = await fetch(`/.netlify/functions/manual-payment-config?${params.toString()}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -379,6 +444,9 @@
         `<p><strong>Amount:</strong> ${amountLabel}</p>`,
         note ? `<p class="manual-transfer__note">${note}</p>` : "",
       ].join("");
+      manualBankDetails.setAttribute("data-course-loaded", cacheKey);
+      if (paystackOptionMeta) paystackOptionMeta.textContent = `Pay in full (${amountLabel})`;
+      if (manualOptionMeta) manualOptionMeta.textContent = `Transfer ${amountLabel} and upload proof`;
     } catch (_error) {
       manualBankDetails.innerHTML =
         '<p class="manual-transfer__title">Bank details</p><p>Bank details unavailable. Please try again shortly.</p>';
@@ -443,13 +511,20 @@
   });
 
   setActiveProvider((providerInput && providerInput.value) || "paystack");
+  applyCourseLabels();
   updateLaunchCopy();
 
   function openEnrolModal() {
     if (!modal) return;
-    loadActiveBatch().catch(function () {
-      return null;
-    });
+    loadActiveBatch()
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        ensureManualConfigLoaded().catch(function () {
+          return null;
+        });
+      });
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     const firstInput = document.getElementById("enrolFirstName");
@@ -568,8 +643,8 @@
             firstName,
             email,
             country,
-            courseSlug: "prompt-to-profit",
-            batchKey: activePromptToProfitBatchKey,
+            courseSlug: currentCourseConfig().slug,
+            batchKey: activeCourseBatchKey,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -592,7 +667,14 @@
       const res = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email, country, provider, batchKey: activePromptToProfitBatchKey }),
+        body: JSON.stringify({
+          firstName,
+          email,
+          country,
+          provider,
+          courseSlug: currentCourseConfig().slug,
+          batchKey: activeCourseBatchKey,
+        }),
       });
 
       const json = await res.json().catch(function () {
@@ -615,8 +697,10 @@
   const search = new URLSearchParams(window.location.search);
   const payment = search.get("payment");
   const paidOrderUuid = search.get("order_uuid");
-  const isPromptToProfitPage = window.location.pathname.indexOf("/courses/prompt-to-profit") === 0;
-  if (isPromptToProfitPage) {
+  const isEnrollmentCoursePage =
+    window.location.pathname.indexOf("/courses/prompt-to-profit") === 0 ||
+    window.location.pathname.indexOf("/courses/prompt-to-production") === 0;
+  if (isEnrollmentCoursePage) {
     if (payment === "success" && paidOrderUuid) {
       loadActiveBatch()
         .catch(function () {

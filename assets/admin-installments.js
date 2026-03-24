@@ -3,6 +3,7 @@
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const refreshBtn = document.getElementById("adminRefreshBtn");
   const statusFilter = document.getElementById("adminStatusFilter");
+  const courseFilter = document.getElementById("adminCourseFilter");
   const batchFilter = document.getElementById("adminBatchFilter");
   const searchInput = document.getElementById("adminSearchInput");
   const rowsEl = document.getElementById("adminRows");
@@ -38,6 +39,10 @@
 
   function selectedBatch() {
     return batchFilter ? String(batchFilter.value || "").trim() : "all";
+  }
+
+  function selectedCourse() {
+    return courseFilter ? String(courseFilter.value || "prompt-to-profit").trim() : "prompt-to-profit";
   }
 
   function fmtDate(value) {
@@ -94,6 +99,9 @@
   function renderSummary(summary) {
     latestSummary = summary || null;
     if (!summary) return;
+    if (courseFilter && summary.courseSlug) {
+      courseFilter.value = String(summary.courseSlug || selectedCourse());
+    }
     if (summaryPlansEl) summaryPlansEl.textContent = String(Number(summary.totalPlans || 0));
     if (summaryPaidEl) summaryPaidEl.textContent = String(Number(summary.paidCount || 0));
     if (summaryPendingEl) summaryPendingEl.textContent = String(Number(summary.pendingCount || 0));
@@ -129,6 +137,7 @@
 
   async function loadItems() {
     const qs = new URLSearchParams({
+      course_slug: selectedCourse(),
       status: selectedStatus(),
       batch_key: selectedBatch() || "all",
       search: searchInput ? String(searchInput.value || "").trim() : "",
@@ -192,6 +201,15 @@
     batchFilter.addEventListener("change", function () {
       loadItems().catch(function (error) {
         setMessage(error.message || "Could not filter by batch", "error");
+      });
+    });
+  }
+
+  if (courseFilter) {
+    courseFilter.addEventListener("change", function () {
+      if (batchFilter) batchFilter.value = "all";
+      loadItems().catch(function (error) {
+        setMessage(error.message || "Could not filter by course", "error");
       });
     });
   }

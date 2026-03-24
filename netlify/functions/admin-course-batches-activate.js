@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureCourseBatchesTable, activateCourseBatch } = require("./_lib/batch-store");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -17,18 +18,20 @@ exports.handler = async function (event) {
   }
 
   const batchKey = String(body.batchKey || "").trim();
+  const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
   if (!batchKey) return json(400, { ok: false, error: "batchKey is required" });
 
   const pool = getPool();
   try {
     await ensureCourseBatchesTable(pool);
     const active = await activateCourseBatch(pool, {
-      courseSlug: "prompt-to-profit",
+      courseSlug,
       batchKey,
       batchStartAt: body.batchStartAt,
     });
     return json(200, {
       ok: true,
+      courseSlug,
       activeBatch: active
         ? {
             batchKey: active.batch_key,
@@ -38,6 +41,7 @@ exports.handler = async function (event) {
             batchStartAt: active.batch_start_at || null,
             paystackReferencePrefix: active.paystack_reference_prefix,
             paystackAmountMinor: Number(active.paystack_amount_minor || 0),
+            paypalAmountMinor: Number(active.paypal_amount_minor || 0),
           }
         : null,
     });

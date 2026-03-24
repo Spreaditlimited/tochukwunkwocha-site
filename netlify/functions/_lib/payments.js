@@ -117,9 +117,11 @@ async function paypalAccessToken() {
   return json.access_token;
 }
 
-async function paypalCreateOrder({ amount, currency, customId }) {
+async function paypalCreateOrder({ amount, currency, customId, description, cancelPath }) {
   const token = await paypalAccessToken();
   const baseUrl = siteBaseUrl();
+  const safeCancelPath = String(cancelPath || "/courses/prompt-to-profit").trim();
+  const safeDescription = String(description || "Course pre-enrolment").trim();
 
   const res = await fetch(`${paypalBaseUrl()}/v2/checkout/orders`, {
     method: "POST",
@@ -136,12 +138,12 @@ async function paypalCreateOrder({ amount, currency, customId }) {
             value: amount,
           },
           custom_id: customId,
-          description: "Prompt to Profit pre-enrolment",
+          description: safeDescription,
         },
       ],
       application_context: {
         return_url: `${baseUrl}/.netlify/functions/paypal-return`,
-        cancel_url: `${baseUrl}/courses/prompt-to-profit?payment=cancelled`,
+        cancel_url: `${baseUrl}${safeCancelPath}?payment=cancelled`,
         user_action: "PAY_NOW",
       },
     }),

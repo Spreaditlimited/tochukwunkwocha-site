@@ -1,10 +1,13 @@
 const { nowSql } = require("./db");
+const {
+  DEFAULT_COURSE_SLUG,
+  getCourseConfig,
+  listCourseConfigs,
+  normalizeCourseSlug,
+  getCourseDefaultPaypalMinor,
+} = require("./course-config");
 
-const DEFAULT_COURSE_SLUG = "prompt-to-profit";
-const DEFAULT_BATCH_KEY = "ptp-batch-1";
-const DEFAULT_BATCH_LABEL = "Batch 1";
-const DEFAULT_PREFIX = "PTP";
-const DEFAULT_AMOUNT_MINOR = Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
+const FALLBACK_CONFIG = getCourseConfig(DEFAULT_COURSE_SLUG);
 
 function normalizeBatchKey(value) {
   return String(value || "")
@@ -17,7 +20,7 @@ function normalizeBatchKey(value) {
 }
 
 function normalizePrefix(value) {
-  return String(value || DEFAULT_PREFIX)
+  return String(value || (FALLBACK_CONFIG && FALLBACK_CONFIG.defaultPrefix) || "PTP")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "")
@@ -73,6 +76,7 @@ async function ensureCourseBatchesTable(pool) {
       is_active TINYINT(1) NOT NULL DEFAULT 0,
       paystack_reference_prefix VARCHAR(20) NOT NULL DEFAULT 'PTP',
       paystack_amount_minor INT NOT NULL,
+      paypal_amount_minor INT NOT NULL DEFAULT 2400,
       batch_start_at DATETIME NULL,
       activated_at DATETIME NULL,
       created_at DATETIME NOT NULL,
@@ -85,54 +89,56 @@ async function ensureCourseBatchesTable(pool) {
 
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN activated_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN batch_start_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN paypal_amount_minor INT NOT NULL DEFAULT 2400`);
 
   const now = nowSql();
-  await pool.query(
-    `INSERT INTO course_batches
-      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, activated_at, created_at, updated_at)
-     SELECT ?, ?, ?, 'closed', 1, ?, ?, ?, ?, ?
-     FROM DUAL
-     WHERE NOT EXISTS (
-       SELECT 1 FROM course_batches WHERE course_slug = ? AND batch_key = ?
-     )`,
-    [
-      DEFAULT_COURSE_SLUG,
-      DEFAULT_BATCH_KEY,
-      DEFAULT_BATCH_LABEL,
-      DEFAULT_PREFIX,
-      DEFAULT_AMOUNT_MINOR,
-      now,
-      now,
-      now,
-      DEFAULT_COURSE_SLUG,
-      DEFAULT_BATCH_KEY,
-    ]
-  );
+  const configs = listCourseConfigs();
 
-  const [activeRows] = await pool.query(
-    `SELECT id
-     FROM course_batches
-     WHERE course_slug = ?
-       AND is_active = 1
-     ORDER BY id DESC
-     LIMIT 1`,
-    [DEFAULT_COURSE_SLUG]
-  );
+  for (const cfg of configs) {
+    const slug = normalizeCourseSlug(cfg.slug, DEFAULT_COURSE_SLUG);
+    const batchKey = normalizeBatchKey(cfg.defaultBatchKey || "batch-1");
+    const batchLabel = String(cfg.defaultBatchLabel || "Batch 1").trim().slice(0, 120) || "Batch 1";
+    const prefix = normalizePrefix(cfg.defaultPrefix || "PTP");
+    const amountMinorRaw = Number(cfg.defaultAmountMinor || 0);
+    const amountMinor = Number.isFinite(amountMinorRaw) && amountMinorRaw > 0 ? Math.round(amountMinorRaw) : 1075000;
+    const paypalAmountMinor = getCourseDefaultPaypalMinor(slug);
 
-  if (!activeRows || !activeRows.length) {
     await pool.query(
-      `UPDATE course_batches
-       SET is_active = 1, activated_at = ?, updated_at = ?
-       WHERE course_slug = ?
-       ORDER BY id ASC
-       LIMIT 1`,
-      [now, now, DEFAULT_COURSE_SLUG]
+      `INSERT INTO course_batches
+        (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, paypal_amount_minor, activated_at, created_at, updated_at)
+       SELECT ?, ?, ?, 'closed', 1, ?, ?, ?, ?, ?, ?
+       FROM DUAL
+       WHERE NOT EXISTS (
+         SELECT 1 FROM course_batches WHERE course_slug = ? AND batch_key = ?
+       )`,
+      [slug, batchKey, batchLabel, prefix, amountMinor, paypalAmountMinor, now, now, now, slug, batchKey]
     );
+
+    const [activeRows] = await pool.query(
+      `SELECT id
+       FROM course_batches
+       WHERE course_slug = ?
+         AND is_active = 1
+       ORDER BY id DESC
+       LIMIT 1`,
+      [slug]
+    );
+
+    if (!activeRows || !activeRows.length) {
+      await pool.query(
+        `UPDATE course_batches
+         SET is_active = 1, activated_at = ?, updated_at = ?
+         WHERE course_slug = ?
+         ORDER BY id ASC
+         LIMIT 1`,
+        [now, now, slug]
+      );
+    }
   }
 }
 
 async function listCourseBatches(pool, courseSlug) {
-  const slug = String(courseSlug || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   await ensureCourseBatchesTable(pool);
   const [rows] = await pool.query(
     `SELECT course_slug,
@@ -142,6 +148,7 @@ async function listCourseBatches(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
@@ -155,7 +162,7 @@ async function listCourseBatches(pool, courseSlug) {
 }
 
 async function getCourseBatchByKey(pool, courseSlug, batchKey) {
-  const slug = String(courseSlug || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   const key = normalizeBatchKey(batchKey);
   if (!key) return null;
   await ensureCourseBatchesTable(pool);
@@ -167,6 +174,7 @@ async function getCourseBatchByKey(pool, courseSlug, batchKey) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
@@ -181,7 +189,7 @@ async function getCourseBatchByKey(pool, courseSlug, batchKey) {
 }
 
 async function getActiveCourseBatch(pool, courseSlug) {
-  const slug = String(courseSlug || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   await ensureCourseBatchesTable(pool);
   const [rows] = await pool.query(
     `SELECT course_slug,
@@ -191,6 +199,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
@@ -211,6 +220,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
@@ -225,7 +235,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
 }
 
 async function resolveCourseBatch(pool, { courseSlug, batchKey }) {
-  const slug = String(courseSlug || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   const key = normalizeBatchKey(batchKey);
   if (key && key !== "all") {
     const found = await getCourseBatchByKey(pool, slug, key);
@@ -235,13 +245,17 @@ async function resolveCourseBatch(pool, { courseSlug, batchKey }) {
 }
 
 async function createCourseBatch(pool, input) {
-  const courseSlug = String((input && input.courseSlug) || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const courseSlug = normalizeCourseSlug(input && input.courseSlug, DEFAULT_COURSE_SLUG);
   const batchLabel = String((input && input.batchLabel) || "").trim().slice(0, 120);
   const batchKeyRaw = String((input && input.batchKey) || "").trim();
   const batchKey = normalizeBatchKey(batchKeyRaw || batchLabel);
   const status = String((input && input.status) || "closed").trim().toLowerCase() === "open" ? "open" : "closed";
-  const paystackReferencePrefix = normalizePrefix(input && input.paystackReferencePrefix);
-  const paystackAmountMinor = Number((input && input.paystackAmountMinor) || DEFAULT_AMOUNT_MINOR);
+  const courseConfig = getCourseConfig(courseSlug) || FALLBACK_CONFIG;
+  const paystackReferencePrefix = normalizePrefix((input && input.paystackReferencePrefix) || courseConfig.defaultPrefix);
+  const paystackAmountMinor = Number((input && input.paystackAmountMinor) || courseConfig.defaultAmountMinor || 1075000);
+  const paypalAmountMinor = Number(
+    (input && input.paypalAmountMinor) || getCourseDefaultPaypalMinor(courseSlug)
+  );
   const batchStartAt = normalizeBatchStartAt(input && input.batchStartAt);
 
   if (!batchLabel) throw new Error("Batch label is required");
@@ -249,21 +263,35 @@ async function createCourseBatch(pool, input) {
   if (!Number.isFinite(paystackAmountMinor) || paystackAmountMinor <= 0) {
     throw new Error("Valid paystack amount is required");
   }
+  if (!Number.isFinite(paypalAmountMinor) || paypalAmountMinor <= 0) {
+    throw new Error("Valid paypal amount is required");
+  }
 
   await ensureCourseBatchesTable(pool);
   const now = nowSql();
   await pool.query(
     `INSERT INTO course_batches
-      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, batch_start_at, activated_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 0, ?, ?, ?, NULL, ?, ?)`,
-    [courseSlug, batchKey, batchLabel, status, paystackReferencePrefix, Math.round(paystackAmountMinor), batchStartAt, now, now]
+      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, paypal_amount_minor, batch_start_at, activated_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NULL, ?, ?)`,
+    [
+      courseSlug,
+      batchKey,
+      batchLabel,
+      status,
+      paystackReferencePrefix,
+      Math.round(paystackAmountMinor),
+      Math.round(paypalAmountMinor),
+      batchStartAt,
+      now,
+      now,
+    ]
   );
 
   return getCourseBatchByKey(pool, courseSlug, batchKey);
 }
 
 async function activateCourseBatch(pool, input) {
-  const courseSlug = String((input && input.courseSlug) || DEFAULT_COURSE_SLUG).trim().slice(0, 120) || DEFAULT_COURSE_SLUG;
+  const courseSlug = normalizeCourseSlug(input && input.courseSlug, DEFAULT_COURSE_SLUG);
   const batchKey = normalizeBatchKey(input && input.batchKey);
   if (!batchKey) throw new Error("batchKey is required");
 
@@ -295,6 +323,69 @@ async function activateCourseBatch(pool, input) {
   return getActiveCourseBatch(pool, courseSlug);
 }
 
+async function updateCourseBatch(pool, input) {
+  const courseSlug = normalizeCourseSlug(input && input.courseSlug, DEFAULT_COURSE_SLUG);
+  const batchKey = normalizeBatchKey(input && input.batchKey);
+  if (!batchKey) throw new Error("batchKey is required");
+
+  await ensureCourseBatchesTable(pool);
+  const target = await getCourseBatchByKey(pool, courseSlug, batchKey);
+  if (!target) throw new Error("Batch not found");
+
+  const batchLabel = String((input && input.batchLabel) || target.batch_label || "")
+    .trim()
+    .slice(0, 120);
+  const paystackReferencePrefix = normalizePrefix(
+    (input && input.paystackReferencePrefix) || target.paystack_reference_prefix
+  );
+  const paystackAmountMinorRaw =
+    input && input.paystackAmountMinor !== undefined && input.paystackAmountMinor !== null
+      ? Number(input.paystackAmountMinor)
+      : Number(target.paystack_amount_minor || 0);
+  const paypalAmountMinorRaw =
+    input && input.paypalAmountMinor !== undefined && input.paypalAmountMinor !== null
+      ? Number(input.paypalAmountMinor)
+      : Number(target.paypal_amount_minor || 0);
+  const batchStartAtRaw =
+    input && Object.prototype.hasOwnProperty.call(input, "batchStartAt")
+      ? input.batchStartAt
+      : target.batch_start_at;
+  const batchStartAt = normalizeBatchStartAt(batchStartAtRaw);
+
+  if (!batchLabel) throw new Error("Batch label is required");
+  if (!Number.isFinite(paystackAmountMinorRaw) || paystackAmountMinorRaw <= 0) {
+    throw new Error("Valid paystack amount is required");
+  }
+  if (!Number.isFinite(paypalAmountMinorRaw) || paypalAmountMinorRaw <= 0) {
+    throw new Error("Valid paypal amount is required");
+  }
+
+  const now = nowSql();
+  await pool.query(
+    `UPDATE course_batches
+     SET batch_label = ?,
+         paystack_reference_prefix = ?,
+         paystack_amount_minor = ?,
+         paypal_amount_minor = ?,
+         batch_start_at = ?,
+         updated_at = ?
+     WHERE course_slug = ?
+       AND batch_key = ?`,
+    [
+      batchLabel,
+      paystackReferencePrefix,
+      Math.round(paystackAmountMinorRaw),
+      Math.round(paypalAmountMinorRaw),
+      batchStartAt,
+      now,
+      courseSlug,
+      batchKey,
+    ]
+  );
+
+  return getCourseBatchByKey(pool, courseSlug, batchKey);
+}
+
 module.exports = {
   DEFAULT_COURSE_SLUG,
   normalizeBatchKey,
@@ -305,4 +396,5 @@ module.exports = {
   resolveCourseBatch,
   createCourseBatch,
   activateCourseBatch,
+  updateCourseBatch,
 };

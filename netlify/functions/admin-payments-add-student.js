@@ -5,6 +5,7 @@ const { ensureManualPaymentsTable, createManualPayment, reviewManualPayment, mar
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -31,6 +32,7 @@ exports.handler = async function (event) {
   const adminNote = String(body.adminNote || "").trim().slice(0, 500);
   const proofUrl = String(body.proofUrl || "").trim();
   const proofPublicId = String(body.proofPublicId || "").trim().slice(0, 255);
+  const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
 
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and valid email are required" });
@@ -42,21 +44,21 @@ exports.handler = async function (event) {
     await ensureManualPaymentsTable(pool);
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
-    const batch = await resolveCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey: body.batchKey });
+    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
-    const amountMinor = Number(batch.paystack_amount_minor || process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
+    const amountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
     const currency = "NGN";
 
     const [existingManual] = await pool.query(
       `SELECT id
        FROM course_manual_payments
-       WHERE course_slug = 'prompt-to-profit'
+       WHERE course_slug = ?
          AND batch_key = ?
          AND email = ?
          AND status = 'approved'
        ORDER BY id DESC
        LIMIT 1`,
-      [batch.batch_key, email]
+      [courseSlug, batch.batch_key, email]
     );
     if (existingManual && existingManual.length) {
       return json(409, {
@@ -68,13 +70,13 @@ exports.handler = async function (event) {
     const [existingOrder] = await pool.query(
       `SELECT id
        FROM course_orders
-       WHERE course_slug = 'prompt-to-profit'
+       WHERE course_slug = ?
          AND batch_key = ?
          AND email = ?
          AND status = 'paid'
        ORDER BY id DESC
        LIMIT 1`,
-      [batch.batch_key, email]
+      [courseSlug, batch.batch_key, email]
     );
     if (existingOrder && existingOrder.length) {
       return json(409, {
@@ -84,7 +86,7 @@ exports.handler = async function (event) {
     }
 
     const paymentUuid = await createManualPayment(pool, {
-      courseSlug: "prompt-to-profit",
+      courseSlug,
       batchKey: batch.batch_key,
       batchLabel: batch.batch_label,
       firstName,

@@ -2,12 +2,14 @@
   const appCard = document.getElementById("adminAppCard");
   const internalShell = document.getElementById("internalShell");
 
+  const courseFilter = document.getElementById("adminCourseFilter");
   const statusFilter = document.getElementById("adminStatusFilter");
   const batchFilter = document.getElementById("adminBatchFilter");
   const searchInput = document.getElementById("adminSearchInput");
   const reconcileBtn = document.getElementById("adminReconcileBtn");
   const addStudentBtn = document.getElementById("adminAddStudentBtn");
   const createBatchBtn = document.getElementById("adminCreateBatchBtn");
+  const editBatchBtn = document.getElementById("adminEditBatchBtn");
   const activateBatchBtn = document.getElementById("adminActivateBatchBtn");
   const activateBatchSelect = document.getElementById("adminActivateBatchSelect");
   const batchStartInput = document.getElementById("adminBatchStartAt");
@@ -42,10 +44,18 @@
   const createBatchForm = document.getElementById("createBatchForm");
   const createBatchError = document.getElementById("createBatchError");
   const createBatchSubmitBtn = document.getElementById("createBatchSubmitBtn");
+  const editBatchModal = document.getElementById("editBatchModal");
+  const editBatchForm = document.getElementById("editBatchForm");
+  const editBatchError = document.getElementById("editBatchError");
+  const editBatchSubmitBtn = document.getElementById("editBatchSubmitBtn");
 
   let debounceTimer = null;
   let pendingReviewAction = null;
   let latestBatches = [];
+  const COURSE_DEFAULTS = {
+    "prompt-to-profit": { prefix: "PTP", amountMinor: 1075000, paypalAmountMinor: 2400 },
+    "prompt-to-production": { prefix: "PTPROD", amountMinor: 25000000, paypalAmountMinor: 2400 },
+  };
 
   function redirectToInternalSignIn() {
     const next = `${window.location.pathname}${window.location.search || ""}`;
@@ -74,6 +84,12 @@
   function selectedBatchKey() {
     if (!batchFilter) return "";
     return String(batchFilter.value || "").trim();
+  }
+
+  function selectedCourseSlug() {
+    if (!courseFilter) return "prompt-to-profit";
+    const value = String(courseFilter.value || "").trim();
+    return value || "prompt-to-profit";
   }
 
   function statusLabel(status) {
@@ -166,6 +182,16 @@
     }
     createBatchModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
+    if (createBatchForm) {
+      const defaults = COURSE_DEFAULTS[selectedCourseSlug()] || COURSE_DEFAULTS["prompt-to-profit"];
+      if (createBatchForm.paystackReferencePrefix) createBatchForm.paystackReferencePrefix.value = defaults.prefix;
+      if (createBatchForm.paystackAmountMinor) {
+        createBatchForm.paystackAmountMinor.value = String(defaults.amountMinor);
+      }
+      if (createBatchForm.paypalAmountMinor) {
+        createBatchForm.paypalAmountMinor.value = String(defaults.paypalAmountMinor);
+      }
+    }
     if (createBatchForm && createBatchForm.batchLabel) createBatchForm.batchLabel.focus();
   }
 
@@ -178,6 +204,48 @@
       createBatchError.classList.add("hidden");
     }
     if (createBatchForm) createBatchForm.reset();
+  }
+
+  function openEditBatchModal() {
+    if (!editBatchModal || !editBatchForm) return;
+    if (editBatchError) {
+      editBatchError.textContent = "";
+      editBatchError.classList.add("hidden");
+    }
+    const batchKey = String((activateBatchSelect && activateBatchSelect.value) || "").trim();
+    const selected = batchByKey(batchKey);
+    if (!selected) {
+      setMessage("Select a batch first.", "error");
+      return;
+    }
+    if (editBatchForm.batchKey) editBatchForm.batchKey.value = String(selected.batchKey || "");
+    if (editBatchForm.batchLabel) editBatchForm.batchLabel.value = String(selected.batchLabel || "");
+    if (editBatchForm.paystackReferencePrefix) {
+      editBatchForm.paystackReferencePrefix.value = String(selected.paystackReferencePrefix || "");
+    }
+    if (editBatchForm.paystackAmountMinor) {
+      editBatchForm.paystackAmountMinor.value = String(Number(selected.paystackAmountMinor || 0) || "");
+    }
+    if (editBatchForm.paypalAmountMinor) {
+      editBatchForm.paypalAmountMinor.value = String(Number(selected.paypalAmountMinor || 0) || "");
+    }
+    if (editBatchForm.batchStartAt) {
+      editBatchForm.batchStartAt.value = toDatetimeLocalValue(selected.batchStartAt || "");
+    }
+    editBatchModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (editBatchForm.batchLabel) editBatchForm.batchLabel.focus();
+  }
+
+  function closeEditBatchModal() {
+    if (!editBatchModal) return;
+    editBatchModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (editBatchError) {
+      editBatchError.textContent = "";
+      editBatchError.classList.add("hidden");
+    }
+    if (editBatchForm) editBatchForm.reset();
   }
 
   function normalizeBatchStartText(value) {
@@ -367,7 +435,7 @@
   }
 
   async function loadCourseBatches() {
-    const res = await fetch("/.netlify/functions/admin-course-batches-list?course_slug=prompt-to-profit", {
+    const res = await fetch(`/.netlify/functions/admin-course-batches-list?course_slug=${encodeURIComponent(selectedCourseSlug())}`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
@@ -389,6 +457,10 @@
 
   function renderSummary(summary) {
     if (!summary) return;
+
+    if (courseFilter && summary.courseSlug) {
+      courseFilter.value = String(summary.courseSlug).trim() || selectedCourseSlug();
+    }
 
     const courseName = String(summary.courseName || "Prompt to Profit").trim();
     const batchLabel = String(summary.batchLabel || "Batch 1").trim();
@@ -435,6 +507,7 @@
     const batchKey = selectedBatchKey();
     const search = searchInput ? searchInput.value.trim() : "";
     const qs = new URLSearchParams({
+      course_slug: selectedCourseSlug(),
       status,
       search,
       limit: "100",
@@ -463,7 +536,9 @@
     const items = Array.isArray(json.items) ? json.items : [];
     const summaryObj = json.summary || null;
     const summaryBatches = summaryObj && Array.isArray(summaryObj.availableBatches) ? summaryObj.availableBatches : [];
-    if (summaryBatches.length) latestBatches = summaryBatches;
+    if (!latestBatches.length && summaryBatches.length) {
+      latestBatches = summaryBatches;
+    }
     renderSummary(summaryObj);
     renderBatchOptions(summaryObj);
     const reconcile = json.reconcile && typeof json.reconcile === "object" ? json.reconcile : null;
@@ -569,6 +644,18 @@
     });
   }
 
+  if (editBatchBtn) {
+    editBatchBtn.addEventListener("click", function () {
+      openEditBatchModal();
+    });
+  }
+
+  if (editBatchModal) {
+    editBatchModal.querySelectorAll("[data-edit-batch-close]").forEach(function (el) {
+      el.addEventListener("click", closeEditBatchModal);
+    });
+  }
+
   if (createBatchForm) {
     createBatchForm.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -586,6 +673,9 @@
         paystackAmountMinor: Number(
           String((createBatchForm.paystackAmountMinor && createBatchForm.paystackAmountMinor.value) || "").trim()
         ),
+        paypalAmountMinor: Number(
+          String((createBatchForm.paypalAmountMinor && createBatchForm.paypalAmountMinor.value) || "").trim()
+        ),
         batchStartAt:
           normalizeBatchStartText(String((createBatchForm.batchStartAt && createBatchForm.batchStartAt.value) || "").trim()) ||
           null,
@@ -593,6 +683,20 @@
       if (!payload.batchLabel) {
         if (createBatchError) {
           createBatchError.textContent = "Batch label is required.";
+          createBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (!Number.isFinite(payload.paystackAmountMinor) || payload.paystackAmountMinor <= 0) {
+        if (createBatchError) {
+          createBatchError.textContent = "Enter a valid Paystack amount in minor units.";
+          createBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (!Number.isFinite(payload.paypalAmountMinor) || payload.paypalAmountMinor <= 0) {
+        if (createBatchError) {
+          createBatchError.textContent = "Enter a valid PayPal amount in minor units.";
           createBatchError.classList.remove("hidden");
         }
         return;
@@ -606,7 +710,7 @@
         const res = await fetch("/.netlify/functions/admin-course-batches-create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(Object.assign({}, payload, { courseSlug: selectedCourseSlug() })),
         });
         const json = await res.json().catch(function () {
           return null;
@@ -632,6 +736,84 @@
     });
   }
 
+  if (editBatchForm) {
+    editBatchForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (editBatchError) {
+        editBatchError.textContent = "";
+        editBatchError.classList.add("hidden");
+      }
+      const payload = {
+        batchKey: String((editBatchForm.batchKey && editBatchForm.batchKey.value) || "").trim(),
+        batchLabel: String((editBatchForm.batchLabel && editBatchForm.batchLabel.value) || "").trim(),
+        paystackReferencePrefix: String(
+          (editBatchForm.paystackReferencePrefix && editBatchForm.paystackReferencePrefix.value) || ""
+        ).trim(),
+        paystackAmountMinor: Number(
+          String((editBatchForm.paystackAmountMinor && editBatchForm.paystackAmountMinor.value) || "").trim()
+        ),
+        paypalAmountMinor: Number(
+          String((editBatchForm.paypalAmountMinor && editBatchForm.paypalAmountMinor.value) || "").trim()
+        ),
+        batchStartAt:
+          normalizeBatchStartText(String((editBatchForm.batchStartAt && editBatchForm.batchStartAt.value) || "").trim()) ||
+          null,
+      };
+      if (!payload.batchKey || !payload.batchLabel) {
+        if (editBatchError) {
+          editBatchError.textContent = "Batch key and label are required.";
+          editBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (!Number.isFinite(payload.paystackAmountMinor) || payload.paystackAmountMinor <= 0) {
+        if (editBatchError) {
+          editBatchError.textContent = "Enter a valid amount in minor units.";
+          editBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (!Number.isFinite(payload.paypalAmountMinor) || payload.paypalAmountMinor <= 0) {
+        if (editBatchError) {
+          editBatchError.textContent = "Enter a valid PayPal amount in minor units.";
+          editBatchError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (editBatchSubmitBtn) {
+        editBatchSubmitBtn.disabled = true;
+        editBatchSubmitBtn.textContent = "Saving...";
+      }
+      try {
+        const res = await fetch("/.netlify/functions/admin-course-batches-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({}, payload, { courseSlug: selectedCourseSlug() })),
+        });
+        const json = await res.json().catch(function () {
+          return null;
+        });
+        if (!res.ok || !json || !json.ok) {
+          throw new Error((json && json.error) || "Could not update batch");
+        }
+        closeEditBatchModal();
+        await loadCourseBatches();
+        await loadItems({ reconcile: false });
+        setMessage("Batch updated successfully.", "ok");
+      } catch (error) {
+        if (editBatchError) {
+          editBatchError.textContent = error.message || "Could not update batch";
+          editBatchError.classList.remove("hidden");
+        }
+      } finally {
+        if (editBatchSubmitBtn) {
+          editBatchSubmitBtn.disabled = false;
+          editBatchSubmitBtn.textContent = "Save Changes";
+        }
+      }
+    });
+  }
+
   if (activateBatchBtn) {
     activateBatchBtn.addEventListener("click", async function () {
       const batchKey = String((activateBatchSelect && activateBatchSelect.value) || "").trim();
@@ -648,7 +830,7 @@
         const res = await fetch("/.netlify/functions/admin-course-batches-activate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ batchKey, batchStartAt }),
+          body: JSON.stringify({ courseSlug: selectedCourseSlug(), batchKey, batchStartAt }),
         });
         const json = await res.json().catch(function () {
           return null;
@@ -715,7 +897,7 @@
         const res = await fetch("/.netlify/functions/admin-payments-add-student", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(Object.assign({}, payload, { courseSlug: selectedCourseSlug() })),
         });
         const json = await res.json().catch(function () {
           return null;
@@ -775,6 +957,19 @@
     });
   }
 
+  if (courseFilter) {
+    courseFilter.addEventListener("change", function () {
+      if (batchFilter) batchFilter.value = "all";
+      loadCourseBatches()
+        .then(function () {
+          return loadItems({ reconcile: false });
+        })
+        .catch(function (error) {
+          setMessage(error.message || "Could not filter by course", "error");
+        });
+    });
+  }
+
   if (rowsEl) {
     rowsEl.addEventListener("click", function (event) {
       const btn = event.target.closest("button[data-action]");
@@ -830,6 +1025,9 @@
     }
     if (event.key === "Escape" && createBatchModal && createBatchModal.getAttribute("aria-hidden") === "false") {
       closeCreateBatchModal();
+    }
+    if (event.key === "Escape" && editBatchModal && editBatchModal.getAttribute("aria-hidden") === "false") {
+      closeEditBatchModal();
     }
   });
 

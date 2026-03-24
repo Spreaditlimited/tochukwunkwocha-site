@@ -1,6 +1,7 @@
 const { getPool } = require("./_lib/db");
 const { siteBaseUrl, paystackVerifyTransaction } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
+const { getCourseLandingPath, normalizeCourseSlug } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") {
@@ -14,9 +15,10 @@ exports.handler = async function (event) {
   const reference = String(qs.reference || qs.trxref || "").trim();
 
   if (!reference) {
+    const fallbackPath = getCourseLandingPath("prompt-to-profit");
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=failed` },
+      headers: { Location: `${siteBaseUrl()}${fallbackPath}?payment=failed` },
       body: "",
     };
   }
@@ -26,14 +28,16 @@ exports.handler = async function (event) {
     const status = String(tx.status || "").toLowerCase();
 
     if (status !== "success") {
+      const txCourseSlug = normalizeCourseSlug(tx && tx.metadata && tx.metadata.course_slug, "prompt-to-profit");
       return {
         statusCode: 302,
-        headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=failed` },
+        headers: { Location: `${siteBaseUrl()}${getCourseLandingPath(txCourseSlug)}?payment=failed` },
         body: "",
       };
     }
 
-    const orderUuid = tx.metadata && tx.metadata.order_uuid ? String(tx.metadata.order_uuid) : null;
+    const txCourseSlug = normalizeCourseSlug(tx && tx.metadata && tx.metadata.course_slug, "prompt-to-profit");
+    const orderUuid = tx && tx.metadata && tx.metadata.order_uuid ? String(tx.metadata.order_uuid) : null;
 
     const pool = getPool();
     const result = await markOrderPaidBy({
@@ -46,13 +50,18 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=success${result.orderUuid ? `&order_uuid=${encodeURIComponent(result.orderUuid)}` : ''}` },
+      headers: {
+        Location: `${siteBaseUrl()}${getCourseLandingPath(result.courseSlug || txCourseSlug)}?payment=success${
+          result.orderUuid ? `&order_uuid=${encodeURIComponent(result.orderUuid)}` : ""
+        }`,
+      },
       body: "",
     };
   } catch (_error) {
+    const fallbackPath = getCourseLandingPath("prompt-to-profit");
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/courses/prompt-to-profit?payment=failed` },
+      headers: { Location: `${siteBaseUrl()}${fallbackPath}?payment=failed` },
       body: "",
     };
   }

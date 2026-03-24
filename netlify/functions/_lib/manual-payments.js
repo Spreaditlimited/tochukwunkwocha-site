@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
 const { listCourseBatches, getCourseBatchByKey, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName } = require("./course-config");
 
 const STATUS_PENDING = "pending_verification";
 const STATUS_APPROVED = "approved";
@@ -220,7 +221,8 @@ function normalizeQueueStatusForOrder(rawStatus) {
   return "";
 }
 
-async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
+async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batchKey }) {
+  const desiredCourseSlug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   const desiredStatus = String(status || "").trim().toLowerCase();
   const desiredBatchKey = normalizeBatchKey(batchKey || "");
   const q = String(search || "").trim();
@@ -251,7 +253,8 @@ async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
     FROM course_manual_payments
   `;
   const manualParams = [];
-  const manualWhere = [];
+  const manualWhere = ["course_slug = ?"];
+  manualParams.push(desiredCourseSlug);
   if (desiredStatus && desiredStatus !== "all") {
     manualWhere.push("status = ?");
     manualParams.push(desiredStatus);
@@ -291,10 +294,11 @@ async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
              created_at AS created_at,
              updated_at AS updated_at
       FROM course_orders
-      WHERE status = 'paid'
+      WHERE course_slug = ?
+        AND status = 'paid'
         AND (provider IS NULL OR provider <> 'wallet_installment')
     `;
-    const orderParams = [];
+    const orderParams = [desiredCourseSlug];
     if (desiredBatchKey && desiredBatchKey !== "all") {
       orderSql += " AND batch_key = ?";
       orderParams.push(desiredBatchKey);
@@ -374,10 +378,11 @@ async function listPaymentsQueue(pool, { status, search, limit, batchKey }) {
 
 async function getPaymentsQueueSummary(pool, opts) {
   await ensureCourseBatchesTable(pool);
+  const courseSlug = normalizeCourseSlug(opts && opts.courseSlug, DEFAULT_COURSE_SLUG);
   const desiredBatchKey = normalizeBatchKey((opts && opts.batchKey) || "");
   const scopedBatch = desiredBatchKey && desiredBatchKey !== "all" ? desiredBatchKey : "";
-  const availableBatches = await listCourseBatches(pool, "prompt-to-profit");
-  const batchConfig = scopedBatch ? await getCourseBatchByKey(pool, "prompt-to-profit", scopedBatch) : null;
+  const availableBatches = await listCourseBatches(pool, courseSlug);
+  const batchConfig = scopedBatch ? await getCourseBatchByKey(pool, courseSlug, scopedBatch) : null;
 
   const manualBatchClause = scopedBatch ? " AND batch_key = ? " : "";
   const manualBatchParams = scopedBatch ? [scopedBatch] : [];
@@ -387,36 +392,36 @@ async function getPaymentsQueueSummary(pool, opts) {
   const [manualApprovedRows] = await pool.query(
     `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_manual_payments
-     WHERE course_slug = 'prompt-to-profit'
+     WHERE course_slug = ?
        AND status = 'approved'
        ${manualBatchClause}
      GROUP BY currency`,
-    manualBatchParams
+    [courseSlug].concat(manualBatchParams)
   );
   const [manualPendingRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
-     WHERE course_slug = 'prompt-to-profit'
+     WHERE course_slug = ?
        AND status = 'pending_verification'
        ${manualBatchClause}`,
-    manualBatchParams
+    [courseSlug].concat(manualBatchParams)
   );
   const [manualAllRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
-     WHERE course_slug = 'prompt-to-profit'
+     WHERE course_slug = ?
        ${manualBatchClause}`,
-    manualBatchParams
+    [courseSlug].concat(manualBatchParams)
   );
   const [paidOrderRows] = await pool.query(
     `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_orders
-     WHERE course_slug = 'prompt-to-profit'
+     WHERE course_slug = ?
        AND status = 'paid'
        AND (provider IS NULL OR provider <> 'wallet_installment')
        ${ordersBatchClause}
      GROUP BY currency, provider`,
-    ordersBatchParams
+    [courseSlug].concat(ordersBatchParams)
   );
 
   const totalsByCurrency = {};
@@ -457,7 +462,8 @@ async function getPaymentsQueueSummary(pool, opts) {
   const totalRegistrations = manualAllCount + paidOrderCount;
 
   return {
-    courseName: "Prompt to Profit",
+    courseName: getCourseName(courseSlug),
+    courseSlug,
     batchKey: scopedBatch || "all",
     batchLabel: batchConfig ? batchConfig.batch_label : "All Batches",
     registrationStatus: batchConfig ? (String(batchConfig.status || "").toLowerCase() === "open" ? "Open" : "Closed") : "Mixed",
@@ -474,6 +480,9 @@ async function getPaymentsQueueSummary(pool, opts) {
         status: item.status,
         isActive: Number(item.is_active || 0) === 1,
         batchStartAt: item.batch_start_at || null,
+        paystackReferencePrefix: item.paystack_reference_prefix || "",
+        paystackAmountMinor: Number(item.paystack_amount_minor || 0),
+        paypalAmountMinor: Number(item.paypal_amount_minor || 0),
       };
     }),
   };

@@ -12,6 +12,7 @@
 
   const logoutBtn = document.getElementById("walletLogoutBtn");
   const accountMeta = document.getElementById("walletAccountMeta");
+  const courseSelect = document.getElementById("walletCourse");
   const batchSelect = document.getElementById("walletBatch");
   const createPlanForm = document.getElementById("walletCreatePlanForm");
   const createPlanBtn = document.getElementById("walletCreatePlanBtn");
@@ -20,6 +21,10 @@
 
   let dashboard = null;
   let authMode = "signin";
+
+  function selectedCourseSlug() {
+    return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
+  }
 
   function setWalletState(isAuthenticated) {
     const showPlan = !!isAuthenticated;
@@ -134,7 +139,8 @@
   }
 
   async function loadBatches() {
-    const json = await api("/.netlify/functions/installment-batches?course_slug=prompt-to-profit", {
+    const courseSlug = selectedCourseSlug();
+    const json = await api(`/.netlify/functions/installment-batches?course_slug=${encodeURIComponent(courseSlug)}`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
@@ -243,7 +249,7 @@
       await api("/.netlify/functions/installment-plan-create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseSlug: "prompt-to-profit", batchKey }),
+        body: JSON.stringify({ courseSlug: selectedCourseSlug(), batchKey }),
       });
       await loadDashboard();
       setMsg(planMsg, "Plan ready. Start paying in parts.", "ok");
@@ -342,6 +348,14 @@
     });
   }
 
+  if (courseSelect) {
+    courseSelect.addEventListener("change", function () {
+      loadBatches().catch(function (error) {
+        setMsg(planMsg, error.message || "Could not load batches", "error");
+      });
+    });
+  }
+
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async function () {
       await fetch("/.netlify/functions/student-auth-logout", { method: "POST", credentials: "include" }).catch(function () {
@@ -399,6 +413,13 @@
   }
 
   const qs = new URLSearchParams(window.location.search);
+  const preselectedCourse = String(qs.get("course_slug") || "").trim().toLowerCase();
+  if (courseSelect && preselectedCourse) {
+    const valid = Array.from(courseSelect.options).some(function (opt) {
+      return String(opt.value || "").trim() === preselectedCourse;
+    });
+    if (valid) courseSelect.value = preselectedCourse;
+  }
   const payment = String(qs.get("payment") || "").trim().toLowerCase();
   if (payment === "success") setMsg(planMsg, "Installment payment successful.", "ok");
   if (payment === "failed") setMsg(planMsg, "Installment payment failed.", "error");

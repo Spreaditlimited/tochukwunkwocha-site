@@ -4,6 +4,13 @@ const { getPool } = require("./_lib/db");
 const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const {
+  DEFAULT_COURSE_SLUG,
+  normalizeCourseSlug,
+  getCourseConfig,
+  getCourseDefaultAmountMinor,
+  getCourseDefaultPaypalMinor,
+} = require("./_lib/course-config");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -21,13 +28,14 @@ function normalizeCountry(value) {
   return String(value || "").trim().slice(0, 120);
 }
 
-function priceConfig(provider) {
-  const ngnMinor = Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
-  const gbp = String(process.env.PROMPT_TO_PROFIT_PRICE_GBP || "24.00");
+function priceConfig({ provider, courseSlug, batch }) {
+  const ngnMinor = Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
+  const paypalMinor = Number((batch && batch.paypal_amount_minor) || getCourseDefaultPaypalMinor(courseSlug));
+  const gbp = (paypalMinor / 100).toFixed(2);
   if (provider === "paystack") {
     return { currency: "NGN", amountMinor: ngnMinor, amountDisplay: (ngnMinor / 100).toFixed(2) };
   }
-  return { currency: "GBP", amountMinor: Math.round(Number(gbp) * 100), amountDisplay: gbp };
+  return { currency: "GBP", amountMinor: paypalMinor, amountDisplay: gbp };
 }
 
 exports.handler = async function (event) {
@@ -44,6 +52,8 @@ exports.handler = async function (event) {
   const email = normalizeEmail(body.email);
   const country = normalizeCountry(body.country);
   const provider = normalizeProvider(body.provider, country);
+  const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
+  const courseConfig = getCourseConfig(courseSlug);
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and valid email are required" });
   }
@@ -53,21 +63,21 @@ exports.handler = async function (event) {
   }
 
   const orderUuid = crypto.randomUUID();
-  const price = priceConfig(provider);
 
   const pool = getPool();
 
   try {
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
-    const batch = await resolveCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey: body.batchKey });
+    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
+    const price = priceConfig({ provider, courseSlug, batch });
 
     await pool.query(
       `INSERT INTO course_orders
        (order_uuid, course_slug, first_name, email, country, currency, amount_minor, provider, status, batch_key, batch_label)
-       VALUES (?, 'prompt-to-profit', ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      [orderUuid, firstName, email, country || null, price.currency, price.amountMinor, provider, batch.batch_key, batch.batch_label]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      [orderUuid, courseSlug, firstName, email, country || null, price.currency, price.amountMinor, provider, batch.batch_key, batch.batch_label]
     );
 
     if (provider === "paystack") {
@@ -80,7 +90,7 @@ exports.handler = async function (event) {
         metadata: {
           order_uuid: orderUuid,
           first_name: firstName,
-          course_slug: "prompt-to-profit",
+          course_slug: courseSlug,
           batch_key: batch.batch_key,
           batch_label: batch.batch_label,
         },
@@ -105,6 +115,8 @@ exports.handler = async function (event) {
       amount: price.amountDisplay,
       currency: price.currency,
       customId: orderUuid,
+      description: `${String((courseConfig && courseConfig.name) || "Course")} pre-enrolment`,
+      cancelPath: String((courseConfig && courseConfig.landingPath) || "/courses/prompt-to-profit"),
     });
 
     await pool.query(

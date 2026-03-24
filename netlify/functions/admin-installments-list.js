@@ -4,6 +4,7 @@ const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureStudentAuthTables } = require("./_lib/student-auth");
 const { ensureInstallmentTables } = require("./_lib/installments");
 const { ensureCourseBatchesTable, listCourseBatches, normalizeBatchKey } = require("./_lib/batch-store");
+const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -17,6 +18,7 @@ exports.handler = async function (event) {
   const limit = Math.max(1, Math.min(Number(qs.limit || 100), 300));
   const batchKeyRaw = String(qs.batch_key || "").trim();
   const batchKey = normalizeBatchKey(batchKeyRaw);
+  const courseSlug = normalizeCourseSlug(qs.course_slug, DEFAULT_COURSE_SLUG);
 
   if (!["all", "paid"].includes(status)) {
     return json(400, { ok: false, error: "Invalid status" });
@@ -49,10 +51,10 @@ exports.handler = async function (event) {
       FROM student_installment_payments ip
       JOIN student_installment_plans pl ON pl.id = ip.plan_id
       LEFT JOIN student_accounts sa ON sa.id = pl.account_id
-      WHERE pl.course_slug = 'prompt-to-profit'
+      WHERE pl.course_slug = ?
         AND ip.status = 'paid'
     `;
-    const params = [];
+    const params = [courseSlug];
 
     if (batchKey && batchKey !== "all") {
       sql += " AND pl.batch_key = ?";
@@ -73,11 +75,11 @@ exports.handler = async function (event) {
       `SELECT ip.status, ip.currency, COUNT(*) AS c, COALESCE(SUM(ip.amount_minor), 0) AS t
        FROM student_installment_payments ip
        JOIN student_installment_plans pl ON pl.id = ip.plan_id
-       WHERE pl.course_slug = 'prompt-to-profit'
+       WHERE pl.course_slug = ?
          AND ip.status = 'paid'
          ${batchKey && batchKey !== "all" ? " AND pl.batch_key = ? " : ""}
        GROUP BY ip.status, ip.currency`,
-      batchKey && batchKey !== "all" ? [batchKey] : []
+      [courseSlug].concat(batchKey && batchKey !== "all" ? [batchKey] : [])
     );
 
     const totalsByCurrency = {};
@@ -98,24 +100,24 @@ exports.handler = async function (event) {
     const [planRows] = await pool.query(
       `SELECT COUNT(*) AS c
        FROM student_installment_plans
-       WHERE course_slug = 'prompt-to-profit'
+       WHERE course_slug = ?
          ${batchKey && batchKey !== "all" ? " AND batch_key = ? " : ""}`,
-      batchKey && batchKey !== "all" ? [batchKey] : []
+      [courseSlug].concat(batchKey && batchKey !== "all" ? [batchKey] : [])
     );
     const totalPlans = Number(planRows && planRows[0] ? planRows[0].c : 0);
 
     const [plansInProgressRows] = await pool.query(
       `SELECT COUNT(*) AS c
        FROM student_installment_plans
-       WHERE course_slug = 'prompt-to-profit'
+       WHERE course_slug = ?
          AND status = 'open'
          AND COALESCE(total_paid_minor, 0) < COALESCE(target_amount_minor, 0)
          ${batchKey && batchKey !== "all" ? " AND batch_key = ? " : ""}`,
-      batchKey && batchKey !== "all" ? [batchKey] : []
+      [courseSlug].concat(batchKey && batchKey !== "all" ? [batchKey] : [])
     );
     pendingCount = Number(plansInProgressRows && plansInProgressRows[0] ? plansInProgressRows[0].c : 0);
 
-    const availableBatches = await listCourseBatches(pool, "prompt-to-profit");
+    const availableBatches = await listCourseBatches(pool, courseSlug);
 
     return json(200, {
       ok: true,
@@ -145,6 +147,8 @@ exports.handler = async function (event) {
         };
       }),
       summary: {
+        courseSlug,
+        courseName: getCourseName(courseSlug),
         paidCount,
         pendingCount,
         totalPlans,

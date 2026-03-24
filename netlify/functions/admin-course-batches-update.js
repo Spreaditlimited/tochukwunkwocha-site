@@ -1,7 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { ensureCourseBatchesTable, createCourseBatch } = require("./_lib/batch-store");
+const { ensureCourseBatchesTable, updateCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./_lib/course-config");
 
 exports.handler = async function (event) {
@@ -17,37 +17,39 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "Invalid JSON body" });
   }
 
+  const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
+  const batchKey = String(body.batchKey || "").trim();
+  if (!batchKey) return json(400, { ok: false, error: "batchKey is required" });
+
   const pool = getPool();
   try {
-    const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
     await ensureCourseBatchesTable(pool);
-    const created = await createCourseBatch(pool, {
+    const updated = await updateCourseBatch(pool, {
       courseSlug,
+      batchKey,
       batchLabel: body.batchLabel,
-      batchKey: body.batchKey,
-      status: body.status || "closed",
-      batchStartAt: body.batchStartAt,
       paystackReferencePrefix: body.paystackReferencePrefix,
       paystackAmountMinor: body.paystackAmountMinor,
       paypalAmountMinor: body.paypalAmountMinor,
+      batchStartAt: body.batchStartAt,
     });
     return json(200, {
       ok: true,
       courseSlug,
-      batch: {
-        batchKey: created.batch_key,
-        batchLabel: created.batch_label,
-        status: created.status,
-        isActive: Number(created.is_active || 0) === 1,
-        batchStartAt: created.batch_start_at || null,
-        paystackReferencePrefix: created.paystack_reference_prefix,
-        paystackAmountMinor: Number(created.paystack_amount_minor || 0),
-        paypalAmountMinor: Number(created.paypal_amount_minor || 0),
-      },
+      batch: updated
+        ? {
+            batchKey: updated.batch_key,
+            batchLabel: updated.batch_label,
+            status: updated.status,
+            isActive: Number(updated.is_active || 0) === 1,
+            batchStartAt: updated.batch_start_at || null,
+            paystackReferencePrefix: updated.paystack_reference_prefix,
+            paystackAmountMinor: Number(updated.paystack_amount_minor || 0),
+            paypalAmountMinor: Number(updated.paypal_amount_minor || 0),
+          }
+        : null,
     });
   } catch (error) {
-    const msg = String(error && error.message ? error.message : "Could not create batch");
-    const isConflict = /duplicate|unique|exists/i.test(msg);
-    return json(isConflict ? 409 : 500, { ok: false, error: msg });
+    return json(500, { ok: false, error: error.message || "Could not update batch" });
   }
 };
