@@ -63,6 +63,17 @@
         flex: 0 0 auto;
       }
 
+      .wallet-plan-btn--enrol.is-locked,
+      .wallet-plan-btn--enrol[disabled] {
+        background: #e5e7eb !important;
+        border-color: #d1d5db !important;
+        color: #6b7280 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+      }
+
       @media (max-width: 760px) {
         .wallet-plan-actions {
           flex-wrap: wrap;

@@ -114,6 +114,7 @@
           paid >= target &&
           String(plan.status || "").toLowerCase() === "open";
         const disableEnrol = !canEnrolNow;
+        const enrolLabel = "Enrol";
         return [
           `<article class="wallet-plan" data-plan-uuid="${plan.planUuid}">`,
           `<p class="wallet-pill">${plan.batchLabel}</p>`,
@@ -124,7 +125,7 @@
           `<div class="wallet-plan-actions">`,
           `<input class="tw-input wallet-input wallet-topup-input" type="number" min="100" step="100" placeholder="Top-up amount (NGN)" data-topup-input ${disabledPay ? "disabled" : ""} />`,
           `<button class="btn btn-primary wallet-plan-btn" type="button" data-action="pay" ${disabledPay ? "disabled" : ""}>Pay Part</button>`,
-          `<button class="btn btn-outline wallet-plan-btn" type="button" data-action="enrol" ${disableEnrol ? "disabled" : ""}>Enrol Now</button>`,
+          `<button class="btn btn-outline wallet-plan-btn wallet-plan-btn--enrol ${disableEnrol ? "is-locked" : ""}" type="button" data-action="enrol" ${disableEnrol ? "disabled aria-disabled=\"true\" title=\"Complete full payment to unlock enrolment\"" : ""}>${enrolLabel}</button>`,
           `</div>`,
           `</article>`,
         ].join("");
