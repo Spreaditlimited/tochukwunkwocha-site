@@ -263,15 +263,16 @@ p {
 }
 
 .course-hero .course-hero-copy h1 {
-  max-width: 18ch;
-  font-size: clamp(2.35rem, 4.25vw, 3.55rem);
+  max-width: 16ch;
+  font-size: clamp(2.25rem, 5.8vw, 4.5rem);
   line-height: 1.1;
 }
 
 .course-hero .course-hero-copy > p {
-  max-width: 62ch;
-  margin-top: 14px;
-  font-size: 1.02rem;
+  max-width: 66ch;
+  margin-top: 18px;
+  color: var(--muted-text);
+  font-size: 1.05rem;
   line-height: 1.6;
 }
 
@@ -1513,14 +1514,14 @@ body.modal-open {
   }
 
   .course-hero .course-hero-copy h1 {
-    font-size: clamp(2rem, 5vw, 2.95rem);
-    max-width: 17ch;
+    font-size: clamp(2.25rem, 5.8vw, 4.5rem);
+    max-width: 16ch;
   }
 
   .course-hero .course-hero-copy > p {
-    max-width: 52ch;
-    font-size: 1rem;
-    line-height: 1.56;
+    max-width: 66ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
   }
 
   .course-hero .course-hero-copy .cta-row {
@@ -1614,13 +1615,23 @@ body.modal-open {
     gap: 18px;
   }
 
+  .course-hero .course-hero-copy {
+    text-align: center;
+  }
+
   .course-hero .course-hero-copy h1 {
-    max-width: 16ch;
-    font-size: clamp(2rem, 8vw, 2.8rem);
+    max-width: 18ch;
+    font-size: clamp(2.25rem, 5.8vw, 4.5rem);
+    margin-inline: auto;
   }
 
   .course-hero .course-hero-copy > p {
-    max-width: 100%;
+    max-width: 92%;
+    margin-inline: auto;
+  }
+
+  .course-hero .course-hero-copy .cta-row {
+    justify-content: center;
   }
 
   .course-hero .hero-card {
@@ -1632,6 +1643,16 @@ body.modal-open {
     aspect-ratio: 16 / 10;
     max-width: none;
     justify-self: stretch;
+  }
+
+  .course-highlight__media {
+    min-height: 0;
+    height: auto;
+  }
+
+  .course-highlight__media img {
+    height: auto;
+    object-fit: contain;
   }
 }
 
