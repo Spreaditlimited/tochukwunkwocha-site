@@ -24,6 +24,7 @@ exports.handler = async function (event) {
       batchLabel: body.batchLabel,
       batchKey: body.batchKey,
       status: body.status || "closed",
+      batchStartAt: body.batchStartAt,
       paystackReferencePrefix: body.paystackReferencePrefix,
       paystackAmountMinor: body.paystackAmountMinor,
     });
@@ -34,6 +35,7 @@ exports.handler = async function (event) {
         batchLabel: created.batch_label,
         status: created.status,
         isActive: Number(created.is_active || 0) === 1,
+        batchStartAt: created.batch_start_at || null,
         paystackReferencePrefix: created.paystack_reference_prefix,
         paystackAmountMinor: Number(created.paystack_amount_minor || 0),
       },

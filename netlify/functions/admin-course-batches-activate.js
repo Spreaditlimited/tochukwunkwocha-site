@@ -22,7 +22,11 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureCourseBatchesTable(pool);
-    const active = await activateCourseBatch(pool, { courseSlug: "prompt-to-profit", batchKey });
+    const active = await activateCourseBatch(pool, {
+      courseSlug: "prompt-to-profit",
+      batchKey,
+      batchStartAt: body.batchStartAt,
+    });
     return json(200, {
       ok: true,
       activeBatch: active
@@ -31,6 +35,7 @@ exports.handler = async function (event) {
             batchLabel: active.batch_label,
             status: active.status,
             isActive: Number(active.is_active || 0) === 1,
+            batchStartAt: active.batch_start_at || null,
             paystackReferencePrefix: active.paystack_reference_prefix,
             paystackAmountMinor: Number(active.paystack_amount_minor || 0),
           }

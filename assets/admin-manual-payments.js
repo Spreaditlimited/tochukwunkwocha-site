@@ -10,6 +10,7 @@
   const createBatchBtn = document.getElementById("adminCreateBatchBtn");
   const activateBatchBtn = document.getElementById("adminActivateBatchBtn");
   const activateBatchSelect = document.getElementById("adminActivateBatchSelect");
+  const batchStartInput = document.getElementById("adminBatchStartAt");
   const activeBatchText = document.getElementById("adminActiveBatchText");
   const refreshBtn = document.getElementById("adminRefreshBtn");
   const logoutBtn = document.getElementById("adminLogoutBtn");
@@ -179,11 +180,41 @@
     if (createBatchForm) createBatchForm.reset();
   }
 
+  function normalizeBatchStartText(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?/);
+    if (!m) return "";
+    return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}`;
+  }
+
+  function fmtBatchStart(value) {
+    return normalizeBatchStartText(value) || "-";
+  }
+
   function fmtDate(value) {
     if (!value) return "-";
     const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "-";
+    if (Number.isNaN(d.getTime())) return String(value);
     return d.toLocaleString();
+  }
+
+  function toDatetimeLocalValue(value) {
+    return normalizeBatchStartText(value);
+  }
+
+  function batchByKey(batchKey) {
+    const key = String(batchKey || "").trim();
+    if (!key) return null;
+    return (latestBatches || []).find(function (item) {
+      return String(item.batchKey || "").trim() === key;
+    }) || null;
+  }
+
+  function syncBatchStartInputFromSelection() {
+    if (!batchStartInput || !activateBatchSelect) return;
+    const selected = batchByKey(activateBatchSelect.value);
+    batchStartInput.value = selected ? toDatetimeLocalValue(selected.batchStartAt) : "";
   }
 
   function fmtMoney(amountMinor, currency) {
@@ -317,6 +348,7 @@
         .filter(Boolean)
         .join("");
       activateBatchSelect.innerHTML = activeOptions;
+      syncBatchStartInputFromSelection();
     }
 
     const activeBatch = (batches || []).find(function (item) {
@@ -324,7 +356,10 @@
     });
     if (activeBatchText) {
       if (activeBatch) {
-        activeBatchText.textContent = `Active batch: ${activeBatch.batchLabel}`;
+        const startLabel = fmtBatchStart(activeBatch.batchStartAt);
+        activeBatchText.textContent = startLabel && startLabel !== "-"
+          ? `Active batch: ${activeBatch.batchLabel} (Starts: ${startLabel})`
+          : `Active batch: ${activeBatch.batchLabel}`;
       } else {
         activeBatchText.textContent = "Active batch: --";
       }
@@ -551,6 +586,9 @@
         paystackAmountMinor: Number(
           String((createBatchForm.paystackAmountMinor && createBatchForm.paystackAmountMinor.value) || "").trim()
         ),
+        batchStartAt:
+          normalizeBatchStartText(String((createBatchForm.batchStartAt && createBatchForm.batchStartAt.value) || "").trim()) ||
+          null,
       };
       if (!payload.batchLabel) {
         if (createBatchError) {
@@ -597,6 +635,8 @@
   if (activateBatchBtn) {
     activateBatchBtn.addEventListener("click", async function () {
       const batchKey = String((activateBatchSelect && activateBatchSelect.value) || "").trim();
+      const batchStartAt =
+        normalizeBatchStartText(String((batchStartInput && batchStartInput.value) || "").trim()) || null;
       if (!batchKey) {
         setMessage("Select a batch to activate.", "error");
         return;
@@ -608,7 +648,7 @@
         const res = await fetch("/.netlify/functions/admin-course-batches-activate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ batchKey }),
+          body: JSON.stringify({ batchKey, batchStartAt }),
         });
         const json = await res.json().catch(function () {
           return null;
@@ -625,6 +665,12 @@
         activateBatchBtn.disabled = false;
         activateBatchBtn.textContent = prevText || "Activate Batch";
       }
+    });
+  }
+
+  if (activateBatchSelect) {
+    activateBatchSelect.addEventListener("change", function () {
+      syncBatchStartInputFromSelection();
     });
   }
 

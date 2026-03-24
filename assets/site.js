@@ -6,6 +6,7 @@
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
   const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
   let activePromptToProfitBatchKey = "ptp-batch-1";
+  let activePromptToProfitBatchStartAt = "";
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -175,7 +176,7 @@
     '    <button class="enrol-modal__close modal-close" type="button" aria-label="Close dialog" data-enrol-close>&times;</button>',
     '    <p class="enrol-modal__label">Prompt to Profit</p>',
     '    <h3 id="enrolTitle">Secure your slot now</h3>',
-    '    <p class="enrol-modal__intro">Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch on Monday, 23rd of March, 2026 at 8:00 PM WAT and 7:00 PM UK time.</p>',
+    '    <p class="enrol-modal__intro">Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.</p>',
     '    <p class="enrol-modal__batch-badge" id="enrolActiveBatch">Active Batch: Batch 1</p>',
     '    <form id="enrolForm" class="enrol-form" novalidate>',
     '      <label for="enrolFirstName">Full Name</label>',
@@ -249,8 +250,59 @@
   const paymentMessage = document.getElementById("paymentFeedbackMessage");
   const paymentCloseBtn = document.getElementById("paymentFeedbackBtn");
   const enrolActiveBatchEl = document.getElementById("enrolActiveBatch");
+  const enrolIntroEl = document.querySelector(".enrol-modal__intro");
 
   let manualConfigLoaded = false;
+
+  function parseBatchStart(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    const match = raw.match(
+      /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/
+    );
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const hour = Number(match[4]);
+      const minute = Number(match[5]);
+      const second = Number(match[6] || "0");
+      // Interpret stored value as WAT wall clock (UTC+1).
+      return new Date(Date.UTC(year, month - 1, day, hour - 1, minute, second));
+    }
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function formatDayTime(date, timeZone) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date);
+  }
+
+  function launchScheduleText() {
+    const startDate = parseBatchStart(activePromptToProfitBatchStartAt);
+    if (!startDate) return "";
+    const lagos = formatDayTime(startDate, "Africa/Lagos");
+    return `Launch is ${lagos} WAT.`;
+  }
+
+  function updateLaunchCopy() {
+    if (enrolIntroEl) {
+      const schedule = launchScheduleText();
+      enrolIntroEl.textContent = schedule
+        ? `Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch. ${schedule}`
+        : "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.";
+    }
+  }
 
   async function loadActiveBatch() {
     try {
@@ -265,9 +317,11 @@
 
       const active = json.activeBatch;
       if (active && active.batchKey) activePromptToProfitBatchKey = String(active.batchKey);
+      activePromptToProfitBatchStartAt = String((active && active.batchStartAt) || "").trim();
       if (enrolActiveBatchEl && active) {
         enrolActiveBatchEl.textContent = `Active Batch: ${String(active.batchLabel || "Current Batch")}`;
       }
+      updateLaunchCopy();
     } catch (_error) {
       return;
     }
@@ -389,6 +443,7 @@
   });
 
   setActiveProvider((providerInput && providerInput.value) || "paystack");
+  updateLaunchCopy();
 
   function openEnrolModal() {
     if (!modal) return;
@@ -417,8 +472,10 @@
 
     if (status === "success") {
       paymentTitle.textContent = "Payment successful";
-      paymentMessage.textContent =
-        "Payment received. We have added you to the enrolment list. Launch is Monday, 23rd of March, 2026 at 8:00 PM WAT and 7:00 PM UK time.";
+      const schedule = launchScheduleText();
+      paymentMessage.textContent = schedule
+        ? `Payment received. We have added you to the enrolment list. ${schedule}`
+        : "Payment received. We have added you to the enrolment list.";
       paymentModal.classList.remove("is-error");
       paymentModal.classList.add("is-success");
     } else if (status === "manual_submitted") {
@@ -561,7 +618,13 @@
   const isPromptToProfitPage = window.location.pathname.indexOf("/courses/prompt-to-profit") === 0;
   if (isPromptToProfitPage) {
     if (payment === "success" && paidOrderUuid) {
-      openPaymentFeedbackModal("success");
+      loadActiveBatch()
+        .catch(function () {
+          return null;
+        })
+        .finally(function () {
+          openPaymentFeedbackModal("success");
+        });
       trackPurchase(paidOrderUuid).catch(function () {
         return null;
       });

@@ -245,6 +245,10 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" /></svg>
                       </span>
                     </div>
+                    <div class="w-full sm:w-auto sm:min-w-[16rem]">
+                      <label for="adminBatchStartAt" class="sr-only">Batch start date</label>
+                      <input id="adminBatchStartAt" type="text" placeholder="YYYY-MM-DD HH:MM" class="block w-full rounded-xl border-0 py-2.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+                    </div>
                     <button id="adminActivateBatchBtn" type="button" class="inline-flex flex-1 sm:flex-none items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors">
                       Activate Batch
                     </button>
@@ -455,6 +459,10 @@
             <div>
               <label for="createBatchAmount" class="block text-sm font-semibold leading-6 text-gray-900">Paystack Amount (minor units)</label>
               <input id="createBatchAmount" name="paystackAmountMinor" type="number" min="1" step="1" value="1075000" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="createBatchStartAt" class="block text-sm font-semibold leading-6 text-gray-900">Batch Start Date (optional)</label>
+              <input id="createBatchStartAt" name="batchStartAt" type="text" placeholder="YYYY-MM-DD HH:MM" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
             </div>
             
             <p class="text-sm text-red-600 hidden" id="createBatchError" role="alert"></p>

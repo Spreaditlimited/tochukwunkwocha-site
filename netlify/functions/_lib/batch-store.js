@@ -24,6 +24,36 @@ function normalizePrefix(value) {
     .slice(0, 10);
 }
 
+function normalizeBatchStartAt(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const match = raw.match(
+    /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/
+  );
+  if (!match) throw new Error("Valid batch start date is required");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] || "0");
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(second)
+  ) {
+    throw new Error("Valid batch start date is required");
+  }
+  // Persist exactly as entered (WAT wall-clock semantics).
+  const pad = function (n) {
+    return String(n).padStart(2, "0");
+  };
+  return `${String(year).padStart(4, "0")}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
+}
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -43,6 +73,7 @@ async function ensureCourseBatchesTable(pool) {
       is_active TINYINT(1) NOT NULL DEFAULT 0,
       paystack_reference_prefix VARCHAR(20) NOT NULL DEFAULT 'PTP',
       paystack_amount_minor INT NOT NULL,
+      batch_start_at DATETIME NULL,
       activated_at DATETIME NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
@@ -53,6 +84,7 @@ async function ensureCourseBatchesTable(pool) {
   `);
 
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN activated_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN batch_start_at DATETIME NULL`);
 
   const now = nowSql();
   await pool.query(
@@ -110,6 +142,7 @@ async function listCourseBatches(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
             updated_at
@@ -134,6 +167,7 @@ async function getCourseBatchByKey(pool, courseSlug, batchKey) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
             updated_at
@@ -157,6 +191,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
             updated_at
@@ -176,6 +211,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             is_active,
             paystack_reference_prefix,
             paystack_amount_minor,
+            DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             activated_at,
             created_at,
             updated_at
@@ -206,6 +242,7 @@ async function createCourseBatch(pool, input) {
   const status = String((input && input.status) || "closed").trim().toLowerCase() === "open" ? "open" : "closed";
   const paystackReferencePrefix = normalizePrefix(input && input.paystackReferencePrefix);
   const paystackAmountMinor = Number((input && input.paystackAmountMinor) || DEFAULT_AMOUNT_MINOR);
+  const batchStartAt = normalizeBatchStartAt(input && input.batchStartAt);
 
   if (!batchLabel) throw new Error("Batch label is required");
   if (!batchKey) throw new Error("Batch key is required");
@@ -217,9 +254,9 @@ async function createCourseBatch(pool, input) {
   const now = nowSql();
   await pool.query(
     `INSERT INTO course_batches
-      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, activated_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 0, ?, ?, NULL, ?, ?)`,
-    [courseSlug, batchKey, batchLabel, status, paystackReferencePrefix, Math.round(paystackAmountMinor), now, now]
+      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, batch_start_at, activated_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, ?, ?, ?, NULL, ?, ?)`,
+    [courseSlug, batchKey, batchLabel, status, paystackReferencePrefix, Math.round(paystackAmountMinor), batchStartAt, now, now]
   );
 
   return getCourseBatchByKey(pool, courseSlug, batchKey);
@@ -235,6 +272,7 @@ async function activateCourseBatch(pool, input) {
   if (!target) throw new Error("Batch not found");
 
   const now = nowSql();
+  const batchStartAt = normalizeBatchStartAt(input && input.batchStartAt) || target.batch_start_at || null;
   await pool.query(
     `UPDATE course_batches
      SET is_active = 0,
@@ -246,11 +284,12 @@ async function activateCourseBatch(pool, input) {
     `UPDATE course_batches
      SET is_active = 1,
          status = 'open',
+         batch_start_at = ?,
          activated_at = ?,
          updated_at = ?
      WHERE course_slug = ?
        AND batch_key = ?`,
-    [now, now, courseSlug, batchKey]
+    [batchStartAt, now, now, courseSlug, batchKey]
   );
 
   return getActiveCourseBatch(pool, courseSlug);

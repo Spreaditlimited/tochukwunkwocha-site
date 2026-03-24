@@ -473,6 +473,7 @@ async function getPaymentsQueueSummary(pool, opts) {
         batchLabel: item.batch_label,
         status: item.status,
         isActive: Number(item.is_active || 0) === 1,
+        batchStartAt: item.batch_start_at || null,
       };
     }),
   };

@@ -21,6 +21,7 @@ exports.handler = async function (event) {
             batchKey: active.batch_key,
             batchLabel: active.batch_label,
             status: active.status,
+            batchStartAt: active.batch_start_at || null,
             paystackReferencePrefix: active.paystack_reference_prefix,
             paystackAmountMinor: Number(active.paystack_amount_minor || 0),
           }
