@@ -487,7 +487,7 @@
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
 
-  setWalletState(null);
+  setWalletState(false);
   Promise.all([loadBatches(), loadDashboard()]).catch(function () {
     setWalletState(false);
     return null;
