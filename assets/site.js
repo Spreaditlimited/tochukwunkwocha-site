@@ -583,7 +583,7 @@
   }
 
   document
-    .querySelectorAll('a[href="#ENROL_LINK"], .nav-cta, [data-enrol-modal]')
+    .querySelectorAll('a[href="#ENROL_LINK"], [data-enrol-modal]')
     .forEach(function (trigger) {
       trigger.addEventListener("click", function (event) {
         event.preventDefault();

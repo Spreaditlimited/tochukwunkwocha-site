@@ -1,8 +1,15 @@
 const { json, badMethod } = require("./_lib/http");
+const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { setAdminCookieHeader, verifyAdminPassword } = require("./_lib/admin-auth");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+
+  try {
+    const pool = getPool();
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   let body;
   try {

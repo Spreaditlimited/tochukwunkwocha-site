@@ -4,9 +4,14 @@ function required(name) {
   return value;
 }
 
-async function triggerNetlifyPublish() {
-  const token = required("NETLIFY_API_TOKEN");
-  const siteId = required("NETLIFY_SITE_ID");
+function clean(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
+async function triggerNetlifyPublish(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const token = clean(source.apiToken, 400) || required("NETLIFY_API_TOKEN");
+  const siteId = clean(source.siteId, 200) || required("NETLIFY_SITE_ID");
 
   const res = await fetch(`https://api.netlify.com/api/v1/sites/${encodeURIComponent(siteId)}/builds`, {
     method: "POST",

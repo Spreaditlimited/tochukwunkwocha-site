@@ -1,4 +1,5 @@
 const { nowSql } = require("./db");
+const { applyRuntimeSettings } = require("./runtime-settings");
 const { syncFlodeskSubscriber } = require("./flodesk");
 const { paystackVerifyTransaction } = require("./payments");
 const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
@@ -6,6 +7,8 @@ const { ensureCourseOrdersBatchColumns } = require("./course-orders");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./course-config");
 
 async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider }) {
+  await applyRuntimeSettings(pool);
+
   if (!orderUuid && !providerReference && !providerOrderId) {
     return { ok: false, error: "Missing order identifier" };
   }
@@ -59,6 +62,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     const synced = await syncFlodeskSubscriber({
       firstName: order.first_name,
       email: order.email,
+      courseSlug: order.course_slug,
     });
 
     if (synced.ok) {
@@ -70,6 +74,8 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
 }
 
 async function reconcileCoursePaystackOrders(pool, input) {
+  await applyRuntimeSettings(pool);
+
   await ensureCourseOrdersBatchColumns(pool);
   await ensureCourseBatchesTable(pool);
 

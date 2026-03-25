@@ -70,7 +70,7 @@ exports.handler = async function (event) {
     }
 
     return redirect(
-      `${siteBaseUrl()}/dashboard/?job_uuid=${encodeURIComponent(jobUuid)}&access=${encodeURIComponent(
+      `${siteBaseUrl()}/dashboard/project/index.html?job_uuid=${encodeURIComponent(jobUuid)}&access=${encodeURIComponent(
         accessToken
       )}&payment=success`
     );

@@ -1,4 +1,7 @@
 const DEFAULT_SEGMENT_ID = "69ad9a50568c36094377ea96";
+const { getMainEnrolSegmentId } = require("./_lib/flodesk");
+const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 
 function json(statusCode, payload) {
   return {
@@ -16,10 +19,12 @@ exports.handler = async function (event) {
     return json(405, { ok: false, error: "Method not allowed" });
   }
 
+  try {
+    const pool = getPool();
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
+
   const apiKey = process.env.FLODESK_API_KEY && process.env.FLODESK_API_KEY.trim();
-  const segmentId =
-    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
-    DEFAULT_SEGMENT_ID;
 
   if (!apiKey) {
     return json(500, { ok: false, error: "Missing FLODESK_API_KEY" });
@@ -34,6 +39,8 @@ exports.handler = async function (event) {
 
   const firstName = (body.firstName || "").trim();
   const email = (body.email || "").trim().toLowerCase();
+  const courseSlug = String(body.courseSlug || body.course_slug || "").trim().toLowerCase();
+  const segmentId = getMainEnrolSegmentId(courseSlug) || DEFAULT_SEGMENT_ID;
 
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and email are required" });

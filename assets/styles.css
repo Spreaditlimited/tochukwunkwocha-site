@@ -149,11 +149,22 @@ p {
 }
 
 .nav-cta {
-  padding: 12px 18px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 14px;
   background: var(--deep-ink);
   color: var(--warm-ivory) !important;
   font-weight: 700;
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+  transform: translateY(-1px);
+  background: #22345f;
 }
 
 .nav-toggle {

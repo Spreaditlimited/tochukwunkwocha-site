@@ -1,8 +1,15 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
+const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+
+  try {
+    const pool = getPool();
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   const cloudName = String(process.env.CLOUDINARY_CLOUD_NAME || "").trim();
   const apiKey = String(process.env.CLOUDINARY_API_KEY || "").trim();

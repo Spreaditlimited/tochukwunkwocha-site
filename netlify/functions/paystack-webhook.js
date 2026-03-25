@@ -1,11 +1,15 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { verifyPaystackSignature } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
 const { ensureInstallmentTables, markInstallmentPaymentPaidByReference } = require("./_lib/installments");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+
+  const pool = getPool();
+  await applyRuntimeSettings(pool);
 
   const signature = event.headers["x-paystack-signature"] || event.headers["X-Paystack-Signature"];
   const rawBody = event.isBase64Encoded
@@ -35,8 +39,6 @@ exports.handler = async function (event) {
   const reference = String(data.reference || "").trim();
   const orderUuid = data.metadata && String(data.metadata.order_uuid || "").trim();
   const installmentPlanUuid = data.metadata && String(data.metadata.installment_plan_uuid || "").trim();
-
-  const pool = getPool();
 
   if (installmentPlanUuid) {
     await ensureInstallmentTables(pool);

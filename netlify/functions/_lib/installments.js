@@ -1,7 +1,10 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
+const { applyRuntimeSettings } = require("./runtime-settings");
 
 async function ensureInstallmentTables(pool) {
+  await applyRuntimeSettings(pool);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_installment_plans (
       id BIGINT NOT NULL AUTO_INCREMENT,

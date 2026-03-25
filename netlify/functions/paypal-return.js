@@ -1,4 +1,5 @@
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { siteBaseUrl, paypalCaptureOrder } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
 const { getCourseLandingPath } = require("./_lib/course-config");
@@ -10,6 +11,11 @@ exports.handler = async function (event) {
       body: "Method not allowed",
     };
   }
+
+  const pool = getPool();
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   const orderId = event.queryStringParameters && event.queryStringParameters.token;
 
@@ -25,7 +31,6 @@ exports.handler = async function (event) {
   try {
     await paypalCaptureOrder(orderId);
 
-    const pool = getPool();
     const result = await markOrderPaidBy({
       pool,
       provider: "paypal",

@@ -1,10 +1,14 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { paypalVerifyWebhook } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+
+  const pool = getPool();
+  await applyRuntimeSettings(pool);
 
   let body;
   try {
@@ -33,7 +37,6 @@ exports.handler = async function (event) {
   const related = body.resource && body.resource.supplementary_data && body.resource.supplementary_data.related_ids;
   const orderId = related && related.order_id ? String(related.order_id) : "";
 
-  const pool = getPool();
   const result = await markOrderPaidBy({
     pool,
     provider: "paypal",

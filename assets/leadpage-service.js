@@ -78,6 +78,30 @@
     }
   }
 
+  function openPaystackInline(config) {
+    if (!window.PaystackPop || typeof window.PaystackPop.setup !== "function") return false;
+    const handler = window.PaystackPop.setup({
+      key: config.publicKey,
+      email: config.email || "",
+      amount: Number(config.amountMinor || 0),
+      ref: config.reference,
+      access_code: config.accessCode,
+      callback: function (response) {
+        const reference = String((response && response.reference) || config.reference || "").trim();
+        if (!reference) {
+          setPaymentError("Payment completed. Verifying...");
+          return;
+        }
+        window.location.href = `/.netlify/functions/leadpage-paystack-return?reference=${encodeURIComponent(reference)}`;
+      },
+      onClose: function () {
+        setPaymentError("Payment window closed.");
+      },
+    });
+    handler.openIframe();
+    return true;
+  }
+
   closeTargets.forEach(function (btn) {
     btn.addEventListener("click", closeModal);
   });
@@ -263,10 +287,22 @@
           openModal("Payment already confirmed", "This project has already been paid for.");
           return;
         }
-        if (!json.checkoutUrl) {
-          throw new Error("Missing checkout URL.");
+        const openedInline = json.publicKey && json.accessCode
+          ? openPaystackInline({
+              publicKey: json.publicKey,
+              accessCode: json.accessCode,
+              reference: json.reference,
+              amountMinor: json.amountMinor,
+              email: json.email,
+            })
+          : false;
+
+        if (!openedInline) {
+          if (!json.checkoutUrl) {
+            throw new Error("Missing checkout URL.");
+          }
+          window.location.href = json.checkoutUrl;
         }
-        window.location.href = json.checkoutUrl;
       } catch (error) {
         setPaymentError(error.message || "Could not start payment right now.");
       } finally {

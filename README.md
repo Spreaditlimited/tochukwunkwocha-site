@@ -57,6 +57,7 @@ Core DB / payment / Flodesk
 - `PAYPAL_WEBHOOK_ID`
 - `FLODESK_API_KEY`
 - `FLODESK_ENROL_SEGMENT_ID` (main enrolment segment, default `69ad9a50568c36094377ea96`)
+- `FLODESK_ENROL_PROD_SEGMENT_ID` (Prompt to Production enrolment segment; falls back to `FLODESK_ENROL_SEGMENT_ID` if unset)
 - `FLODESK_PRE_ENROL_SEGMENT_ID` (pre-enrolment segment, default `69ad60e952e4ac8ca746bb53`)
 
 Manual transfer bank details
@@ -78,12 +79,72 @@ Optional pricing vars
 - `PROMPT_TO_PROFIT_PRICE_NGN_MINOR` (default `1075000` = N10,750)
 - `PROMPT_TO_PROFIT_PRICE_GBP` (default `24.00`)
 
+Leadpage AI automation
+- `LEADPAGE_AUTOMATION_ENABLED` (`1` default; set `0` to disable pre-publish AI content generation)
+- `LEADPAGE_AUTOMATION_ALLOW_MOCK` (`1` default; set `0` to require real AI key)
+- `LEADPAGE_AI_PROVIDER` (`gemini` default, or `openai`)
+- `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`) when using Gemini
+- `OPENAI_API_KEY` when using OpenAI
+
+Leadpage Brevo automation
+- `LEADPAGE_BREVO_ENABLED` (`0` default; set `1` to sync lead-capture clients to Brevo during first publish)
+- `LEADPAGE_BREVO_ALLOW_MOCK` (`0` default; set `1` only for non-production mock mode)
+- `BREVO_API_KEY` (preferred) or `SENDINBLUE_API_KEY` (legacy alias)
+- `BREVO_LEADPAGE_LIST_ID` (required when Brevo is enabled; list where lead-capture clients are added)
+- `BREVO_LEADPAGE_FOLLOWUP_EMAIL_COUNT` (`5` default; clamped to 1..7 for free-tier safety)
+- `BREVO_FREE_TIER_DAILY_SEND_LIMIT` (`300` default; guardrail blocks new scheduling when projected sends exceed this)
+
+Leadpage customer-owned credentials (new model)
+- Netlify publish and Brevo automation now read per-customer credentials saved from the client dashboard.
+- Global `NETLIFY_API_TOKEN`/`NETLIFY_SITE_ID` and `BREVO_API_KEY`/`BREVO_LEADPAGE_LIST_ID` are no longer required for leadpage jobs when customer credentials are present.
+- First publish is blocked until customer provides:
+  - Netlify Site ID
+  - Netlify API key
+- Brevo automation runs only when customer provides:
+  - Brevo API key
+  - Brevo List ID
+
+Leadpage build timing (payment-gated)
+- No AI page generation runs at detail submission stage.
+- Build starts only after payment is confirmed and the client opens their dashboard.
+- Dashboard triggers build automatically and shows "We are building your landing page" status while pipeline runs.
+
+Leadpage domain automation (registrar API)
+- `LEADPAGE_DOMAIN_AUTOMATION_ENABLED` (`0` default; set `1` to auto-run domain purchase step on first publish for `needs_domain` jobs)
+- `LEADPAGE_DOMAIN_PROVIDER` (`namecheap` default, or `mock`)
+- `LEADPAGE_DOMAIN_ALLOW_MOCK` (`1` default; set `0` to fail when registrar config is missing)
+- `LEADPAGE_DOMAIN_TLDS` (CSV list, default `com,com.ng,ng`)
+- `LEADPAGE_DOMAIN_SUGGEST_WINDOW_SECONDS` (default `120`)
+- `LEADPAGE_DOMAIN_SUGGEST_LIMIT_PER_WINDOW` (default `8`)
+- `LEADPAGE_DOMAIN_CHECK_WINDOW_SECONDS` (default `120`)
+- `LEADPAGE_DOMAIN_CHECK_LIMIT_PER_WINDOW` (default `20`)
+- `LEADPAGE_DOMAIN_REGISTER_WINDOW_SECONDS` (default `900`)
+- `LEADPAGE_DOMAIN_REGISTER_LIMIT_PER_WINDOW` (default `2`)
+
+Namecheap registrar credentials
+- `NAMECHEAP_API_USER`
+- `NAMECHEAP_API_KEY`
+- `NAMECHEAP_USERNAME`
+- `NAMECHEAP_CLIENT_IP` (must be allow-listed in Namecheap API settings)
+- `NAMECHEAP_USE_SANDBOX` (`1` default for sandbox API, set `0` for production)
+
+Namecheap contact profile (required for registration)
+- `NAMECHEAP_CONTACT_FIRST_NAME`
+- `NAMECHEAP_CONTACT_LAST_NAME`
+- `NAMECHEAP_CONTACT_ADDRESS1`
+- `NAMECHEAP_CONTACT_CITY`
+- `NAMECHEAP_CONTACT_STATE`
+- `NAMECHEAP_CONTACT_POSTAL_CODE`
+- `NAMECHEAP_CONTACT_COUNTRY`
+- `NAMECHEAP_CONTACT_PHONE`
+- `NAMECHEAP_CONTACT_EMAIL`
+
 ## Internal Manual Review Page
 Use this URL after deploy:
 - `https://tochukwunkwocha.com/internal/manual-payments/`
 
 Workflow:
-1. Student chooses manual transfer, uploads proof, and is added to pre-enrol segment.
+1. User chooses manual transfer, uploads proof, and is added to pre-enrol segment.
 2. You verify payment in your bank app.
 3. Approve in internal page.
-4. Student is synced to main enrolment Flodesk segment.
+4. User is synced to main enrolment Flodesk segment.

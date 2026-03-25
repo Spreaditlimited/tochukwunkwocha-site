@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const {
   ensureLeadpageTables,
   validateLeadpageClientAccess,
+  findLeadpageJobByUuid,
   setLeadpagePublishState,
   getLeadpagePublishUsage,
 } = require("./_lib/leadpage-jobs");
@@ -54,12 +55,25 @@ exports.handler = async function (event) {
       });
     }
 
+    const job = await findLeadpageJobByUuid(pool, jobUuid);
+    const netlifyApiToken = clean(job && job.netlify_api_token, 400);
+    const netlifySiteId = clean(job && job.netlify_site_id, 200);
+    if (!netlifyApiToken || !netlifySiteId) {
+      return json(400, {
+        ok: false,
+        error: "Netlify credentials are missing. Please save your Netlify API key and Site ID in dashboard settings first.",
+      });
+    }
+
     await setLeadpagePublishState(pool, {
       jobUuid,
       publishStatus: "publishing",
     });
 
-    const publish = await triggerNetlifyPublish();
+    const publish = await triggerNetlifyPublish({
+      apiToken: netlifyApiToken,
+      siteId: netlifySiteId,
+    });
 
     const liveUrl = `${siteBaseUrl()}/projects/${encodeURIComponent(jobUuid)}`;
 

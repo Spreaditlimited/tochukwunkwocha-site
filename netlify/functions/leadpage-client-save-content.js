@@ -39,6 +39,8 @@ exports.handler = async function (event) {
   }
 
   const content = cleanContent(body.content);
+  const facebookPixelId = clean(body.facebookPixelId || body.facebook_pixel_id, 120);
+  const googleTagId = clean(body.googleTagId || body.google_tag_id, 120);
   if (!content.headline || !content.subheadline || !content.offer) {
     return json(400, { ok: false, error: "headline, subheadline, and offer are required" });
   }
@@ -52,6 +54,10 @@ exports.handler = async function (event) {
     await updateLeadpageClientContent(pool, {
       jobUuid,
       contentJson: content,
+      facebookPixelId,
+      googleTagId,
+      hasFacebookPixelId: Object.prototype.hasOwnProperty.call(body, "facebookPixelId") || Object.prototype.hasOwnProperty.call(body, "facebook_pixel_id"),
+      hasGoogleTagId: Object.prototype.hasOwnProperty.call(body, "googleTagId") || Object.prototype.hasOwnProperty.call(body, "google_tag_id"),
     });
 
     return json(200, { ok: true, message: "Dashboard content saved" });

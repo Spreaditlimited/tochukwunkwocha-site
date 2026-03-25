@@ -1,4 +1,5 @@
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { siteBaseUrl, paystackVerifyTransaction } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
 const { getCourseLandingPath, normalizeCourseSlug } = require("./_lib/course-config");
@@ -10,6 +11,11 @@ exports.handler = async function (event) {
       body: "Method not allowed",
     };
   }
+
+  const pool = getPool();
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   const qs = event.queryStringParameters || {};
   const reference = String(qs.reference || qs.trxref || "").trim();
@@ -39,7 +45,6 @@ exports.handler = async function (event) {
     const txCourseSlug = normalizeCourseSlug(tx && tx.metadata && tx.metadata.course_slug, "prompt-to-profit");
     const orderUuid = tx && tx.metadata && tx.metadata.order_uuid ? String(tx.metadata.order_uuid) : null;
 
-    const pool = getPool();
     const result = await markOrderPaidBy({
       pool,
       provider: "paystack",

@@ -1,14 +1,12 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { siteBaseUrl, paystackInitialize } = require("./_lib/payments");
+const { siteBaseUrl, paystackInitialize, paystackPublicKey } = require("./_lib/payments");
 const {
   ensureLeadpageTables,
   findLeadpageJobByUuid,
   markLeadpagePaymentInitiated,
 } = require("./_lib/leadpage-jobs");
-
-const LEADPAGE_PRICE_NGN_MINOR = Number(process.env.LEADPAGE_PRICE_NGN_MINOR || 100000);
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -18,6 +16,11 @@ function buildReference(jobUuid) {
   const compact = clean(jobUuid, 72).replace(/[^a-zA-Z0-9]/g, "").slice(0, 20);
   const nonce = crypto.randomBytes(3).toString("hex");
   return `LPG_${compact}_${nonce}`.slice(0, 80);
+}
+
+function leadpagePriceMinor() {
+  const amount = Number(process.env.LEADPAGE_PRICE_NGN_MINOR || 100000);
+  return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : 100000;
 }
 
 exports.handler = async function (event) {
@@ -49,9 +52,10 @@ exports.handler = async function (event) {
     }
 
     const reference = buildReference(jobUuid);
+    const amountMinor = leadpagePriceMinor();
     const payment = await paystackInitialize({
       email: String(job.email || "").trim(),
-      amountMinor: LEADPAGE_PRICE_NGN_MINOR,
+      amountMinor,
       reference,
       callbackUrl: `${siteBaseUrl()}/.netlify/functions/leadpage-paystack-return`,
       metadata: {
@@ -66,15 +70,19 @@ exports.handler = async function (event) {
       paymentProvider: "paystack",
       paymentReference: payment.providerReference || reference,
       paymentCurrency: "NGN",
-      paymentAmountMinor: LEADPAGE_PRICE_NGN_MINOR,
+      paymentAmountMinor: amountMinor,
     });
 
     return json(200, {
       ok: true,
       jobUuid,
-      amountMinor: LEADPAGE_PRICE_NGN_MINOR,
+      amountMinor,
       currency: "NGN",
       checkoutUrl: payment.checkoutUrl,
+      accessCode: payment.accessCode || null,
+      publicKey: paystackPublicKey(),
+      reference: payment.providerReference || reference,
+      email: String(job.email || "").trim(),
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not initialize payment" });

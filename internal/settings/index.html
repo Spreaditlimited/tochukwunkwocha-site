@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings | Internal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"], heading: ["Manrope", "sans-serif"] },
+            colors: {
+              brand: {
+                50: "#eef2fb",
+                100: "#dfe7f7",
+                200: "#ccd3e6",
+                300: "#99a9cc",
+                400: "#667eb2",
+                500: "#22345f",
+                600: "#1a2849",
+                700: "#14213d",
+                800: "#0f182d",
+                900: "#0a101e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-[#F3F4F6] text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
+    <div class="flex h-full w-full">
+      <aside class="hidden md:flex w-72 bg-brand-800 text-white flex-col">
+        <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+          <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+          <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
+        </div>
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+          <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Dashboard Home</a>
+          <a href="/internal/manual-payments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Enrollments</a>
+          <a href="/internal/installments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Installments</a>
+          <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Lead Capture Jobs</a>
+          <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium">Settings</a>
+        </div>
+      </aside>
+
+      <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
+          <h2 class="text-xl font-heading font-extrabold text-gray-900 tracking-tight">Settings</h2>
+          <button id="settingsSaveBtnTop" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500 transition-colors">
+            Save All
+          </button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6 sm:p-8">
+          <div class="max-w-7xl mx-auto">
+            <div class="mb-4">
+              <p class="text-sm text-gray-600">
+                Configure internal runtime values for Tochukwu site features. `override` values are stored in `tochukwu_admin_settings`.
+              </p>
+              <p class="mt-2 text-xs text-amber-700">
+                Note: bootstrap keys like DB connection and session bootstrapping may still require Netlify env values as fallback.
+              </p>
+            </div>
+            <p id="settingsMessage" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm font-semibold"></p>
+            <div id="settingsGroups" class="space-y-6"></div>
+            <div class="mt-8">
+              <button id="settingsSaveBtnBottom" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-500 transition-colors">
+                Save Settings
+              </button>
+            </div>
+
+            <section class="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
+              <h3 class="mb-4 text-lg font-heading font-extrabold text-gray-900">Settings Audit Trail</h3>
+              <div class="overflow-x-auto">
+                <table class="min-w-full">
+                  <thead class="border-b border-gray-100">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">When</th>
+                      <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Key</th>
+                      <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">Action</th>
+                      <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">By</th>
+                    </tr>
+                  </thead>
+                  <tbody id="settingsAuditRows">
+                    <tr><td colspan="4" class="px-3 py-5 text-sm text-gray-500">No audit entries yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/assets/admin-tochukwu-settings.js" defer></script>
+  </body>
+</html>

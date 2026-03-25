@@ -1,4 +1,5 @@
 const { nowSql } = require("./db");
+const { applyRuntimeSettings } = require("./runtime-settings");
 const {
   DEFAULT_COURSE_SLUG,
   getCourseConfig,
@@ -66,6 +67,8 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseBatchesTable(pool) {
+  await applyRuntimeSettings(pool);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS course_batches (
       id BIGINT NOT NULL AUTO_INCREMENT,

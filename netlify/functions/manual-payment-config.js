@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 
@@ -15,6 +16,8 @@ exports.handler = async function (event) {
   const qs = event.queryStringParameters || {};
   const courseSlug = normalizeCourseSlug(qs.course_slug, DEFAULT_COURSE_SLUG);
   const batchKey = String(qs.batch_key || "").trim();
+  const pool = getPool();
+  await applyRuntimeSettings(pool);
 
   const bankName = String(process.env.MANUAL_BANK_NAME || "").trim();
   const accountName = String(process.env.MANUAL_BANK_ACCOUNT_NAME || "").trim();
@@ -24,7 +27,6 @@ exports.handler = async function (event) {
   let resolvedBatch = null;
 
   try {
-    const pool = getPool();
     await ensureCourseBatchesTable(pool);
     resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
     if (resolvedBatch && Number(resolvedBatch.paystack_amount_minor || 0) > 0) {

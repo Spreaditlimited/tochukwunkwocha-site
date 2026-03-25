@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
+const { applyRuntimeSettings } = require("./runtime-settings");
 
 const COOKIE_NAME = "tws_student_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
@@ -44,6 +45,8 @@ function buildSetCookie(event, value, maxAge) {
 }
 
 async function ensureStudentAuthTables(pool) {
+  await applyRuntimeSettings(pool);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_accounts (
       id BIGINT NOT NULL AUTO_INCREMENT,

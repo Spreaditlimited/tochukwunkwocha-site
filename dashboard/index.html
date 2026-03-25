@@ -3,11 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Dashboard | Tochukwu Nkwocha</title>
-    <meta
-      name="description"
-      content="Track your lead capture page project, edit your page content, and publish updates."
-    />
+    <title>User Dashboard | Tochukwu Nkwocha</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,134 +12,178 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <style>
-      .form-input {
-        width: 100%;
-        margin-top: 6px;
-        border: 1px solid #d6dbe7;
-        border-radius: 12px;
-        padding: 10px 12px;
-        font: inherit;
-        color: #222;
-        background: #fff;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
       }
-      .form-input:focus {
-        outline: 2px solid #22345f;
-        outline-offset: 1px;
+    </script>
+    <style>
+      [hidden] { display: none !important; }
+      .wallet-plan-actions { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; margin-top: 10px; }
+      .wallet-plan-actions .wallet-topup-input { margin-top: 0; flex: 1 1 220px; min-width: 180px; }
+      .wallet-plan-actions .wallet-plan-btn { white-space: nowrap; flex: 0 0 auto; }
+      .wallet-plan-btn--enrol.is-locked,
+      .wallet-plan-btn--enrol[disabled] {
+        background: #e5e7eb !important; border-color: #d1d5db !important; color: #6b7280 !important;
+        cursor: not-allowed !important; box-shadow: none !important; transform: none !important; opacity: 1 !important;
+      }
+      @media (max-width: 760px) {
+        .wallet-plan-actions { flex-wrap: wrap; }
+        .wallet-plan-actions .wallet-topup-input { flex: 1 1 100%; min-width: 0; }
+        .wallet-plan-actions .wallet-plan-btn { flex: 1 1 calc(50% - 4px); }
+      }
+    </style>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .tw-input { @apply mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-brand-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 bg-white transition-shadow; }
+        .tw-select {
+          @apply appearance-none cursor-pointer pr-10;
+          background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
+          background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
+          background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
+        }
+        .tw-label { @apply block text-sm font-semibold leading-6 text-gray-900; }
+        .tw-btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md; }
+        .wallet-plan { @apply rounded-xl border border-gray-200 bg-white p-5 shadow-sm mb-4 transition-all hover:shadow-md; }
+        .wallet-progress { @apply mt-4 w-full h-2.5 rounded-full bg-brand-50 overflow-hidden ring-1 ring-inset ring-brand-100; }
+        .wallet-progress > span { @apply block h-full bg-brand-600 transition-all duration-500 ease-out; }
       }
     </style>
   </head>
-  <body>
-    <header class="site-header">
-      <div class="nav-wrap">
-        <a class="logo" href="/">
-          <span class="logo-mark" aria-hidden="true">TN</span>
-          <span>Tochukwu Nkwocha</span>
-        </a>
-        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
-        <nav class="nav-links" aria-label="Primary navigation">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          
-          <a href="/#about">About</a>
-          <a href="/#faq">FAQ</a>
-          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
-        </nav>
-      </div>
-    </header>
-
-    <main>
-      <section class="page-hero reveal">
-        <p class="section-label">Client Dashboard</p>
-        <h1>Track your project and manage your page content.</h1>
-        <p>
-          This dashboard helps you monitor progress, update your page messaging, and publish changes.
-        </p>
-      </section>
-
-      <section class="section reveal" style="padding-top: 20px">
-        <div id="dashboardUsageNotice" class="course-highlight" style="display:none; margin-bottom: 16px; border-color: #f1b23b; background: #fff6e5;">
-          <h3 style="font-size: 1.1rem; margin-bottom: 6px; color: #7a4a00;">Publishing Notice</h3>
-          <p id="dashboardUsageNoticeText" class="section-intro" style="margin-top: 0; color: #7a4a00;"></p>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
+    <section class="flex h-full w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-brand-900/40 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+      <aside id="userWorkspaceSidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none" hidden>
+        <div class="h-16 flex items-center px-6 border-b border-white/10">
+          <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+          <span class="font-heading font-bold text-lg">User Workspace</span>
         </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+          <a href="/dashboard/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-600/40 text-white">Overview</a>
+          <a href="/dashboard/courses/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">My Courses</a>
+          <a href="/dashboard/projects/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">Manage Projects</a>
+          <a href="/services/lead-capture/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">Start New Project</a>
+        </nav>
+        <div class="p-4 border-t border-white/10">
+          <button type="button" class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors" data-user-signout>Sign out</button>
+        </div>
+      </aside>
+      <div class="flex-1 min-w-0 flex flex-col">
+        <header id="userWorkspaceTopbar" class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6" hidden>
+          <div class="flex items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <div id="walletAccountIdentity" hidden>
+              <p id="walletAccountName" class="text-sm font-heading font-bold text-gray-900"></p>
+              <p id="walletAccountEmail" class="text-xs text-gray-500 font-medium"></p>
+            </div>
+          </div>
+          <button type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" data-user-signout>Sign out</button>
+        </header>
+        <main id="userDashboardMain" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div id="userGuestStack" class="w-full max-w-2xl mx-auto space-y-6">
+          <div class="flex justify-start">
+            <button type="button" id="userDashboardBackBtn" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+              Back to home
+            </button>
+          </div>
+          <section id="userWorkspaceIntro" class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600">User Dashboard Area</p>
+            <h2 class="mt-1 text-2xl font-heading font-extrabold text-gray-900">Wallet, Courses, and Projects</h2>
+            <p class="mt-2 text-sm text-gray-600">Manage your wallet, review your paid courses, and manage lead capture projects in one workspace.</p>
+          </section>
 
-        <div class="card-grid-2">
-          <article class="card">
-            <h3>Project Status</h3>
-            <p id="dashboardProjectMeta" class="section-intro">Loading project details...</p>
-            <div class="hero-points" style="margin-top: 14px">
-              <span id="dashboardPaymentStatus">Payment: --</span>
-              <span id="dashboardBuildStatus">Build status: --</span>
-              <span id="dashboardPublishStatus">Publish status: --</span>
-              <span id="dashboardPublishedUrl">Published URL: --</span>
-              <span id="dashboardUsageStats">Monthly publish usage: --</span>
+          <article class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto" id="walletAuthCard" hidden>
+            <div class="mb-8">
+              <h3 class="text-2xl font-heading font-bold text-gray-900">User Dashboard</h3>
+              <p class="mt-2 text-sm text-gray-500">Sign in to continue, or create a new account.</p>
+            </div>
+            <div class="mb-6 inline-flex w-full rounded-xl bg-gray-100 p-1 ring-1 ring-gray-200" role="tablist">
+              <button type="button" id="walletShowSignInBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-900 bg-white shadow-sm ring-1 ring-gray-200" aria-selected="true">Sign In</button>
+              <button type="button" id="walletShowSignUpBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-600" aria-selected="false">Sign Up</button>
+            </div>
+            <form id="walletSignInForm" class="space-y-6" novalidate>
+              <div><label class="tw-label" for="walletSignInEmail">Email Address</label><input id="walletSignInEmail" name="email" type="email" class="tw-input" required /></div>
+              <div><label class="tw-label" for="walletSignInPassword">Password</label><input id="walletSignInPassword" name="password" type="password" class="tw-input" required minlength="8" /></div>
+              <button type="submit" class="tw-btn-primary w-full" id="walletLoginBtn">Sign In</button>
+            </form>
+            <form id="walletSignUpForm" class="space-y-6" novalidate hidden>
+              <div><label class="tw-label" for="walletSignUpFullName">Full Name</label><input id="walletSignUpFullName" name="fullName" class="tw-input" required /></div>
+              <div><label class="tw-label" for="walletSignUpEmail">Email Address</label><input id="walletSignUpEmail" name="email" type="email" class="tw-input" required /></div>
+              <div><label class="tw-label" for="walletSignUpPassword">Password</label><input id="walletSignUpPassword" name="password" type="password" class="tw-input" required minlength="8" /></div>
+              <button type="submit" class="tw-btn-primary w-full" id="walletRegisterBtn">Create Account</button>
+            </form>
+            <p class="text-sm mt-4" id="walletAuthMsg"></p>
+          </article>
+          </div>
+
+          <article class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-4xl mx-auto" id="walletPlanCard" hidden>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <a href="/dashboard/courses/" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-all">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Courses</p>
+                <h4 class="mt-1 text-lg font-heading font-bold text-gray-900">My Courses</h4>
+                <p class="mt-2 text-sm text-gray-600">View courses you have paid for on the platform.</p>
+              </a>
+              <a href="/dashboard/projects/" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-all">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Lead Capture</p>
+                <h4 class="mt-1 text-lg font-heading font-bold text-gray-900">Manage Projects</h4>
+                <p class="mt-2 text-sm text-gray-600">Open your projects page and manage existing projects.</p>
+              </a>
+            </div>
+
+            <div class="bg-gray-50 rounded-2xl p-6 ring-1 ring-inset ring-gray-200 mb-8">
+              <h4 class="text-base font-heading font-bold text-gray-900 mb-4">My Wallet</h4>
+              <form id="walletCreatePlanForm" class="grid grid-cols-1 gap-4" novalidate>
+                <div>
+                  <label class="tw-label" for="walletCourse">Course</label>
+                  <select id="walletCourse" class="tw-input tw-select">
+                    <option value="prompt-to-profit">Prompt to Profit</option>
+                    <option value="prompt-to-production">Prompt to Production</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="tw-label" for="walletBatch">Batch Target</label>
+                  <select id="walletBatch" class="tw-input tw-select"></select>
+                </div>
+                <div><button type="submit" class="tw-btn-primary w-full" id="walletCreatePlanBtn">Create Plan</button></div>
+              </form>
+            </div>
+
+            <div>
+              <h4 class="text-lg font-heading font-bold text-gray-900 mb-4">Active Plans</h4>
+              <div id="walletPlans" class="space-y-4"></div>
+              <p class="text-sm mt-3" id="walletPlanMsg"></p>
             </div>
           </article>
-
-          <article class="card">
-            <h3>Recent Activity</h3>
-            <div id="dashboardEvents" class="section-intro">No activity yet.</div>
-          </article>
-        </div>
-      </section>
-
-      <section class="section reveal" style="padding-top: 12px">
-        <div class="course-highlight">
-          <h2 class="section-headline" style="max-width: 100%">Edit Your Page Content</h2>
-          <p class="section-intro" style="margin-top: 10px">
-            Update this content and save. Your updates are stored and used in your page build/publish process.
-          </p>
-
-          <form id="dashboardContentForm" style="margin-top: 18px; display: grid; gap: 14px">
-            <label>
-              Headline
-              <input class="form-input" type="text" name="headline" required />
-            </label>
-            <label>
-              Subheadline
-              <textarea class="form-input" name="subheadline" rows="3" required></textarea>
-            </label>
-            <label>
-              Offer Summary
-              <textarea class="form-input" name="offer" rows="3" required></textarea>
-            </label>
-            <label>
-              Primary CTA Text
-              <input class="form-input" type="text" name="cta" />
-            </label>
-            <label>
-              Testimonials
-              <textarea class="form-input" name="testimonials" rows="4"></textarea>
-            </label>
-            <label>
-              Contact Note
-              <textarea class="form-input" name="contactNote" rows="3"></textarea>
-            </label>
-            <p id="dashboardFormError" class="section-intro" style="color: #b91c1c"></p>
-            <div class="cta-row">
-              <button id="dashboardSaveBtn" type="submit" class="btn btn-outline">Save Changes</button>
-              <button id="dashboardPublishBtn" type="button" class="btn btn-primary">Publish Updates</button>
-            </div>
-          </form>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">Tochukwu Nkwocha</div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/privacy-policy">Privacy Policy</a>
-          <a href="/terms-and-conditions">Terms & Conditions</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+        </main>
       </div>
-    </footer>
-
-    <script src="/assets/site.js"></script>
-    <script src="/assets/dashboard-client.js" defer></script>
+    </section>
+    <script src="https://js.paystack.co/v1/inline.js" defer></script>
+    <script src="/assets/user-dashboard-shell.js" defer></script>
+    <script src="/assets/installments.js" defer></script>
   </body>
 </html>

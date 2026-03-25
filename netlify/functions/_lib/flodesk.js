@@ -1,5 +1,6 @@
 const DEFAULT_ENROL_SEGMENT_ID = "69ad9a50568c36094377ea96";
 const DEFAULT_PRE_ENROL_SEGMENT_ID = "69ad60e952e4ac8ca746bb53";
+const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./course-config");
 
 async function syncFlodeskSubscriberToSegment({ firstName, email, segmentId }) {
   const apiKey = process.env.FLODESK_API_KEY && process.env.FLODESK_API_KEY.trim();
@@ -44,10 +45,22 @@ async function syncFlodeskSubscriberToSegment({ firstName, email, segmentId }) {
   }
 }
 
-async function syncFlodeskSubscriber({ firstName, email }) {
-  const segmentId =
-    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
-    DEFAULT_ENROL_SEGMENT_ID;
+function getMainEnrolSegmentId(rawCourseSlug) {
+  const courseSlug = normalizeCourseSlug(rawCourseSlug, DEFAULT_COURSE_SLUG);
+  if (courseSlug === "prompt-to-production") {
+    return (
+      (process.env.FLODESK_ENROL_PROD_SEGMENT_ID && process.env.FLODESK_ENROL_PROD_SEGMENT_ID.trim()) ||
+      (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) ||
+      DEFAULT_ENROL_SEGMENT_ID
+    );
+  }
+  return (
+    (process.env.FLODESK_ENROL_SEGMENT_ID && process.env.FLODESK_ENROL_SEGMENT_ID.trim()) || DEFAULT_ENROL_SEGMENT_ID
+  );
+}
+
+async function syncFlodeskSubscriber({ firstName, email, courseSlug }) {
+  const segmentId = getMainEnrolSegmentId(courseSlug);
 
   return syncFlodeskSubscriberToSegment({ firstName, email, segmentId });
 }
@@ -64,6 +77,7 @@ module.exports = {
   syncFlodeskSubscriber,
   syncFlodeskPreEnrolSubscriber,
   syncFlodeskSubscriberToSegment,
+  getMainEnrolSegmentId,
   DEFAULT_ENROL_SEGMENT_ID,
   DEFAULT_PRE_ENROL_SEGMENT_ID,
 };

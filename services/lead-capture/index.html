@@ -139,10 +139,8 @@
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-          
-          <a href="/#about">About</a>
-          <a href="/#faq">FAQ</a>
-          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+          <a href="/services/lead-capture/">Services</a>
+          <a href="/dashboard/" class="nav-cta">Sign in</a>
         </nav>
       </div>
     </header>
@@ -228,7 +226,7 @@
               <svg class="w-6 h-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             </div>
             <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Lead Form + Email Follow-up</h3>
-            <p class="text-gray-600 leading-relaxed">We add a form to collect name, email, and phone number, set up your email marketing, and write a 5-email follow-up series.</p>
+            <p class="text-gray-600 leading-relaxed">We add a form to collect name, email, and phone number, set up your email marketing powered by Brevo, and write a 5-email follow-up series.</p>
           </article>
           
           <article class="bg-white rounded-2xl p-8 shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md">
@@ -262,7 +260,15 @@
               </li>
               <li class="flex items-start">
                 <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                <span class="text-gray-300 text-lg">Free hosting setup included</span>
+                <span class="text-gray-300 text-lg">Hosting powered by Netlify (free-tier limits apply)</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">Email marketing powered by Brevo (free-tier limits apply)</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-brand-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="text-gray-300 text-lg">Domain registration and renewals are paid separately</span>
               </li>
               <li class="flex items-start opacity-70">
                 <svg class="h-6 w-6 text-gray-500 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -287,7 +293,10 @@
             Submit your business details
           </h2>
           <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Give us clear information about your business. The more detail you provide, the better your page will convert. Free hosting is included for this setup.
+            Give us clear information about your business. The more detail you provide, the better your page will convert. Hosting is powered by Netlify and email marketing is powered by Brevo under each provider's free-tier limits.
+          </p>
+          <p class="mt-3 text-sm font-semibold text-gray-500 max-w-2xl mx-auto">
+            When your Netlify or Brevo free quota is exceeded, you will upgrade directly on your own provider account to continue service.
           </p>
         </div>
 
@@ -324,9 +333,15 @@
               </div>
 
               <div class="mt-10 flex justify-end pt-6 border-t border-gray-100">
-                <button type="button" data-step-next class="site-btn-primary group">
-                  Continue to Business
-                  <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                <button
+                  type="button"
+                  data-step-next
+                  disabled
+                  aria-disabled="true"
+                  title="Coming soon"
+                  class="site-btn-primary group !bg-gray-300 !text-gray-600 cursor-not-allowed hover:!bg-gray-300"
+                >
+                  Coming soon
                 </button>
               </div>
             </div>
@@ -392,9 +407,15 @@
                   <svg class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                   Back
                 </button>
-                <button type="button" data-step-next class="site-btn-primary group">
-                  Continue to Tech Details
-                  <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                <button
+                  type="button"
+                  data-step-next
+                  disabled
+                  aria-disabled="true"
+                  title="Coming soon"
+                  class="site-btn-primary group !bg-gray-300 !text-gray-600 cursor-not-allowed hover:!bg-gray-300"
+                >
+                  Coming soon
                 </button>
               </div>
             </div>
@@ -553,6 +574,7 @@
     </div>
 
     <script src="/assets/site.js"></script>
+    <script src="https://js.paystack.co/v1/inline.js" defer></script>
     <script src="/assets/leadpage-service.js" defer></script>
   </body>
 </html>

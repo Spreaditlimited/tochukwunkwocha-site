@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const {
   STATUS_APPROVED,
@@ -13,6 +14,9 @@ const { syncFlodeskSubscriber } = require("./_lib/flodesk");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+  try {
+    await applyRuntimeSettings(getPool());
+  } catch (_error) {}
 
   const auth = requireAdminSession(event);
   if (!auth.ok) return json(auth.statusCode || 401, { ok: false, error: auth.error || "Unauthorized" });
@@ -54,6 +58,7 @@ exports.handler = async function (event) {
       const synced = await syncFlodeskSubscriber({
         firstName: payment.first_name,
         email: payment.email,
+        courseSlug: payment.course_slug,
       });
       if (synced.ok) {
         await markMainSynced(pool, paymentUuid);

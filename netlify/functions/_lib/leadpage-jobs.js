@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
+const { applyRuntimeSettings } = require("./runtime-settings");
 
 const STATUS_DETAILS_PENDING = "details_pending";
 const STATUS_DETAILS_COMPLETE = "details_complete";
@@ -51,6 +52,8 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureLeadpageTables(pool) {
+  await applyRuntimeSettings(pool);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS leadpage_jobs (
       id BIGINT NOT NULL AUTO_INCREMENT,
@@ -116,6 +119,16 @@ async function ensureLeadpageTables(pool) {
   await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN publish_enabled TINYINT(1) NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN published_url TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN last_published_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN domain_provider VARCHAR(40) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN domain_order_id VARCHAR(120) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN domain_purchase_currency VARCHAR(16) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN domain_purchase_amount_minor BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN domain_purchased_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD KEY idx_leadpage_domain_status_created (domain_status, created_at)`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN netlify_api_token VARCHAR(400) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN netlify_site_id VARCHAR(200) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN brevo_api_key VARCHAR(400) NULL`);
+  await safeAlter(pool, `ALTER TABLE leadpage_jobs ADD COLUMN brevo_list_id BIGINT NULL`);
 }
 
 async function appendLeadpageEvent(pool, input) {
@@ -132,6 +145,23 @@ async function appendLeadpageEvent(pool, input) {
       now,
     ]
   );
+}
+
+async function countLeadpageEventsSince(pool, input) {
+  const jobUuid = clean(input && input.jobUuid, 72);
+  const eventType = clean(input && input.eventType, 80);
+  const seconds = Math.max(1, Math.min(Number((input && input.seconds) || 60), 86400));
+  const cutoff = new Date(Date.now() - seconds * 1000).toISOString().slice(0, 19).replace("T", " ");
+
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS count
+     FROM leadpage_job_events
+     WHERE job_uuid = ?
+       AND event_type = ?
+       AND created_at >= ?`,
+    [jobUuid, eventType, cutoff]
+  );
+  return Number(rows && rows[0] ? rows[0].count : 0);
 }
 
 async function createLeadpageJob(pool, input) {
@@ -244,11 +274,17 @@ async function listLeadpageJobs(pool, input) {
             google_tag_id,
             domain_status,
             domain_name,
+            domain_provider,
+            domain_order_id,
+            domain_purchase_currency,
+            domain_purchase_amount_minor,
+            domain_purchased_at,
             hostinger_email,
             notes,
             status,
             build_url,
             delivery_url,
+            copy_json,
             payment_status,
             payment_provider,
             payment_reference,
@@ -262,6 +298,10 @@ async function listLeadpageJobs(pool, input) {
             publish_enabled,
             published_url,
             last_published_at,
+            CASE WHEN netlify_api_token IS NULL OR netlify_api_token = '' THEN 0 ELSE 1 END AS has_netlify_api_token,
+            netlify_site_id,
+            CASE WHEN brevo_api_key IS NULL OR brevo_api_key = '' THEN 0 ELSE 1 END AS has_brevo_api_key,
+            brevo_list_id,
             source,
             created_at,
             updated_at
@@ -292,11 +332,18 @@ async function findLeadpageJobByUuid(pool, jobUuid) {
             google_tag_id,
             domain_status,
             domain_name,
+            domain_provider,
+            domain_order_id,
+            domain_purchase_currency,
+            domain_purchase_amount_minor,
+            domain_purchased_at,
             hostinger_email,
             notes,
             status,
             build_url,
             delivery_url,
+            copy_json,
+            client_content_json,
             payment_status,
             payment_provider,
             payment_reference,
@@ -310,6 +357,10 @@ async function findLeadpageJobByUuid(pool, jobUuid) {
             publish_enabled,
             published_url,
             last_published_at,
+            netlify_api_token,
+            netlify_site_id,
+            brevo_api_key,
+            brevo_list_id,
             source,
             created_at,
             updated_at
@@ -383,7 +434,7 @@ async function findLeadpageJobByPaymentReference(pool, paymentReference) {
   return rows && rows.length ? rows[0] : null;
 }
 
-async function validateLeadpageClientAccess(pool, input) {
+async function validateLeadpageClientToken(pool, input) {
   const jobUuid = clean(input.jobUuid, 72);
   const accessToken = clean(input.accessToken, 96);
   if (!jobUuid || !accessToken) return null;
@@ -398,6 +449,10 @@ async function validateLeadpageClientAccess(pool, input) {
             publish_status,
             publish_enabled,
             published_url,
+            netlify_site_id,
+            CASE WHEN netlify_api_token IS NULL OR netlify_api_token = '' THEN 0 ELSE 1 END AS has_netlify_api_token,
+            brevo_list_id,
+            CASE WHEN brevo_api_key IS NULL OR brevo_api_key = '' THEN 0 ELSE 1 END AS has_brevo_api_key,
             created_at,
             updated_at
      FROM leadpage_jobs
@@ -407,7 +462,12 @@ async function validateLeadpageClientAccess(pool, input) {
   );
 
   if (!rows || !rows.length) return null;
-  const access = rows[0];
+  return rows[0];
+}
+
+async function validateLeadpageClientAccess(pool, input) {
+  const access = await validateLeadpageClientToken(pool, input);
+  if (!access) return null;
   if (String(access.payment_status || "").toLowerCase() !== "paid") return null;
   return access;
 }
@@ -428,6 +488,15 @@ async function getLeadpageDashboardData(pool, input) {
             primary_goal,
             cta_text,
             tone,
+            facebook_pixel_id,
+            google_tag_id,
+            domain_status,
+            domain_name,
+            domain_provider,
+            domain_order_id,
+            domain_purchase_currency,
+            domain_purchase_amount_minor,
+            domain_purchased_at,
             notes,
             status,
             payment_status,
@@ -435,6 +504,10 @@ async function getLeadpageDashboardData(pool, input) {
             publish_enabled,
             published_url,
             client_content_json,
+            netlify_site_id,
+            CASE WHEN netlify_api_token IS NULL OR netlify_api_token = '' THEN 0 ELSE 1 END AS has_netlify_api_token,
+            brevo_list_id,
+            CASE WHEN brevo_api_key IS NULL OR brevo_api_key = '' THEN 0 ELSE 1 END AS has_brevo_api_key,
             created_at,
             updated_at
      FROM leadpage_jobs
@@ -464,13 +537,25 @@ async function updateLeadpageClientContent(pool, input) {
   const jobUuid = clean(input.jobUuid, 72);
   const contentJson = input.contentJson ? JSON.stringify(input.contentJson) : null;
   const now = nowSql();
+  const sets = ["client_content_json = ?", "updated_at = ?"];
+  const params = [contentJson, now];
 
+  if (Object.prototype.hasOwnProperty.call(input, "hasFacebookPixelId") && input.hasFacebookPixelId) {
+    sets.push("facebook_pixel_id = ?");
+    params.push(clean(input.facebookPixelId, 120) || null);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, "hasGoogleTagId") && input.hasGoogleTagId) {
+    sets.push("google_tag_id = ?");
+    params.push(clean(input.googleTagId, 120) || null);
+  }
+
+  params.push(jobUuid);
   const [res] = await pool.query(
     `UPDATE leadpage_jobs
-     SET client_content_json = ?,
-         updated_at = ?
+     SET ${sets.join(", ")}
      WHERE job_uuid = ?`,
-    [contentJson, now, jobUuid]
+    params
   );
 
   const affected = Number(res && res.affectedRows ? res.affectedRows : 0);
@@ -479,6 +564,59 @@ async function updateLeadpageClientContent(pool, input) {
       jobUuid,
       eventType: "client_content_saved",
       eventNote: "Client saved page content from dashboard",
+    });
+  }
+  return affected;
+}
+
+async function updateLeadpageClientIntegrations(pool, input) {
+  const jobUuid = clean(input.jobUuid, 72);
+  const now = nowSql();
+  const sets = ["updated_at = ?"];
+  const params = [now];
+
+  if (Object.prototype.hasOwnProperty.call(input, "hasNetlifyApiToken") && input.hasNetlifyApiToken) {
+    sets.push("netlify_api_token = ?");
+    params.push(clean(input.netlifyApiToken, 400) || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "hasNetlifySiteId") && input.hasNetlifySiteId) {
+    sets.push("netlify_site_id = ?");
+    params.push(clean(input.netlifySiteId, 200) || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "hasBrevoApiKey") && input.hasBrevoApiKey) {
+    sets.push("brevo_api_key = ?");
+    params.push(clean(input.brevoApiKey, 400) || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "hasBrevoListId") && input.hasBrevoListId) {
+    const raw = clean(input.brevoListId, 40);
+    const n = Number(raw);
+    const listId = Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+    sets.push("brevo_list_id = ?");
+    params.push(listId);
+  }
+
+  if (sets.length === 1) return 0;
+
+  params.push(jobUuid);
+  const [res] = await pool.query(
+    `UPDATE leadpage_jobs
+     SET ${sets.join(", ")}
+     WHERE job_uuid = ?`,
+    params
+  );
+
+  const affected = Number(res && res.affectedRows ? res.affectedRows : 0);
+  if (affected > 0) {
+    await appendLeadpageEvent(pool, {
+      jobUuid,
+      eventType: "client_integrations_saved",
+      eventNote: "Client saved Netlify/Brevo integration credentials",
+      payload: {
+        hasNetlifyApiToken: Boolean(input.hasNetlifyApiToken),
+        hasNetlifySiteId: Boolean(input.hasNetlifySiteId),
+        hasBrevoApiKey: Boolean(input.hasBrevoApiKey),
+        hasBrevoListId: Boolean(input.hasBrevoListId),
+      },
     });
   }
   return affected;
@@ -521,13 +659,81 @@ async function setLeadpagePublishState(pool, input) {
   return affected;
 }
 
+async function setLeadpageDomainState(pool, input) {
+  const jobUuid = clean(input.jobUuid, 72);
+  const domainStatus = clean(input.domainStatus, 80);
+  const domainName = clean(input.domainName, 190).toLowerCase();
+  const domainProvider = clean(input.domainProvider, 40);
+  const domainOrderId = clean(input.domainOrderId, 120);
+  const domainPurchaseCurrency = clean(input.domainPurchaseCurrency, 16).toUpperCase();
+  const domainPurchaseAmountMinor = Number.isFinite(Number(input.domainPurchaseAmountMinor))
+    ? Math.max(0, Math.floor(Number(input.domainPurchaseAmountMinor)))
+    : null;
+  const markPurchased = Boolean(input.markPurchased);
+  const now = nowSql();
+
+  const sets = ["updated_at = ?"];
+  const params = [now];
+
+  if (domainStatus) {
+    sets.push("domain_status = ?");
+    params.push(domainStatus);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "domainName")) {
+    sets.push("domain_name = ?");
+    params.push(domainName || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "domainProvider")) {
+    sets.push("domain_provider = ?");
+    params.push(domainProvider || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "domainOrderId")) {
+    sets.push("domain_order_id = ?");
+    params.push(domainOrderId || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "domainPurchaseCurrency")) {
+    sets.push("domain_purchase_currency = ?");
+    params.push(domainPurchaseCurrency || null);
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "domainPurchaseAmountMinor")) {
+    sets.push("domain_purchase_amount_minor = ?");
+    params.push(domainPurchaseAmountMinor);
+  }
+  if (markPurchased) {
+    sets.push("domain_purchased_at = ?");
+    params.push(now);
+  }
+
+  params.push(jobUuid);
+  const [res] = await pool.query(`UPDATE leadpage_jobs SET ${sets.join(", ")} WHERE job_uuid = ?`, params);
+  const affected = Number(res && res.affectedRows ? res.affectedRows : 0);
+  if (affected > 0) {
+    await appendLeadpageEvent(pool, {
+      jobUuid,
+      eventType: "domain_state_changed",
+      eventNote: domainStatus ? `Domain status changed to ${domainStatus}` : "Domain state updated",
+      payload: {
+        domainName: domainName || null,
+        domainProvider: domainProvider || null,
+        domainOrderId: domainOrderId || null,
+        domainPurchaseCurrency: domainPurchaseCurrency || null,
+        domainPurchaseAmountMinor,
+      },
+    });
+  }
+  return affected;
+}
+
 async function findPublishedLeadpageProject(pool, jobUuid) {
   const [rows] = await pool.query(
     `SELECT job_uuid,
             business_name,
+            primary_goal,
+            target_location,
             service_offer,
             cta_text,
             notes,
+            copy_json,
             client_content_json,
             publish_status,
             publish_enabled,
@@ -548,9 +754,6 @@ async function findPublishedLeadpageProject(pool, jobUuid) {
 async function getLeadpagePublishUsage(pool, jobUuid) {
   const safeJobUuid = clean(jobUuid, 72);
   const perClientLimit = positiveInt(process.env.LEADPAGE_CLIENT_MONTHLY_PUBLISH_LIMIT, 12);
-  const netlifyMonthlyCredits = positiveInt(process.env.NETLIFY_MONTHLY_CREDIT_LIMIT, 300);
-  const estimatedCreditsPerPublish = positiveInt(process.env.NETLIFY_ESTIMATED_CREDITS_PER_PUBLISH, 5);
-  const warningRemainingCredits = positiveInt(process.env.NETLIFY_CREDIT_WARNING_REMAINING, 60);
 
   const [jobRows] = await pool.query(
     `SELECT COUNT(*) AS count
@@ -564,35 +767,24 @@ async function getLeadpagePublishUsage(pool, jobUuid) {
   );
   const jobPublishedThisMonth = Number(jobRows && jobRows[0] ? jobRows[0].count : 0);
 
-  const [globalRows] = await pool.query(
-    `SELECT COUNT(*) AS count
-     FROM leadpage_job_events
-     WHERE event_type = 'publish_state_changed'
-       AND event_note = 'Publish status changed to published'
-       AND YEAR(created_at) = YEAR(CURRENT_DATE())
-       AND MONTH(created_at) = MONTH(CURRENT_DATE())`
-  );
-  const globalPublishedThisMonth = Number(globalRows && globalRows[0] ? globalRows[0].count : 0);
-
-  const globalEstimatedCreditsUsed = globalPublishedThisMonth * estimatedCreditsPerPublish;
-  const globalEstimatedCreditsRemaining = Math.max(0, netlifyMonthlyCredits - globalEstimatedCreditsUsed);
   const clientRemainingPublishes = Math.max(0, perClientLimit - jobPublishedThisMonth);
   const clientLimitReached = jobPublishedThisMonth >= perClientLimit;
-  const globalCreditsExhausted = globalEstimatedCreditsRemaining <= 0;
-  const globalCreditWarning = globalEstimatedCreditsRemaining <= warningRemainingCredits;
+  const globalPublishedThisMonth = 0;
+  const netlifyMonthlyCredits = 0;
+  const estimatedCreditsPerPublish = 0;
+  const globalEstimatedCreditsUsed = 0;
+  const globalEstimatedCreditsRemaining = 0;
+  const globalCreditsExhausted = false;
+  const globalCreditWarning = false;
 
   let warningMessage = "";
   if (clientLimitReached) {
-    warningMessage = "Monthly publish limit reached for this project. Please contact support for more publish credits.";
-  } else if (globalCreditsExhausted) {
-    warningMessage = "Publishing is temporarily paused because monthly hosting credits are exhausted.";
-  } else if (globalCreditWarning) {
-    warningMessage = "Publishing credits are running low this month. Please publish only final changes.";
+    warningMessage = "Monthly publish limit reached for this project. Upgrade hosting on your Netlify account to continue publishing this month.";
   }
 
   return {
     perClientLimit,
-    clientPublishedThisMonth,
+    clientPublishedThisMonth: jobPublishedThisMonth,
     clientRemainingPublishes,
     globalPublishedThisMonth,
     netlifyMonthlyCredits,
@@ -602,7 +794,7 @@ async function getLeadpagePublishUsage(pool, jobUuid) {
     clientLimitReached,
     globalCreditsExhausted,
     globalCreditWarning,
-    canPublish: !clientLimitReached && !globalCreditsExhausted,
+    canPublish: !clientLimitReached,
     warningMessage,
   };
 }
@@ -703,12 +895,16 @@ module.exports = {
   findLeadpageJobByUuid,
   findLeadpageJobByPaymentReference,
   validateLeadpageClientAccess,
+  validateLeadpageClientToken,
   getLeadpageDashboardData,
   findPublishedLeadpageProject,
   getLeadpagePublishUsage,
   updateLeadpageJob,
   updateLeadpageClientContent,
+  updateLeadpageClientIntegrations,
   setLeadpagePublishState,
+  setLeadpageDomainState,
+  countLeadpageEventsSince,
   markLeadpagePaymentInitiated,
   markLeadpagePaymentPaid,
   appendLeadpageEvent,

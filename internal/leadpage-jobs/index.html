@@ -42,48 +42,73 @@
     
     <style type="text/tailwindcss">
       @layer utilities {
-        /* JS logic hooks */
+        /* Premium Filter Button Active State */
         .status-filter__btn.is-active {
-          @apply bg-white text-gray-900 shadow-sm ring-1 ring-gray-200;
+          @apply bg-brand-700 text-white shadow-lg ring-1 ring-brand-800 -translate-y-0.5 transition-all duration-200;
         }
         .status-filter__btn:not(.is-active) {
-          @apply text-gray-500 hover:text-gray-700 hover:bg-gray-50;
+          @apply text-gray-500 hover:text-brand-700 hover:bg-white transition-all duration-200;
         }
         
-        /* Strict hidden enforcement for JS toggling */
         [hidden] {
           display: none !important;
         }
 
-        /* Clean formatting for JS-injected table rows */
+        /* Rethought Table Cell Presentation */
         #adminRows td {
-          @apply whitespace-nowrap px-4 py-4 text-sm text-gray-600 border-b border-gray-100;
+          @apply align-top px-6 py-6 text-sm text-gray-600 border-b border-gray-100 transition-colors bg-white;
         }
-        #adminRows td:last-child {
-          @apply text-right font-medium;
+        #adminRows tr:hover td {
+          @apply bg-gray-50/40;
         }
+
+        /* Injected Button Styling for Table Actions */
+        #adminRows button {
+          @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200;
+          @apply bg-white ring-1 ring-inset ring-gray-200 text-gray-700 hover:bg-brand-700 hover:text-white hover:ring-brand-800;
+        }
+        #adminRows button[data-action='view'] {
+          @apply bg-brand-600 text-white ring-brand-700 hover:bg-brand-500 hover:text-white;
+        }
+        #adminRows button[data-action='save'] {
+          @apply bg-gray-900 text-white ring-gray-900 hover:bg-gray-700 hover:text-white;
+        }
+        #adminRows button[data-action='first-publish'] {
+          @apply bg-emerald-600 text-white ring-emerald-700 hover:bg-emerald-500 hover:text-white;
+        }
+        #adminRows button[data-action='domain-suggest'],
+        #adminRows button[data-action='domain-check'] {
+          @apply bg-white text-gray-700 ring-gray-300 hover:bg-gray-100 hover:text-gray-900 hover:ring-gray-400;
+        }
+
+        /* Custom Premium Picker Styling */
+        .premium-picker {
+          @apply appearance-none w-full bg-white border-0 py-2.5 pl-4 pr-10 text-sm font-semibold text-gray-900;
+          @apply rounded-xl shadow-sm ring-1 ring-inset ring-gray-200 transition-all duration-200;
+          @apply hover:ring-brand-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 outline-none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       }
     </style>
   </head>
-  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
+  <body class="bg-[#F3F4F6] text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100">
     
     <div id="internalShell" class="flex h-full w-full flex-col">
 
       <section id="adminAppCard" class="flex h-full w-full">
         
         <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
-        <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+        <label for="mobile-menu-toggle" class="fixed inset-0 bg-brand-900/40 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
 
         <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
-          
           <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
             <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
             <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
           </div>
-          
           <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
             <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
-            
             <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
               <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
               Dashboard Home
@@ -96,13 +121,15 @@
               <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Installments
             </a>
-            
             <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">
               <svg class="h-5 w-5 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" /></svg>
               Lead Capture Jobs
             </a>
+            <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
+              <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.591 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.59c1.756.427 1.756 2.925 0 3.352a1.724 1.724 0 00-1.066 2.59c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.59 1.066c-.427 1.756-2.925 1.756-3.352 0a1.724 1.724 0 00-2.59-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.59c-1.756-.427-1.756-2.925 0-3.352a1.724 1.724 0 001.066-2.59c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.59-1.066z" /></svg>
+              Settings
+            </a>
           </div>
-          
           <div class="p-4 border-t border-white/10 shrink-0">
             <a href="/" class="flex items-center gap-2 px-3 py-2 text-sm text-brand-300 hover:text-white transition-colors">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -111,99 +138,68 @@
           </div>
         </aside>
 
-        <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
+        <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
           
-          <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+          <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
             <div class="flex items-center gap-4">
-              <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+              <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
               </label>
-              <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Lead Capture Jobs</h2>
+              <h2 class="text-xl font-heading font-extrabold text-gray-900 tracking-tight">Lead Capture Queue</h2>
             </div>
-            <div class="flex items-center gap-4">
-              <button 
-                id="adminLogoutBtn" 
-                type="button" 
-                class="hidden sm:inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Sign out
-              </button>
-              <button type="button" class="sm:hidden p-2 text-gray-500 hover:text-gray-900">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-              </button>
+            <div class="flex items-center gap-3">
+              <button id="adminLogoutBtn" type="button" class="hidden sm:inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ring-1 ring-inset ring-gray-200 hover:text-red-600 hover:ring-red-100 transition-all">Sign Out</button>
             </div>
           </header>
 
-          <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div class="max-w-6xl mx-auto">
+          <main class="flex-1 overflow-y-auto p-6 sm:p-8">
+            <div class="max-w-[100rem] mx-auto space-y-6">
               
-              <div class="text-sm text-gray-500 mb-6">
-                Track details, build, QA, and delivery for 24-hour turnaround.
-              </div>
-
-              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 
-                <div class="overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
-                  <div id="adminStatusFilter" role="tablist" aria-label="Filter by status" class="inline-flex items-center justify-center p-1 rounded-lg bg-gray-100/80 ring-1 ring-gray-200">
-                    <button type="button" class="status-filter__btn is-active px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="details_pending">Details pending</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="details_complete">Details complete</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="copy_generated">Copy generated</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="page_built">Page built</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="qa_passed">QA passed</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="delivered">Delivered</button>
-                    <button type="button" class="status-filter__btn px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all" data-status="all">All Jobs</button>
+                <div class="bg-gray-200/50 p-1 rounded-2xl inline-flex hide-scrollbar overflow-x-auto ring-1 ring-black/5">
+                  <div id="adminStatusFilter" role="tablist" class="flex items-center gap-0.5">
+                    <button type="button" class="status-filter__btn is-active px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="details_pending">Pending</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="details_complete">Details</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="copy_generated">Copy</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="page_built">Built</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="qa_passed">QA</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="delivered">Done</button>
+                    <button type="button" class="status-filter__btn px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl whitespace-nowrap transition-all" data-status="all">All</button>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-3">
-                  <div class="relative rounded-md shadow-sm w-full sm:w-64">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
+                   <div class="relative min-w-[280px]">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <input 
-                      id="adminSearchInput" 
-                      type="text" 
-                      placeholder="Search email, phone, business..." 
-                      class="block w-full rounded-lg border-0 py-2 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all"
-                    />
+                    <input id="adminSearchInput" type="text" placeholder="Filter jobs..." class="block w-full rounded-xl border-0 py-2.5 pl-10 text-sm bg-white shadow-sm ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-brand-600 transition-all" />
                   </div>
-                  <button 
-                    id="adminRefreshBtn" 
-                    type="button" 
-                    class="inline-flex items-center rounded-lg bg-white p-2 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                    title="Refresh Data"
-                  >
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                  <button id="adminRefreshBtn" type="button" class="p-2.5 rounded-xl bg-white text-brand-600 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-brand-50 transition-all active:scale-95">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                   </button>
                 </div>
               </div>
 
-              <p id="adminMessage" class="mt-4 text-sm text-gray-500 hidden"></p>
+              <p id="adminMessage" class="hidden"></p>
 
-              <div class="flex flex-col">
-                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                  <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                    <div class="overflow-hidden shadow-sm ring-1 ring-gray-200 sm:rounded-xl bg-white">
-                      <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">Date</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Business</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Offer</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody id="adminRows" class="divide-y divide-gray-200 bg-white">
-                          </tbody>
-                      </table>
-                    </div>
-                  </div>
+              <div class="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] ring-1 ring-black/[0.03] overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full">
+                    <thead class="bg-gray-50/50 border-b border-gray-100">
+                      <tr>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Submitted</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Client & Business</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">The Offer</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Job Workflow</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status & Hosting</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminRows" class="divide-y divide-gray-100">
+                      </tbody>
+                  </table>
                 </div>
               </div>
               
@@ -212,6 +208,35 @@
         </div>
       </section>
       
+    </div>
+
+    <div id="adminDetailsModal" class="fixed inset-0 z-[70] hidden" aria-hidden="true">
+      <div class="absolute inset-0 bg-brand-900/40 backdrop-blur-sm transition-opacity" data-details-close></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+          <div class="flex items-center justify-between border-b border-gray-100 px-8 py-6">
+            <div>
+              <h3 class="text-xl font-heading font-extrabold text-gray-900">Project Details</h3>
+              <p class="text-[10px] font-bold text-brand-600 uppercase tracking-widest mt-0.5">Comprehensive Intake View</p>
+            </div>
+            <button type="button" class="h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-brand-600 transition-all" data-details-close>
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div id="adminDetailsBody" class="max-h-[65vh] overflow-y-auto px-8 py-8 text-sm leading-relaxed text-gray-600"></div>
+          <div class="bg-gray-50/80 px-8 py-4 border-t border-gray-100 flex justify-end gap-3">
+             <div class="relative min-w-[200px]">
+               <select id="modalStatusUpdate" class="premium-picker">
+                  <option>Update Workflow...</option>
+               </select>
+               <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+               </div>
+             </div>
+             <button type="button" class="px-6 py-2 text-[11px] font-black uppercase tracking-widest text-brand-700 hover:text-brand-900 transition-colors" data-details-close>Dismiss</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="/assets/admin-leadpage-jobs.js" defer></script>

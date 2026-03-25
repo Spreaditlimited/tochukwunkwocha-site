@@ -70,6 +70,7 @@ exports.handler = async function (event) {
     const synced = await syncFlodeskSubscriber({
       firstName: session.account.fullName,
       email: session.account.email,
+      courseSlug: plan.course_slug,
     });
     if (synced.ok) {
       await pool.query(`UPDATE course_orders SET flodesk_synced = 1, updated_at = ? WHERE order_uuid = ?`, [nowSql(), orderUuid]);

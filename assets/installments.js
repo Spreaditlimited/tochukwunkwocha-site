@@ -1,6 +1,10 @@
 (function () {
   const authCard = document.getElementById("walletAuthCard");
   const planCard = document.getElementById("walletPlanCard");
+  const workspaceSidebar = document.getElementById("userWorkspaceSidebar");
+  const workspaceTopbar = document.getElementById("userWorkspaceTopbar");
+  const dashboardMain = document.getElementById("userDashboardMain");
+  const guestStack = document.getElementById("userGuestStack");
 
   const signInForm = document.getElementById("walletSignInForm");
   const signUpForm = document.getElementById("walletSignUpForm");
@@ -12,12 +16,16 @@
 
   const logoutBtn = document.getElementById("walletLogoutBtn");
   const accountMeta = document.getElementById("walletAccountMeta");
+  const accountName = document.getElementById("walletAccountName");
+  const accountEmail = document.getElementById("walletAccountEmail");
+  const accountIdentity = document.getElementById("walletAccountIdentity");
   const courseSelect = document.getElementById("walletCourse");
   const batchSelect = document.getElementById("walletBatch");
   const createPlanForm = document.getElementById("walletCreatePlanForm");
   const createPlanBtn = document.getElementById("walletCreatePlanBtn");
   const plansWrap = document.getElementById("walletPlans");
   const planMsg = document.getElementById("walletPlanMsg");
+  const backBtn = document.getElementById("userDashboardBackBtn");
 
   let dashboard = null;
   let authMode = "signin";
@@ -27,6 +35,27 @@
   }
 
   function setWalletState(isAuthenticated) {
+    if (isAuthenticated == null) {
+      if (authCard) {
+        authCard.hidden = true;
+        authCard.style.display = "none";
+      }
+      if (planCard) {
+        planCard.hidden = true;
+        planCard.style.display = "none";
+      }
+      if (accountIdentity) {
+        accountIdentity.hidden = true;
+      }
+      if (workspaceSidebar) workspaceSidebar.hidden = true;
+      if (workspaceTopbar) workspaceTopbar.hidden = true;
+      if (guestStack) guestStack.hidden = true;
+      if (dashboardMain) {
+        dashboardMain.classList.add("flex", "items-center", "justify-center");
+      }
+      return;
+    }
+
     const showPlan = !!isAuthenticated;
     if (authCard) {
       authCard.hidden = showPlan;
@@ -35,6 +64,19 @@
     if (planCard) {
       planCard.hidden = !showPlan;
       planCard.style.display = showPlan ? "" : "none";
+    }
+    if (accountIdentity) {
+      accountIdentity.hidden = !showPlan;
+    }
+    if (workspaceSidebar) workspaceSidebar.hidden = !showPlan;
+    if (workspaceTopbar) workspaceTopbar.hidden = !showPlan;
+    if (guestStack) guestStack.hidden = showPlan;
+    if (dashboardMain) {
+      if (showPlan) {
+        dashboardMain.classList.remove("flex", "items-center", "justify-center");
+      } else {
+        dashboardMain.classList.add("flex", "items-center", "justify-center");
+      }
     }
   }
 
@@ -167,11 +209,19 @@
       if (accountMeta && json.account) {
         accountMeta.textContent = `${json.account.fullName} • ${json.account.email}`;
       }
+      if (accountName && json.account) {
+        accountName.textContent = String(json.account.fullName || "");
+      }
+      if (accountEmail && json.account) {
+        accountEmail.textContent = String(json.account.email || "");
+      }
       setWalletState(true);
       renderPlans();
       setMsg(planMsg, "", "");
     } catch (_error) {
       dashboard = null;
+      if (accountName) accountName.textContent = "";
+      if (accountEmail) accountEmail.textContent = "";
       setWalletState(false);
       throw _error;
     }
@@ -190,7 +240,7 @@
     registerBtn.disabled = true;
     registerBtn.textContent = "Creating...";
     try {
-      await api("/.netlify/functions/student-auth-register", {
+      await api("/.netlify/functions/user-auth-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, email, password }),
@@ -219,7 +269,7 @@
     loginBtn.disabled = true;
     loginBtn.textContent = "Signing in...";
     try {
-      await api("/.netlify/functions/student-auth-login", {
+      await api("/.netlify/functions/user-auth-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -356,12 +406,20 @@
     });
   }
 
+  if (backBtn) {
+    backBtn.addEventListener("click", function () {
+      window.location.href = "/";
+    });
+  }
+
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async function () {
-      await fetch("/.netlify/functions/student-auth-logout", { method: "POST", credentials: "include" }).catch(function () {
+      await fetch("/.netlify/functions/user-auth-logout", { method: "POST", credentials: "include" }).catch(function () {
         return null;
       });
       dashboard = null;
+      if (accountName) accountName.textContent = "";
+      if (accountEmail) accountEmail.textContent = "";
       setWalletState(false);
       setMsg(planMsg, "", "");
       setAuthView("signin");
@@ -429,10 +487,10 @@
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
 
+  setWalletState(null);
   Promise.all([loadBatches(), loadDashboard()]).catch(function () {
     setWalletState(false);
     return null;
   });
-  setWalletState(false);
   setAuthView("signin");
 })();

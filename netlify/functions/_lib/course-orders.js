@@ -1,3 +1,5 @@
+const { applyRuntimeSettings } = require("./runtime-settings");
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -7,6 +9,8 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseOrdersBatchColumns(pool) {
+  await applyRuntimeSettings(pool);
+
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_key VARCHAR(64) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_label VARCHAR(120) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD KEY idx_course_orders_batch_created (batch_key, created_at)`);

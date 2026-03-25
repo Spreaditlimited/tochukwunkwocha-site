@@ -6,8 +6,6 @@ const COURSE_CONFIGS = {
     defaultBatchKey: "ptp-batch-1",
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "PTP",
-    defaultAmountMinor: Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000),
-    defaultPaypalAmount: String(process.env.PROMPT_TO_PROFIT_PRICE_GBP || "24.00"),
   },
   "prompt-to-production": {
     slug: "prompt-to-production",
@@ -16,8 +14,6 @@ const COURSE_CONFIGS = {
     defaultBatchKey: "ptprod-batch-1",
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "PTPROD",
-    defaultAmountMinor: Number(process.env.PROMPT_TO_PRODUCTION_PRICE_NGN_MINOR || 25000000),
-    defaultPaypalAmount: String(process.env.PROMPT_TO_PRODUCTION_PRICE_GBP || "24.00"),
   },
 };
 
@@ -53,14 +49,21 @@ function getCourseName(rawSlug) {
 }
 
 function getCourseDefaultAmountMinor(rawSlug) {
-  const cfg = getCourseConfig(rawSlug);
-  const amount = Number(cfg && cfg.defaultAmountMinor);
+  const slug = normalizeCourseSlug(rawSlug);
+  if (slug === "prompt-to-production") {
+    const amount = Number(process.env.PROMPT_TO_PRODUCTION_PRICE_NGN_MINOR || 25000000);
+    return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : 25000000;
+  }
+  const amount = Number(process.env.PROMPT_TO_PROFIT_PRICE_NGN_MINOR || 1075000);
   return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : 1075000;
 }
 
 function getCourseDefaultPaypalAmount(rawSlug) {
-  const cfg = getCourseConfig(rawSlug);
-  const raw = String((cfg && cfg.defaultPaypalAmount) || "24.00").trim();
+  const slug = normalizeCourseSlug(rawSlug);
+  const raw =
+    slug === "prompt-to-production"
+      ? String(process.env.PROMPT_TO_PRODUCTION_PRICE_GBP || "24.00").trim()
+      : String(process.env.PROMPT_TO_PROFIT_PRICE_GBP || "24.00").trim();
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed.toFixed(2) : "24.00";
 }
