@@ -362,6 +362,101 @@ p {
   color: #4f5970;
 }
 
+.course-hero .hero-card.course-hero-card--premium {
+  padding: 0;
+  background: #111827;
+  border: 1px solid #27324c;
+  border-radius: 18px;
+  box-shadow: 0 22px 44px rgba(16, 24, 40, 0.28);
+  overflow: hidden;
+}
+
+.course-hero-card--premium::before {
+  display: none;
+}
+
+.course-hero-terminal__top {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: #1f2937;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.course-hero-terminal__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.course-hero-terminal__dot--red {
+  background: #ef4444;
+}
+
+.course-hero-terminal__dot--amber {
+  background: #f59e0b;
+}
+
+.course-hero-terminal__dot--green {
+  background: #22c55e;
+}
+
+.course-hero-terminal__title {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.course-hero-terminal__body {
+  padding: 16px 18px 18px;
+}
+
+.course-hero-card--premium h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #f8fafc;
+}
+
+.course-hero-card--premium .course-hero-card__intro {
+  margin-top: 8px;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.course-hero .hero-points.course-hero-card__points.course-hero-terminal__points {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.course-hero .hero-points.course-hero-card__points.course-hero-terminal__points span {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.course-hero .hero-points.course-hero-card__points.course-hero-terminal__points span::before {
+  background: #22c55e;
+}
+
+.course-hero-card--premium .hero-proof {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: #dbeafe;
+  font-size: 0.88rem;
+}
+
+.course-hero-card--desktop-only {
+  display: block;
+}
+
 .promise-section {
   padding-top: 78px;
 }
@@ -1651,6 +1746,10 @@ body.modal-open {
   .course-hero .hero-card {
     margin-top: 0;
     justify-self: stretch;
+  }
+
+  .course-hero-card--desktop-only {
+    display: none !important;
   }
 
   .tutor-bridge__media {
