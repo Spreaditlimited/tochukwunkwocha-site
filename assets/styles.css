@@ -1702,6 +1702,28 @@ body.modal-open {
 }
 
 @media (max-width: 760px) {
+  .user-dashboard-page {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: auto !important;
+  }
+
+  .user-dashboard-page > section {
+    height: auto !important;
+    min-height: 100dvh;
+    padding-top: max(14px, env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+  }
+
+  .user-dashboard-topbar {
+    height: 4rem !important;
+    padding-top: 0 !important;
+  }
+
+  .user-dashboard-main {
+    padding-top: 14px !important;
+  }
+
   .hero:not(.course-hero) > div {
     text-align: left;
   }
@@ -1963,6 +1985,12 @@ body.modal-open {
 
 .internal-auth-head {
   display: block;
+}
+
+.user-dashboard-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 .internal-home-link {

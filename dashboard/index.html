@@ -53,6 +53,9 @@
         .wallet-plan-actions { flex-wrap: wrap; }
         .wallet-plan-actions .wallet-topup-input { flex: 1 1 100%; min-width: 0; }
         .wallet-plan-actions .wallet-plan-btn { flex: 1 1 calc(50% - 4px); }
+        #userGuestStack {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+        }
       }
     </style>
     <style type="text/tailwindcss">
@@ -72,7 +75,7 @@
       }
     </style>
   </head>
-  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
+  <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
     <section class="flex h-full w-full">
       <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
       <label for="mobile-menu-toggle" class="fixed inset-0 bg-brand-900/40 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
@@ -92,7 +95,7 @@
         </div>
       </aside>
       <div class="flex-1 min-w-0 flex flex-col">
-        <header id="userWorkspaceTopbar" class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6" hidden>
+        <header id="userWorkspaceTopbar" class="user-dashboard-topbar h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6" hidden>
           <div class="flex items-center gap-4">
             <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -104,7 +107,7 @@
           </div>
           <button type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" data-user-signout>Sign out</button>
         </header>
-        <main id="userDashboardMain" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main id="userDashboardMain" class="user-dashboard-main flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div id="userGuestStack" class="w-full max-w-2xl mx-auto space-y-6">
           <div class="flex justify-start">
             <button type="button" id="userDashboardBackBtn" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
@@ -143,13 +146,13 @@
 
           <article class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-4xl mx-auto" id="walletPlanCard" hidden>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              <a href="/dashboard/courses/" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-all">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Courses</p>
+              <a href="/dashboard/courses/" class="rounded-2xl bg-[#eef4ff] p-5 shadow-sm ring-1 ring-[#c9dafd] hover:shadow-md transition-all">
+                <p class="text-xs font-bold uppercase tracking-wider text-[#345ca8]">Courses</p>
                 <h4 class="mt-1 text-lg font-heading font-bold text-gray-900">My Courses</h4>
                 <p class="mt-2 text-sm text-gray-600">View courses you have paid for on the platform.</p>
               </a>
-              <a href="/dashboard/projects/" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-all">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Lead Capture</p>
+              <a href="/dashboard/projects/" class="rounded-2xl bg-[#ecfdf3] p-5 shadow-sm ring-1 ring-[#b7e4c7] hover:shadow-md transition-all">
+                <p class="text-xs font-bold uppercase tracking-wider text-[#1b7a4b]">Lead Capture</p>
                 <h4 class="mt-1 text-lg font-heading font-bold text-gray-900">Manage Projects</h4>
                 <p class="mt-2 text-sm text-gray-600">Open your projects page and manage existing projects.</p>
               </a>
