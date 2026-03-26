@@ -47,6 +47,7 @@ exports.handler = async function (event) {
       entries,
       updatedBy: "admin",
     });
+    await applyRuntimeSettings(pool, { force: true });
 
     const rows = await listAdminSettings(pool);
     const audit = await listRecentAdminSettingsAudit(pool, 80);

@@ -7,3 +7,6 @@ assets/tochukwunkwocha logo.png
 # Local machine/generated files
 deno.lock
 .DS_Store
+
+# local deps
+node_modules/

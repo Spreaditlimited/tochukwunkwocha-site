@@ -25,6 +25,13 @@ exports.handler = async function (event) {
       password: body.password,
     });
     if (!account) return json(401, { ok: false, error: "Invalid email or password" });
+    if (Number(account.must_reset_password || 0) === 1) {
+      return json(403, {
+        ok: false,
+        code: "PASSWORD_RESET_REQUIRED",
+        error: "Password reset required before sign in",
+      });
+    }
     const token = await createStudentSession(pool, account.id);
 
     return {
@@ -46,4 +53,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not sign in" });
   }
 };
-

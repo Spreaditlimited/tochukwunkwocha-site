@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password | User Dashboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Manrope', 'sans-serif'] },
+            colors: { brand: { 500: '#22345f', 600: '#1a2849', 700: '#14213d' } }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex items-center justify-center p-4">
+    <section class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <h1 class="text-2xl font-heading font-extrabold text-gray-900">Reset Password</h1>
+      <p class="mt-2 text-sm text-gray-600">Set a new dashboard password to continue.</p>
+      <form id="resetPasswordForm" class="mt-6 space-y-4" novalidate>
+        <div>
+          <label for="newPassword" class="block text-sm font-semibold text-gray-800">New Password</label>
+          <input id="newPassword" name="password" type="password" minlength="8" required class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" />
+        </div>
+        <div>
+          <label for="confirmPassword" class="block text-sm font-semibold text-gray-800">Confirm Password</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" minlength="8" required class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" />
+        </div>
+        <button id="resetPasswordBtn" type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-500">Reset Password</button>
+      </form>
+      <p id="resetPasswordMsg" class="mt-4 text-sm"></p>
+      <a href="/dashboard/" class="mt-4 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-600">Back to dashboard</a>
+    </section>
+    <script src="/assets/dashboard-reset-password.js" defer></script>
+  </body>
+</html>

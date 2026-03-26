@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Plan Manager | Internal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              heading: ["Manrope", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#eef2fb",
+                100: "#dfe7f7",
+                200: "#ccd3e6",
+                300: "#99a9cc",
+                400: "#667eb2",
+                500: "#22345f",
+                600: "#1a2849",
+                700: "#14213d",
+                800: "#0f182d",
+                900: "#0a101e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
+    <main id="internalShell" class="flex h-full w-full flex-col">
+      <section id="adminAppCard" class="flex h-full w-full" hidden>
+        <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+        <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+
+        <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+          <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+            <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+            <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
+          </div>
+          <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+            <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Dashboard Home</a>
+            <a href="/internal/manual-payments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Enrollments</a>
+            <a href="/internal/installments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Installments</a>
+            <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Lead Capture Jobs</a>
+            <a href="/internal/business-plan-manager/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">Business Plan Manager</a>
+            <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Settings</a>
+          </div>
+          <div class="p-4 border-t border-white/10 shrink-0">
+            <a href="/" class="flex items-center gap-2 px-3 py-2 text-sm text-brand-300 hover:text-white transition-colors">Back to public site</a>
+          </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
+          <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+            <div class="flex items-center gap-4">
+              <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </label>
+              <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Business Plan Manager</h2>
+            </div>
+            <button id="adminLogoutBtn" type="button" class="hidden sm:inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
+              Sign out
+            </button>
+          </header>
+
+          <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div class="max-w-4xl mx-auto space-y-6">
+              <p id="managerMessage" class="hidden rounded-xl border px-4 py-3 text-sm font-semibold"></p>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-heading font-extrabold text-gray-900">Price</h3>
+                <p class="mt-1 text-sm text-gray-500">Set amount in Naira. Checkout and button labels update automatically.</p>
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                  <label class="block">
+                    <span class="text-sm font-semibold text-gray-700">Price (Naira)</span>
+                    <input id="priceNaira" type="number" min="1" step="1" class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="200" />
+                  </label>
+                  <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Saved value (minor)</p>
+                    <p id="priceMinorPreview" class="mt-1 text-sm font-bold text-gray-900">20000</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-heading font-extrabold text-gray-900">Lead Financial Verifier</h3>
+                <p class="mt-1 text-sm text-gray-500">Update card content shown on the public business plan page.</p>
+
+                <div class="mt-5 grid gap-5">
+                  <label class="block">
+                    <span class="text-sm font-semibold text-gray-700">Verifier Name</span>
+                    <input id="verifierNameInput" type="text" class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="Jane Doe" />
+                  </label>
+
+                  <label class="block">
+                    <span class="text-sm font-semibold text-gray-700">Verifier Bio</span>
+                    <textarea id="verifierBioInput" rows="5" class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 resize-y" placeholder="Write a short verifier bio..."></textarea>
+                  </label>
+
+                  <label class="block">
+                    <span class="text-sm font-semibold text-gray-700">Verifier LinkedIn URL</span>
+                    <input id="verifierLinkedinInput" type="url" class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="https://linkedin.com/in/..." />
+                  </label>
+
+                  <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                    <label class="block">
+                      <span class="text-sm font-semibold text-gray-700">Verifier Image URL</span>
+                      <input id="verifierImageUrlInput" type="url" class="mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="https://..." />
+                    </label>
+                    <label class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer">
+                      <input id="verifierImageFileInput" type="file" accept="image/*" class="hidden" />
+                      Upload Image
+                    </label>
+                  </div>
+
+                  <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Preview</p>
+                    <div class="mt-3 flex items-start gap-4">
+                      <img id="verifierImagePreview" src="https://ui-avatars.com/api/?name=Jane+Doe&background=10b981&color=fff" alt="Verifier preview" class="h-16 w-16 rounded-full border-2 border-white object-cover" />
+                      <div class="space-y-1">
+                        <p id="verifierNamePreview" class="text-base font-heading font-bold text-gray-900">Jane Doe</p>
+                        <p id="verifierBioPreview" class="text-sm text-gray-600"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-heading font-extrabold text-gray-900">Verifier Accounts</h3>
+                <p class="mt-1 text-sm text-gray-500">Create verifier accounts and assign/update passwords from here.</p>
+
+                <form id="verifierCreateForm" class="mt-4 grid gap-3 md:grid-cols-4">
+                  <input id="verifierCreateName" type="text" class="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="Full name" required />
+                  <input id="verifierCreateEmail" type="email" class="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="email@example.com" required />
+                  <input id="verifierCreatePassword" type="password" minlength="8" class="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900" placeholder="Password (8+ chars)" required />
+                  <button id="verifierCreateBtn" type="submit" class="rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white hover:bg-brand-500">Create Verifier</button>
+                </form>
+
+                <div class="mt-4 overflow-x-auto">
+                  <table class="min-w-full">
+                    <thead class="border-b border-gray-100">
+                      <tr>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Name</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Email</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Last Login</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Set New Password</th>
+                      </tr>
+                    </thead>
+                    <tbody id="verifierRows"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 class="text-lg font-heading font-extrabold text-gray-900">Generated Business Plans</h3>
+                    <p id="bpQueueMeta" class="mt-1 text-sm text-gray-500">Loading records...</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select id="bpQueueStatus" class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800">
+                      <option value="all">All</option>
+                      <option value="awaiting_verification">Awaiting Verification</option>
+                      <option value="verified">Verified</option>
+                    </select>
+                    <button id="bpQueueRefreshBtn" type="button" class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Refresh</button>
+                  </div>
+                </div>
+                <div class="mt-4 overflow-x-auto">
+                  <table class="min-w-full">
+                    <thead class="border-b border-gray-100">
+                      <tr>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Business</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">User</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Amount Paid</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Generated</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bpQueueRows"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <div class="flex items-center justify-end">
+                <button id="managerSaveBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-500 transition-colors">
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      </section>
+    </main>
+
+    <div id="bpQueueDetailsModal" class="fixed inset-0 z-[70] hidden" aria-hidden="true">
+      <div class="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" data-bp-close></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="w-full max-w-3xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 overflow-hidden">
+          <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <h3 class="text-lg font-heading font-extrabold text-gray-900">Business Plan Details</h3>
+            <button type="button" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100" data-bp-close>Close</button>
+          </div>
+          <div class="max-h-[65vh] overflow-y-auto p-6 space-y-4">
+            <pre id="bpQueueDetailsText" class="whitespace-pre-wrap text-sm text-gray-700"></pre>
+            <div class="space-y-2">
+              <label for="bpQueueVerifierNotes" class="block text-sm font-semibold text-gray-700">Verifier Notes</label>
+              <textarea id="bpQueueVerifierNotes" rows="3" class="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 resize-y" placeholder="Optional notes"></textarea>
+            </div>
+            <button id="bpQueueVerifyBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-500">Mark Verified</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/admin-business-plan-manager.js" defer></script>
+  </body>
+</html>

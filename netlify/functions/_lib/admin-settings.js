@@ -25,6 +25,12 @@ const SETTINGS_DEFINITIONS = [
   { key: "PROMPT_TO_PRODUCTION_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "PROMPT_TO_PRODUCTION_PRICE_GBP", category: "Pricing", secret: false },
   { key: "LEADPAGE_PRICE_NGN_MINOR", category: "Pricing", secret: false },
+  { key: "BUSINESS_PLAN_PRICE_NGN_MINOR", category: "Pricing", secret: false },
+
+  { key: "BUSINESS_PLAN_VERIFIER_NAME", category: "Business Plan", secret: false },
+  { key: "BUSINESS_PLAN_VERIFIER_IMAGE_URL", category: "Business Plan", secret: false },
+  { key: "BUSINESS_PLAN_VERIFIER_BIO", category: "Business Plan", secret: false },
+  { key: "BUSINESS_PLAN_VERIFIER_LINKEDIN_URL", category: "Business Plan", secret: false },
 
   { key: "MANUAL_BANK_NAME", category: "Manual Transfer", secret: false },
   { key: "MANUAL_BANK_ACCOUNT_NAME", category: "Manual Transfer", secret: false },

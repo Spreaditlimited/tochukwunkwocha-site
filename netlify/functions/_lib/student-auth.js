@@ -5,6 +5,14 @@ const { applyRuntimeSettings } = require("./runtime-settings");
 const COOKIE_NAME = "tws_student_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 
+async function safeAlter(pool, sql) {
+  try {
+    await pool.query(sql);
+  } catch (_error) {
+    return;
+  }
+}
+
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -55,6 +63,10 @@ async function ensureStudentAuthTables(pool) {
       email VARCHAR(190) NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       password_salt VARCHAR(255) NOT NULL,
+      must_reset_password TINYINT(1) NOT NULL DEFAULT 0,
+      reset_token_hash VARCHAR(128) NULL,
+      reset_token_expires_at DATETIME NULL,
+      reset_requested_at DATETIME NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
       last_login_at DATETIME NULL,
@@ -63,6 +75,11 @@ async function ensureStudentAuthTables(pool) {
       UNIQUE KEY uniq_student_account_email (email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_expires_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_requested_at DATETIME NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_sessions (
@@ -101,12 +118,13 @@ async function createStudentAccount(pool, input) {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = await hashPassword(password, salt);
   const now = nowSql();
+  const mustReset = input && input.mustResetPassword ? 1 : 0;
 
   await pool.query(
     `INSERT INTO student_accounts
-      (account_uuid, full_name, email, password_hash, password_salt, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [accountUuid, fullName, email, hash, salt, now, now]
+      (account_uuid, full_name, email, password_hash, password_salt, must_reset_password, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [accountUuid, fullName, email, hash, salt, mustReset, now, now]
   );
 
   const [rows] = await pool.query(
@@ -123,7 +141,7 @@ async function findStudentByEmail(pool, emailInput) {
   const email = normalizeEmail(emailInput);
   if (!email) return null;
   const [rows] = await pool.query(
-    `SELECT id, account_uuid, full_name, email, password_hash, password_salt
+    `SELECT id, account_uuid, full_name, email, password_hash, password_salt, must_reset_password
      FROM student_accounts
      WHERE email = ?
      LIMIT 1`,
@@ -141,6 +159,10 @@ async function verifyStudentCredentials(pool, input) {
   const ok = crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(String(account.password_hash || "")));
   if (!ok) return null;
   return account;
+}
+
+function sqlDateFromNow(ms) {
+  return new Date(Date.now() + Math.max(0, Number(ms) || 0)).toISOString().slice(0, 19).replace("T", " ");
 }
 
 function randomToken() {
@@ -189,7 +211,8 @@ async function requireStudentSession(pool, event) {
             s.expires_at,
             a.account_uuid,
             a.full_name,
-            a.email
+            a.email,
+            a.must_reset_password
      FROM student_sessions s
      JOIN student_accounts a ON a.id = s.account_id
      WHERE s.token_hash = ?
@@ -211,8 +234,79 @@ async function requireStudentSession(pool, event) {
       accountUuid: row.account_uuid,
       fullName: row.full_name,
       email: row.email,
+      mustResetPassword: Number(row.must_reset_password || 0) === 1,
     },
     token,
+  };
+}
+
+async function setStudentPassword(pool, input) {
+  const accountId = Number(input && input.accountId);
+  const password = String((input && input.password) || "");
+  if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = await hashPassword(password, salt);
+  await pool.query(
+    `UPDATE student_accounts
+     SET password_hash = ?, password_salt = ?, must_reset_password = 0,
+         reset_token_hash = NULL, reset_token_expires_at = NULL, reset_requested_at = NULL,
+         updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [hash, salt, nowSql(), accountId]
+  );
+}
+
+async function createPasswordResetToken(pool, emailInput) {
+  const account = await findStudentByEmail(pool, emailInput);
+  if (!account || !account.id) return null;
+
+  const rawToken = randomToken();
+  const tokenHash = shaToken(rawToken);
+  await pool.query(
+    `UPDATE student_accounts
+     SET reset_token_hash = ?, reset_token_expires_at = ?, reset_requested_at = ?, updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [tokenHash, sqlDateFromNow(1000 * 60 * 60), nowSql(), nowSql(), Number(account.id)]
+  );
+
+  return {
+    token: rawToken,
+    accountId: Number(account.id),
+    email: String(account.email || ""),
+    fullName: String(account.full_name || ""),
+  };
+}
+
+async function consumePasswordResetToken(pool, input) {
+  const token = String((input && input.token) || "").trim();
+  const password = String((input && input.password) || "");
+  if (!token) throw new Error("Reset token is required");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
+
+  const tokenHash = shaToken(token);
+  const [rows] = await pool.query(
+    `SELECT id, email, full_name, reset_token_expires_at
+     FROM student_accounts
+     WHERE reset_token_hash = ?
+     LIMIT 1`,
+    [tokenHash]
+  );
+  if (!rows || !rows.length) throw new Error("Invalid or expired reset token");
+  const account = rows[0];
+  const exp = new Date(account.reset_token_expires_at).getTime();
+  if (!Number.isFinite(exp) || exp < Date.now()) {
+    throw new Error("Invalid or expired reset token");
+  }
+
+  await setStudentPassword(pool, { accountId: Number(account.id), password });
+  return {
+    id: Number(account.id),
+    email: String(account.email || ""),
+    fullName: String(account.full_name || ""),
   };
 }
 
@@ -227,12 +321,16 @@ function clearStudentCookieHeader(event) {
 module.exports = {
   COOKIE_NAME,
   normalizeEmail,
+  findStudentByEmail,
   ensureStudentAuthTables,
   createStudentAccount,
   verifyStudentCredentials,
   createStudentSession,
   requireStudentSession,
   clearStudentSession,
+  setStudentPassword,
+  createPasswordResetToken,
+  consumePasswordResetToken,
   setStudentCookieHeader,
   clearStudentCookieHeader,
 };

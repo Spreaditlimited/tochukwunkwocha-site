@@ -12,6 +12,7 @@
   const showSignUpBtn = document.getElementById("walletShowSignUpBtn");
   const registerBtn = document.getElementById("walletRegisterBtn");
   const loginBtn = document.getElementById("walletLoginBtn");
+  const forgotPasswordBtn = document.getElementById("walletForgotPasswordBtn");
   const authMsg = document.getElementById("walletAuthMsg");
 
   const logoutBtn = document.getElementById("walletLogoutBtn");
@@ -135,9 +136,21 @@
       return null;
     });
     if (!res.ok || !json || !json.ok) {
-      throw new Error((json && json.error) || "Request failed");
+      const error = new Error((json && json.error) || "Request failed");
+      if (json && json.code) error.code = String(json.code);
+      throw error;
     }
     return json;
+  }
+
+  async function requestPasswordReset(emailInput) {
+    const email = String(emailInput || "").trim();
+    if (!email) throw new Error("Enter your email first.");
+    await api("/.netlify/functions/user-auth-password-reset-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email }),
+    });
   }
 
   function renderPlans() {
@@ -280,6 +293,16 @@
       await loadDashboard();
       await loadBatches();
     } catch (error) {
+      if (error && error.code === "PASSWORD_RESET_REQUIRED") {
+        try {
+          await requestPasswordReset(email);
+          setMsg(authMsg, "Password reset required. We sent a reset link to your email.", "ok");
+          return;
+        } catch (resetError) {
+          setMsg(authMsg, resetError.message || "Password reset required. Could not send reset link.", "error");
+          return;
+        }
+      }
       setMsg(authMsg, error.message || "Could not sign in", "error");
     } finally {
       loginBtn.disabled = false;
@@ -395,6 +418,19 @@
   if (showSignUpBtn) {
     showSignUpBtn.addEventListener("click", function () {
       setAuthView("signup");
+    });
+  }
+
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.addEventListener("click", function () {
+      const email = String((signInForm && signInForm.email && signInForm.email.value) || "").trim();
+      requestPasswordReset(email)
+        .then(function () {
+          setMsg(authMsg, "If the account exists, a reset link has been sent.", "ok");
+        })
+        .catch(function (error) {
+          setMsg(authMsg, error.message || "Could not send reset link.", "error");
+        });
     });
   }
 
