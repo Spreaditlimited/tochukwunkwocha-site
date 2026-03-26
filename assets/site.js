@@ -1,6 +1,7 @@
 (function () {
   const navToggle = document.querySelector(".nav-toggle");
   const navLinks = document.querySelector(".nav-links");
+  const navDropdowns = Array.prototype.slice.call(document.querySelectorAll(".nav-dropdown"));
 
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
@@ -191,6 +192,38 @@
       const expanded = navToggle.getAttribute("aria-expanded") === "true";
       navToggle.setAttribute("aria-expanded", String(!expanded));
       navLinks.classList.toggle("open");
+    });
+  }
+
+  if (navDropdowns.length) {
+    navDropdowns.forEach(function (dropdown) {
+      const toggle = dropdown.querySelector(".nav-dropdown-toggle");
+      if (!toggle) return;
+      toggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        const willOpen = !dropdown.classList.contains("open");
+        navDropdowns.forEach(function (item) {
+          item.classList.remove("open");
+          const itemToggle = item.querySelector(".nav-dropdown-toggle");
+          if (itemToggle) itemToggle.setAttribute("aria-expanded", "false");
+        });
+        if (willOpen) {
+          dropdown.classList.add("open");
+          toggle.setAttribute("aria-expanded", "true");
+        } else {
+          toggle.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+
+    document.addEventListener("click", function (event) {
+      var inside = event.target && event.target.closest && event.target.closest(".nav-dropdown");
+      if (inside) return;
+      navDropdowns.forEach(function (item) {
+        item.classList.remove("open");
+        const itemToggle = item.querySelector(".nav-dropdown-toggle");
+        if (itemToggle) itemToggle.setAttribute("aria-expanded", "false");
+      });
     });
   }
 
