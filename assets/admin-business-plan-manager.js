@@ -38,6 +38,7 @@
     verifierLinkedinUrl: "BUSINESS_PLAN_VERIFIER_LINKEDIN_URL",
   };
   var queueItems = [];
+  var queuedRegenerationByPlan = Object.create(null);
   var activePlanUuid = "";
   var verifierItems = [];
 
@@ -171,11 +172,49 @@
           '<td class="px-3 py-2 text-sm text-gray-700">' + escapeHtml(fmtMoney(item.amountMinor, item.paymentCurrency)) + "</td>",
           '<td class="px-3 py-2 text-sm"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ' + (verified ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-amber-50 text-amber-700 ring-1 ring-amber-200") + '">' + escapeHtml(verified ? "Verified" : "Awaiting Verification") + "</span></td>",
           '<td class="px-3 py-2 text-sm text-gray-700">' + escapeHtml(fmtDate(item.generatedAt)) + "</td>",
-          '<td class="px-3 py-2 text-sm"><button type="button" data-queue-view="' + idx + '" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50">Open</button></td>',
+          '<td class="px-3 py-2 text-sm"><div class="flex items-center gap-2"><button type="button" data-queue-view="' + idx + '" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50">Open</button><button type="button" data-queue-regenerate="' + idx + '" ' + (queuedRegenerationByPlan[String(item.planUuid || "")] ? "disabled" : "") + ' class="rounded-lg border px-3 py-1.5 text-xs font-semibold ' + (queuedRegenerationByPlan[String(item.planUuid || "")] ? "border-amber-300 bg-amber-50 text-amber-700 cursor-not-allowed" : "border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100") + '">' + (queuedRegenerationByPlan[String(item.planUuid || "")] ? "Queued" : "Regenerate") + "</button></div></td>",
           "</tr>",
         ].join("");
       })
       .join("");
+  }
+
+  async function regeneratePlanByRow(idx, buttonEl) {
+    var item = queueItems[idx];
+    if (!item || !item.planUuid) throw new Error("Invalid plan row");
+    var queueKey = String(item.planUuid || "");
+    if (buttonEl) {
+      buttonEl.disabled = true;
+      buttonEl.textContent = "Queueing...";
+    }
+    var queued = false;
+    try {
+      var res = await fetch("/.netlify/functions/admin-business-plans-regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ planUuid: String(item.planUuid) }),
+      });
+      if (res.status === 401 || res.status === 403) {
+        redirectToInternalSignIn();
+        return;
+      }
+      var json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok) {
+        throw new Error((json && json.error) || "Could not queue regeneration");
+      }
+      queuedRegenerationByPlan[queueKey] = Date.now();
+      queued = true;
+      renderQueue(queueItems);
+      setMessage("Regeneration queued. This plan will be replaced with the newly generated version. Use Refresh to reload status.", "ok");
+    } finally {
+      if (buttonEl && !queued) {
+        buttonEl.disabled = false;
+        buttonEl.textContent = "Regenerate";
+      }
+    }
   }
 
   async function loadQueue() {
@@ -555,10 +594,19 @@
   if (queueRows) {
     queueRows.addEventListener("click", function (event) {
       var btn = event.target.closest("[data-queue-view]");
-      if (!btn) return;
-      var idx = Number(btn.getAttribute("data-queue-view"));
-      if (!Number.isFinite(idx) || !queueItems[idx]) return;
-      openQueueModal(queueItems[idx]);
+      if (btn) {
+        var idxView = Number(btn.getAttribute("data-queue-view"));
+        if (!Number.isFinite(idxView) || !queueItems[idxView]) return;
+        openQueueModal(queueItems[idxView]);
+        return;
+      }
+      var regenBtn = event.target.closest("[data-queue-regenerate]");
+      if (!regenBtn) return;
+      var idxRegen = Number(regenBtn.getAttribute("data-queue-regenerate"));
+      if (!Number.isFinite(idxRegen) || !queueItems[idxRegen]) return;
+      regeneratePlanByRow(idxRegen, regenBtn).catch(function (error) {
+        setMessage(error.message || "Could not queue regeneration", "error");
+      });
     });
   }
   if (queueVerifyBtn) {

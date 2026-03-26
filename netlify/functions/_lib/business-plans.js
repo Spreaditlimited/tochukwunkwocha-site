@@ -150,6 +150,28 @@ async function findOrderByReference(pool, reference) {
   return rows && rows.length ? rows[0] : null;
 }
 
+async function findLatestPaidOrderForSamePlan(pool, input) {
+  const email = normalizeEmail(input && input.email);
+  const businessName = clean(input && input.businessName, 220);
+  const purpose = clean(input && input.purpose, 40);
+  if (!email || !businessName || !purpose) return null;
+
+  const [rows] = await pool.query(
+    `SELECT *
+     FROM tochukwu_business_plan_orders
+     WHERE email = ?
+       AND business_name = ?
+       AND purpose = ?
+       AND payment_status = 'paid'
+       AND payment_reference IS NOT NULL
+       AND payment_reference != ''
+     ORDER BY COALESCE(paid_at, created_at) DESC
+     LIMIT 1`,
+    [email, businessName, purpose]
+  );
+  return rows && rows.length ? rows[0] : null;
+}
+
 async function markOrderPaid(pool, input) {
   await pool.query(
     `UPDATE tochukwu_business_plan_orders
@@ -182,6 +204,9 @@ async function markPlanGenerated(pool, input) {
          plan_status = 'generated',
          verification_status = 'awaiting_verification',
          plan_text = ?,
+         verifier_notes = NULL,
+         verified_at = NULL,
+         verified_by = NULL,
          account_id = ?,
          generated_at = ?,
          updated_at = ?,
@@ -325,6 +350,7 @@ module.exports = {
   insertBusinessPlanOrder,
   setOrderPaymentInitiated,
   findOrderByReference,
+  findLatestPaidOrderForSamePlan,
   markOrderPaid,
   markPlanGenerated,
   markPlanFailed,

@@ -6,6 +6,7 @@ const {
   ensureBusinessPlanTables,
   insertBusinessPlanOrder,
   setOrderPaymentInitiated,
+  findLatestPaidOrderForSamePlan,
 } = require("./_lib/business-plans");
 
 function clean(value, max) {
@@ -50,6 +51,22 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureBusinessPlanTables(pool);
+
+    const existingPaid = await findLatestPaidOrderForSamePlan(pool, {
+      email,
+      businessName: clean(intake.businessName, 220),
+      purpose,
+    });
+    if (existingPaid && existingPaid.payment_reference) {
+      return json(200, {
+        ok: true,
+        skipCheckout: true,
+        alreadyPaid: true,
+        reference: String(existingPaid.payment_reference),
+        dashboardUrl: `${siteBaseUrl()}/dashboard/business-plans/`,
+        message: "Payment already exists for this plan. Resuming generation.",
+      });
+    }
 
     const amountMinor = priceMinor();
     const order = await insertBusinessPlanOrder(pool, {

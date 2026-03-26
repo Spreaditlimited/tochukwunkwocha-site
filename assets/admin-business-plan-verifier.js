@@ -50,8 +50,82 @@
       .replace(/'/g, "&#39;");
   }
 
+  function monthKey(dateLike) {
+    var d = new Date(dateLike || "");
+    if (Number.isNaN(d.getTime())) return "Unknown";
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+
+  function monthLabel(key) {
+    if (key === "Unknown") return "Unknown Month";
+    var parts = String(key).split("-");
+    var y = Number(parts[0]);
+    var m = Number(parts[1]);
+    var d = new Date(y, Math.max(0, m - 1), 1);
+    if (Number.isNaN(d.getTime())) return key;
+    return d.toLocaleString(undefined, { month: "long", year: "numeric" });
+  }
+
+  function statusBadge(status) {
+    var s = String(status || "awaiting_verification").toLowerCase();
+    if (s === "verified") {
+      return '<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Verified</span>';
+    }
+    return '<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">Awaiting Verification</span>';
+  }
+
+  function renderRows() {
+    if (!rows) return;
+    if (!items.length) {
+      rows.innerHTML = '<article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><p class="text-sm text-gray-600">No generated plans yet.</p></article>';
+      return;
+    }
+
+    var grouped = {};
+    items.forEach(function (item) {
+      var key = monthKey(item.generatedAt);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    });
+
+    var keys = Object.keys(grouped).sort(function (a, b) {
+      if (a === "Unknown") return 1;
+      if (b === "Unknown") return -1;
+      return a > b ? -1 : 1;
+    });
+
+    var html = [];
+    keys.forEach(function (key) {
+      html.push('<section class="space-y-3">');
+      html.push('<h3 class="text-sm font-bold uppercase tracking-wide text-gray-500">' + escapeHtml(monthLabel(key)) + "</h3>");
+      grouped[key].forEach(function (item, idxInGroup) {
+        var originalIdx = items.indexOf(item);
+        var isAwaiting = String(item.verificationStatus || "").toLowerCase() !== "verified";
+        html.push([
+          '<article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">',
+          '<div class="flex items-start justify-between gap-3">',
+          '<div>',
+          '<p class="text-sm font-bold text-gray-900">' + escapeHtml(item.businessName || "-") + "</p>",
+          '<p class="mt-1 text-xs text-gray-500">' + escapeHtml(item.fullName || "-") + " • " + escapeHtml(item.email || "-") + "</p>",
+          '<p class="mt-1 text-xs text-gray-500">Amount: ' + escapeHtml(fmtMoney(item.amountMinor, item.paymentCurrency)) + " • Generated: " + escapeHtml(fmtDate(item.generatedAt)) + "</p>",
+          "</div>",
+          statusBadge(item.verificationStatus),
+          "</div>",
+          '<div class="mt-3 flex items-center gap-2">',
+          '<button type="button" data-v-open="' + originalIdx + '" class="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Open Plan</button>',
+          '<button type="button" data-v-mark="' + originalIdx + '" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50" ' + (isAwaiting ? "" : "disabled") + ">Mark Verified</button>",
+          "</div>",
+          "</article>",
+        ].join(""));
+      });
+      html.push("</section>");
+    });
+
+    rows.innerHTML = html.join("");
+  }
+
   async function fetchQueue() {
-    var res = await fetch("/.netlify/functions/admin-business-plans-list?status=awaiting_verification", {
+    var res = await fetch("/.netlify/functions/admin-business-plans-list?status=all", {
       method: "GET",
       headers: { Accept: "application/json" },
       credentials: "include",
@@ -64,19 +138,12 @@
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not load queue");
     items = Array.isArray(json.items) ? json.items : [];
-    if (meta) meta.textContent = "Showing " + items.length + " plan(s) awaiting verification.";
-    if (rows) {
-      rows.innerHTML = items.map(function (item, idx) {
-        return [
-          '<article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">',
-          '<p class="text-sm font-bold text-gray-900">' + escapeHtml(item.businessName || "-") + "</p>",
-          '<p class="mt-1 text-xs text-gray-500">' + escapeHtml(item.fullName || "-") + " • " + escapeHtml(item.email || "-") + "</p>",
-          '<p class="mt-1 text-xs text-gray-500">Amount: ' + escapeHtml(fmtMoney(item.amountMinor, item.paymentCurrency)) + " • Generated: " + escapeHtml(fmtDate(item.generatedAt)) + "</p>",
-          '<button type="button" data-v-open="' + idx + '" class="mt-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Open Plan</button>',
-          "</article>",
-        ].join("");
-      }).join("");
-    }
+    var awaiting = items.filter(function (item) {
+      return String(item.verificationStatus || "").toLowerCase() !== "verified";
+    }).length;
+    var verified = items.length - awaiting;
+    if (meta) meta.textContent = "Showing " + items.length + " plan(s): " + awaiting + " awaiting, " + verified + " verified.";
+    renderRows();
   }
 
   function openModal(item) {
@@ -161,10 +228,21 @@
   if (rows) {
     rows.addEventListener("click", function (event) {
       var btn = event.target.closest("[data-v-open]");
-      if (!btn) return;
-      var idx = Number(btn.getAttribute("data-v-open"));
-      if (!Number.isFinite(idx) || !items[idx]) return;
-      openModal(items[idx]);
+      if (btn) {
+        var idx = Number(btn.getAttribute("data-v-open"));
+        if (!Number.isFinite(idx) || !items[idx]) return;
+        openModal(items[idx]);
+        return;
+      }
+      var verifyBtn = event.target.closest("[data-v-mark]");
+      if (!verifyBtn) return;
+      var verifyIdx = Number(verifyBtn.getAttribute("data-v-mark"));
+      if (!Number.isFinite(verifyIdx) || !items[verifyIdx]) return;
+      var plan = items[verifyIdx];
+      if (String(plan.verificationStatus || "").toLowerCase() === "verified") return;
+      activePlanUuid = String(plan.planUuid || "");
+      if (!activePlanUuid) return;
+      markVerified().catch(function () { return null; });
     });
   }
   if (markBtn) markBtn.addEventListener("click", function () { markVerified().catch(function () { return null; }); });

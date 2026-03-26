@@ -22,7 +22,14 @@ function normalizeEmail(value) {
 function isSecureRequest(event) {
   const headers = event && event.headers ? event.headers : {};
   const proto = String(headers["x-forwarded-proto"] || headers["X-Forwarded-Proto"] || "").toLowerCase();
-  return process.env.NODE_ENV === "production" || proto === "https";
+  if (proto) return proto === "https";
+
+  const host = String(headers.host || headers.Host || "").toLowerCase();
+  const isLocalHost = host.includes("localhost") || host.includes("127.0.0.1");
+  if (isLocalHost) return false;
+
+  const siteBase = String(process.env.SITE_BASE_URL || process.env.URL || "").trim().toLowerCase();
+  return siteBase.startsWith("https://");
 }
 
 function readCookieHeader(event) {

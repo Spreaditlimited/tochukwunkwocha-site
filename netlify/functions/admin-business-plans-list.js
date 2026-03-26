@@ -21,7 +21,12 @@ exports.handler = async function (event) {
 
   const qs = event.queryStringParameters || {};
   const requestedStatus = clean(qs.status, 40);
-  const status = role === "verifier" ? "awaiting_verification" : requestedStatus;
+  let status = requestedStatus;
+  if (role === "verifier") {
+    // Verifier defaults to all generated plans (awaiting + verified),
+    // but can still request a specific status.
+    if (!status || status === "all") status = "";
+  }
 
   try {
     await ensureBusinessPlanTables(pool);

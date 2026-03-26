@@ -86,7 +86,9 @@ exports.handler = async function (event) {
         if (plan.id) {
           await markVerifiedEmailSent(pool, plan.id);
         }
-      } catch (_error) {}
+      } catch (emailError) {
+        console.error("admin-business-plans-verify email send failed:", emailError && emailError.message ? emailError.message : emailError);
+      }
     }
 
     return json(200, { ok: true, planUuid, verificationStatus: "verified" });
