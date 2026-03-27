@@ -124,7 +124,13 @@ exports.handler = async function (event) {
               html: mail.html,
               text: mail.text,
             });
-          } catch (_error) {}
+          } catch (error) {
+            console.warn("enrol_email_failed", {
+              source: "paystack",
+              email: result.email,
+              error: error && error.message ? error.message : String(error || "unknown error"),
+            });
+          }
         }
       }
       if (account && account.id) {

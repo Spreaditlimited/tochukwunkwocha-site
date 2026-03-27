@@ -34,17 +34,26 @@ async function sendEmail(input) {
     throw new Error("to, subject, and email body are required");
   }
 
-  const transporter = nodemailer.createTransport(smtpConfig());
+  try {
+    const transporter = nodemailer.createTransport(smtpConfig());
 
-  const result = await transporter.sendMail({
-    from: fromAddress(),
-    to,
-    subject,
-    text: text || undefined,
-    html: html || undefined,
-  });
+    const result = await transporter.sendMail({
+      from: fromAddress(),
+      to,
+      subject,
+      text: text || undefined,
+      html: html || undefined,
+    });
 
-  return { ok: true, messageId: result && result.messageId ? String(result.messageId) : null };
+    return { ok: true, messageId: result && result.messageId ? String(result.messageId) : null };
+  } catch (error) {
+    console.warn("smtp_send_failed", {
+      to,
+      subject,
+      error: error && error.message ? error.message : String(error || "unknown error"),
+    });
+    throw error;
+  }
 }
 
 module.exports = { sendEmail };
