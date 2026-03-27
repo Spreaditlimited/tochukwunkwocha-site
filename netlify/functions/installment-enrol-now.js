@@ -79,7 +79,7 @@ exports.handler = async function (event) {
 
     try {
       const sent = await sendMetaPurchase({
-        eventId: orderUuid,
+        eventId: `ptp_${orderUuid}`,
         email: session.account.email,
         value: target / 100,
         currency: plan.currency || "NGN",

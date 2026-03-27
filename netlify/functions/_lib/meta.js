@@ -16,11 +16,7 @@ function getMetaConfig() {
   if (!pixelId || !accessToken) {
     return null;
   }
-  const testEventCode =
-    clean(process.env.META_TEST_EVENT_CODE) ||
-    clean(process.env.FACEBOOK_TEST_EVENT_CODE) ||
-    clean(process.env.FB_TEST_EVENT_CODE);
-  return { pixelId, accessToken, testEventCode };
+  return { pixelId, accessToken };
 }
 
 function sha256(value) {
@@ -61,9 +57,6 @@ async function sendMetaPurchase(input) {
       },
     ],
   };
-  if (cfg.testEventCode) {
-    payload.test_event_code = cfg.testEventCode;
-  }
 
   const url = `https://graph.facebook.com/v17.0/${encodeURIComponent(cfg.pixelId)}/events?access_token=${encodeURIComponent(
     cfg.accessToken
@@ -85,11 +78,11 @@ async function sendMetaPurchase(input) {
       status: res.status,
       response: json || null,
     });
-    return { ok: false, error: message };
+    return { ok: false, error: message, response: json || null, status: res.status };
   }
 
   console.log("meta_capi_ok", json);
-  return { ok: true };
+  return { ok: true, response: json || null, status: res.status };
 }
 
 module.exports = { sendMetaPurchase };

@@ -70,7 +70,7 @@ exports.handler = async function (event) {
     if (nextStatus === STATUS_APPROVED && !Number(payment.meta_purchase_sent || 0)) {
       try {
         const sent = await sendMetaPurchase({
-          eventId: payment.payment_uuid,
+          eventId: `ptp_${payment.payment_uuid}`,
           email: payment.email,
           value: Number(payment.amount_minor || 0) / 100,
           currency: payment.currency || "NGN",

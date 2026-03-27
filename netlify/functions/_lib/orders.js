@@ -74,7 +74,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   if (!Number(order.meta_purchase_sent || 0)) {
     try {
       const sent = await sendMetaPurchase({
-        eventId: order.order_uuid,
+        eventId: `ptp_${order.order_uuid}`,
         email: order.email,
         value: Number(order.amount_minor || 0) / 100,
         currency: order.currency || "NGN",
