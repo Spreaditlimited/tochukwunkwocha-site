@@ -16,7 +16,11 @@ function getMetaConfig() {
   if (!pixelId || !accessToken) {
     return null;
   }
-  return { pixelId, accessToken };
+  const testEventCode =
+    clean(process.env.META_TEST_EVENT_CODE) ||
+    clean(process.env.FACEBOOK_TEST_EVENT_CODE) ||
+    clean(process.env.FB_TEST_EVENT_CODE);
+  return { pixelId, accessToken, testEventCode };
 }
 
 function sha256(value) {
@@ -57,6 +61,9 @@ async function sendMetaPurchase(input) {
       },
     ],
   };
+  if (cfg.testEventCode) {
+    payload.test_event_code = cfg.testEventCode;
+  }
 
   const url = `https://graph.facebook.com/v17.0/${encodeURIComponent(cfg.pixelId)}/events?access_token=${encodeURIComponent(
     cfg.accessToken
