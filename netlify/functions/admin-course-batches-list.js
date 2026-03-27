@@ -35,6 +35,7 @@ exports.handler = async function (event) {
         paystackReferencePrefix: item.paystack_reference_prefix,
         paystackAmountMinor: Number(item.paystack_amount_minor || 0),
         paypalAmountMinor: Number(item.paypal_amount_minor || 0),
+        brevoListId: item.brevo_list_id || null,
       })),
     });
   } catch (error) {

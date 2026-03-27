@@ -10,8 +10,9 @@ const {
   markMainSynced,
   reviewManualPayment,
 } = require("./_lib/manual-payments");
-const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
+const { resolveCourseBatch } = require("./_lib/batch-store");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -56,10 +57,12 @@ exports.handler = async function (event) {
     let flodeskSyncedMain = !!payment.flodesk_main_synced;
 
     if (nextStatus === STATUS_APPROVED && !flodeskSyncedMain) {
-      const synced = await syncFlodeskSubscriber({
-        firstName: payment.first_name,
+      const batch = await resolveCourseBatch(pool, { courseSlug: payment.course_slug, batchKey: payment.batch_key });
+      const listId = batch && batch.brevo_list_id ? batch.brevo_list_id : "";
+      const synced = await syncBrevoSubscriber({
+        fullName: payment.first_name,
         email: payment.email,
-        courseSlug: payment.course_slug,
+        listId,
       });
       if (synced.ok) {
         await markMainSynced(pool, paymentUuid);

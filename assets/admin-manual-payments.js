@@ -232,6 +232,9 @@
     if (editBatchForm.batchStartAt) {
       editBatchForm.batchStartAt.value = toDatetimeLocalValue(selected.batchStartAt || "");
     }
+    if (editBatchForm.brevoListId) {
+      editBatchForm.brevoListId.value = String(selected.brevoListId || "");
+    }
     editBatchModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     if (editBatchForm.batchLabel) editBatchForm.batchLabel.focus();
@@ -679,6 +682,7 @@
         batchStartAt:
           normalizeBatchStartText(String((createBatchForm.batchStartAt && createBatchForm.batchStartAt.value) || "").trim()) ||
           null,
+        brevoListId: String((createBatchForm.brevoListId && createBatchForm.brevoListId.value) || "").trim(),
       };
       if (!payload.batchLabel) {
         if (createBatchError) {
@@ -758,6 +762,7 @@
         batchStartAt:
           normalizeBatchStartText(String((editBatchForm.batchStartAt && editBatchForm.batchStartAt.value) || "").trim()) ||
           null,
+        brevoListId: String((editBatchForm.brevoListId && editBatchForm.brevoListId.value) || "").trim(),
       };
       if (!payload.batchKey || !payload.batchLabel) {
         if (editBatchError) {

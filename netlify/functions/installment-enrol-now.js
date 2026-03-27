@@ -4,7 +4,8 @@ const { getPool, nowSql } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/student-auth");
 const { ensureInstallmentTables, findPlanByUuidForAccount, markPlanEnrolled } = require("./_lib/installments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
-const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { resolveCourseBatch } = require("./_lib/batch-store");
+const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
 
 exports.handler = async function (event) {
@@ -68,10 +69,11 @@ exports.handler = async function (event) {
 
     await markPlanEnrolled(pool, { planId: plan.id, orderUuid });
 
-    const synced = await syncFlodeskSubscriber({
-      firstName: session.account.fullName,
+    const batch = await resolveCourseBatch(pool, { courseSlug: plan.course_slug, batchKey: plan.batch_key });
+    const synced = await syncBrevoSubscriber({
+      fullName: session.account.fullName,
       email: session.account.email,
-      courseSlug: plan.course_slug,
+      listId: batch && batch.brevo_list_id ? batch.brevo_list_id : null,
     });
     if (synced.ok) {
       await pool.query(`UPDATE course_orders SET flodesk_synced = 1, updated_at = ? WHERE order_uuid = ?`, [nowSql(), orderUuid]);

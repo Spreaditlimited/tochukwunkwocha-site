@@ -4,9 +4,7 @@ const { getPool } = require("./_lib/db");
 const {
   ensureManualPaymentsTable,
   createManualPayment,
-  markPreSynced,
 } = require("./_lib/manual-payments");
-const { syncFlodeskPreEnrolSubscriber } = require("./_lib/flodesk");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { sendEmail } = require("./_lib/email");
@@ -108,11 +106,6 @@ exports.handler = async function (event) {
       proofPublicId,
     });
 
-    const synced = await syncFlodeskPreEnrolSubscriber({ firstName, email });
-    if (synced.ok) {
-      await markPreSynced(pool, paymentUuid);
-    }
-
     await ensureStudentAuthTables(pool);
     let account = await findStudentByEmail(pool, email);
     if (!account) {
@@ -157,7 +150,7 @@ exports.handler = async function (event) {
       ok: true,
       paymentUuid,
       pendingReview: true,
-      flodeskPreSynced: !!synced.ok,
+      flodeskPreSynced: false,
     };
 
     if (sessionToken) {

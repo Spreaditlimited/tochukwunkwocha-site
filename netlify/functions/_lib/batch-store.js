@@ -80,6 +80,7 @@ async function ensureCourseBatchesTable(pool) {
       paystack_reference_prefix VARCHAR(20) NOT NULL DEFAULT 'PTP',
       paystack_amount_minor INT NOT NULL,
       paypal_amount_minor INT NOT NULL DEFAULT 2400,
+      brevo_list_id VARCHAR(64) NULL,
       batch_start_at DATETIME NULL,
       activated_at DATETIME NULL,
       created_at DATETIME NOT NULL,
@@ -93,6 +94,7 @@ async function ensureCourseBatchesTable(pool) {
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN activated_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN batch_start_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN paypal_amount_minor INT NOT NULL DEFAULT 2400`);
+  await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN brevo_list_id VARCHAR(64) NULL`);
 
   const now = nowSql();
   const configs = listCourseConfigs();
@@ -179,6 +181,7 @@ async function getCourseBatchByKey(pool, courseSlug, batchKey) {
             paystack_amount_minor,
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+            brevo_list_id,
             activated_at,
             created_at,
             updated_at
@@ -204,6 +207,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             paystack_amount_minor,
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+            brevo_list_id,
             activated_at,
             created_at,
             updated_at
@@ -225,6 +229,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             paystack_amount_minor,
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+            brevo_list_id,
             activated_at,
             created_at,
             updated_at
@@ -272,10 +277,11 @@ async function createCourseBatch(pool, input) {
 
   await ensureCourseBatchesTable(pool);
   const now = nowSql();
+  const brevoListIdRaw = input && input.brevoListId ? String(input.brevoListId).trim().slice(0, 64) : "";
   await pool.query(
     `INSERT INTO course_batches
-      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, paypal_amount_minor, batch_start_at, activated_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NULL, ?, ?)`,
+      (course_slug, batch_key, batch_label, status, is_active, paystack_reference_prefix, paystack_amount_minor, paypal_amount_minor, brevo_list_id, batch_start_at, activated_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, NULL, ?, ?)`,
     [
       courseSlug,
       batchKey,
@@ -284,6 +290,7 @@ async function createCourseBatch(pool, input) {
       paystackReferencePrefix,
       Math.round(paystackAmountMinor),
       Math.round(paypalAmountMinor),
+      brevoListIdRaw || null,
       batchStartAt,
       now,
       now,
@@ -354,6 +361,9 @@ async function updateCourseBatch(pool, input) {
       ? input.batchStartAt
       : target.batch_start_at;
   const batchStartAt = normalizeBatchStartAt(batchStartAtRaw);
+  const brevoListId = input && Object.prototype.hasOwnProperty.call(input, "brevoListId")
+    ? String(input.brevoListId || "").trim().slice(0, 64)
+    : String(target.brevo_list_id || "").trim().slice(0, 64);
 
   if (!batchLabel) throw new Error("Batch label is required");
   if (!Number.isFinite(paystackAmountMinorRaw) || paystackAmountMinorRaw <= 0) {
@@ -370,6 +380,7 @@ async function updateCourseBatch(pool, input) {
          paystack_reference_prefix = ?,
          paystack_amount_minor = ?,
          paypal_amount_minor = ?,
+         brevo_list_id = ?,
          batch_start_at = ?,
          updated_at = ?
      WHERE course_slug = ?
@@ -379,6 +390,7 @@ async function updateCourseBatch(pool, input) {
       paystackReferencePrefix,
       Math.round(paystackAmountMinorRaw),
       Math.round(paypalAmountMinorRaw),
+      brevoListId || null,
       batchStartAt,
       now,
       courseSlug,

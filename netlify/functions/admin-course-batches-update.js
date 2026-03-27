@@ -35,6 +35,7 @@ exports.handler = async function (event) {
       paystackReferencePrefix: body.paystackReferencePrefix,
       paystackAmountMinor: body.paystackAmountMinor,
       paypalAmountMinor: body.paypalAmountMinor,
+      brevoListId: body.brevoListId,
       batchStartAt: body.batchStartAt,
     });
     return json(200, {
@@ -50,6 +51,7 @@ exports.handler = async function (event) {
             paystackReferencePrefix: updated.paystack_reference_prefix,
             paystackAmountMinor: Number(updated.paystack_amount_minor || 0),
             paypalAmountMinor: Number(updated.paypal_amount_minor || 0),
+            brevoListId: updated.brevo_list_id || null,
           }
         : null,
     });

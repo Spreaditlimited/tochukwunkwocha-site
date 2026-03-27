@@ -5,7 +5,7 @@ const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureManualPaymentsTable, createManualPayment, reviewManualPayment, markMainSynced, STATUS_APPROVED } = require("./_lib/manual-payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
-const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 
 function normalizeEmail(value) {
@@ -111,7 +111,7 @@ exports.handler = async function (event) {
       reviewNote,
     });
 
-    const synced = await syncFlodeskSubscriber({ firstName, email, courseSlug });
+    const synced = await syncBrevoSubscriber({ fullName: firstName, email, listId: batch.brevo_list_id || null });
     if (synced.ok) {
       await markMainSynced(pool, paymentUuid);
     }

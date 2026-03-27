@@ -1,6 +1,6 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
-const { syncFlodeskSubscriber } = require("./flodesk");
+const { syncBrevoSubscriber } = require("./brevo");
 const { sendMetaPurchase } = require("./meta");
 const { paystackVerifyTransaction } = require("./payments");
 const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
@@ -31,7 +31,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   }
 
   const [rows] = await pool.query(
-    `SELECT id, order_uuid, course_slug, first_name, email, status, flodesk_synced, currency, amount_minor, meta_purchase_sent
+    `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, meta_purchase_sent
      FROM course_orders
      WHERE ${where.join(" OR ")}
      ORDER BY id DESC
@@ -60,10 +60,12 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   }
 
   if (!order.flodesk_synced) {
-    const synced = await syncFlodeskSubscriber({
-      firstName: order.first_name,
+    const batch = await resolveCourseBatch(pool, { courseSlug: order.course_slug, batchKey: order.batch_key });
+    const listId = batch && batch.brevo_list_id ? batch.brevo_list_id : "";
+    const synced = await syncBrevoSubscriber({
+      fullName: order.first_name,
       email: order.email,
-      courseSlug: order.course_slug,
+      listId,
     });
 
     if (synced.ok) {
