@@ -26,6 +26,7 @@ const SETTINGS_DEFINITIONS = [
   { key: "PROMPT_TO_PROFIT_PRICE_GBP", category: "Pricing", secret: false },
   { key: "PROMPT_TO_PRODUCTION_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "PROMPT_TO_PRODUCTION_PRICE_GBP", category: "Pricing", secret: false },
+  { key: "INSTALLMENT_SURCHARGE_PERCENT", category: "Pricing", secret: false },
   { key: "LEADPAGE_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "BUSINESS_PLAN_PRICE_NGN_MINOR", category: "Pricing", secret: false },
 

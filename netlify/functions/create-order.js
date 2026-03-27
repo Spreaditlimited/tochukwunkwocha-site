@@ -21,7 +21,7 @@ function normalizeEmail(value) {
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "paystack" || raw === "paypal") return raw;
-  return "paystack";
+  return "paypal";
 }
 
 function normalizeCountry(value) {
@@ -60,6 +60,13 @@ exports.handler = async function (event) {
 
   if (provider !== "paystack" && provider !== "paypal") {
     return json(400, { ok: false, error: "Invalid payment provider" });
+  }
+
+  if (provider === "paystack") {
+    return json(400, {
+      ok: false,
+      error: "Paystack is temporarily unavailable. Please use PayPal or manual transfer.",
+    });
   }
 
   const orderUuid = crypto.randomUUID();

@@ -92,8 +92,35 @@
     introEl.textContent = schedule ? intro + " " + schedule : intro;
   }
 
+  function isOptionDisabled(optionEl) {
+    if (!optionEl) return false;
+    if (optionEl.hasAttribute("disabled")) return true;
+    return optionEl.getAttribute("data-disabled") === "true";
+  }
+
+  function findOption(provider) {
+    return paymentOptions.find(function (el) {
+      return el.getAttribute("data-provider") === provider;
+    });
+  }
+
+  function firstEnabledProvider() {
+    var fallback = "paypal";
+    for (var i = 0; i < paymentOptions.length; i += 1) {
+      var el = paymentOptions[i];
+      if (!isOptionDisabled(el)) {
+        return el.getAttribute("data-provider") || fallback;
+      }
+    }
+    return fallback;
+  }
+
   function setActiveProvider(provider) {
     if (!providerInput) return;
+    var optionEl = findOption(provider);
+    if (optionEl && isOptionDisabled(optionEl)) {
+      provider = firstEnabledProvider();
+    }
     providerInput.value = provider;
     paymentOptions.forEach(function (el) {
       var active = el.getAttribute("data-provider") === provider;
@@ -162,7 +189,10 @@
         "<p><strong>Amount:</strong> " + amountLabel + "</p>",
       ].join("");
     }
-    if (paystackOptionMeta) paystackOptionMeta.textContent = "Pay in full (" + amountLabel + ")";
+    var paystackOption = findOption("paystack");
+    if (paystackOptionMeta && !isOptionDisabled(paystackOption)) {
+      paystackOptionMeta.textContent = "Pay in full (" + amountLabel + ")";
+    }
     if (manualOptionMeta) manualOptionMeta.textContent = "Transfer " + amountLabel + " and upload proof";
   }
 
@@ -201,6 +231,7 @@
   paymentOptions.forEach(function (option) {
     option.addEventListener("click", function () {
       var provider = option.getAttribute("data-provider");
+      if (isOptionDisabled(option)) return;
       if (!provider) return;
       setActiveProvider(provider);
     });
@@ -248,7 +279,7 @@
         }
         setSuccess("Payment proof submitted. Redirecting you to your dashboard...");
         form.reset();
-        setActiveProvider("paystack");
+        setActiveProvider("paypal");
         window.location.href = "/dashboard/";
         return;
       }
@@ -280,7 +311,7 @@
   });
 
   updateIntro();
-  setActiveProvider((providerInput && providerInput.value) || "paystack");
+  setActiveProvider((providerInput && providerInput.value) || "paypal");
   loadActiveBatch()
     .then(function () {
       return ensureManualConfigLoaded();

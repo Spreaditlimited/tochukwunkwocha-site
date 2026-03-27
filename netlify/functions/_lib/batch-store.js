@@ -155,6 +155,7 @@ async function listCourseBatches(pool, courseSlug) {
             paystack_amount_minor,
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+            brevo_list_id,
             activated_at,
             created_at,
             updated_at

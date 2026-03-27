@@ -127,16 +127,10 @@ p {
   color: var(--deep-ink);
 }
 
-.logo-mark {
-  width: 34px;
+.logo-image {
   height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: var(--warm-ivory);
-  background: var(--deep-ink);
-  font-size: 0.85rem;
-  line-height: 1;
+  width: auto;
+  display: block;
 }
 
 .nav-links {
@@ -1224,6 +1218,20 @@ body.modal-open {
   border-color: #adb8da;
 }
 
+.payment-option.is-disabled,
+.payment-option:disabled {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.65;
+  box-shadow: none;
+}
+
+.payment-option.is-disabled:hover,
+.payment-option:disabled:hover {
+  border-color: #e5e7eb;
+}
+
 .payment-option.is-active {
   border-color: #2d3f70;
   background: #f3f6ff;
@@ -1362,6 +1370,15 @@ body.modal-open {
   font-family: "Manrope", sans-serif;
   font-size: 1.18rem;
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-logo-image {
+  height: 32px;
+  width: auto;
+  display: block;
 }
 
 .footer-tagline {

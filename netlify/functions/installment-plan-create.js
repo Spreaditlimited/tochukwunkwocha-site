@@ -28,6 +28,11 @@ exports.handler = async function (event) {
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(404, { ok: false, error: "Batch not found" });
 
+    const baseAmountMinor = Number(batch.paystack_amount_minor || 0);
+    const rawSurcharge = Number(process.env.INSTALLMENT_SURCHARGE_PERCENT || "20");
+    const surchargePercent = Number.isFinite(rawSurcharge) && rawSurcharge >= 0 ? rawSurcharge : 0;
+    const targetAmountMinor = Math.round(baseAmountMinor * (1 + surchargePercent / 100));
+
     const existing = await findOpenPlan(pool, {
       accountId: session.account.id,
       courseSlug,
@@ -56,7 +61,7 @@ exports.handler = async function (event) {
       batchKey: batch.batch_key,
       batchLabel: batch.batch_label,
       currency: "NGN",
-      targetAmountMinor: Number(batch.paystack_amount_minor || 0),
+      targetAmountMinor,
     });
 
     return json(200, {
