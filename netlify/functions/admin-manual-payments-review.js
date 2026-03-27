@@ -1,5 +1,5 @@
 const { json, badMethod } = require("./_lib/http");
-const { getPool } = require("./_lib/db");
+const { getPool, nowSql } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const {
@@ -11,6 +11,7 @@ const {
   reviewManualPayment,
 } = require("./_lib/manual-payments");
 const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { sendMetaPurchase } = require("./_lib/meta");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -64,6 +65,28 @@ exports.handler = async function (event) {
         await markMainSynced(pool, paymentUuid);
         flodeskSyncedMain = true;
       }
+    }
+
+    if (nextStatus === STATUS_APPROVED && !Number(payment.meta_purchase_sent || 0)) {
+      try {
+        const sent = await sendMetaPurchase({
+          eventId: payment.payment_uuid,
+          email: payment.email,
+          value: Number(payment.amount_minor || 0) / 100,
+          currency: payment.currency || "NGN",
+          contentName: payment.course_slug || "Course",
+          contentIds: [payment.course_slug || "course"],
+        });
+        if (sent && sent.ok) {
+          await pool.query(
+            `UPDATE course_manual_payments
+             SET meta_purchase_sent = 1,
+                 meta_purchase_sent_at = ?
+             WHERE payment_uuid = ?`,
+            [nowSql(), paymentUuid]
+          );
+        }
+      } catch (_error) {}
     }
 
     return json(200, {

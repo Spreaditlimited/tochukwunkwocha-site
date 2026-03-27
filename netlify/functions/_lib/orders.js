@@ -1,6 +1,7 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { syncFlodeskSubscriber } = require("./flodesk");
+const { sendMetaPurchase } = require("./meta");
 const { paystackVerifyTransaction } = require("./payments");
 const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { ensureCourseOrdersBatchColumns } = require("./course-orders");
@@ -30,7 +31,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   }
 
   const [rows] = await pool.query(
-    `SELECT id, order_uuid, course_slug, first_name, email, status, flodesk_synced
+    `SELECT id, order_uuid, course_slug, first_name, email, status, flodesk_synced, currency, amount_minor, meta_purchase_sent
      FROM course_orders
      WHERE ${where.join(" OR ")}
      ORDER BY id DESC
@@ -70,7 +71,35 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     }
   }
 
-  return { ok: true, orderUuid: order.order_uuid, courseSlug: order.course_slug, email: order.email };
+  if (!Number(order.meta_purchase_sent || 0)) {
+    try {
+      const sent = await sendMetaPurchase({
+        eventId: order.order_uuid,
+        email: order.email,
+        value: Number(order.amount_minor || 0) / 100,
+        currency: order.currency || "NGN",
+        contentName: order.course_slug || "Course",
+        contentIds: [order.course_slug || "course"],
+      });
+      if (sent && sent.ok) {
+        await pool.query(
+          `UPDATE course_orders
+           SET meta_purchase_sent = 1,
+               meta_purchase_sent_at = ?
+           WHERE id = ?`,
+          [nowSql(), order.id]
+        );
+      }
+    } catch (_error) {}
+  }
+
+  return {
+    ok: true,
+    orderUuid: order.order_uuid,
+    courseSlug: order.course_slug,
+    email: order.email,
+    fullName: order.first_name,
+  };
 }
 
 async function reconcileCoursePaystackOrders(pool, input) {

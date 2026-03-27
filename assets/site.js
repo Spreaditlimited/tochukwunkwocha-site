@@ -403,7 +403,10 @@
       if (active && active.batchKey) activeCourseBatchKey = String(active.batchKey);
       activeCourseBatchStartAt = String((active && active.batchStartAt) || "").trim();
       if (enrolActiveBatchEl && active) {
-        enrolActiveBatchEl.textContent = `Active Batch: ${String(active.batchLabel || "Current Batch")}`;
+        enrolActiveBatchEl.innerHTML =
+          '<span class="status-pill status-approved">Active Batch: ' +
+          String(active.batchLabel || "Current Batch") +
+          "</span>";
       }
       const paypalLabel = formatGbpMinor(active && active.paypalAmountMinor);
       if (paypalOptionMeta) {

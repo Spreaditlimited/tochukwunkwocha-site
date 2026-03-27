@@ -3,6 +3,40 @@ const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureVerifierAccountsTable, createVerifierAccount } = require("./_lib/verifier-accounts");
+const { sendEmail } = require("./_lib/email");
+
+function clean(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
+function siteBaseUrl() {
+  return String(process.env.SITE_BASE_URL || "https://tochukwunkwocha.com").trim().replace(/\/$/, "");
+}
+
+function buildVerifierOnboardingEmail(input) {
+  const fullName = clean(input.fullName, 120) || "there";
+  const email = clean(input.email, 190);
+  const password = String(input.password || "");
+  const loginUrl = `${siteBaseUrl()}/internal/verifier/`;
+  const html = [
+    `<p>Hello ${fullName},</p>`,
+    `<p>Your verifier account has been created on Tochukwu Nkwocha internal dashboard.</p>`,
+    `<p><strong>Login URL:</strong> <a href="${loginUrl}">${loginUrl}</a><br/>`,
+    `<strong>Email:</strong> ${email}<br/>`,
+    `<strong>Temporary password:</strong> <code>${password}</code></p>`,
+    `<p>You are required to reset this password on first login before you can continue.</p>`,
+  ].join("\n");
+  const text = [
+    `Hello ${fullName},`,
+    "",
+    "Your verifier account has been created on Tochukwu Nkwocha internal dashboard.",
+    `Login URL: ${loginUrl}`,
+    `Email: ${email}`,
+    `Temporary password: ${password}`,
+    "You are required to reset this password on first login before you can continue.",
+  ].join("\n");
+  return { html, text };
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -23,12 +57,26 @@ exports.handler = async function (event) {
 
   try {
     await ensureVerifierAccountsTable(pool);
+    const rawPassword = String(body.password || "");
     const row = await createVerifierAccount(pool, {
       fullName: body.fullName,
       email: body.email,
-      password: body.password,
+      password: rawPassword,
       createdBy: "admin",
     });
+    if (row && row.email) {
+      const mail = buildVerifierOnboardingEmail({
+        fullName: row.full_name,
+        email: row.email,
+        password: rawPassword,
+      });
+      await sendEmail({
+        to: row.email,
+        subject: "Your Verifier Account Login Details",
+        html: mail.html,
+        text: mail.text,
+      });
+    }
     return json(200, {
       ok: true,
       item: row

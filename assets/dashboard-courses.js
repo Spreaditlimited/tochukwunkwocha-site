@@ -53,13 +53,22 @@
       if (listEl) {
         listEl.innerHTML = items
           .map(function (item) {
+            const status = String(item.status || "").toLowerCase();
+            const isPending = status === "pending_verification";
             const paidAt = item.paidAt ? new Date(item.paidAt).toLocaleString() : "Unknown";
+            const submittedAt = item.submittedAt ? new Date(item.submittedAt).toLocaleString() : "Unknown";
+            const statusLabel = isPending ? "Pending verification" : "Paid";
+            const statusBadge = isPending
+              ? '<span class="status-pill status-pending_verification">Pending verification</span>'
+              : '<span class="status-pill status-approved">Paid</span>';
             return [
               '<article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">',
               `<p class="text-sm font-bold text-gray-900">${escapeHtml(item.courseName || item.courseSlug)}</p>`,
-              `<p class="mt-1 text-xs text-gray-500">Batch: ${escapeHtml(item.batchLabel || item.batchKey || "N/A")} • Paid: ${escapeHtml(
-                paidAt
-              )}</p>`,
+              `<div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <span>Batch: ${escapeHtml(item.batchLabel || item.batchKey || "N/A")}</span>
+                ${statusBadge}
+                <span>${escapeHtml(statusLabel)}: ${escapeHtml(isPending ? submittedAt : paidAt)}</span>
+              </div>`,
               `<a class="mt-3 inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-500" href="${escapeHtml(
                 courseUrl(item.courseSlug)
               )}">Open Course Page</a>`,
@@ -78,4 +87,3 @@
 
   load();
 })();
-

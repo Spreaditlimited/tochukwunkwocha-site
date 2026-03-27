@@ -35,9 +35,23 @@ exports.handler = async function (event) {
        GROUP BY course_slug, batch_key, batch_label`,
       [email]
     );
+    const [manualPendingRows] = await pool.query(
+      `SELECT course_slug, batch_key, batch_label, MAX(created_at) AS submitted_at
+       FROM course_manual_payments
+       WHERE email = ?
+         AND status = 'pending_verification'
+       GROUP BY course_slug, batch_key, batch_label`,
+      [email]
+    );
 
     const map = new Map();
-    function upsert(row, source) {
+    function statusRank(status) {
+      if (status === "paid" || status === "approved") return 2;
+      if (status === "pending_verification") return 1;
+      return 0;
+    }
+
+    function upsert(row, source, status, submittedAt) {
       const courseSlug = String(row.course_slug || "").trim();
       const batchKey = String(row.batch_key || "").trim();
       const batchLabel = String(row.batch_label || "").trim();
@@ -51,23 +65,39 @@ exports.handler = async function (event) {
           batchKey: batchKey || null,
           batchLabel: batchLabel || null,
           paidAt,
+          submittedAt: submittedAt || null,
           source,
+          status,
         });
         return;
       }
-      const prevTime = existing.paidAt ? new Date(existing.paidAt).getTime() : 0;
-      const nextTime = paidAt ? new Date(paidAt).getTime() : 0;
-      if (nextTime > prevTime) {
+      const prevRank = statusRank(existing.status);
+      const nextRank = statusRank(status);
+      if (nextRank > prevRank) {
         existing.paidAt = paidAt;
+        existing.submittedAt = submittedAt || existing.submittedAt || null;
         existing.source = source;
+        existing.status = status;
+        return;
+      }
+      if (nextRank === prevRank) {
+        const prevTime = existing.paidAt ? new Date(existing.paidAt).getTime() : 0;
+        const nextTime = paidAt ? new Date(paidAt).getTime() : 0;
+        if (nextTime > prevTime) {
+          existing.paidAt = paidAt;
+          existing.source = source;
+        }
       }
     }
 
     (autoRows || []).forEach(function (row) {
-      upsert(row, "order");
+      upsert(row, "order", "paid", null);
     });
     (manualRows || []).forEach(function (row) {
-      upsert(row, "manual_payment");
+      upsert(row, "manual_payment", "approved", null);
+    });
+    (manualPendingRows || []).forEach(function (row) {
+      upsert(row, "manual_payment", "pending_verification", row.submitted_at || null);
     });
 
     const items = Array.from(map.values()).sort(function (a, b) {
@@ -88,4 +118,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not load purchased courses" });
   }
 };
-

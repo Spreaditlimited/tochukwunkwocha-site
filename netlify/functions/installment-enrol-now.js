@@ -5,6 +5,7 @@ const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/stude
 const { ensureInstallmentTables, findPlanByUuidForAccount, markPlanEnrolled } = require("./_lib/installments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { syncFlodeskSubscriber } = require("./_lib/flodesk");
+const { sendMetaPurchase } = require("./_lib/meta");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -75,6 +76,26 @@ exports.handler = async function (event) {
     if (synced.ok) {
       await pool.query(`UPDATE course_orders SET flodesk_synced = 1, updated_at = ? WHERE order_uuid = ?`, [nowSql(), orderUuid]);
     }
+
+    try {
+      const sent = await sendMetaPurchase({
+        eventId: orderUuid,
+        email: session.account.email,
+        value: target / 100,
+        currency: plan.currency || "NGN",
+        contentName: plan.course_slug || "Course",
+        contentIds: [plan.course_slug || "course"],
+      });
+      if (sent && sent.ok) {
+        await pool.query(
+          `UPDATE course_orders
+           SET meta_purchase_sent = 1,
+               meta_purchase_sent_at = ?
+           WHERE order_uuid = ?`,
+          [nowSql(), orderUuid]
+        );
+      }
+    } catch (_error) {}
 
     return json(200, { ok: true, alreadyEnrolled: false, orderUuid });
   } catch (error) {

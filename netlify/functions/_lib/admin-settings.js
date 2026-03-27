@@ -19,6 +19,8 @@ const SETTINGS_DEFINITIONS = [
   { key: "PAYPAL_CLIENT_ID", category: "Payments", secret: true },
   { key: "PAYPAL_CLIENT_SECRET", category: "Payments", secret: true },
   { key: "PAYPAL_WEBHOOK_ID", category: "Payments", secret: true },
+  { key: "META_PIXEL_ID", category: "Marketing", secret: false },
+  { key: "META_PIXEL_ACCESS_TOKEN", category: "Marketing", secret: true },
 
   { key: "PROMPT_TO_PROFIT_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "PROMPT_TO_PROFIT_PRICE_GBP", category: "Pricing", secret: false },

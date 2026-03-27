@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enrol | Prompt to Production</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <style>
+      /* Layout Container - Fixes the edge-touching issue */
+      .checkout-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 40px auto 60px auto;
+        padding: 0 20px; /* Forces breathing room on small screens */
+        box-sizing: border-box;
+      }
+      
+      @media (min-width: 768px) {
+        .checkout-container {
+          padding: 0 40px; /* More breathing room on tablets */
+          margin-top: 60px;
+        }
+      }
+
+      /* The Grid */
+      .checkout-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+      
+      @media (min-width: 992px) {
+        .checkout-grid {
+          grid-template-columns: 1fr 1.1fr; /* Switches to 2 columns on desktop */
+          gap: 64px;
+          align-items: start;
+        }
+      }
+
+      /* Trust Column (Left) */
+      .trust-column h1 {
+        font-family: 'Manrope', sans-serif;
+        font-size: 2.1rem;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #111827;
+        margin-bottom: 16px;
+      }
+      @media (min-width: 768px) {
+        .trust-column h1 { font-size: 2.75rem; }
+      }
+      
+      .trust-column p.lead {
+        font-size: 1.05rem;
+        color: #4b5563;
+        margin-bottom: 32px;
+        line-height: 1.6;
+      }
+      @media (min-width: 768px) {
+        .trust-column p.lead { font-size: 1.15rem; }
+      }
+
+      /* Social Proof */
+      .social-proof {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .social-proof-avatars {
+        display: flex;
+      }
+      .social-proof-avatars img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #f8f6f1;
+        margin-left: -12px;
+        background-color: #e5e7eb;
+      }
+      .social-proof-avatars img:first-child { margin-left: 0; }
+      .social-proof-text {
+        font-size: 0.9rem;
+        color: #374151;
+        font-weight: 600;
+      }
+      .social-proof-stars { color: #f59e0b; letter-spacing: 2px; }
+
+      /* Trust Boxes */
+      .trust-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      }
+      
+      .trust-box-icon {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        background-color: #f0fdf4;
+        color: #16a34a;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .trust-box-icon.blue {
+        background-color: #eff6ff;
+        color: #2563eb;
+      }
+      .trust-box-content h3 {
+        font-weight: 700;
+        color: #111827;
+        font-size: 1.05rem;
+        margin-bottom: 4px;
+      }
+      .trust-box-content p {
+        color: #4b5563;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      /* Form Column (Right) */
+      .checkout-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 24px;
+        padding: 24px 20px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        box-sizing: border-box;
+      }
+      @media (min-width: 600px) {
+        .checkout-card { padding: 40px; }
+      }
+      
+      .form-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 14px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        margin-top: 6px;
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: #f9fafb;
+      }
+      .form-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .form-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #374151;
+      }
+
+      /* Installment Banner */
+      .installment-banner {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: linear-gradient(to right, #f0fdfa, #ecfeff);
+        border: 1px solid #ccfbf1;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 16px 0 6px;
+      }
+      @media (min-width: 500px) {
+        .installment-banner {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+      
+      .installment-banner h4 {
+        color: #0f766e;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 4px;
+      }
+      .installment-banner p {
+        color: #0d9488;
+        font-size: 0.85rem;
+        margin: 0;
+      }
+      .installment-btn {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        background: #fff;
+        color: #0f766e;
+        border: 1px solid #99f6e4;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+      @media (min-width: 500px) {
+        .installment-btn { width: auto; padding: 10px 16px; }
+      }
+      .installment-btn:hover { background: #f0fdfa; }
+
+      /* Primary Button */
+      .btn-primary-checkout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 16px;
+        font-size: 1.1rem;
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">TN</span>
+          <span>Tochukwu Nkwocha</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-toggle" type="button" aria-expanded="false">Services</button>
+            <div class="nav-dropdown-menu" role="menu">
+              <a href="/services/business-plan/" role="menuitem">Business Plan</a>
+              <a href="/services/lead-capture/" role="menuitem">Lead Capture</a>
+            </div>
+          </div>
+          <a href="/dashboard/" class="nav-cta">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full">
+      <div class="checkout-container">
+        <div class="checkout-grid">
+          
+          <div class="trust-column">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-3">Prompt to Production • Next Batch</p>
+            <h1>Build production-ready web apps with AI.</h1>
+            
+            <div class="social-proof">
+              <div class="social-proof-avatars">
+                <img src="/assets/solomon.JPG" alt="Student" loading="lazy">
+                <img src="/assets/chinenye.JPG" alt="Student" loading="lazy">
+                <img src="/assets/emeka.JPG" alt="Student" loading="lazy">
+              </div>
+              <div class="social-proof-text">
+                <div class="social-proof-stars">★★★★★</div>
+                Highly rated by ambitious builders
+              </div>
+            </div>
+
+            <p class="lead">
+              Ready to go beyond the basics? Join the upcoming batch and learn how to engineer, build, and deploy functional real-world projects using advanced AI workflows. <strong>Secure your spot today.</strong>
+            </p>
+            
+            <div class="trust-box">
+              <div class="trust-box-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <div class="trust-box-content">
+                <h3>Advanced AI Workflows</h3>
+                <p>Move past simple pages. Learn the exact architecture and prompting strategies to build and launch production-level web tools and applications.</p>
+              </div>
+            </div>
+
+            <div class="trust-box">
+              <div class="trust-box-icon blue">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <div class="trust-box-content">
+                <h3>Secure & Safe Checkout</h3>
+                <p>Your payment is processed with bank-level security. Once enrolled, you get instant access to your student dashboard to start preparing.</p>
+              </div>
+            </div>
+          </div>
+
+          <section class="checkout-card">
+            <h2 class="text-2xl font-heading font-extrabold text-gray-900">Secure your spot</h2>
+            <p id="enrolIntro" class="mt-2 text-sm text-gray-600">Fill in your details below to join the upcoming batch.</p>
+            
+          <div class="mt-4 mb-6">
+            <div id="enrolActiveBatch">
+              <span class="status-pill status-approved">Active Batch: Loading...</span>
+            </div>
+          </div>
+
+            <form id="enrolPageForm" data-course-slug="prompt-to-production" class="enrol-form m-0" novalidate>
+              
+              <div>
+                <label for="enrolFirstName" class="form-label">Full Name</label>
+                <input id="enrolFirstName" name="firstName" type="text" class="form-input" autocomplete="given-name" placeholder="E.g. Sarah Johnson" required />
+              </div>
+              
+              <div>
+                <label for="enrolEmail" class="form-label">Email address</label>
+                <input id="enrolEmail" name="email" type="email" class="form-input" autocomplete="email" placeholder="you@example.com" required />
+              </div>
+              
+
+
+              <div class="mt-2">
+                <label class="form-label block mb-3">Select payment method (Pay in Full)</label>
+                <input id="enrolProvider" name="provider" type="hidden" value="paystack" />
+                
+                <div class="payment-options" role="radiogroup" aria-label="Payment method">
+                  <button type="button" class="payment-option is-active" data-provider="paystack" role="radio" aria-checked="true">
+                    <span class="payment-option__title">Paystack</span>
+                    <span class="payment-option__meta" id="paystackOptionMeta">Pay securely in Naira.</span>
+                  </button>
+                  <button type="button" class="payment-option" data-provider="paypal" role="radio" aria-checked="false">
+                    <span class="payment-option__title">PayPal</span>
+                    <span class="payment-option__meta" id="paypalOptionMeta">International checkout (PayPal)</span>
+                  </button>
+                  <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">
+                    <span class="payment-option__title">Manual bank transfer</span>
+                    <span class="payment-option__meta" id="manualOptionMeta">Transfer and upload proof</span>
+                  </button>
+                </div>
+              </div>
+
+              <section id="manualTransferBlock" class="manual-transfer mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50" hidden>
+                <div class="manual-transfer__bank mb-4" id="manualBankDetails">
+                  <p class="manual-transfer__title font-bold text-sm text-gray-900">Bank details</p>
+                  <p class="text-sm text-gray-600">Bank details will appear here.</p>
+                </div>
+                <label for="manualProofFile" class="form-label">Payment proof (image/PDF)</label>
+                <input id="manualProofFile" name="manualProofFile" type="file" accept="image/*,.pdf" class="form-input mb-0" />
+                <p class="manual-transfer__hint text-xs text-gray-500 mt-2">After upload and confirm, you will be added to pre-enrolment while payment is manually verified.</p>
+              </section>
+
+              <div class="installment-banner">
+                <div>
+                  <h4>Need flexibility?</h4>
+                  <p>Reserve your slot today and pay in parts.</p>
+                </div>
+                <a href="https://tochukwunkwocha.com/dashboard/" class="installment-btn">Open Installment Wallet</a>
+              </div>
+
+              <p id="enrolError" class="enrol-form__error hidden text-red-600 text-sm mt-4 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert"></p>
+              <p id="enrolSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 hidden mt-4"></p>
+              
+              <div class="enrol-form__actions mt-3">
+                <button id="enrolSubmit" class="btn btn-primary btn-primary-checkout" type="submit">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  Complete Secure Enrolment
+                </button>
+              </div>
+              <p class="text-center text-xs text-gray-500 mt-4">
+                By enrolling, you agree to our
+                <a href="/terms-and-conditions" class="font-semibold text-blue-700 hover:text-blue-800" style="text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;">Terms &amp; Conditions</a>.
+              </p>
+            </form>
+          </section>
+
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">Tochukwu Nkwocha</div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/terms-and-conditions">Terms & Conditions</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Nkwocha. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js" defer></script>
+    <script src="/assets/enrol-page.js" defer></script>
+  </body>
+</html>

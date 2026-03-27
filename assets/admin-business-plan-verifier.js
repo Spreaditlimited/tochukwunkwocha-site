@@ -1,7 +1,9 @@
 (function () {
   var loginCard = document.getElementById("verifierLoginCard");
   var loginForm = document.getElementById("verifierLoginForm");
+  var resetForm = document.getElementById("verifierResetForm");
   var loginBtn = document.getElementById("verifierLoginBtn");
+  var resetBtn = document.getElementById("verifierResetBtn");
   var loginMsg = document.getElementById("verifierLoginMsg");
   var app = document.getElementById("verifierApp");
   var rows = document.getElementById("verifierRows");
@@ -14,6 +16,8 @@
 
   var items = [];
   var activePlanUuid = "";
+  var pendingResetEmail = "";
+  var pendingCurrentPassword = "";
 
   function setMsg(text, type) {
     if (!loginMsg) return;
@@ -22,6 +26,17 @@
     if (!text) return;
     if (type === "error") loginMsg.classList.add("text-red-700");
     if (type === "ok") loginMsg.classList.add("text-emerald-700");
+  }
+
+  function showResetForm(show) {
+    if (!resetForm || !loginForm) return;
+    if (show) {
+      resetForm.classList.remove("hidden");
+      loginForm.classList.add("hidden");
+      return;
+    }
+    resetForm.classList.add("hidden");
+    loginForm.classList.remove("hidden");
   }
 
   function fmtDate(value) {
@@ -213,6 +228,13 @@
         });
         var json = await res.json().catch(function () { return null; });
         if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not sign in");
+        if (json.mustResetPassword) {
+          pendingResetEmail = String(json.email || email || "").trim().toLowerCase();
+          pendingCurrentPassword = password;
+          showResetForm(true);
+          setMsg("Reset your temporary password to continue.", "error");
+          return;
+        }
         if (loginCard) loginCard.hidden = true;
         if (app) app.hidden = false;
         await fetchQueue();
@@ -221,6 +243,72 @@
       } finally {
         loginBtn.disabled = false;
         loginBtn.textContent = "Sign In";
+      }
+    });
+  }
+
+  if (resetForm) {
+    resetForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      setMsg("", "");
+      var newPassword = String((resetForm.newPassword && resetForm.newPassword.value) || "");
+      var confirmPassword = String((resetForm.confirmPassword && resetForm.confirmPassword.value) || "");
+      if (!pendingResetEmail || !pendingCurrentPassword) {
+        setMsg("Sign in again to continue.", "error");
+        showResetForm(false);
+        return;
+      }
+      if (newPassword.length < 8) {
+        setMsg("New password must be at least 8 characters.", "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setMsg("Passwords do not match.", "error");
+        return;
+      }
+      if (resetBtn) {
+        resetBtn.disabled = true;
+        resetBtn.textContent = "Resetting...";
+      }
+      try {
+        var resetRes = await fetch("/.netlify/functions/verifier-password-first-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            email: pendingResetEmail,
+            currentPassword: pendingCurrentPassword,
+            newPassword: newPassword,
+          }),
+        });
+        var resetJson = await resetRes.json().catch(function () { return null; });
+        if (!resetRes.ok || !resetJson || !resetJson.ok) {
+          throw new Error((resetJson && resetJson.error) || "Could not reset password");
+        }
+
+        var loginRes = await fetch("/.netlify/functions/verifier-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: pendingResetEmail, password: newPassword }),
+        });
+        var loginJson = await loginRes.json().catch(function () { return null; });
+        if (!loginRes.ok || !loginJson || !loginJson.ok || loginJson.mustResetPassword) {
+          throw new Error((loginJson && loginJson.error) || "Password reset worked, but sign in failed");
+        }
+
+        if (loginCard) loginCard.hidden = true;
+        if (app) app.hidden = false;
+        if (resetForm) resetForm.reset();
+        pendingCurrentPassword = "";
+        await fetchQueue();
+      } catch (error) {
+        setMsg(error.message || "Could not reset password", "error");
+      } finally {
+        if (resetBtn) {
+          resetBtn.disabled = false;
+          resetBtn.textContent = "Reset Password";
+        }
       }
     });
   }

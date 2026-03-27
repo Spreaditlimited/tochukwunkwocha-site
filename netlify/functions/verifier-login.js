@@ -28,6 +28,14 @@ exports.handler = async function (event) {
   const account = await verifyVerifierCredentials(pool, { email, password });
   if (!account) return json(401, { ok: false, error: "Invalid credentials" });
 
+  if (account.mustResetPassword) {
+    return json(200, {
+      ok: true,
+      mustResetPassword: true,
+      email: account.email,
+    });
+  }
+
   return {
     statusCode: 200,
     headers: {

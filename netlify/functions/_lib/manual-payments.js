@@ -28,6 +28,8 @@ async function ensureManualPaymentsTable(pool) {
       status VARCHAR(32) NOT NULL DEFAULT 'pending_verification',
       flodesk_pre_synced TINYINT(1) NOT NULL DEFAULT 0,
       flodesk_main_synced TINYINT(1) NOT NULL DEFAULT 0,
+      meta_purchase_sent TINYINT(1) NOT NULL DEFAULT 0,
+      meta_purchase_sent_at DATETIME NULL,
       reviewed_by VARCHAR(160) NULL,
       review_note VARCHAR(500) NULL,
       reviewed_at DATETIME NULL,
@@ -49,6 +51,16 @@ async function ensureManualPaymentsTable(pool) {
   }
   try {
     await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN batch_label VARCHAR(120) NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN meta_purchase_sent TINYINT(1) NOT NULL DEFAULT 0`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN meta_purchase_sent_at DATETIME NULL`);
   } catch (_error) {
     // no-op
   }
@@ -134,6 +146,8 @@ async function findManualPaymentByUuid(pool, paymentUuid) {
             status,
             flodesk_pre_synced,
             flodesk_main_synced,
+            meta_purchase_sent,
+            meta_purchase_sent_at,
             reviewed_by,
             review_note,
             reviewed_at,
@@ -178,6 +192,8 @@ async function listManualPayments(pool, { status, search, limit }) {
            status,
            flodesk_pre_synced,
            flodesk_main_synced,
+           meta_purchase_sent,
+           meta_purchase_sent_at,
            reviewed_by,
            review_note,
            reviewed_at,

@@ -18,10 +18,10 @@ function normalizeEmail(value) {
   return ok ? email : "";
 }
 
-function normalizeProvider(value, country) {
+function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "paystack" || raw === "paypal") return raw;
-  return String(country || "").trim().toLowerCase() === "nigeria" ? "paystack" : "paypal";
+  return "paystack";
 }
 
 function normalizeCountry(value) {
@@ -51,7 +51,7 @@ exports.handler = async function (event) {
   const firstName = String(body.firstName || "").trim().slice(0, 120);
   const email = normalizeEmail(body.email);
   const country = normalizeCountry(body.country);
-  const provider = normalizeProvider(body.provider, country);
+  const provider = normalizeProvider(body.provider);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
   const courseConfig = getCourseConfig(courseSlug);
   if (!firstName || !email) {

@@ -38,6 +38,7 @@ async function ensureVerifierAccountsTable(pool) {
       email VARCHAR(190) NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       password_salt VARCHAR(255) NOT NULL,
+      must_reset_password TINYINT(1) NOT NULL DEFAULT 0,
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       created_by VARCHAR(120) NULL,
       created_at DATETIME NOT NULL,
@@ -49,6 +50,9 @@ async function ensureVerifierAccountsTable(pool) {
       KEY idx_verifier_active (is_active, email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  try {
+    await pool.query(`ALTER TABLE tochukwu_verifier_accounts ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0`);
+  } catch (_error) {}
 }
 
 async function createVerifierAccount(pool, input) {
@@ -67,8 +71,8 @@ async function createVerifierAccount(pool, input) {
 
   await pool.query(
     `INSERT INTO tochukwu_verifier_accounts
-      (verifier_uuid, full_name, email, password_hash, password_salt, is_active, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+      (verifier_uuid, full_name, email, password_hash, password_salt, must_reset_password, is_active, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?)`,
     [verifierUuid, fullName, email, hash, salt, createdBy, now, now]
   );
 
@@ -95,7 +99,7 @@ async function findVerifierByEmailForAuth(pool, emailInput) {
   const email = normalizeEmail(emailInput);
   if (!email) return null;
   const [rows] = await pool.query(
-    `SELECT id, verifier_uuid, full_name, email, password_hash, password_salt, is_active
+    `SELECT id, verifier_uuid, full_name, email, password_hash, password_salt, must_reset_password, is_active
      FROM tochukwu_verifier_accounts
      WHERE email = ?
      LIMIT 1`,
@@ -127,6 +131,7 @@ async function verifyVerifierCredentials(pool, input) {
     verifierUuid: account.verifier_uuid,
     fullName: account.full_name,
     email: account.email,
+    mustResetPassword: Number(account.must_reset_password || 0) === 1,
   };
 }
 
@@ -140,10 +145,34 @@ async function updateVerifierPassword(pool, input) {
   const hash = await hashPassword(password, salt);
   await pool.query(
     `UPDATE tochukwu_verifier_accounts
-     SET password_hash = ?, password_salt = ?, updated_at = ?
+     SET password_hash = ?, password_salt = ?, must_reset_password = 0, updated_at = ?
      WHERE verifier_uuid = ?
      LIMIT 1`,
     [hash, salt, nowSql(), verifierUuid]
+  );
+}
+
+async function resetVerifierPasswordByEmail(pool, input) {
+  const email = normalizeEmail(input && input.email);
+  const currentPassword = String((input && input.currentPassword) || "");
+  const newPassword = String((input && input.newPassword) || "");
+  if (!email || !currentPassword || newPassword.length < 8) {
+    throw new Error("Email, current password and new password (8+ chars) are required");
+  }
+
+  const account = await findVerifierByEmailForAuth(pool, email);
+  if (!account || Number(account.is_active || 0) !== 1) throw new Error("Invalid credentials");
+  const currentHash = await hashPassword(currentPassword, account.password_salt);
+  if (!safeEqual(currentHash, account.password_hash)) throw new Error("Invalid credentials");
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = await hashPassword(newPassword, salt);
+  await pool.query(
+    `UPDATE tochukwu_verifier_accounts
+     SET password_hash = ?, password_salt = ?, must_reset_password = 0, updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [hash, salt, nowSql(), Number(account.id)]
   );
 }
 
@@ -153,4 +182,5 @@ module.exports = {
   listVerifierAccounts,
   verifyVerifierCredentials,
   updateVerifierPassword,
+  resetVerifierPasswordByEmail,
 };
