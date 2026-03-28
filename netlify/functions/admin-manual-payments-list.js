@@ -26,7 +26,12 @@ exports.handler = async function (event) {
   const limit = Number(qs.limit || 80);
   const reconcile = String(qs.reconcile || "1").trim() !== "0";
   const batchKey = String(qs.batch_key || "").trim();
+  const summaryBatchKey = String(qs.summary_batch_key || batchKey || "").trim();
   const courseSlug = normalizeCourseSlug(qs.course_slug, DEFAULT_COURSE_SLUG);
+  const summaryCourseSlugRaw = String(qs.summary_course_slug || "").trim().toLowerCase();
+  const summaryCourseSlug = summaryCourseSlugRaw === "all"
+    ? "all"
+    : normalizeCourseSlug(summaryCourseSlugRaw || courseSlug, DEFAULT_COURSE_SLUG);
 
   const allowedStatus = new Set(["pending_verification", "approved", "rejected", "all"]);
   if (!allowedStatus.has(status)) {
@@ -49,7 +54,10 @@ exports.handler = async function (event) {
       limit,
       batchKey,
     });
-    const summary = await getPaymentsQueueSummary(pool, { courseSlug, batchKey });
+    const summary = await getPaymentsQueueSummary(pool, {
+      courseSlug: summaryCourseSlug,
+      batchKey: summaryBatchKey,
+    });
 
     return json(200, { ok: true, items: rows || [], summary, reconcile: reconcileResult });
   } catch (error) {

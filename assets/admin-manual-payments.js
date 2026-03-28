@@ -21,6 +21,8 @@
   const summaryTitleEl = document.getElementById("paymentsSummaryTitle");
   const summaryStatusEl = document.getElementById("paymentsSummaryStatus");
   const summaryPendingEl = document.getElementById("paymentsSummaryPending");
+  const summaryCourseFilter = document.getElementById("paymentsSummaryCourseFilter");
+  const summaryBatchFilter = document.getElementById("paymentsSummaryBatchFilter");
   const summaryCourseEl = document.getElementById("paymentsSummaryCourse");
   const summaryStudentsEl = document.getElementById("paymentsSummaryStudents");
   const summaryTotalEl = document.getElementById("paymentsSummaryTotal");
@@ -90,6 +92,19 @@
     if (!courseFilter) return "prompt-to-profit";
     const value = String(courseFilter.value || "").trim();
     return value || "prompt-to-profit";
+  }
+
+  function selectedSummaryCourseSlug() {
+    if (!summaryCourseFilter) return selectedCourseSlug();
+    const value = String(summaryCourseFilter.value || "").trim().toLowerCase();
+    if (value === "all" || value === "prompt-to-profit" || value === "prompt-to-production") return value;
+    return selectedCourseSlug();
+  }
+
+  function selectedSummaryBatchKey() {
+    if (!summaryBatchFilter || summaryBatchFilter.disabled) return "all";
+    const value = String(summaryBatchFilter.value || "").trim();
+    return value || "all";
   }
 
   function statusLabel(status) {
@@ -461,10 +476,6 @@
   function renderSummary(summary) {
     if (!summary) return;
 
-    if (courseFilter && summary.courseSlug) {
-      courseFilter.value = String(summary.courseSlug).trim() || selectedCourseSlug();
-    }
-
     const courseName = String(summary.courseName || "Prompt to Profit").trim();
     const batchLabel = String(summary.batchLabel || "Batch 1").trim();
     const registrationStatus = String(summary.registrationStatus || "Closed").trim();
@@ -502,6 +513,33 @@
     }
   }
 
+  function renderSummaryBatchOptions(summary) {
+    if (!summaryBatchFilter) return;
+
+    const summaryCourseSlug = String((summary && summary.courseSlug) || "").trim().toLowerCase();
+    const batches = summary && Array.isArray(summary.availableBatches) ? summary.availableBatches : [];
+    const shouldDisable = summaryCourseSlug === "all";
+    const current = selectedSummaryBatchKey();
+    const fallback = String((summary && summary.batchKey) || "all").trim() || "all";
+
+    const options = ['<option value="all">All batches</option>'];
+    batches.forEach(function (item) {
+      const key = String(item.batchKey || "").trim();
+      if (!key) return;
+      const label = String(item.batchLabel || key).trim();
+      options.push(`<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`);
+    });
+    summaryBatchFilter.innerHTML = options.join("");
+    summaryBatchFilter.disabled = shouldDisable;
+    summaryBatchFilter.value = current;
+    if (summaryBatchFilter.value !== current) {
+      summaryBatchFilter.value = fallback;
+    }
+    if (summaryBatchFilter.value !== fallback && fallback !== "all") {
+      summaryBatchFilter.value = "all";
+    }
+  }
+
   async function loadItems(options) {
     setMessage("", "");
     const shouldReconcile = !!(options && options.reconcile);
@@ -511,6 +549,8 @@
     const search = searchInput ? searchInput.value.trim() : "";
     const qs = new URLSearchParams({
       course_slug: selectedCourseSlug(),
+      summary_course_slug: selectedSummaryCourseSlug(),
+      summary_batch_key: selectedSummaryBatchKey(),
       status,
       search,
       limit: "100",
@@ -543,6 +583,7 @@
       latestBatches = summaryBatches;
     }
     renderSummary(summaryObj);
+    renderSummaryBatchOptions(summaryObj);
     renderBatchOptions(summaryObj);
     const reconcile = json.reconcile && typeof json.reconcile === "object" ? json.reconcile : null;
     if (shouldReconcile && reconcile) {
@@ -972,6 +1013,23 @@
         .catch(function (error) {
           setMessage(error.message || "Could not filter by course", "error");
         });
+    });
+  }
+
+  if (summaryCourseFilter) {
+    summaryCourseFilter.addEventListener("change", function () {
+      if (summaryBatchFilter) summaryBatchFilter.value = "all";
+      loadItems({ reconcile: false }).catch(function (error) {
+        setMessage(error.message || "Could not refresh summary", "error");
+      });
+    });
+  }
+
+  if (summaryBatchFilter) {
+    summaryBatchFilter.addEventListener("change", function () {
+      loadItems({ reconcile: false }).catch(function (error) {
+        setMessage(error.message || "Could not refresh summary", "error");
+      });
     });
   }
 

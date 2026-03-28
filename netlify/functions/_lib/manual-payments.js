@@ -459,50 +459,62 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
 
 async function getPaymentsQueueSummary(pool, opts) {
   await ensureCourseBatchesTable(pool);
-  const courseSlug = normalizeCourseSlug(opts && opts.courseSlug, DEFAULT_COURSE_SLUG);
+  const rawCourseSlug = String((opts && opts.courseSlug) || "").trim().toLowerCase();
+  const includeAllCourses = rawCourseSlug === "all";
+  const courseSlug = includeAllCourses ? "all" : normalizeCourseSlug(rawCourseSlug, DEFAULT_COURSE_SLUG);
   const desiredBatchKey = normalizeBatchKey((opts && opts.batchKey) || "");
-  const scopedBatch = desiredBatchKey && desiredBatchKey !== "all" ? desiredBatchKey : "";
-  const availableBatches = await listCourseBatches(pool, courseSlug);
-  const batchConfig = scopedBatch ? await getCourseBatchByKey(pool, courseSlug, scopedBatch) : null;
+  const scopedBatch = !includeAllCourses && desiredBatchKey && desiredBatchKey !== "all" ? desiredBatchKey : "";
+  const availableBatches = includeAllCourses ? [] : await listCourseBatches(pool, courseSlug);
+  const batchConfig = includeAllCourses || !scopedBatch
+    ? null
+    : await getCourseBatchByKey(pool, courseSlug, scopedBatch);
 
+  const manualCourseClause = includeAllCourses ? "" : " AND course_slug = ? ";
   const manualBatchClause = scopedBatch ? " AND batch_key = ? " : "";
+  const manualCourseParams = includeAllCourses ? [] : [courseSlug];
   const manualBatchParams = scopedBatch ? [scopedBatch] : [];
+  const ordersCourseClause = includeAllCourses ? "" : " AND course_slug = ? ";
   const ordersBatchClause = scopedBatch ? " AND batch_key = ? " : "";
+  const ordersCourseParams = includeAllCourses ? [] : [courseSlug];
   const ordersBatchParams = scopedBatch ? [scopedBatch] : [];
 
   const [manualApprovedRows] = await pool.query(
     `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_manual_payments
-     WHERE course_slug = ?
+     WHERE 1=1
+       ${manualCourseClause}
        AND status = 'approved'
        ${manualBatchClause}
      GROUP BY currency`,
-    [courseSlug].concat(manualBatchParams)
+    manualCourseParams.concat(manualBatchParams)
   );
   const [manualPendingRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
-     WHERE course_slug = ?
+     WHERE 1=1
+       ${manualCourseClause}
        AND status = 'pending_verification'
        ${manualBatchClause}`,
-    [courseSlug].concat(manualBatchParams)
+    manualCourseParams.concat(manualBatchParams)
   );
   const [manualAllRows] = await pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
-     WHERE course_slug = ?
+     WHERE 1=1
+       ${manualCourseClause}
        ${manualBatchClause}`,
-    [courseSlug].concat(manualBatchParams)
+    manualCourseParams.concat(manualBatchParams)
   );
   const [paidOrderRows] = await pool.query(
     `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_orders
-     WHERE course_slug = ?
+     WHERE 1=1
+       ${ordersCourseClause}
        AND status = 'paid'
        AND (provider IS NULL OR provider <> 'wallet_installment')
        ${ordersBatchClause}
      GROUP BY currency, provider`,
-    [courseSlug].concat(ordersBatchParams)
+    ordersCourseParams.concat(ordersBatchParams)
   );
 
   const totalsByCurrency = {};
@@ -543,11 +555,13 @@ async function getPaymentsQueueSummary(pool, opts) {
   const totalRegistrations = manualAllCount + paidOrderCount;
 
   return {
-    courseName: getCourseName(courseSlug),
+    courseName: includeAllCourses ? "All Courses" : getCourseName(courseSlug),
     courseSlug,
-    batchKey: scopedBatch || "all",
+    batchKey: includeAllCourses ? "all" : (scopedBatch || "all"),
     batchLabel: batchConfig ? batchConfig.batch_label : "All Batches",
-    registrationStatus: batchConfig ? (String(batchConfig.status || "").toLowerCase() === "open" ? "Open" : "Closed") : "Mixed",
+    registrationStatus: includeAllCourses
+      ? "Mixed"
+      : (batchConfig ? (String(batchConfig.status || "").toLowerCase() === "open" ? "Open" : "Closed") : "Mixed"),
     totalStudents: paidApprovedCount,
     totalRegistrations,
     paidApprovedCount,
