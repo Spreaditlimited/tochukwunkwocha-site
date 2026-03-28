@@ -49,8 +49,8 @@ exports.handler = async function (event) {
     const now = nowSql();
     await pool.query(
       `INSERT INTO course_orders
-       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, provider, status, batch_key, batch_label, paid_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?)`,
+       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label, paid_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?)`,
       [
         orderUuid,
         plan.course_slug,
@@ -59,6 +59,11 @@ exports.handler = async function (event) {
         null,
         plan.currency || "NGN",
         target,
+        Number(plan.base_amount_minor || target),
+        Number(plan.discount_minor || 0),
+        target,
+        plan.coupon_code || null,
+        Number(plan.coupon_id || 0) > 0 ? Number(plan.coupon_id) : null,
         "wallet_installment",
         plan.batch_key,
         plan.batch_label,

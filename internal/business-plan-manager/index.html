@@ -60,8 +60,8 @@
             <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Settings</a>
           </div>
           <div class="p-4 border-t border-white/10 shrink-0">
-            <a href="/" class="flex items-center gap-2 px-3 py-2 text-sm text-brand-300 hover:text-white transition-colors">Back to public site</a>
-          </div>
+          <button type="button" data-admin-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
+        </div>
         </aside>
 
         <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
@@ -72,7 +72,7 @@
               </label>
               <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Business Plan Manager</h2>
             </div>
-            <button id="adminLogoutBtn" type="button" class="hidden sm:inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
+            <button id="adminLogoutBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
               Sign out
             </button>
           </header>

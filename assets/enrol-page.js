@@ -15,11 +15,18 @@
   var paystackOptionMeta = document.getElementById("paystackOptionMeta");
   var manualOptionMeta = document.getElementById("manualOptionMeta");
   var paypalOptionMeta = document.getElementById("paypalOptionMeta");
+  var couponCodeInput = document.getElementById("couponCodeInput");
+  var applyCouponBtn = document.getElementById("applyCouponBtn");
+  var couponStatusEl = document.getElementById("couponStatus");
+  var couponSummaryEl = document.getElementById("couponSummary");
 
   var courseSlug = String(form.getAttribute("data-course-slug") || "prompt-to-profit").trim();
   var activeCourseBatchKey = "";
   var activeCourseBatchStartAt = "";
   var manualConfigLoadedKey = "";
+  var appliedCoupon = null;
+  var couponPricingByProvider = { paystack: null, paypal: null };
+  var basePricingByProvider = { paystack: null, paypal: null };
 
   var COURSE_CONFIGS = {
     "prompt-to-profit": {
@@ -48,6 +55,85 @@
     if (!successEl) return;
     successEl.textContent = String(text || "");
     successEl.classList.toggle("hidden", !text);
+  }
+
+  function setCouponStatus(text, type) {
+    if (!couponStatusEl) return;
+    var msg = String(text || "").trim();
+    couponStatusEl.textContent = msg;
+    couponStatusEl.classList.toggle("hidden", !msg);
+    couponStatusEl.classList.remove("text-red-600", "text-emerald-700", "text-gray-600");
+    if (!msg) return;
+    if (type === "error") {
+      couponStatusEl.classList.add("text-red-600");
+      return;
+    }
+    if (type === "ok") {
+      couponStatusEl.classList.add("text-emerald-700");
+      return;
+    }
+    couponStatusEl.classList.add("text-gray-600");
+  }
+
+  function formatNgnMinor(minor) {
+    var amount = Number(minor || 0) / 100;
+    if (!Number.isFinite(amount)) return "";
+    return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(amount);
+  }
+
+  function formatCurrencyMinor(currency, minor) {
+    var cur = String(currency || "").toUpperCase();
+    if (cur === "NGN") return formatNgnMinor(minor);
+    return formatGbpMinor(minor);
+  }
+
+  function renderCouponSummary() {
+    if (!couponSummaryEl) return;
+    var provider = providerInput ? providerInput.value : "paypal";
+    var pricing = null;
+    if (provider === "manual_transfer") {
+      pricing = couponPricingByProvider.paystack;
+    } else {
+      pricing = couponPricingByProvider[provider] || null;
+    }
+    if (!appliedCoupon || !pricing) {
+      couponSummaryEl.classList.add("hidden");
+      couponSummaryEl.textContent = "";
+      return;
+    }
+    var currency = String(pricing.currency || "").toUpperCase();
+    var baseText = formatCurrencyMinor(currency, pricing.baseAmountMinor);
+    var discountText = formatCurrencyMinor(currency, pricing.discountMinor);
+    var finalText = formatCurrencyMinor(currency, pricing.finalAmountMinor);
+    couponSummaryEl.textContent = "Original: " + baseText + " • Discount: -" + discountText + " • New total: " + finalText;
+    couponSummaryEl.classList.remove("hidden");
+  }
+
+  function clearAppliedCoupon(message) {
+    appliedCoupon = null;
+    couponPricingByProvider = { paystack: null, paypal: null };
+    renderCouponSummary();
+    updatePaymentOptionMetas();
+    if (message) setCouponStatus(message, "info");
+    if (providerInput && providerInput.value === "manual_transfer") {
+      ensureManualConfigLoaded().catch(function () { return null; });
+    }
+  }
+
+  function updatePaymentOptionMetas() {
+    var paystackPricing = couponPricingByProvider.paystack || basePricingByProvider.paystack;
+    var paypalPricing = couponPricingByProvider.paypal || basePricingByProvider.paypal;
+    var paystackOption = findOption("paystack");
+    if (paystackOptionMeta && !isOptionDisabled(paystackOption)) {
+      paystackOptionMeta.textContent = paystackPricing
+        ? "Pay in full (" + formatCurrencyMinor("NGN", paystackPricing.finalAmountMinor) + ")"
+        : "Pay in full";
+    }
+    if (paypalOptionMeta) {
+      paypalOptionMeta.textContent = paypalPricing
+        ? "Pay online (" + formatCurrencyMinor("GBP", paypalPricing.finalAmountMinor) + ")"
+        : "International checkout (PayPal)";
+    }
   }
 
   function parseBatchStart(value) {
@@ -130,6 +216,7 @@
     var isManual = provider === "manual_transfer";
     if (manualTransferBlock) manualTransferBlock.hidden = !isManual;
     if (submitBtn) submitBtn.textContent = isManual ? "Upload proof and confirm" : "Proceed to Payment";
+    renderCouponSummary();
     if (isManual) ensureManualConfigLoaded().catch(function () { return null; });
   }
 
@@ -152,6 +239,20 @@
     var active = json.activeBatch;
     activeCourseBatchKey = String(active.batchKey || "");
     activeCourseBatchStartAt = String(active.batchStartAt || "");
+    var paystackMinor = Number(active.paystackAmountMinor || 0);
+    var paypalMinor = Number(active.paypalAmountMinor || 0);
+    basePricingByProvider.paystack = {
+      currency: "NGN",
+      baseAmountMinor: paystackMinor,
+      discountMinor: 0,
+      finalAmountMinor: paystackMinor,
+    };
+    basePricingByProvider.paypal = {
+      currency: "GBP",
+      baseAmountMinor: paypalMinor,
+      discountMinor: 0,
+      finalAmountMinor: paypalMinor,
+    };
     if (batchEl) {
       batchEl.innerHTML = [
         '<span class="status-pill status-approved">',
@@ -159,19 +260,22 @@
         "</span>",
       ].join("");
     }
-    var paypalLabel = formatGbpMinor(active.paypalAmountMinor);
-    if (paypalOptionMeta) paypalOptionMeta.textContent = paypalLabel ? "Pay online (" + paypalLabel + ")" : "International checkout (PayPal)";
+    updatePaymentOptionMetas();
     updateIntro();
   }
 
   async function ensureManualConfigLoaded() {
-    var cacheKey = courseSlug + ":" + (activeCourseBatchKey || "");
+    var couponForManual = appliedCoupon ? String(appliedCoupon.code || "").trim() : String((couponCodeInput && couponCodeInput.value) || "").trim();
+    var cacheKey = courseSlug + ":" + (activeCourseBatchKey || "") + ":" + couponForManual;
     if (manualConfigLoadedKey === cacheKey) return;
     manualConfigLoadedKey = cacheKey;
     var params = new URLSearchParams({
       course_slug: courseSlug,
       batch_key: activeCourseBatchKey || "",
     });
+    if (couponForManual) params.set("coupon_code", couponForManual);
+    var emailForManual = String((form.email && form.email.value) || "").trim();
+    if (emailForManual) params.set("email", emailForManual);
     var res = await fetch("/.netlify/functions/manual-payment-config?" + params.toString(), {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -179,6 +283,9 @@
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok || !json.details) throw new Error((json && json.error) || "Could not load bank details");
     var details = json.details || {};
+    if (details.couponError) {
+      setCouponStatus(String(details.couponError), "error");
+    }
     var amountLabel = String(details.amountLabel || "N10,750").trim();
     if (manualBankDetails) {
       manualBankDetails.innerHTML = [
@@ -188,10 +295,6 @@
         "<p><strong>Account number:</strong> " + String(details.accountNumber || "-") + "</p>",
         "<p><strong>Amount:</strong> " + amountLabel + "</p>",
       ].join("");
-    }
-    var paystackOption = findOption("paystack");
-    if (paystackOptionMeta && !isOptionDisabled(paystackOption)) {
-      paystackOptionMeta.textContent = "Pay in full (" + amountLabel + ")";
     }
     if (manualOptionMeta) manualOptionMeta.textContent = "Transfer " + amountLabel + " and upload proof";
   }
@@ -237,6 +340,85 @@
     });
   });
 
+  async function applyCoupon() {
+    var provider = providerInput ? providerInput.value : "paypal";
+    var code = String((couponCodeInput && couponCodeInput.value) || "").trim();
+    if (!code) {
+      clearAppliedCoupon("");
+      setCouponStatus("Enter a coupon code.", "error");
+      return;
+    }
+    if (applyCouponBtn) {
+      applyCouponBtn.disabled = true;
+      applyCouponBtn.textContent = "Applying...";
+    }
+    setCouponStatus("", "");
+    try {
+      var emailValue = String((form.email && form.email.value) || "").trim();
+      async function fetchCouponForProvider(targetProvider) {
+        var res = await fetch("/.netlify/functions/coupon-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            couponCode: code,
+            courseSlug: courseSlug,
+            batchKey: activeCourseBatchKey,
+            provider: targetProvider,
+            email: emailValue,
+          }),
+        });
+        var json = await res.json().catch(function () { return null; });
+        return { ok: !!(res.ok && json && json.ok && json.pricing), res: res, json: json };
+      }
+
+      var previewPaystack = await fetchCouponForProvider("paystack");
+      var previewPaypal = await fetchCouponForProvider("paypal");
+      if (!previewPaystack.ok && !previewPaypal.ok) {
+        throw new Error(
+          (previewPaypal.json && previewPaypal.json.error) ||
+            (previewPaystack.json && previewPaystack.json.error) ||
+            "Could not apply coupon."
+        );
+      }
+      couponPricingByProvider = {
+        paystack: previewPaystack.ok ? previewPaystack.json.pricing : null,
+        paypal: previewPaypal.ok ? previewPaypal.json.pricing : null,
+      };
+      var winner = previewPaypal.ok ? previewPaypal.json : previewPaystack.json;
+      appliedCoupon = {
+        code: String((winner.coupon && winner.coupon.code) || code).toUpperCase(),
+      };
+      if (couponCodeInput) couponCodeInput.value = appliedCoupon.code;
+      updatePaymentOptionMetas();
+      renderCouponSummary();
+      if (previewPaystack.ok && previewPaypal.ok) {
+        setCouponStatus("Coupon applied successfully.", "ok");
+      } else if (previewPaystack.ok) {
+        setCouponStatus("Coupon applied for NGN checkout only.", "info");
+      } else {
+        setCouponStatus("Coupon applied for GBP checkout only.", "info");
+      }
+      if (provider === "manual_transfer") {
+        manualConfigLoadedKey = "";
+        await ensureManualConfigLoaded();
+      }
+    } catch (error) {
+      clearAppliedCoupon("");
+      setCouponStatus(error.message || "Could not apply coupon.", "error");
+    } finally {
+      if (applyCouponBtn) {
+        applyCouponBtn.disabled = false;
+        applyCouponBtn.textContent = "Apply";
+      }
+    }
+  }
+
+  if (applyCouponBtn) {
+    applyCouponBtn.addEventListener("click", function () {
+      applyCoupon().catch(function () { return null; });
+    });
+  }
+
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
     setError("");
@@ -269,6 +451,7 @@
             email: email,
             courseSlug: courseSlug,
             batchKey: activeCourseBatchKey,
+            couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -293,6 +476,7 @@
           provider: provider,
           courseSlug: courseSlug,
           batchKey: activeCourseBatchKey,
+          couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
         }),
       });
       var json = await res.json().catch(function () { return null; });

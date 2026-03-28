@@ -5,6 +5,7 @@ const { sendMetaPurchase } = require("./meta");
 const { paystackVerifyTransaction } = require("./payments");
 const { listCourseBatches, resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { ensureCourseOrdersBatchColumns } = require("./course-orders");
+const { recordCouponRedemption } = require("./coupons");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./course-config");
 
 async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider }) {
@@ -31,7 +32,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   }
 
   const [rows] = await pool.query(
-    `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, meta_purchase_sent
+    `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, discount_minor, coupon_id, meta_purchase_sent
      FROM course_orders
      WHERE ${where.join(" OR ")}
      ORDER BY id DESC
@@ -93,6 +94,16 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
         );
       }
     } catch (_error) {}
+  }
+
+  if (Number(order.coupon_id || 0) > 0 && Number(order.discount_minor || 0) > 0) {
+    await recordCouponRedemption(pool, {
+      couponId: Number(order.coupon_id),
+      orderUuid: order.order_uuid,
+      email: order.email,
+      currency: order.currency,
+      discountMinor: Number(order.discount_minor || 0),
+    });
   }
 
   return {

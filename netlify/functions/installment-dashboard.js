@@ -17,12 +17,16 @@ exports.handler = async function (event) {
     const out = [];
     for (const plan of plans) {
       const payments = await listPaymentsForPlan(pool, plan.id);
+      const hasStartedPayment = Array.isArray(payments) && payments.length > 0;
       out.push({
         planUuid: plan.plan_uuid,
         courseSlug: plan.course_slug,
         batchKey: plan.batch_key,
         batchLabel: plan.batch_label,
         currency: plan.currency,
+        baseAmountMinor: Number(plan.base_amount_minor || plan.target_amount_minor || 0),
+        discountMinor: Number(plan.discount_minor || 0),
+        couponCode: plan.coupon_code || null,
         targetAmountMinor: Number(plan.target_amount_minor || 0),
         totalPaidMinor: Number(plan.total_paid_minor || 0),
         remainingMinor: Math.max(0, Number(plan.target_amount_minor || 0) - Number(plan.total_paid_minor || 0)),
@@ -32,6 +36,10 @@ exports.handler = async function (event) {
           Number(plan.target_amount_minor || 0) > 0 &&
           Number(plan.total_paid_minor || 0) >= Number(plan.target_amount_minor || 0) &&
           String(plan.status || "").toLowerCase() === "open",
+        canCancel:
+          String(plan.status || "").toLowerCase() === "open" &&
+          Number(plan.total_paid_minor || 0) <= 0 &&
+          !hasStartedPayment,
         payments: (payments || []).map((p) => ({
           paymentUuid: p.payment_uuid,
           provider: p.provider,

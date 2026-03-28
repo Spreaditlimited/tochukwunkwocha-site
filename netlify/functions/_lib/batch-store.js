@@ -5,10 +5,20 @@ const {
   getCourseConfig,
   listCourseConfigs,
   normalizeCourseSlug,
+  getCourseDefaultAmountMinor,
   getCourseDefaultPaypalMinor,
 } = require("./course-config");
 
 const FALLBACK_CONFIG = getCourseConfig(DEFAULT_COURSE_SLUG);
+
+function slugTokenFromBatchKey(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  const compact = raw.replace(/[^a-z0-9]/g, "");
+  if (!compact) return "";
+  if (compact.includes("ptprod")) return "ptprod";
+  if (compact.includes("ptp")) return "ptp";
+  return "";
+}
 
 function normalizeBatchKey(value) {
   return String(value || "")
@@ -58,6 +68,23 @@ function normalizeBatchStartAt(value) {
   return `${String(year).padStart(4, "0")}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
 }
 
+function batchLooksCrossCourse(courseSlug, batch) {
+  if (!batch) return false;
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
+  const cfg = getCourseConfig(slug) || FALLBACK_CONFIG;
+  const expectedPrefix = normalizePrefix((cfg && cfg.defaultPrefix) || FALLBACK_CONFIG.defaultPrefix || "PTP");
+  const expectedToken = slugTokenFromBatchKey((cfg && cfg.defaultBatchKey) || "");
+  const activePrefix = normalizePrefix(String(batch.paystack_reference_prefix || ""));
+  const activeToken = slugTokenFromBatchKey(batch.batch_key);
+  const otherCoursePrefixes = (listCourseConfigs() || [])
+    .map((item) => normalizePrefix((item && item.defaultPrefix) || ""))
+    .filter((prefix) => prefix && prefix !== expectedPrefix);
+
+  if (activeToken && expectedToken && activeToken !== expectedToken) return true;
+  if (activePrefix && activePrefix !== expectedPrefix && otherCoursePrefixes.includes(activePrefix)) return true;
+  return false;
+}
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -104,8 +131,7 @@ async function ensureCourseBatchesTable(pool) {
     const batchKey = normalizeBatchKey(cfg.defaultBatchKey || "batch-1");
     const batchLabel = String(cfg.defaultBatchLabel || "Batch 1").trim().slice(0, 120) || "Batch 1";
     const prefix = normalizePrefix(cfg.defaultPrefix || "PTP");
-    const amountMinorRaw = Number(cfg.defaultAmountMinor || 0);
-    const amountMinor = Number.isFinite(amountMinorRaw) && amountMinorRaw > 0 ? Math.round(amountMinorRaw) : 1075000;
+    const amountMinor = getCourseDefaultAmountMinor(slug);
     const paypalAmountMinor = getCourseDefaultPaypalMinor(slug);
 
     await pool.query(
@@ -118,6 +144,18 @@ async function ensureCourseBatchesTable(pool) {
        )`,
       [slug, batchKey, batchLabel, prefix, amountMinor, paypalAmountMinor, now, now, now, slug, batchKey]
     );
+
+    // Backfill old auto-seeded Prompt to Production defaults created with legacy N10,750 fallback.
+    if (slug === "prompt-to-production") {
+      await pool.query(
+        `UPDATE course_batches
+         SET paystack_amount_minor = ?, updated_at = ?
+         WHERE course_slug = ?
+           AND batch_key = ?
+           AND paystack_amount_minor = 1075000`,
+        [amountMinor, now, slug, batchKey]
+      );
+    }
 
     const [activeRows] = await pool.query(
       `SELECT id
@@ -248,9 +286,18 @@ async function resolveCourseBatch(pool, { courseSlug, batchKey }) {
   const key = normalizeBatchKey(batchKey);
   if (key && key !== "all") {
     const found = await getCourseBatchByKey(pool, slug, key);
-    if (found) return found;
+    if (found && !batchLooksCrossCourse(slug, found)) return found;
   }
-  return getActiveCourseBatch(pool, slug);
+  const active = await getActiveCourseBatch(pool, slug);
+  if (active && !batchLooksCrossCourse(slug, active)) return active;
+
+  const cfg = getCourseConfig(slug) || FALLBACK_CONFIG;
+  const defaultKey = normalizeBatchKey((cfg && cfg.defaultBatchKey) || "");
+  if (defaultKey) {
+    const fallback = await getCourseBatchByKey(pool, slug, defaultKey);
+    if (fallback) return fallback;
+  }
+  return active;
 }
 
 async function createCourseBatch(pool, input) {
@@ -261,7 +308,9 @@ async function createCourseBatch(pool, input) {
   const status = String((input && input.status) || "closed").trim().toLowerCase() === "open" ? "open" : "closed";
   const courseConfig = getCourseConfig(courseSlug) || FALLBACK_CONFIG;
   const paystackReferencePrefix = normalizePrefix((input && input.paystackReferencePrefix) || courseConfig.defaultPrefix);
-  const paystackAmountMinor = Number((input && input.paystackAmountMinor) || courseConfig.defaultAmountMinor || 1075000);
+  const paystackAmountMinor = Number(
+    (input && input.paystackAmountMinor) || getCourseDefaultAmountMinor(courseSlug)
+  );
   const paypalAmountMinor = Number(
     (input && input.paypalAmountMinor) || getCourseDefaultPaypalMinor(courseSlug)
   );
@@ -410,6 +459,7 @@ module.exports = {
   getCourseBatchByKey,
   getActiveCourseBatch,
   resolveCourseBatch,
+  batchLooksCrossCourse,
   createCourseBatch,
   activateCourseBatch,
   updateCourseBatch,

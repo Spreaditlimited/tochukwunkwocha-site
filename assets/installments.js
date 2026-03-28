@@ -22,6 +22,10 @@
   const accountIdentity = document.getElementById("walletAccountIdentity");
   const courseSelect = document.getElementById("walletCourse");
   const batchSelect = document.getElementById("walletBatch");
+  const couponCodeInput = document.getElementById("walletCouponCode");
+  const applyCouponBtn = document.getElementById("walletApplyCouponBtn");
+  const couponStatusEl = document.getElementById("walletCouponStatus");
+  const couponSummaryEl = document.getElementById("walletCouponSummary");
   const createPlanForm = document.getElementById("walletCreatePlanForm");
   const createPlanBtn = document.getElementById("walletCreatePlanBtn");
   const plansWrap = document.getElementById("walletPlans");
@@ -30,6 +34,7 @@
 
   let dashboard = null;
   let authMode = "signin";
+  let appliedPlanCoupon = null;
 
   function selectedCourseSlug() {
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
@@ -129,6 +134,45 @@
     if (type === "ok") el.classList.add("ok");
   }
 
+  function setCouponStatus(text, type) {
+    if (!couponStatusEl) return;
+    const msg = String(text || "").trim();
+    couponStatusEl.textContent = msg;
+    couponStatusEl.classList.toggle("hidden", !msg);
+    couponStatusEl.classList.remove("text-red-600", "text-emerald-700", "text-gray-600");
+    if (!msg) return;
+    if (type === "error") {
+      couponStatusEl.classList.add("text-red-600");
+      return;
+    }
+    if (type === "ok") {
+      couponStatusEl.classList.add("text-emerald-700");
+      return;
+    }
+    couponStatusEl.classList.add("text-gray-600");
+  }
+
+  function renderCouponSummary() {
+    if (!couponSummaryEl) return;
+    if (!appliedPlanCoupon || !appliedPlanCoupon.pricing) {
+      couponSummaryEl.classList.add("hidden");
+      couponSummaryEl.textContent = "";
+      return;
+    }
+    const pricing = appliedPlanCoupon.pricing;
+    const baseText = fmtMoney(pricing.baseAmountMinor, pricing.currency || "NGN");
+    const discountText = fmtMoney(pricing.discountMinor, pricing.currency || "NGN");
+    const finalText = fmtMoney(pricing.finalAmountMinor, pricing.currency || "NGN");
+    couponSummaryEl.textContent = `Original total: ${baseText} • Discount: -${discountText} • You pay: ${finalText}`;
+    couponSummaryEl.classList.remove("hidden");
+  }
+
+  function clearAppliedCoupon(message) {
+    appliedPlanCoupon = null;
+    renderCouponSummary();
+    if (message) setCouponStatus(message, "info");
+  }
+
   async function api(url, options) {
     const request = Object.assign({ credentials: "include" }, options || {});
     const res = await fetch(url, request);
@@ -175,10 +219,16 @@
           String(plan.status || "").toLowerCase() === "open";
         const disableEnrol = !canEnrolNow;
         const enrolLabel = "Enrol";
+        const showCancel = !!plan.canCancel;
         return [
           `<article class="wallet-plan" data-plan-uuid="${plan.planUuid}">`,
           `<p class="wallet-pill">${plan.batchLabel}</p>`,
           `<p style="margin-top:8px;font-weight:700;color:#14213d">${plan.courseSlug}</p>`,
+          `${
+            Number(plan.discountMinor || 0) > 0
+              ? `<p class="wallet-msg" style="margin-top:4px">Coupon (${String(plan.couponCode || "").toUpperCase()}): -${fmtMoney(Number(plan.discountMinor || 0), plan.currency)}</p>`
+              : ""
+          }`,
           `<p class="wallet-msg" style="margin-top:6px">Paid: ${fmtMoney(paid, plan.currency)} / ${fmtMoney(target, plan.currency)}</p>`,
           `<p class="wallet-msg">Remaining: ${fmtMoney(remaining, plan.currency)}</p>`,
           `<div class="wallet-progress"><span style="width:${progress}%"></span></div>`,
@@ -186,6 +236,9 @@
           `<input class="tw-input wallet-input wallet-topup-input" type="number" min="100" step="100" placeholder="Top-up amount (NGN)" data-topup-input ${disabledPay ? "disabled" : ""} />`,
           `<button class="btn btn-primary wallet-plan-btn" type="button" data-action="pay" ${disabledPay ? "disabled" : ""}>Pay Part</button>`,
           `<button class="btn btn-outline wallet-plan-btn wallet-plan-btn--enrol ${disableEnrol ? "is-locked" : ""}" type="button" data-action="enrol" ${disableEnrol ? "disabled aria-disabled=\"true\" title=\"Complete full payment to unlock enrolment\"" : ""}>${enrolLabel}</button>`,
+          showCancel
+            ? `<button class="btn btn-outline wallet-plan-btn" type="button" data-action="cancel">Cancel Plan</button>`
+            : "",
           `</div>`,
           `</article>`,
         ].join("");
@@ -319,18 +372,84 @@
     createPlanBtn.disabled = true;
     createPlanBtn.textContent = "Starting...";
     try {
-      await api("/.netlify/functions/installment-plan-create", {
+      const created = await api("/.netlify/functions/installment-plan-create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseSlug: selectedCourseSlug(), batchKey }),
+        body: JSON.stringify({
+          courseSlug: selectedCourseSlug(),
+          batchKey,
+          couponCode: appliedPlanCoupon
+            ? appliedPlanCoupon.code
+            : String((couponCodeInput && couponCodeInput.value) || "").trim(),
+        }),
       });
       await loadDashboard();
-      setMsg(planMsg, "Plan ready. Start paying in parts.", "ok");
+      if (created && created.reused) {
+        setMsg(planMsg, "Existing open plan found for this course and batch.", "ok");
+      } else {
+        setMsg(planMsg, "Plan ready. Start paying in parts.", "ok");
+      }
+      clearAppliedCoupon("");
+      if (couponCodeInput) couponCodeInput.value = "";
     } catch (error) {
+      if (error && error.code === "payment_lock_active") {
+        setMsg(
+          planMsg,
+          "Plan start is unavailable because a payment already exists for this course (online paid or manual pending/approved).",
+          "error"
+        );
+        return;
+      }
       setMsg(planMsg, error.message || "Could not create plan", "error");
     } finally {
       createPlanBtn.disabled = false;
       createPlanBtn.textContent = "Start Plan";
+    }
+  }
+
+  async function applyInstallmentCoupon() {
+    const batchKey = String((batchSelect && batchSelect.value) || "").trim();
+    if (!batchKey) {
+      setCouponStatus("Select a batch first.", "error");
+      return;
+    }
+    const couponCode = String((couponCodeInput && couponCodeInput.value) || "").trim();
+    if (!couponCode) {
+      clearAppliedCoupon("");
+      setCouponStatus("Enter a coupon code.", "error");
+      return;
+    }
+    if (applyCouponBtn) {
+      applyCouponBtn.disabled = true;
+      applyCouponBtn.textContent = "Applying...";
+    }
+    setCouponStatus("", "");
+    try {
+      const json = await api("/.netlify/functions/installment-coupon-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseSlug: selectedCourseSlug(),
+          batchKey: batchKey,
+          couponCode: couponCode,
+          email: dashboard && dashboard.account ? dashboard.account.email : "",
+        }),
+      });
+      appliedPlanCoupon = {
+        code: String((json.coupon && json.coupon.code) || couponCode).toUpperCase(),
+        pricing: json.pricing || null,
+      };
+      if (couponCodeInput) couponCodeInput.value = appliedPlanCoupon.code;
+      renderCouponSummary();
+      setCouponStatus("Coupon applied to your installment total.", "ok");
+    } catch (error) {
+      clearAppliedCoupon("");
+      setCouponStatus(error.message || "Could not apply coupon.", "error");
+    } finally {
+      if (applyCouponBtn) {
+        applyCouponBtn.disabled = false;
+        applyCouponBtn.textContent = "Apply";
+      }
     }
   }
 
@@ -391,6 +510,16 @@
     setMsg(planMsg, "Enrolment completed. Added to payments queue.", "ok");
   }
 
+  async function cancelPlan(planUuid) {
+    await api("/.netlify/functions/installment-plan-cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planUuid }),
+    });
+    await loadDashboard();
+    setMsg(planMsg, "Plan cancelled.", "ok");
+  }
+
   if (signUpForm) {
     signUpForm.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -436,8 +565,25 @@
 
   if (courseSelect) {
     courseSelect.addEventListener("change", function () {
+      clearAppliedCoupon("");
+      if (couponCodeInput) couponCodeInput.value = "";
       loadBatches().catch(function (error) {
         setMsg(planMsg, error.message || "Could not load batches", "error");
+      });
+    });
+  }
+
+  if (batchSelect) {
+    batchSelect.addEventListener("change", function () {
+      clearAppliedCoupon("");
+      if (couponCodeInput) couponCodeInput.value = "";
+    });
+  }
+
+  if (applyCouponBtn) {
+    applyCouponBtn.addEventListener("click", function () {
+      applyInstallmentCoupon().catch(function () {
+        return null;
       });
     });
   }
@@ -501,6 +647,16 @@
       } else if (action === "enrol") {
         enrolNow(planUuid).catch(function (error) {
           setMsg(planMsg, error.message || "Could not enrol now", "error");
+        });
+      } else if (action === "cancel") {
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = "Cancelling...";
+        cancelPlan(planUuid).catch(function (error) {
+          setMsg(planMsg, error.message || "Could not cancel plan", "error");
+        }).finally(function () {
+          button.disabled = false;
+          button.textContent = originalText || "Cancel Plan";
         });
       }
     });

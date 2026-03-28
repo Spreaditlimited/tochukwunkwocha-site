@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName, getCourseDefaultAmountMinor } = require("./_lib/course-config");
+const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 
 function formatNaira(minor) {
   const amount = Math.max(0, Number(minor || 0)) / 100;
@@ -16,6 +17,8 @@ exports.handler = async function (event) {
   const qs = event.queryStringParameters || {};
   const courseSlug = normalizeCourseSlug(qs.course_slug, DEFAULT_COURSE_SLUG);
   const batchKey = String(qs.batch_key || "").trim();
+  const couponCode = normalizeCouponCode(qs.coupon_code);
+  const email = String(qs.email || "").trim().toLowerCase();
   const pool = getPool();
   await applyRuntimeSettings(pool);
 
@@ -25,12 +28,32 @@ exports.handler = async function (event) {
   const note = String(process.env.MANUAL_BANK_NOTE || "").trim();
   let amountMinor = getCourseDefaultAmountMinor(courseSlug);
   let resolvedBatch = null;
+  let pricing = null;
+  let coupon = null;
+  let couponError = "";
 
   try {
     await ensureCourseBatchesTable(pool);
+    await ensureCouponsTables(pool);
     resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
     if (resolvedBatch && Number(resolvedBatch.paystack_amount_minor || 0) > 0) {
       amountMinor = Number(resolvedBatch.paystack_amount_minor);
+    }
+    if (couponCode) {
+      const evaluated = await evaluateCouponForOrder(pool, {
+        couponCode,
+        courseSlug,
+        email,
+        currency: "NGN",
+        baseAmountMinor: amountMinor,
+      });
+      if (evaluated && evaluated.ok && evaluated.pricing) {
+        pricing = evaluated.pricing;
+        coupon = evaluated.coupon || null;
+        amountMinor = Number(evaluated.pricing.finalAmountMinor || amountMinor);
+      } else if (evaluated && !evaluated.ok) {
+        couponError = String(evaluated.error || "Coupon could not be applied.");
+      }
     }
   } catch (_error) {
     // fall back to configured defaults if batch lookup fails
@@ -48,6 +71,14 @@ exports.handler = async function (event) {
       currency: "NGN",
       amountMinor: Math.round(amountMinor),
       amountLabel: formatNaira(amountMinor),
+      pricing,
+      couponError: couponError || null,
+      coupon: coupon
+        ? {
+            id: Number(coupon.id),
+            code: String(coupon.code || couponCode),
+          }
+        : null,
       batchKey: resolvedBatch ? resolvedBatch.batch_key : null,
       batchLabel: resolvedBatch ? resolvedBatch.batch_label : null,
     },

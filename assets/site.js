@@ -287,18 +287,18 @@
   document.body.insertAdjacentHTML("beforeend", modalMarkup);
 
   const modal = document.getElementById("enrolModal");
-  const form = document.getElementById("enrolForm");
-  const errorEl = document.getElementById("enrolError");
-  const submitBtn = document.getElementById("enrolSubmit");
-  const enrolCourseLabel = document.getElementById("enrolCourseLabel");
-  const providerInput = document.getElementById("enrolProvider");
-  const paymentOptions = document.querySelectorAll(".payment-option");
-  const paystackOptionMeta = document.getElementById("paystackOptionMeta");
-  const paypalOptionMeta = document.getElementById("paypalOptionMeta");
-  const manualOptionMeta = document.getElementById("manualOptionMeta");
-  const manualTransferBlock = document.getElementById("manualTransferBlock");
-  const manualBankDetails = document.getElementById("manualBankDetails");
-  const manualProofFileInput = document.getElementById("manualProofFile");
+  const form = modal ? modal.querySelector("#enrolForm") : null;
+  const errorEl = modal ? modal.querySelector("#enrolError") : null;
+  const submitBtn = modal ? modal.querySelector("#enrolSubmit") : null;
+  const enrolCourseLabel = modal ? modal.querySelector("#enrolCourseLabel") : null;
+  const providerInput = modal ? modal.querySelector("#enrolProvider") : null;
+  const paymentOptions = modal ? modal.querySelectorAll(".payment-option") : [];
+  const paystackOptionMeta = modal ? modal.querySelector("#paystackOptionMeta") : null;
+  const paypalOptionMeta = modal ? modal.querySelector("#paypalOptionMeta") : null;
+  const manualOptionMeta = modal ? modal.querySelector("#manualOptionMeta") : null;
+  const manualTransferBlock = modal ? modal.querySelector("#manualTransferBlock") : null;
+  const manualBankDetails = modal ? modal.querySelector("#manualBankDetails") : null;
+  const manualProofFileInput = modal ? modal.querySelector("#manualProofFile") : null;
 
   const paymentFeedbackMarkup = [
     '<div class="payment-feedback-modal" id="paymentFeedbackModal" aria-hidden="true">',
@@ -319,8 +319,8 @@
   const paymentMessage = document.getElementById("paymentFeedbackMessage");
   const paymentCloseBtn = document.getElementById("paymentFeedbackBtn");
   const paymentFeedbackCourseLabel = document.getElementById("paymentFeedbackCourseLabel");
-  const enrolActiveBatchEl = document.getElementById("enrolActiveBatch");
-  const enrolIntroEl = document.querySelector(".enrol-modal__intro");
+  const enrolActiveBatchEl = modal ? modal.querySelector("#enrolActiveBatch") : null;
+  const enrolIntroEl = modal ? modal.querySelector(".enrol-modal__intro") : null;
 
   let manualConfigLoaded = false;
 
@@ -563,7 +563,7 @@
       });
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
-    const firstInput = document.getElementById("enrolFirstName");
+    const firstInput = modal.querySelector("#enrolFirstName");
     if (firstInput) firstInput.focus();
   }
 

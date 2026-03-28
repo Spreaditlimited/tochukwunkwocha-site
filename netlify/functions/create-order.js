@@ -4,6 +4,7 @@ const { getPool } = require("./_lib/db");
 const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
 const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
@@ -53,6 +54,7 @@ exports.handler = async function (event) {
   const country = normalizeCountry(body.country);
   const provider = normalizeProvider(body.provider);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
+  const couponCode = normalizeCouponCode(body.couponCode);
   const courseConfig = getCourseConfig(courseSlug);
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and valid email are required" });
@@ -76,15 +78,67 @@ exports.handler = async function (event) {
   try {
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
+    await ensureCouponsTables(pool);
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
     const price = priceConfig({ provider, courseSlug, batch });
 
+    let pricing = {
+      currency: price.currency,
+      baseAmountMinor: Number(price.amountMinor || 0),
+      discountMinor: 0,
+      finalAmountMinor: Number(price.amountMinor || 0),
+      couponCode: "",
+      couponId: null,
+    };
+
+    if (couponCode) {
+      const evaluated = await evaluateCouponForOrder(pool, {
+        couponCode,
+        courseSlug,
+        email,
+        currency: price.currency,
+        baseAmountMinor: price.amountMinor,
+      });
+      if (!evaluated.ok) {
+        return json(400, { ok: false, error: evaluated.error || "Invalid coupon code." });
+      }
+      pricing = {
+        currency: evaluated.pricing.currency,
+        baseAmountMinor: evaluated.pricing.baseAmountMinor,
+        discountMinor: evaluated.pricing.discountMinor,
+        finalAmountMinor: evaluated.pricing.finalAmountMinor,
+        couponCode: String((evaluated.coupon && evaluated.coupon.code) || couponCode),
+        couponId: evaluated.coupon ? Number(evaluated.coupon.id) : null,
+      };
+    }
+
+    const amountDisplay =
+      price.currency === "NGN"
+        ? (pricing.finalAmountMinor / 100).toFixed(2)
+        : (pricing.finalAmountMinor / 100).toFixed(2);
+
     await pool.query(
       `INSERT INTO course_orders
-       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, provider, status, batch_key, batch_label)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      [orderUuid, courseSlug, firstName, email, country || null, price.currency, price.amountMinor, provider, batch.batch_key, batch.batch_label]
+       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      [
+        orderUuid,
+        courseSlug,
+        firstName,
+        email,
+        country || null,
+        pricing.currency,
+        pricing.finalAmountMinor,
+        pricing.baseAmountMinor,
+        pricing.discountMinor,
+        pricing.finalAmountMinor,
+        pricing.couponCode || null,
+        pricing.couponId,
+        provider,
+        batch.batch_key,
+        batch.batch_label,
+      ]
     );
 
     if (provider === "paystack") {
@@ -92,7 +146,7 @@ exports.handler = async function (event) {
       const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
       const payment = await paystackInitialize({
         email,
-        amountMinor: price.amountMinor,
+        amountMinor: pricing.finalAmountMinor,
         reference,
         metadata: {
           order_uuid: orderUuid,
@@ -118,9 +172,9 @@ exports.handler = async function (event) {
       });
     }
 
-    const payment = await paypalCreateOrder({
-      amount: price.amountDisplay,
-      currency: price.currency,
+      const payment = await paypalCreateOrder({
+      amount: amountDisplay,
+      currency: pricing.currency,
       customId: orderUuid,
       description: `${String((courseConfig && courseConfig.name) || "Course")} pre-enrolment`,
       cancelPath: String((courseConfig && courseConfig.landingPath) || "/courses/prompt-to-profit"),
@@ -138,6 +192,13 @@ exports.handler = async function (event) {
       orderUuid,
       provider,
       checkoutUrl: payment.checkoutUrl,
+      pricing: {
+        currency: pricing.currency,
+        baseAmountMinor: pricing.baseAmountMinor,
+        discountMinor: pricing.discountMinor,
+        finalAmountMinor: pricing.finalAmountMinor,
+        couponCode: pricing.couponCode || null,
+      },
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not create order" });

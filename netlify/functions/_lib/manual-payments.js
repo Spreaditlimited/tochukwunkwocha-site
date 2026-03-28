@@ -22,6 +22,11 @@ async function ensureManualPaymentsTable(pool) {
       country VARCHAR(120) NULL,
       currency VARCHAR(12) NOT NULL DEFAULT 'NGN',
       amount_minor INT NOT NULL,
+      base_amount_minor INT NULL,
+      discount_minor INT NULL,
+      final_amount_minor INT NULL,
+      coupon_code VARCHAR(40) NULL,
+      coupon_id BIGINT NULL,
       transfer_reference VARCHAR(190) NULL,
       proof_url TEXT NOT NULL,
       proof_public_id VARCHAR(255) NULL,
@@ -69,6 +74,46 @@ async function ensureManualPaymentsTable(pool) {
   } catch (_error) {
     // no-op
   }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN base_amount_minor INT NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN discount_minor INT NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN final_amount_minor INT NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN coupon_code VARCHAR(40) NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN coupon_id BIGINT NULL`);
+  } catch (_error) {
+    // no-op
+  }
+  await pool.query(
+    `UPDATE course_manual_payments
+     SET base_amount_minor = amount_minor
+     WHERE base_amount_minor IS NULL`
+  );
+  await pool.query(
+    `UPDATE course_manual_payments
+     SET discount_minor = 0
+     WHERE discount_minor IS NULL`
+  );
+  await pool.query(
+    `UPDATE course_manual_payments
+     SET final_amount_minor = amount_minor
+     WHERE final_amount_minor IS NULL`
+  );
   await pool.query(
     `UPDATE course_manual_payments
      SET batch_key = 'ptp-batch-1',
@@ -84,8 +129,8 @@ async function createManualPayment(pool, input) {
 
   await pool.query(
     `INSERT INTO course_manual_payments
-     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       paymentUuid,
       input.courseSlug,
@@ -96,6 +141,11 @@ async function createManualPayment(pool, input) {
       input.country || null,
       input.currency,
       input.amountMinor,
+      input.baseAmountMinor !== undefined && input.baseAmountMinor !== null ? input.baseAmountMinor : input.amountMinor,
+      input.discountMinor !== undefined && input.discountMinor !== null ? input.discountMinor : 0,
+      input.finalAmountMinor !== undefined && input.finalAmountMinor !== null ? input.finalAmountMinor : input.amountMinor,
+      input.couponCode || null,
+      input.couponId || null,
       input.transferReference || null,
       input.proofUrl,
       input.proofPublicId || null,
@@ -140,6 +190,11 @@ async function findManualPaymentByUuid(pool, paymentUuid) {
             country,
             currency,
             amount_minor,
+            base_amount_minor,
+            discount_minor,
+            final_amount_minor,
+            coupon_code,
+            coupon_id,
             transfer_reference,
             proof_url,
             proof_public_id,
@@ -255,6 +310,11 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
            country AS country,
            currency AS currency,
            amount_minor AS amount_minor,
+           base_amount_minor AS base_amount_minor,
+           discount_minor AS discount_minor,
+           final_amount_minor AS final_amount_minor,
+           coupon_code AS coupon_code,
+           coupon_id AS coupon_id,
            transfer_reference AS transfer_reference,
            proof_url AS proof_url,
            proof_public_id AS proof_public_id,
@@ -341,6 +401,11 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       country: row.country,
       currency: row.currency,
       amount_minor: row.amount_minor,
+      base_amount_minor: row.base_amount_minor,
+      discount_minor: row.discount_minor,
+      final_amount_minor: row.final_amount_minor,
+      coupon_code: row.coupon_code,
+      coupon_id: row.coupon_id,
       transfer_reference: row.transfer_reference,
       proof_url: row.proof_url,
       proof_public_id: row.proof_public_id,

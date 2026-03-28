@@ -234,6 +234,11 @@
         font-size: 1.1rem;
         border-radius: 12px;
       }
+      .coupon-apply-btn {
+        padding: 10px 14px;
+        min-height: 42px;
+        font-size: 0.88rem;
+      }
     </style>
   </head>
   <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
@@ -326,11 +331,19 @@
                 <label for="enrolEmail" class="form-label">Email address</label>
                 <input id="enrolEmail" name="email" type="email" class="form-input" autocomplete="email" placeholder="you@example.com" required />
               </div>
-              
+
+              <div>
+                <label for="couponCodeInput" class="form-label">Coupon code (optional)</label>
+                <div class="flex items-center gap-2">
+                  <input id="couponCodeInput" name="couponCode" type="text" class="form-input mb-0" placeholder="Enter coupon code if available" />
+                  <button id="applyCouponBtn" type="button" class="btn btn-outline coupon-apply-btn shrink-0">Apply</button>
+                </div>
+                <p id="couponStatus" class="text-xs mt-2 hidden"></p>
+                <p id="couponSummary" class="text-xs mt-1 text-gray-600 hidden"></p>
+              </div>
 
 
               <div class="mt-2">
-                <label class="form-label block mb-3">Select payment method (Pay in Full)</label>
                 <input id="enrolProvider" name="provider" type="hidden" value="paypal" />
                 
                 <div class="payment-options" role="radiogroup" aria-label="Payment method">

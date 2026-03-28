@@ -49,6 +49,7 @@
         background: #e5e7eb !important; border-color: #d1d5db !important; color: #6b7280 !important;
         cursor: not-allowed !important; box-shadow: none !important; transform: none !important; opacity: 1 !important;
       }
+      .wallet-coupon-input { margin-top: 0 !important; }
       @media (max-width: 760px) {
         .wallet-plan-actions { flex-wrap: wrap; }
         .wallet-plan-actions .wallet-topup-input { flex: 1 1 100%; min-width: 0; }
@@ -173,6 +174,15 @@
                 <div>
                   <label class="tw-label" for="walletBatch">Batch Target</label>
                   <select id="walletBatch" class="tw-input tw-select"></select>
+                </div>
+                <div>
+                  <label class="tw-label" for="walletCouponCode">Coupon Code (Optional)</label>
+                  <div class="mt-2 flex items-center gap-2">
+                    <input id="walletCouponCode" type="text" class="tw-input wallet-coupon-input !mt-0" placeholder="Enter coupon code if available" />
+                    <button type="button" id="walletApplyCouponBtn" class="btn btn-outline shrink-0">Apply</button>
+                  </div>
+                  <p id="walletCouponStatus" class="text-xs mt-2 hidden"></p>
+                  <p id="walletCouponSummary" class="text-xs mt-1 text-gray-600 hidden"></p>
                 </div>
                 <div><button type="submit" class="tw-btn-primary w-full" id="walletCreatePlanBtn">Create Plan</button></div>
               </form>

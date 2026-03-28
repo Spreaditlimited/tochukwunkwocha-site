@@ -15,6 +15,10 @@ async function ensureInstallmentTables(pool) {
       batch_label VARCHAR(120) NOT NULL,
       currency VARCHAR(12) NOT NULL DEFAULT 'NGN',
       target_amount_minor INT NOT NULL,
+      base_amount_minor INT NULL,
+      discount_minor INT NOT NULL DEFAULT 0,
+      coupon_code VARCHAR(40) NULL,
+      coupon_id BIGINT NULL,
       total_paid_minor INT NOT NULL DEFAULT 0,
       status VARCHAR(32) NOT NULL DEFAULT 'open',
       enrolled_order_uuid VARCHAR(64) NULL,
@@ -26,6 +30,29 @@ async function ensureInstallmentTables(pool) {
       KEY idx_installment_plan_batch (course_slug, batch_key)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN base_amount_minor INT NULL`);
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN discount_minor INT NOT NULL DEFAULT 0`);
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN coupon_code VARCHAR(40) NULL`);
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN coupon_id BIGINT NULL`);
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD KEY idx_installment_plan_coupon_id (coupon_id)`);
+  } catch (_error) {}
+  try {
+    await pool.query(
+      `UPDATE student_installment_plans
+       SET base_amount_minor = target_amount_minor
+       WHERE base_amount_minor IS NULL`
+    );
+  } catch (_error) {}
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_installment_payments (
@@ -54,8 +81,8 @@ async function createInstallmentPlan(pool, input) {
   const planUuid = `ip_${crypto.randomUUID().replace(/-/g, "")}`;
   await pool.query(
     `INSERT INTO student_installment_plans
-      (plan_uuid, account_id, course_slug, batch_key, batch_label, currency, target_amount_minor, total_paid_minor, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)`,
+      (plan_uuid, account_id, course_slug, batch_key, batch_label, currency, target_amount_minor, base_amount_minor, discount_minor, coupon_code, coupon_id, total_paid_minor, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)`,
     [
       planUuid,
       Number(input.accountId),
@@ -64,6 +91,10 @@ async function createInstallmentPlan(pool, input) {
       input.batchLabel,
       input.currency || "NGN",
       Number(input.targetAmountMinor || 0),
+      Number(input.baseAmountMinor || input.targetAmountMinor || 0),
+      Number(input.discountMinor || 0),
+      input.couponCode ? String(input.couponCode).trim().toUpperCase() : null,
+      Number.isFinite(Number(input.couponId)) ? Number(input.couponId) : null,
       now,
       now,
     ]
@@ -204,6 +235,52 @@ async function markPlanEnrolled(pool, input) {
   );
 }
 
+async function cancelPlanIfUnpaid(pool, input) {
+  const planId = Number(input && input.planId);
+  if (!Number.isFinite(planId) || planId <= 0) {
+    return { ok: false, error: "Invalid plan id" };
+  }
+
+  const [planRows] = await pool.query(
+    `SELECT id, status, total_paid_minor
+     FROM student_installment_plans
+     WHERE id = ?
+     LIMIT 1`,
+    [planId]
+  );
+  if (!planRows || !planRows.length) return { ok: false, error: "Plan not found" };
+  const plan = planRows[0];
+  if (String(plan.status || "").toLowerCase() !== "open") {
+    return { ok: false, error: "Only open plans can be cancelled" };
+  }
+  if (Number(plan.total_paid_minor || 0) > 0) {
+    return { ok: false, error: "Plan cannot be cancelled after payment has started" };
+  }
+
+  const [paymentRows] = await pool.query(
+    `SELECT id
+     FROM student_installment_payments
+     WHERE plan_id = ?
+     LIMIT 1`,
+    [planId]
+  );
+  if (paymentRows && paymentRows.length) {
+    return { ok: false, error: "Plan cannot be cancelled after payment has started" };
+  }
+
+  const now = nowSql();
+  await pool.query(
+    `UPDATE student_installment_plans
+     SET status = 'cancelled',
+         updated_at = ?
+     WHERE id = ?
+       AND status = 'open'
+       AND total_paid_minor = 0`,
+    [now, planId]
+  );
+  return { ok: true };
+}
+
 module.exports = {
   ensureInstallmentTables,
   createInstallmentPlan,
@@ -214,4 +291,5 @@ module.exports = {
   listPaymentsForPlan,
   findPlanByUuidForAccount,
   markPlanEnrolled,
+  cancelPlanIfUnpaid,
 };

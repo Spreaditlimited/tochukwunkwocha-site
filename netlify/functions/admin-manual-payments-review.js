@@ -13,6 +13,7 @@ const {
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
 const { resolveCourseBatch } = require("./_lib/batch-store");
+const { recordCouponRedemption } = require("./_lib/coupons");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -90,6 +91,20 @@ exports.handler = async function (event) {
           );
         }
       } catch (_error) {}
+    }
+
+    if (
+      nextStatus === STATUS_APPROVED &&
+      Number(payment.coupon_id || 0) > 0 &&
+      Number(payment.discount_minor || 0) > 0
+    ) {
+      await recordCouponRedemption(pool, {
+        couponId: Number(payment.coupon_id),
+        orderUuid: String(payment.payment_uuid || ""),
+        email: payment.email,
+        currency: payment.currency || "NGN",
+        discountMinor: Number(payment.discount_minor || 0),
+      });
     }
 
     return json(200, {

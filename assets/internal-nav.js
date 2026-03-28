@@ -5,11 +5,48 @@
   if (!menuLinks.length) return;
 
   var navLock = false;
+  var sidebarSignoutButtons = Array.prototype.slice.call(
+    document.querySelectorAll("[data-admin-signout]")
+  );
 
   function normalizePath(pathname) {
     var path = String(pathname || "/").trim();
     if (!path) return "/";
     return path.endsWith("/") ? path : path + "/";
+  }
+
+  function titleForPath(pathname) {
+    var path = normalizePath(pathname);
+    if (path === "/internal/") return { page: "Dashboard Overview", doc: "Internal Dashboard | Tochukwu Nkwocha" };
+    if (path === "/internal/manual-payments/") return { page: "Enrollments", doc: "Enrollments | Internal" };
+    if (path === "/internal/installments/") return { page: "Installments", doc: "Installments | Internal" };
+    if (path === "/internal/leadpage-jobs/") return { page: "Lead Capture Queue", doc: "Leadpage Jobs | Internal" };
+    if (path === "/internal/business-plan-manager/") return { page: "Business Plan Manager", doc: "Business Plan Manager | Internal" };
+    if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
+    if (path === "/internal/verifier/") return { page: "Business Plan Verification Queue", doc: "Business Plan Verifier | Internal" };
+    return null;
+  }
+
+  function syncPageTitle() {
+    var mapped = titleForPath(window.location.pathname);
+    if (!mapped) return;
+
+    var heading = document.querySelector("main h2") || document.querySelector("header h2");
+    if (heading) heading.textContent = mapped.page;
+
+    if (typeof document !== "undefined" && mapped.doc) {
+      document.title = mapped.doc;
+    }
+  }
+
+  async function logoutAdmin() {
+    await fetch("/.netlify/functions/admin-logout", {
+      method: "POST",
+      credentials: "include",
+    }).catch(function () {
+      return null;
+    });
+    window.location.href = "/internal/";
   }
 
   var currentPath = normalizePath(window.location.pathname);
@@ -29,6 +66,8 @@
       linkEl.style.pointerEvents = "none";
     }
   }
+
+  syncPageTitle();
 
   menuLinks.forEach(function (link) {
     var targetPath = getPathFromHref(link.getAttribute("href"));
@@ -60,6 +99,21 @@
       if (mobileMenuToggle && mobileMenuToggle.checked) {
         mobileMenuToggle.checked = false;
       }
+    });
+  });
+
+  sidebarSignoutButtons.forEach(function (button) {
+    button.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (navLock) return;
+      navLock = true;
+      button.disabled = true;
+      button.style.opacity = "0.7";
+      logoutAdmin().catch(function () {
+        navLock = false;
+        button.disabled = false;
+        button.style.opacity = "1";
+      });
     });
   });
 })();

@@ -7,6 +7,7 @@ const {
 } = require("./_lib/manual-payments");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
+const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { sendEmail } = require("./_lib/email");
 const { siteBaseUrl } = require("./_lib/payments");
 const {
@@ -70,6 +71,7 @@ exports.handler = async function (event) {
   const email = normalizeEmail(body.email);
   const country = String(body.country || "").trim().slice(0, 120);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
+  const couponCode = normalizeCouponCode(body.couponCode);
   const transferReference = String(body.transferReference || "").trim().slice(0, 190);
   const proofUrl = String(body.proofUrl || "").trim();
   const proofPublicId = String(body.proofPublicId || "").trim().slice(0, 255);
@@ -88,9 +90,37 @@ exports.handler = async function (event) {
   try {
     await ensureManualPaymentsTable(pool);
     await ensureCourseBatchesTable(pool);
+    await ensureCouponsTables(pool);
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
-    const amountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
+    const baseAmountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
+    let pricing = {
+      currency: "NGN",
+      baseAmountMinor,
+      discountMinor: 0,
+      finalAmountMinor: baseAmountMinor,
+      couponCode: "",
+      couponId: null,
+    };
+
+    if (couponCode) {
+      const evaluated = await evaluateCouponForOrder(pool, {
+        couponCode,
+        courseSlug,
+        email,
+        currency: "NGN",
+        baseAmountMinor,
+      });
+      if (!evaluated.ok) return json(400, { ok: false, error: evaluated.error || "Invalid coupon code." });
+      pricing = {
+        currency: "NGN",
+        baseAmountMinor: Number(evaluated.pricing.baseAmountMinor || baseAmountMinor),
+        discountMinor: Number(evaluated.pricing.discountMinor || 0),
+        finalAmountMinor: Number(evaluated.pricing.finalAmountMinor || baseAmountMinor),
+        couponCode: String((evaluated.coupon && evaluated.coupon.code) || couponCode),
+        couponId: evaluated.coupon ? Number(evaluated.coupon.id) : null,
+      };
+    }
 
     const paymentUuid = await createManualPayment(pool, {
       courseSlug,
@@ -100,7 +130,12 @@ exports.handler = async function (event) {
       email,
       country,
       currency,
-      amountMinor,
+      amountMinor: pricing.finalAmountMinor,
+      baseAmountMinor: pricing.baseAmountMinor,
+      discountMinor: pricing.discountMinor,
+      finalAmountMinor: pricing.finalAmountMinor,
+      couponCode: pricing.couponCode,
+      couponId: pricing.couponId,
       transferReference,
       proofUrl,
       proofPublicId,
