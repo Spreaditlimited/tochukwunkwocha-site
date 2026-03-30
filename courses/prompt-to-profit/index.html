@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,12 +12,94 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .course-hero .ptp-hero-shell {
+        margin-top: 0 !important;
+        align-self: center;
+        justify-self: end;
+        width: 100%;
+        max-width: 520px;
+      }
+
+      #faq .faq-wrap {
+        display: grid;
+        gap: 1rem;
+      }
+
+      #faq .faq-item {
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 1.5rem;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        transition: border-color 0.2s ease;
+      }
+
+      #faq .faq-item:hover {
+        border-color: #99a9cc;
+      }
+
+      #faq .faq-question {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+        font-family: "Manrope", sans-serif;
+        font-weight: 700;
+        color: #111827;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      #faq .faq-answer p {
+        margin-top: 1rem;
+        color: #4b5563;
+        line-height: 1.625;
+        padding: 0 2rem 0 0;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
@@ -43,7 +125,7 @@
       <section class="hero course-hero reveal">
         <div class="course-hero-copy">
           <p class="section-label">Prompt to Profit</p>
-          <h1>Build your own website with AI in 5 days. No coding needed.</h1>
+          <h1>Build websites with AI in 5 days. No coding needed.</h1>
           <p>
             Feel totally confused by AI? This friendly 5-day course takes you by the hand. You will learn exactly what to tell AI so it can build real, working websites for your business or hobby. Start with zero skills, finish with a live website.
           </p>
@@ -52,27 +134,26 @@
             <a class="btn btn-outline" href="#curriculum">See How It Works</a>
           </div>
         </div>
-        <aside class="hero-card course-hero-card course-hero-card--premium course-hero-card--desktop-only">
-          <div class="course-hero-terminal__top">
-            <span class="course-hero-terminal__dot course-hero-terminal__dot--red"></span>
-            <span class="course-hero-terminal__dot course-hero-terminal__dot--amber"></span>
-            <span class="course-hero-terminal__dot course-hero-terminal__dot--green"></span>
-            <span class="course-hero-terminal__title">prompt-to-profit.week-plan</span>
-          </div>
-          <div class="course-hero-terminal__body">
-            <h3>What you get this week</h3>
-            <p class="course-hero-card__intro">
-              A beginner-friendly roadmap to build and launch with confidence.
-            </p>
-            <div class="hero-points course-hero-card__points course-hero-terminal__points">
-              <span>5-day step-by-step beginner curriculum</span>
-              <span>2 live support calls with Tochukwu</span>
-              <span>Recorded lessons you can replay anytime</span>
-              <span>12 months access + learner community</span>
+        <aside class="hero-card course-hero-card--desktop-only ptp-hero-shell !bg-transparent !border-0 !shadow-none !p-0">
+          <div class="rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 overflow-hidden text-left flex flex-col">
+            <div class="h-8 bg-[#2d2d2d] flex items-center px-4 gap-2 border-b border-white/5">
+              <div class="h-3 w-3 rounded-full bg-red-500"></div>
+              <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+              <div class="h-3 w-3 rounded-full bg-green-500"></div>
+              <span class="ml-4 text-xs text-gray-400 font-mono">app.js - Prompt to Profit</span>
             </div>
-            <p class="hero-proof" style="margin-top: 20px; font-weight: 600;">
-              Goal: Launch your first real website in 5 days.
-            </p>
+            <div class="p-6 font-mono text-sm text-gray-300 leading-relaxed">
+              <p><span class="text-pink-400">const</span> <span class="text-blue-400">course</span> = {</p>
+              <p class="ml-4"><span class="text-blue-300">name</span>: <span class="text-green-400">'Prompt to Profit'</span>,</p>
+              <p class="ml-4"><span class="text-blue-300">weeks</span>: <span class="text-orange-400">1</span>,</p>
+              <p class="ml-4"><span class="text-blue-300">format</span>: <span class="text-green-400">'Hybrid (Live + Recorded)'</span>,</p>
+              <p class="ml-4"><span class="text-blue-300">focus</span>: [<span class="text-green-400">'Prompts'</span>, <span class="text-green-400">'Webpages'</span>, <span class="text-green-400">'Publishing'</span>],</p>
+              <p class="ml-4"><span class="text-blue-300">outcome</span>: <span class="text-yellow-300">()</span> <span class="text-pink-400">=></span> {</p>
+              <p class="ml-8"><span class="text-pink-400">return</span> <span class="text-green-400">'First website launched'</span>;</p>
+              <p class="ml-4">}</p>
+              <p>};</p>
+              <p class="mt-4 animate-pulse">_</p>
+            </div>
           </div>
         </aside>
       </section>
@@ -289,28 +370,32 @@
         </div>
       </section>
 
-      <section id="faq" class="section reveal">
-        <p class="section-label">FAQ</p>
-        <h2 class="section-headline">Common questions</h2>
-        <div class="faq-wrap" style="margin-top: 32px">
-          <article class="faq-item">
-            <button class="faq-question" type="button">Do I need to know how to code?</button>
-            <div class="faq-answer">
-              <p>Not at all! This course is for absolute beginners. We use AI to do the heavy lifting for us.</p>
-            </div>
-          </article>
-          <article class="faq-item">
-            <button class="faq-question" type="button">What if I get stuck or make a mistake?</button>
-            <div class="faq-answer">
-              <p>That's what the live calls are for! Plus, I will teach you a secret trick on how to ask AI to find and fix your mistakes for you.</p>
-            </div>
-          </article>
-          <article class="faq-item">
-            <button class="faq-question" type="button">Am I too old to learn this?</button>
-            <div class="faq-answer">
-              <p>Absolutely not. If you know how to send an email or use WhatsApp, you have all the technical skills you need to start this course.</p>
-            </div>
-          </article>
+      <section id="faq" class="reveal" style="background: transparent; border-top: 0; border-bottom: 0; padding: 96px 0;">
+        <div style="max-width: 48rem; margin: 0 auto; padding: 0 24px;">
+          <div style="margin-bottom: 48px; text-align: center;">
+            <p class="section-label" style="margin-bottom: 16px;">FAQ</p>
+            <h2 class="section-headline" style="max-width: 100%; margin-left: auto; margin-right: auto;">Questions about the program</h2>
+          </div>
+          <div class="faq-wrap">
+            <article class="faq-item">
+              <button class="faq-question" type="button">Do I need to know how to code?</button>
+              <div class="faq-answer">
+                <p>Not at all! This course is for absolute beginners. We use AI to do the heavy lifting for us.</p>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">What if I get stuck or make a mistake?</button>
+              <div class="faq-answer">
+                <p>That's what the live calls are for! Plus, I will teach you a secret trick on how to ask AI to find and fix your mistakes for you.</p>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">Am I too old to learn this?</button>
+              <div class="faq-answer">
+                <p>Absolutely not. If you know how to send an email or use WhatsApp, you have all the technical skills you need to start this course.</p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
