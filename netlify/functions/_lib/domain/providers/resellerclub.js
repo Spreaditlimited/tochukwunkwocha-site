@@ -30,7 +30,7 @@ function splitDomain(domainName) {
 function apiBaseUrl() {
   const explicit = clean(process.env.RESCLUB_API_BASE_URL, 300);
   if (explicit) return explicit.replace(/\/+$/, "");
-  return boolEnv("RESCLUB_USE_TEST", false) ? "https://test.httpapi.com" : "https://httpapi.com";
+  return boolEnv("RESCLUB_USE_TEST", true) ? "https://test.httpapi.com" : "https://httpapi.com";
 }
 
 function authParams() {

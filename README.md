@@ -142,7 +142,7 @@ Namecheap contact profile (required for registration)
 ResellerClub registrar credentials
 - `RESCLUB_AUTH_USERID`
 - `RESCLUB_API_KEY`
-- `RESCLUB_USE_TEST` (`0` default; set `1` to use test.httpapi.com)
+- `RESCLUB_USE_TEST` (`1` default; set `0` to use httpapi.com production)
 - Optional override: `RESCLUB_API_BASE_URL`
 
 ResellerClub registration defaults
