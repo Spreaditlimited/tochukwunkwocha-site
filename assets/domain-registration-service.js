@@ -12,6 +12,7 @@
   const yearsInput = document.getElementById("domainYears");
   const registerBtn = document.getElementById("domainRegisterBtn");
   const customerStatusEl = document.getElementById("domainCustomerStatus");
+  const unsupportedTlds = new Set(["ng", "com.ng"]);
 
   let selectedDomain = "";
 
@@ -52,6 +53,19 @@
     const safeStem = domainStem(stem);
     if (!name || !safeStem || !name.startsWith(safeStem + ".")) return "";
     return name.slice(safeStem.length + 1);
+  }
+
+  function getDomainTld(value) {
+    const domain = normalizeDomain(value);
+    if (!domain || !domain.includes(".")) return "";
+    const parts = domain.split(".").filter(Boolean);
+    if (parts.length < 2) return "";
+    return parts.slice(1).join(".");
+  }
+
+  function isUnsupportedTld(value) {
+    const tld = getDomainTld(value);
+    return Boolean(tld) && unsupportedTlds.has(tld);
   }
 
   function normalizeEmail(value) {
@@ -110,7 +124,7 @@
 
     if (!items.length) {
       suggestionsEl.innerHTML = "";
-      return;
+      return 0;
     }
 
     if (mode === "extensions" && stem) {
@@ -119,6 +133,7 @@
       items.forEach(function (item) {
         if (!item || !item.available) return;
         const domainName = String(item.domainName || "").trim().toLowerCase();
+        if (isUnsupportedTld(domainName)) return;
         const ext = extractExtension(domainName, stem);
         if (!ext || extSeen.has(ext)) return;
         extSeen.add(ext);
@@ -127,7 +142,7 @@
 
       if (!extChoices.length) {
         suggestionsEl.innerHTML = "";
-        return;
+        return 0;
       }
 
       suggestionsEl.innerHTML = extChoices
@@ -142,13 +157,14 @@
           ].join("");
         })
         .join("");
-      return;
+      return extChoices.length;
     }
 
-    suggestionsEl.innerHTML = items
+    const htmlItems = items
       .slice(0, 12)
       .map(function (item) {
         const domainName = String(item && item.domainName ? item.domainName : "").trim().toLowerCase();
+        if (!domainName || isUnsupportedTld(domainName)) return "";
         const available = Boolean(item && item.available);
         return [
           `<button type="button" class="rounded-xl border px-3 py-2.5 text-xs text-left font-semibold transition-colors ${
@@ -160,7 +176,10 @@
           "</button>",
         ].join("");
       })
+      .filter(Boolean)
       .join("");
+    suggestionsEl.innerHTML = htmlItems;
+    return htmlItems ? 1 : 0;
   }
 
   async function hydrateFromSession() {
@@ -188,6 +207,11 @@
         setStatus("Enter a preferred domain first.", false);
         return;
       }
+      if (hasExplicitExtension(preferredName) && isUnsupportedTld(preferredName)) {
+        if (suggestionsEl) suggestionsEl.innerHTML = "";
+        setStatus(".ng extensions are currently not supported.", false);
+        return;
+      }
       suggestBtn.disabled = true;
       suggestBtn.textContent = "Suggesting...";
       try {
@@ -201,10 +225,11 @@
           renderSuggestions(json.suggestions || [], { mode: "domains" });
           const pick = String(json.firstAvailable || "").trim().toLowerCase();
           if (pick) setSelectedDomain(pick);
-          else setStatus("No available suggestion found in this set.", false);
+          else setStatus("We couldn't find an available option for that name. Try a slightly different name.", false);
         } else {
-          renderSuggestions(json.suggestions || [], { mode: "extensions", stem: preferredName });
-          setStatus("Select your preferred extension below to continue.", true);
+          const count = renderSuggestions(json.suggestions || [], { mode: "extensions", stem: preferredName });
+          if (count > 0) setStatus("Select your preferred extension below to continue.", true);
+          else setStatus("We couldn't find available extensions for that name. Try a slightly different name.", false);
         }
       } catch (error) {
         setStatus(error.message || "Could not suggest domains", false);
@@ -225,6 +250,11 @@
         setStatus("Enter a domain first.", false);
         return;
       }
+      if (hasExplicitExtension(domainName) && isUnsupportedTld(domainName)) {
+        if (suggestionsEl) suggestionsEl.innerHTML = "";
+        setStatus(".ng extensions are currently not supported.", false);
+        return;
+      }
       checkBtn.disabled = true;
       checkBtn.textContent = "Checking...";
       try {
@@ -242,8 +272,9 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ preferredName: domainName }),
           });
-          renderSuggestions(json.suggestions || [], { mode: "extensions", stem: domainName });
-          setStatus("Select your preferred extension below to continue.", true);
+          const count = renderSuggestions(json.suggestions || [], { mode: "extensions", stem: domainName });
+          if (count > 0) setStatus("Select your preferred extension below to continue.", true);
+          else setStatus("We couldn't find available extensions for that name. Try a slightly different name.", false);
         }
       } catch (error) {
         setStatus(error.message || "Could not check domain", false);

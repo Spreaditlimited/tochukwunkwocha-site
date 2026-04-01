@@ -140,10 +140,28 @@ Namecheap contact profile (required for registration)
 - `NAMECHEAP_CONTACT_EMAIL`
 
 ResellerClub registrar credentials
-- `RESCLUB_AUTH_USERID`
-- `RESCLUB_API_KEY`
-- `RESCLUB_USE_TEST` (`1` default; set `0` to use httpapi.com production)
-- Optional override: `RESCLUB_API_BASE_URL`
+- `RESELLERCLUB_RESELLER_ID` (preferred) or `RESCLUB_AUTH_USERID`
+- `RESELLERCLUB_API_KEY` (preferred) or `RESCLUB_API_KEY`
+- `RESELLERCLUB_USE_TEST` (preferred) or `RESCLUB_USE_TEST` (`1` default; set `0` for production)
+- Optional override: `RESELLERCLUB_API_BASE_URL` (or `RESCLUB_API_BASE_URL`)
+- Optional: `RESCLUB_DOMAIN_PRODUCT_KEYS_JSON` (JSON map for TLD -> ResellerClub product key, used for pricing lookup, e.g. `{"com":"domcno","net":"domnet"}`)
+- Optional proxy mode (use when Netlify egress IP cannot be whitelisted):
+  - `RESELLERCLUB_PROXY_BASE_URL` (or `RESCLUB_PROXY_BASE_URL`) - full HTTPS URL of your proxy endpoint
+  - `RESELLERCLUB_PROXY_TOKEN` (or `RESCLUB_PROXY_TOKEN`) - optional bearer token used by Netlify when calling proxy
+
+ResellerClub checkout pricing
+- Domain checkout amount now comes directly from ResellerClub reseller pricing (`addnewdomain`) per selected TLD and registration years.
+- Currency is read from ResellerClub reseller details; domain Paystack checkout is allowed only when that currency resolves to `NGN`.
+
+ResellerClub proxy server (static IP strategy)
+- File: `scripts/resellerclub-proxy-server.js`
+- Run this on a VPS/server with a static public IP, then whitelist that IP in ResellerClub.
+- Required envs on proxy server:
+  - `RESCLUB_AUTH_USERID` (or `RESELLERCLUB_RESELLER_ID`)
+  - `RESCLUB_API_KEY` (or `RESELLERCLUB_API_KEY`)
+  - Optional `RESCLUB_USE_TEST` / `RESELLERCLUB_USE_TEST`
+  - Optional `RESCLUB_API_BASE_URL` / `RESELLERCLUB_API_BASE_URL`
+  - Optional `RESCLUB_PROXY_TOKEN` (or `PROXY_TOKEN`) for auth between Netlify and proxy
 
 ResellerClub registration defaults
 - `RESCLUB_CUSTOMER_ID`

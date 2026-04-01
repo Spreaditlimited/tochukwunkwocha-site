@@ -51,6 +51,43 @@
   }
 
   var currentPath = normalizePath(window.location.pathname);
+  var hiddenInternalPaths = ["/internal/leadpage-jobs/", "/internal/business-plan-manager/", "/internal/verifier/"];
+
+  function ensureDomainManagementIcon() {
+    var domainLinks = Array.prototype.slice.call(
+      document.querySelectorAll('aside a[href="/internal/domain-management/"]')
+    );
+    domainLinks.forEach(function (link) {
+      if (!link) return;
+      if (link.querySelector("svg")) return;
+      link.classList.add("group");
+      link.insertAdjacentHTML(
+        "afterbegin",
+        '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5V6a2 2 0 00-2-2h-2.5M3 7.5V6a2 2 0 012-2h2.5M21 16.5V18a2 2 0 01-2 2h-2.5M3 16.5V18a2 2 0 002 2h2.5M8 12h8M8 9h8M8 15h5" /></svg>'
+      );
+    });
+  }
+
+  function shouldHidePath(pathname) {
+    var path = normalizePath(pathname);
+    return hiddenInternalPaths.indexOf(path) !== -1;
+  }
+
+  function hideInternalEntries() {
+    hiddenInternalPaths.forEach(function (path) {
+      var navSelector = 'aside a[href="' + path + '"]';
+      Array.prototype.slice.call(document.querySelectorAll(navSelector)).forEach(function (link) {
+        var row = link.closest("a");
+        if (row) row.classList.add("hidden");
+      });
+
+      var cardSelector = 'main article a[href="' + path + '"]';
+      Array.prototype.slice.call(document.querySelectorAll(cardSelector)).forEach(function (cardLink) {
+        var card = cardLink.closest("article");
+        if (card) card.classList.add("hidden");
+      });
+    });
+  }
 
   function getPathFromHref(rawHref) {
     try {
@@ -67,9 +104,12 @@
   }
 
   syncPageTitle();
+  hideInternalEntries();
+  ensureDomainManagementIcon();
 
   menuLinks.forEach(function (link) {
     var targetPath = getPathFromHref(link.getAttribute("href"));
+    if (shouldHidePath(targetPath)) return;
     var isCurrentLink = targetPath && targetPath === currentPath;
 
     if (isCurrentLink) {

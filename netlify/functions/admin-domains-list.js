@@ -4,6 +4,31 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureDomainTables } = require("./_lib/domains");
 
+const NETLIFY_TABLE = "tochukwu_user_domain_netlify_access";
+
+async function ensureNetlifyTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${NETLIFY_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      account_id BIGINT NOT NULL,
+      email VARCHAR(190) NOT NULL,
+      domain_name VARCHAR(190) NOT NULL,
+      netlify_email VARCHAR(190) NULL,
+      netlify_workspace VARCHAR(190) NULL,
+      netlify_site_name VARCHAR(190) NULL,
+      connection_method VARCHAR(40) NOT NULL DEFAULT 'collaborator_invite',
+      access_details TEXT NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'submitted',
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_tochukwu_domain_netlify (account_id, domain_name),
+      KEY idx_tochukwu_domain_netlify_email (email),
+      KEY idx_tochukwu_domain_netlify_status (status, updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -37,6 +62,7 @@ exports.handler = async function (event) {
 
   try {
     await ensureDomainTables(pool);
+    await ensureNetlifyTable(pool);
 
     const where = [];
     const params = [];
@@ -87,7 +113,56 @@ exports.handler = async function (event) {
            WHERE dso.account_id = ud.account_id AND dso.domain_name = ud.domain_name
            ORDER BY dso.created_at DESC
            LIMIT 1
-         ) AS latest_payment_provider
+         ) AS latest_payment_provider,
+         (
+           SELECT n.connection_method
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_connection_method,
+         (
+           SELECT n.netlify_email
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_email,
+         (
+           SELECT n.netlify_workspace
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_workspace,
+         (
+           SELECT n.netlify_site_name
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_site_name,
+         (
+           SELECT n.access_details
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_access_details,
+         (
+           SELECT n.updated_at
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_updated_at,
+         (
+           SELECT n.status
+           FROM ${NETLIFY_TABLE} n
+           WHERE n.account_id = ud.account_id AND n.domain_name = ud.domain_name
+           ORDER BY n.updated_at DESC
+           LIMIT 1
+         ) AS netlify_status
        FROM user_domains ud
        ${whereSql}
        ORDER BY ud.created_at DESC

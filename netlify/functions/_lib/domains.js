@@ -133,6 +133,7 @@ async function ensureDomainTables(pool) {
 
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN payment_provider VARCHAR(40) NOT NULL DEFAULT 'direct'`);
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'paid'`);
+
 }
 
 async function findDomainForAccount(pool, input) {
@@ -292,6 +293,24 @@ async function listUserDomains(pool, input) {
   if (!Number.isFinite(accountId) || accountId <= 0) return [];
   const [rows] = await pool.query(
     `SELECT domain_name, provider, status, years, purchase_currency, purchase_amount_minor,
+            (
+              SELECT dc.payment_currency
+              FROM domain_checkouts dc
+              WHERE dc.linked_account_id = user_domains.account_id
+                AND dc.domain_name = user_domains.domain_name
+                AND dc.payment_amount_minor IS NOT NULL
+              ORDER BY dc.payment_paid_at DESC, dc.updated_at DESC
+              LIMIT 1
+            ) AS checkout_payment_currency,
+            (
+              SELECT dc.payment_amount_minor
+              FROM domain_checkouts dc
+              WHERE dc.linked_account_id = user_domains.account_id
+                AND dc.domain_name = user_domains.domain_name
+                AND dc.payment_amount_minor IS NOT NULL
+              ORDER BY dc.payment_paid_at DESC, dc.updated_at DESC
+              LIMIT 1
+            ) AS checkout_payment_amount_minor,
             provider_order_id, registered_at, renewal_due_at, last_synced_at, created_at, updated_at
      FROM user_domains
      WHERE account_id = ?
@@ -308,7 +327,24 @@ async function listDomainOrders(pool, input) {
   if (!Number.isFinite(accountId) || accountId <= 0) return [];
   const [rows] = await pool.query(
     `SELECT order_uuid, domain_name, years, provider, status, payment_provider, payment_status,
-            purchase_currency, purchase_amount_minor, provider_order_id, notes, registered_at, created_at, updated_at
+            purchase_currency, purchase_amount_minor,
+            (
+              SELECT dc.payment_currency
+              FROM domain_checkouts dc
+              WHERE dc.order_uuid = domain_orders.order_uuid
+                AND dc.payment_amount_minor IS NOT NULL
+              ORDER BY dc.payment_paid_at DESC, dc.updated_at DESC
+              LIMIT 1
+            ) AS checkout_payment_currency,
+            (
+              SELECT dc.payment_amount_minor
+              FROM domain_checkouts dc
+              WHERE dc.order_uuid = domain_orders.order_uuid
+                AND dc.payment_amount_minor IS NOT NULL
+              ORDER BY dc.payment_paid_at DESC, dc.updated_at DESC
+              LIMIT 1
+            ) AS checkout_payment_amount_minor,
+            provider_order_id, notes, registered_at, created_at, updated_at
      FROM domain_orders
      WHERE account_id = ?
      ORDER BY created_at DESC

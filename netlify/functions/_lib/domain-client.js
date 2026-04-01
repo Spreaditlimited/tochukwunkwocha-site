@@ -11,9 +11,14 @@ function normalizeDomain(input) {
 }
 
 function selectedDomainProviderName() {
-  const raw = clean(process.env.LEADPAGE_DOMAIN_PROVIDER, 40).toLowerCase();
+  const raw = clean(
+    process.env.LEADPAGE_DOMAIN_PROVIDER || process.env.DOMAIN_REGISTRAR_PROVIDER || process.env.DOMAIN_PROVIDER,
+    40
+  ).toLowerCase();
   if (raw === "mock") return "mock";
   if (raw === "resellerclub") return "resellerclub";
+  // Auto-select ResellerClub when only reseller vars are configured.
+  if (clean(process.env.RESELLERCLUB_RESELLER_ID || process.env.RESCLUB_AUTH_USERID, 120)) return "resellerclub";
   return "namecheap";
 }
 
@@ -35,13 +40,15 @@ function selectedProvider() {
 function hasProviderConfig(name) {
   if (name === "mock") return true;
   if (name === "resellerclub") {
-    return Boolean(clean(process.env.RESCLUB_AUTH_USERID, 60) && clean(process.env.RESCLUB_API_KEY, 120));
+    const authUserId = clean(process.env.RESCLUB_AUTH_USERID || process.env.RESELLERCLUB_RESELLER_ID, 120);
+    const apiKey = clean(process.env.RESCLUB_API_KEY || process.env.RESELLERCLUB_API_KEY, 240);
+    return Boolean(authUserId && apiKey);
   }
   return Boolean(clean(process.env.NAMECHEAP_API_KEY, 120));
 }
 
 function parseTlds() {
-  const csv = clean(process.env.LEADPAGE_DOMAIN_TLDS || "com,com.ng,ng", 200);
+  const csv = clean(process.env.LEADPAGE_DOMAIN_TLDS || "com,net,org,io,co", 200);
   const tlds = csv
     .split(",")
     .map((x) => clean(x, 20).toLowerCase().replace(/^\.+/, ""))
@@ -98,6 +105,10 @@ function uniquePush(arr, seen, value) {
   arr.push(cleaned);
 }
 
+function hasMeaningfulText(value) {
+  return Boolean(slugPart(value));
+}
+
 function buildDomainCandidates(input) {
   const businessName = clean(input && input.businessName, 220);
   const businessType = clean(input && input.businessType, 160);
@@ -111,15 +122,21 @@ function buildDomainCandidates(input) {
   const stems = [];
   const seen = new Set();
   uniquePush(stems, seen, preferredStem);
-  uniquePush(stems, seen, businessName);
-  uniquePush(stems, seen, `${businessName} ${targetLocation}`);
-  uniquePush(stems, seen, `${businessName} ${businessType}`);
-  uniquePush(stems, seen, `${businessName} ${serviceOffer}`);
-  uniquePush(stems, seen, `${serviceOffer} ${targetLocation}`);
-  uniquePush(stems, seen, `${businessName} hq`);
-  uniquePush(stems, seen, `${businessName} online`);
-  uniquePush(stems, seen, `${businessName} pro`);
-  uniquePush(stems, seen, `${businessName} now`);
+
+  const hasBusinessName = hasMeaningfulText(businessName);
+  const hasServiceOffer = hasMeaningfulText(serviceOffer);
+  const hasTargetLocation = hasMeaningfulText(targetLocation);
+  const hasBusinessType = hasMeaningfulText(businessType);
+
+  if (hasBusinessName) uniquePush(stems, seen, businessName);
+  if (hasBusinessName && hasTargetLocation) uniquePush(stems, seen, `${businessName} ${targetLocation}`);
+  if (hasBusinessName && hasBusinessType) uniquePush(stems, seen, `${businessName} ${businessType}`);
+  if (hasBusinessName && hasServiceOffer) uniquePush(stems, seen, `${businessName} ${serviceOffer}`);
+  if (hasServiceOffer && hasTargetLocation) uniquePush(stems, seen, `${serviceOffer} ${targetLocation}`);
+  if (hasBusinessName) uniquePush(stems, seen, `${businessName} hq`);
+  if (hasBusinessName) uniquePush(stems, seen, `${businessName} online`);
+  if (hasBusinessName) uniquePush(stems, seen, `${businessName} pro`);
+  if (hasBusinessName) uniquePush(stems, seen, `${businessName} now`);
 
   const out = [];
   const seenDomain = new Set();
@@ -209,6 +226,27 @@ async function registerDomain(input) {
   return { ...result, provider: actualProvider };
 }
 
+async function getRegistrationPrice(input) {
+  const providerName = selectedDomainProviderName();
+  const provider = selectedProvider();
+  if (!hasProviderConfig(providerName)) {
+    throw new Error(`Missing registrar config for provider: ${providerName}`);
+  }
+  if (!provider || typeof provider.getRegistrationPrice !== "function") {
+    throw new Error(`Price lookup is not supported for provider: ${providerName}`);
+  }
+  const domainName = normalizeDomain(input && input.domainName);
+  if (!domainName) throw new Error("domainName is required");
+  const years = Math.max(1, Math.min(Number(input && input.years) || 1, 10));
+  const result = await provider.getRegistrationPrice({ domainName, years });
+  return {
+    ...result,
+    provider: providerName,
+    domainName,
+    years,
+  };
+}
+
 async function getDnsZone(input) {
   const providerName = selectedDomainProviderName();
   const provider = selectedProvider();
@@ -271,6 +309,7 @@ module.exports = {
   checkAvailability,
   checkAvailabilityMany,
   registerDomain,
+  getRegistrationPrice,
   getDnsZone,
   updateNameservers,
   updateDnsRecords,

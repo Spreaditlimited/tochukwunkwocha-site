@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { checkAvailability, selectedDomainProviderName } = require("./_lib/domain-client");
+const { checkAvailability, getRegistrationPrice, selectedDomainProviderName } = require("./_lib/domain-client");
 const { paystackInitialize, paystackPublicKey, siteBaseUrl } = require("./_lib/payments");
 const { ensureDomainTables, normalizeDomain, findDomainByName, createDomainCheckout } = require("./_lib/domains");
 
@@ -15,21 +15,39 @@ function normalizeEmail(value) {
   return ok ? email : "";
 }
 
-function paymentAmountMinorNgn() {
-  const raw = Number(process.env.DOMAIN_REGISTRATION_AMOUNT_MINOR_NGN || 150000);
-  if (!Number.isFinite(raw) || raw <= 0) return 150000;
-  return Math.round(raw);
+function requireNgnPricing(pricing) {
+  const currency = String((pricing && pricing.currency) || "").trim().toUpperCase();
+  const amountMinor = Number(pricing && pricing.amountMinor);
+  if (currency !== "NGN") {
+    throw new Error(`ResellerClub currency is ${currency || "unknown"}. Set your ResellerClub selling/display currency to NGN.`);
+  }
+  if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+    throw new Error("ResellerClub returned an invalid domain registration amount.");
+  }
+  return { currency, amountMinor: Math.round(amountMinor) };
 }
 
-function registrarUnavailableError(error) {
+function registrarLookupUnavailableError(error) {
   const message = String((error && error.message) || "").toLowerCase();
   if (!message) return false;
   return (
     message.includes("registrar") ||
     message.includes("lookup_failed") ||
-    message.includes("missing registrar config") ||
-    message.includes("namecheap") ||
-    message.includes("resellerclub")
+    message.includes("availability response")
+  );
+}
+
+function registrarPricingError(error) {
+  const message = String((error && error.message) || "").toLowerCase();
+  if (!message) return false;
+  return (
+    message.includes("reseller-price") ||
+    message.includes("pricing") ||
+    message.includes("selling/display currency") ||
+    message.includes("selling currency") ||
+    message.includes("currency is") ||
+    message.includes("registration amount") ||
+    message.includes("product key")
   );
 }
 
@@ -59,12 +77,38 @@ exports.handler = async function (event) {
       return json(400, { ok: false, error: "This domain has already been registered on the platform." });
     }
 
-    const availability = await checkAvailability({ domainName, strict: true });
+    let availability;
+    try {
+      availability = await checkAvailability({ domainName, strict: true });
+    } catch (error) {
+      if (registrarLookupUnavailableError(error)) {
+        return json(503, {
+          ok: false,
+          error: "Domain lookup is temporarily unavailable. Please try again shortly.",
+        });
+      }
+      throw error;
+    }
     if (!availability.available) {
       return json(400, { ok: false, error: `${domainName} is not available.` });
     }
 
-    const amountMinor = paymentAmountMinorNgn();
+    let pricing;
+    try {
+      pricing = await getRegistrationPrice({ domainName, years });
+    } catch (error) {
+      if (registrarPricingError(error)) {
+        const reason = String((error && error.message) || "").trim();
+        return json(503, {
+          ok: false,
+          error: reason
+            ? `We could not fetch live registrar pricing to start payment. ${reason}`
+            : "We could not fetch live registrar pricing to start payment. Please try again in a moment.",
+        });
+      }
+      throw error;
+    }
+    const priced = requireNgnPricing(pricing);
     const reference = `DMN_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
     const provider = availability.provider || selectedDomainProviderName();
     const checkoutUuid = await createDomainCheckout(pool, {
@@ -75,13 +119,13 @@ exports.handler = async function (event) {
       provider,
       paymentProvider: "paystack",
       paymentReference: reference,
-      paymentCurrency: "NGN",
-      paymentAmountMinor: amountMinor,
+      paymentCurrency: priced.currency,
+      paymentAmountMinor: priced.amountMinor,
     });
 
     const payment = await paystackInitialize({
       email,
-      amountMinor,
+      amountMinor: priced.amountMinor,
       reference,
       callbackUrl: `${siteBaseUrl()}/.netlify/functions/domain-paystack-return`,
       metadata: {
@@ -98,19 +142,17 @@ exports.handler = async function (event) {
       checkoutUuid,
       provider: "paystack",
       paymentReference: reference,
-      amountMinor,
-      currency: "NGN",
+      amountMinor: priced.amountMinor,
+      currency: priced.currency,
       checkoutUrl: payment.checkoutUrl || "",
       accessCode: payment.accessCode || "",
       publicKey: paystackPublicKey(),
     });
   } catch (error) {
-    if (registrarUnavailableError(error)) {
-      return json(503, {
-        ok: false,
-        error: "Domain lookup is temporarily unavailable. Please try again shortly.",
-      });
-    }
+    console.error("[domain-create-payment] failed", {
+      message: error && error.message ? String(error.message) : "unknown",
+      stack: error && error.stack ? String(error.stack) : "",
+    });
     return json(500, { ok: false, error: error.message || "Could not initialize payment" });
   }
 };

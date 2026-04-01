@@ -19,7 +19,14 @@
 
   function formatDate(value) {
     if (!value) return "-";
-    const date = new Date(String(value).replace(" ", "T") + "Z");
+    var raw = String(value).trim();
+    var normalized = raw;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) {
+      normalized = raw.replace(" ", "T") + "Z";
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      normalized = raw + "T00:00:00Z";
+    }
+    const date = new Date(normalized);
     if (!Number.isFinite(date.getTime())) return "-";
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -28,10 +35,41 @@
     });
   }
 
+  function parseDateValue(value) {
+    if (!value) return null;
+    var raw = String(value).trim();
+    var normalized = raw;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) {
+      normalized = raw.replace(" ", "T") + "Z";
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      normalized = raw + "T00:00:00Z";
+    }
+    var out = new Date(normalized);
+    if (!Number.isFinite(out.getTime())) return null;
+    return out;
+  }
+
+  function deriveRenewalDate(item) {
+    if (!item) return "-";
+    if (item.renewalDueAt) return formatDate(item.renewalDueAt);
+    var base = parseDateValue(item.registeredAt || item.createdAt);
+    if (!base) return "-";
+    var years = Math.max(1, Math.min(Number(item.years || 1) || 1, 10));
+    var due = new Date(base.getTime());
+    due.setUTCFullYear(due.getUTCFullYear() + years);
+    return formatDate(due.toISOString());
+  }
+
   function formatMoney(currency, amountMinor) {
     const amt = Number(amountMinor || 0);
     if (!currency || !Number.isFinite(amt) || amt <= 0) return "-";
-    return `${currency} ${(amt / 100).toFixed(2)}`;
+    var code = String(currency || "").toUpperCase();
+    var amount = amt / 100;
+    try {
+      return new Intl.NumberFormat("en-NG", { style: "currency", currency: code }).format(amount);
+    } catch (_error) {
+      return code + " " + amount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
   }
 
   async function api(path, payload) {
@@ -93,11 +131,11 @@
     return [
       `<div class="mt-4 hidden rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5" data-dns-panel="${domain}" data-loaded="0">`,
       '<div class="mb-4 flex items-center justify-between gap-3">',
-      '<h5 class="text-sm font-heading font-bold text-gray-900">DNS Management</h5>',
-      '<span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Propagation may take up to 24h</span>',
+      '<h5 data-panel-title class="text-sm font-heading font-bold text-gray-900">DNS Management</h5>',
+      '<span data-panel-note class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Propagation may take up to 24h</span>',
       "</div>",
       '<p data-dns-status class="mb-3 text-xs text-gray-600">Open this panel to load DNS details.</p>',
-      '<div class="rounded-xl border border-gray-200 bg-white p-3 sm:p-4">',
+      '<div data-dns-section class="rounded-xl border border-gray-200 bg-white p-3 sm:p-4">',
       '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Nameservers</p>',
       '<div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">',
       '<input data-ns-index="0" type="text" class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-brand-400 focus:ring-brand-400" placeholder="ns1.example.com" />',
@@ -109,7 +147,7 @@
       '<button type="button" data-ns-save class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500">Save Nameservers</button>',
       "</div>",
       "</div>",
-      '<div class="mt-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">',
+      '<div data-dns-section class="mt-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">',
       '<div class="mb-3 flex items-center justify-between gap-2">',
       '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">DNS Records</p>',
       '<button type="button" data-dns-add class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">Add record</button>',
@@ -119,8 +157,55 @@
       '<button type="button" data-dns-save class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500">Save DNS Records</button>',
       "</div>",
       "</div>",
+      '<div class="mt-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4" data-netlify-section>',
+      '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Netlify Connection Details (Prompt to Profit)</p>',
+      '<p class="mt-1 text-xs text-gray-600">Submit the 4 details we need to connect your domain to your Netlify project.</p>',
+      '<div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">',
+      '<input data-netlify-email type="email" class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-brand-400 focus:ring-brand-400" placeholder="Login email" />',
+      '<input data-netlify-password type="password" class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-brand-400 focus:ring-brand-400" placeholder="Password (temporary)" />',
+      '<input data-netlify-site type="text" class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-brand-400 focus:ring-brand-400" placeholder="Project name" />',
+      '<input data-netlify-temp-domain type="text" class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-brand-400 focus:ring-brand-400" placeholder="Temporary Netlify domain (e.g. mysite.netlify.app)" />',
+      "</div>",
+      '<p class="mt-2 text-[11px] text-amber-700">Important: Change this password once your domain connection is complete.</p>',
+      '<div class="mt-3 flex justify-end">',
+      '<button type="button" data-netlify-save class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500">Submit Netlify Details</button>',
+      "</div>",
+      '<p data-netlify-status class="mt-2 text-xs text-gray-600"></p>',
+      "</div>",
       "</div>",
     ].join("");
+  }
+
+  function findPanelForDomain(domainName) {
+    const safeDomainSelector =
+      typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function"
+        ? CSS.escape(domainName)
+        : String(domainName || "").replace(/"/g, '\\"');
+    return listEl ? listEl.querySelector(`[data-dns-panel="${safeDomainSelector}"]`) : null;
+  }
+
+  async function ensurePanelLoaded(panel, domainName) {
+    if (!panel || panel.dataset.loaded === "1") return;
+    await loadDnsPanel(panel, domainName);
+    await loadNetlifyPanel(panel, domainName);
+  }
+
+  function setPanelMode(panel, mode) {
+    if (!panel) return;
+    var dnsOnly = String(mode || "").toLowerCase() === "dns";
+    var titleEl = panel.querySelector("[data-panel-title]");
+    var noteEl = panel.querySelector("[data-panel-note]");
+    var dnsStatus = panel.querySelector("[data-dns-status]");
+    var dnsSections = Array.from(panel.querySelectorAll("[data-dns-section]"));
+    var netlifySection = panel.querySelector("[data-netlify-section]");
+
+    if (titleEl) titleEl.textContent = dnsOnly ? "DNS Management" : "Netlify Connection Details";
+    if (noteEl) noteEl.classList.toggle("hidden", !dnsOnly);
+    if (dnsStatus) dnsStatus.classList.toggle("hidden", !dnsOnly);
+    dnsSections.forEach(function (el) {
+      el.classList.toggle("hidden", !dnsOnly);
+    });
+    if (netlifySection) netlifySection.classList.toggle("hidden", false);
   }
 
   function collectNameservers(panel) {
@@ -160,6 +245,23 @@
     }
   }
 
+  function populateNetlifyPanel(panel, details) {
+    var d = details || {};
+    var emailEl = panel.querySelector("[data-netlify-email]");
+    var passwordEl = panel.querySelector("[data-netlify-password]");
+    var tempDomainEl = panel.querySelector("[data-netlify-temp-domain]");
+    var siteEl = panel.querySelector("[data-netlify-site]");
+    var statusEl = panel.querySelector("[data-netlify-status]");
+    if (emailEl) emailEl.value = String(d.netlifyEmail || "");
+    if (passwordEl) passwordEl.value = String(d.accessDetails || "");
+    if (tempDomainEl) tempDomainEl.value = String(d.netlifyWorkspace || "");
+    if (siteEl) siteEl.value = String(d.netlifySiteName || "");
+    if (statusEl) {
+      if (d && d.updatedAt) statusText(statusEl, "Last submitted: " + new Date(d.updatedAt).toLocaleString(), "neutral");
+      else statusText(statusEl, "No Netlify details submitted yet.", "neutral");
+    }
+  }
+
   async function loadDnsPanel(panel, domainName) {
     const statusEl = panel.querySelector("[data-dns-status]");
     statusText(statusEl, "Loading DNS records...", "neutral");
@@ -167,6 +269,13 @@
     populateDnsPanel(panel, json);
     panel.dataset.loaded = "1";
     statusText(statusEl, "DNS loaded. You can now edit and save.", "success");
+  }
+
+  async function loadNetlifyPanel(panel, domainName) {
+    var statusEl = panel.querySelector("[data-netlify-status]");
+    if (statusEl) statusText(statusEl, "Loading Netlify details...", "neutral");
+    var json = await api("/.netlify/functions/domain-netlify-get", { domainName: domainName });
+    populateNetlifyPanel(panel, json.details || null);
   }
 
   async function saveNameservers(panel, domainName) {
@@ -198,6 +307,42 @@
     statusText(statusEl, "DNS records updated successfully.", "success");
   }
 
+  function collectNetlifyPayload(panel, domainName) {
+    return {
+      domainName: domainName,
+      netlifyEmail: String((panel.querySelector("[data-netlify-email]") || {}).value || "").trim(),
+      connectionMethod: "temporary_login",
+      netlifyWorkspace: String((panel.querySelector("[data-netlify-temp-domain]") || {}).value || "").trim(),
+      netlifySiteName: String((panel.querySelector("[data-netlify-site]") || {}).value || "").trim(),
+      accessDetails: String((panel.querySelector("[data-netlify-password]") || {}).value || "").trim(),
+    };
+  }
+
+  async function saveNetlifyDetails(panel, domainName) {
+    var statusEl = panel.querySelector("[data-netlify-status]");
+    var payload = collectNetlifyPayload(panel, domainName);
+    if (!payload.netlifyEmail) {
+      statusText(statusEl, "Enter login email.", "error");
+      return;
+    }
+    if (!payload.netlifySiteName) {
+      statusText(statusEl, "Enter project name.", "error");
+      return;
+    }
+    if (!payload.netlifyWorkspace) {
+      statusText(statusEl, "Enter temporary Netlify domain.", "error");
+      return;
+    }
+    if (!payload.accessDetails) {
+      statusText(statusEl, "Enter temporary password.", "error");
+      return;
+    }
+    statusText(statusEl, "Submitting Netlify details...", "neutral");
+    var json = await api("/.netlify/functions/domain-netlify-save", payload);
+    populateNetlifyPanel(panel, json || payload);
+    statusText(statusEl, "Netlify details submitted successfully.", "success");
+  }
+
   function bindDnsEvents() {
     if (!listEl) return;
     listEl.addEventListener("click", async function (event) {
@@ -205,20 +350,38 @@
       if (toggle) {
         const domainName = String(toggle.getAttribute("data-dns-toggle") || "").trim().toLowerCase();
         if (!domainName) return;
-        const safeDomainSelector =
-          typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function"
-            ? CSS.escape(domainName)
-            : domainName.replace(/"/g, '\\"');
-        const panel = listEl.querySelector(`[data-dns-panel="${safeDomainSelector}"]`);
+        const panel = findPanelForDomain(domainName);
         if (!panel) return;
+        setPanelMode(panel, "dns");
         panel.classList.toggle("hidden");
-        if (!panel.classList.contains("hidden") && panel.dataset.loaded !== "1") {
+        if (!panel.classList.contains("hidden")) {
           try {
-            await loadDnsPanel(panel, domainName);
+            await ensurePanelLoaded(panel, domainName);
           } catch (error) {
             const statusEl = panel.querySelector("[data-dns-status]");
             statusText(statusEl, error.message || "Could not load DNS data.", "error");
           }
+        }
+        return;
+      }
+
+      const netlifyToggle = event.target.closest("[data-netlify-toggle]");
+      if (netlifyToggle) {
+        const domainName = String(netlifyToggle.getAttribute("data-netlify-toggle") || "").trim().toLowerCase();
+        if (!domainName) return;
+        const panel = findPanelForDomain(domainName);
+        if (!panel) return;
+        try {
+          setPanelMode(panel, "netlify");
+          if (panel.classList.contains("hidden")) panel.classList.remove("hidden");
+          await ensurePanelLoaded(panel, domainName);
+          const netlifySection = panel.querySelector("[data-netlify-section]");
+          if (netlifySection && typeof netlifySection.scrollIntoView === "function") {
+            netlifySection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        } catch (error) {
+          const statusEl = panel.querySelector("[data-netlify-status]") || panel.querySelector("[data-dns-status]");
+          statusText(statusEl, error.message || "Could not load Netlify details.", "error");
         }
         return;
       }
@@ -273,6 +436,24 @@
         } finally {
           dnsSave.disabled = false;
         }
+        return;
+      }
+
+      const netlifySave = event.target.closest("[data-netlify-save]");
+      if (netlifySave) {
+        const panel = netlifySave.closest("[data-dns-panel]");
+        if (!panel) return;
+        const domainName = String(panel.getAttribute("data-dns-panel") || "").trim().toLowerCase();
+        if (!domainName) return;
+        try {
+          netlifySave.disabled = true;
+          await saveNetlifyDetails(panel, domainName);
+        } catch (error) {
+          const statusEl = panel.querySelector("[data-netlify-status]");
+          statusText(statusEl, error.message || "Could not submit Netlify details.", "error");
+        } finally {
+          netlifySave.disabled = false;
+        }
       }
     });
   }
@@ -324,20 +505,24 @@
               )}</p>`,
               '<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">',
               `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Registered:</span> ${escapeHtml(
-                formatDate(item.registeredAt)
+                formatDate(item.registeredAt || item.createdAt)
               )}</div>`,
               `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Renewal due:</span> ${escapeHtml(
-                formatDate(item.renewalDueAt)
+                deriveRenewalDate(item)
               )}</div>`,
               `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Amount:</span> ${escapeHtml(
                 formatMoney(item.purchaseCurrency, item.purchaseAmountMinor)
               )}</div>`,
               "</div>",
-              '<div class="mt-4">',
+              '<div class="mt-4 flex flex-wrap gap-2">',
               `<button type="button" data-dns-toggle="${escapeAttr(
                 item.domainName
               )}" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">Manage DNS</button>`,
+              `<button type="button" data-netlify-toggle="${escapeAttr(
+                item.domainName
+              )}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500 transition-colors">Netlify Details</button>`,
               "</div>",
+              '<p class="mt-2 text-xs text-gray-500">Prompt to Profit students: use <span class="font-semibold">Netlify Details</span> to submit your connection information.</p>',
               dnsPanelHtml(item.domainName),
               "</article>",
             ].join("");

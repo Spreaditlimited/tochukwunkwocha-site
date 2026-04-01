@@ -122,6 +122,8 @@
           <div class="flex items-center gap-2"><span class="text-white text-2xl tracking-tight">.co</span></div>
         </div>
 
+        <p class="mt-4 text-sm text-brand-100/90 font-medium">Supported extensions currently</p>
+
         <p id="domainStatus" class="mt-6 text-lg font-medium min-h-[28px] text-brand-100"></p>
       </section>
 
@@ -155,18 +157,25 @@
             </div>
             <div class="md:col-span-1">
               <label class="block text-sm font-bold text-brand-100 mb-2">Registration Period</label>
-              <select id="domainYears" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all appearance-none cursor-pointer">
-                <option value="1">1 year registration</option>
-                <option value="2">2 years registration</option>
-                <option value="3">3 years registration</option>
-                <option value="4">4 years registration</option>
-                <option value="5">5 years registration</option>
-                <option value="6">6 years registration</option>
-                <option value="7">7 years registration</option>
-                <option value="8">8 years registration</option>
-                <option value="9">9 years registration</option>
-                <option value="10">10 years registration</option>
-              </select>
+              <div class="relative">
+                <select id="domainYears" class="block w-full rounded-xl border-0 py-4 pl-4 pr-10 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all appearance-none cursor-pointer">
+                  <option value="1">1 year registration</option>
+                  <option value="2">2 years registration</option>
+                  <option value="3">3 years registration</option>
+                  <option value="4">4 years registration</option>
+                  <option value="5">5 years registration</option>
+                  <option value="6">6 years registration</option>
+                  <option value="7">7 years registration</option>
+                  <option value="8">8 years registration</option>
+                  <option value="9">9 years registration</option>
+                  <option value="10">10 years registration</option>
+                </select>
+                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-100">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
             </div>
             
             <div class="md:col-span-2 pt-4">

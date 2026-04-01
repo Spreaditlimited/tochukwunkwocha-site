@@ -105,6 +105,9 @@ exports.handler = async function (event) {
       status: "paid",
     });
 
+    const paidCurrency = String(tx.currency || checkout.payment_currency || "NGN").toUpperCase();
+    const paidAmountMinor = Number(tx.amount || checkout.payment_amount_minor || 0);
+
     const email = String(checkout.email || "").trim().toLowerCase();
     const fullName = String(checkout.full_name || "Student").trim();
     const years = Math.max(1, Math.min(Number(checkout.years) || 1, 10));
@@ -162,8 +165,8 @@ exports.handler = async function (event) {
       status: "registration_in_progress",
       paymentProvider: "paystack",
       paymentStatus: "paid",
-      purchaseCurrency: String(tx.currency || checkout.payment_currency || "NGN").toUpperCase(),
-      purchaseAmountMinor: Number(tx.amount || checkout.payment_amount_minor || 0),
+      purchaseCurrency: paidCurrency,
+      purchaseAmountMinor: paidAmountMinor,
       providerOrderId: reference,
     });
 
@@ -173,8 +176,8 @@ exports.handler = async function (event) {
         orderUuid,
         status: "registration_failed",
         provider: registration.provider || provider,
-        purchaseCurrency: registration.currency || "USD",
-        purchaseAmountMinor: registration.amountMinor,
+        purchaseCurrency: paidCurrency,
+        purchaseAmountMinor: paidAmountMinor,
         providerOrderId: registration.orderId || reference,
         note: clean(registration.reason || "registration_failed", 500),
         setRegisteredAt: false,
@@ -194,8 +197,8 @@ exports.handler = async function (event) {
       orderUuid,
       status: "registered",
       provider: registration.provider || provider,
-      purchaseCurrency: registration.currency || "USD",
-      purchaseAmountMinor: registration.amountMinor,
+      purchaseCurrency: paidCurrency,
+      purchaseAmountMinor: paidAmountMinor,
       providerOrderId: registration.orderId || reference,
       setRegisteredAt: true,
     });
@@ -206,8 +209,8 @@ exports.handler = async function (event) {
       provider: registration.provider || provider,
       status: "registered",
       years,
-      purchaseCurrency: registration.currency || "USD",
-      purchaseAmountMinor: registration.amountMinor,
+      purchaseCurrency: paidCurrency,
+      purchaseAmountMinor: paidAmountMinor,
       providerOrderId: registration.orderId || "",
       registeredAt,
       renewalDueAt: addYearsSql(registeredAt, years),

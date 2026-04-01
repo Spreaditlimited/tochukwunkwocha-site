@@ -28,13 +28,32 @@ exports.handler = async function (event) {
     });
     const suggestions = await checkAvailabilityMany({ domainNames: candidates, strict: true });
     const firstAvailable = (suggestions || []).find((item) => item && item.available) || null;
+    const providerName = (suggestions && suggestions[0] && suggestions[0].provider) || selectedDomainProviderName();
+    const total = Array.isArray(suggestions) ? suggestions.length : 0;
+    const availableCount = (suggestions || []).filter(function (item) { return item && item.available; }).length;
+    const reasonCounts = {};
+    (suggestions || []).forEach(function (item) {
+      const reason = String((item && item.reason) || "unknown");
+      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+    });
+    console.log("[domain-suggest] result", {
+      preferredName,
+      provider: providerName,
+      total,
+      availableCount,
+      reasonCounts,
+    });
     return json(200, {
       ok: true,
-      provider: (suggestions && suggestions[0] && suggestions[0].provider) || selectedDomainProviderName(),
+      provider: providerName,
       suggestions: suggestions || [],
       firstAvailable: firstAvailable ? firstAvailable.domainName : "",
     });
   } catch (error) {
+    console.error("[domain-suggest] failed", {
+      message: error && error.message ? String(error.message) : "unknown",
+      stack: error && error.stack ? String(error.stack) : "",
+    });
     return json(503, {
       ok: false,
       error: "Domain suggestion service is temporarily unavailable. Please try again shortly.",

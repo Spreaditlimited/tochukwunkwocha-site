@@ -17,6 +17,12 @@ exports.handler = async function (event) {
 
   try {
     const result = await checkAvailability({ domainName, strict: true });
+    console.log("[domain-check] result", {
+      domainName,
+      provider: result.provider || selectedDomainProviderName(),
+      available: Boolean(result.available),
+      reason: result.reason || (result.available ? "available" : "unavailable"),
+    });
     return json(200, {
       ok: true,
       provider: result.provider || selectedDomainProviderName(),
@@ -25,6 +31,11 @@ exports.handler = async function (event) {
       reason: result.reason || (result.available ? "available" : "unavailable"),
     });
   } catch (error) {
+    console.error("[domain-check] failed", {
+      domainName,
+      message: error && error.message ? String(error.message) : "unknown",
+      stack: error && error.stack ? String(error.stack) : "",
+    });
     return json(503, {
       ok: false,
       error: "Domain lookup is temporarily unavailable. Please try again shortly.",
