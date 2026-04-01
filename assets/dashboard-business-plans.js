@@ -78,7 +78,7 @@
             '<div class="rounded-2xl border border-gray-200 bg-gray-50 p-6">',
             '<p class="text-base font-semibold text-gray-900">No business plan yet.</p>',
             '<p class="mt-2 text-sm text-gray-600">When your payment is completed and generation succeeds, your plan will appear here.</p>',
-            '<a class="mt-4 inline-flex items-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500" href="/services/business-plan/">Generate a Business Plan</a>',
+            '<a class="mt-4 inline-flex items-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500" href="/dashboard/domains/">Open Domains</a>',
             '</div>',
           ].join("");
         }

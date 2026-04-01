@@ -1,4 +1,5 @@
 const namecheap = require("./domain/providers/namecheap");
+const resellerclub = require("./domain/providers/resellerclub");
 const mock = require("./domain/providers/mock");
 
 function clean(value, max) {
@@ -12,6 +13,7 @@ function normalizeDomain(input) {
 function selectedDomainProviderName() {
   const raw = clean(process.env.LEADPAGE_DOMAIN_PROVIDER, 40).toLowerCase();
   if (raw === "mock") return "mock";
+  if (raw === "resellerclub") return "resellerclub";
   return "namecheap";
 }
 
@@ -19,13 +21,23 @@ function allowMockFallback() {
   return String(process.env.LEADPAGE_DOMAIN_ALLOW_MOCK || "1").trim() !== "0";
 }
 
+function strictMode(input) {
+  return Boolean(input && input.strict);
+}
+
 function selectedProvider() {
-  return selectedDomainProviderName() === "mock" ? mock : namecheap;
+  const name = selectedDomainProviderName();
+  if (name === "mock") return mock;
+  if (name === "resellerclub") return resellerclub;
+  return namecheap;
 }
 
 function hasProviderConfig(name) {
   if (name === "mock") return true;
-  return Boolean(clean(process.env.NAMECHEAP_API_KEY, 20));
+  if (name === "resellerclub") {
+    return Boolean(clean(process.env.RESCLUB_AUTH_USERID, 60) && clean(process.env.RESCLUB_API_KEY, 120));
+  }
+  return Boolean(clean(process.env.NAMECHEAP_API_KEY, 120));
 }
 
 function parseTlds() {
@@ -129,7 +141,7 @@ async function checkAvailability(input) {
   let actualProvider = providerName;
 
   if (!hasProviderConfig(providerName)) {
-    if (!allowMockFallback()) {
+    if (!allowMockFallback() || strictMode(input)) {
       throw new Error(`Missing registrar config for provider: ${providerName}`);
     }
     provider = mock;
@@ -149,7 +161,7 @@ async function checkAvailabilityMany(input) {
   let actualProvider = providerName;
 
   if (!hasProviderConfig(providerName)) {
-    if (!allowMockFallback()) {
+    if (!allowMockFallback() || strictMode(input)) {
       throw new Error(`Missing registrar config for provider: ${providerName}`);
     }
     provider = mock;
@@ -160,7 +172,18 @@ async function checkAvailabilityMany(input) {
   if (!domainNames.length) return [];
 
   const items = await provider.checkAvailabilityMany({ domainNames });
-  return (items || []).map((x) => ({ ...x, provider: actualProvider }));
+  const mapped = (items || []).map((x) => ({ ...x, provider: actualProvider }));
+  if (
+    strictMode(input) &&
+    mapped.length &&
+    mapped.every((x) => {
+      const reason = String((x && x.reason) || "").toLowerCase();
+      return reason === "lookup_failed";
+    })
+  ) {
+    throw new Error("Registrar provider is unreachable right now.");
+  }
+  return mapped;
 }
 
 async function registerDomain(input) {
@@ -169,7 +192,7 @@ async function registerDomain(input) {
   let actualProvider = providerName;
 
   if (!hasProviderConfig(providerName)) {
-    if (!allowMockFallback()) {
+    if (!allowMockFallback() || strictMode(input)) {
       throw new Error(`Missing registrar config for provider: ${providerName}`);
     }
     provider = mock;
@@ -186,10 +209,69 @@ async function registerDomain(input) {
   return { ...result, provider: actualProvider };
 }
 
+async function getDnsZone(input) {
+  const providerName = selectedDomainProviderName();
+  const provider = selectedProvider();
+  if (!hasProviderConfig(providerName)) {
+    throw new Error(`Missing registrar config for provider: ${providerName}`);
+  }
+  if (!provider || typeof provider.getDnsZone !== "function") {
+    throw new Error(`DNS management is not supported for provider: ${providerName}`);
+  }
+  const domainName = normalizeDomain(input && input.domainName);
+  if (!domainName) throw new Error("domainName is required");
+  const result = await provider.getDnsZone({ domainName });
+  return {
+    ...result,
+    provider: providerName,
+  };
+}
+
+async function updateNameservers(input) {
+  const providerName = selectedDomainProviderName();
+  const provider = selectedProvider();
+  if (!hasProviderConfig(providerName)) {
+    throw new Error(`Missing registrar config for provider: ${providerName}`);
+  }
+  if (!provider || typeof provider.updateNameservers !== "function") {
+    throw new Error(`Nameserver management is not supported for provider: ${providerName}`);
+  }
+  const domainName = normalizeDomain(input && input.domainName);
+  if (!domainName) throw new Error("domainName is required");
+  const nameservers = Array.isArray(input && input.nameservers) ? input.nameservers : [];
+  const result = await provider.updateNameservers({ domainName, nameservers });
+  return {
+    ...result,
+    provider: providerName,
+  };
+}
+
+async function updateDnsRecords(input) {
+  const providerName = selectedDomainProviderName();
+  const provider = selectedProvider();
+  if (!hasProviderConfig(providerName)) {
+    throw new Error(`Missing registrar config for provider: ${providerName}`);
+  }
+  if (!provider || typeof provider.updateDnsRecords !== "function") {
+    throw new Error(`DNS record management is not supported for provider: ${providerName}`);
+  }
+  const domainName = normalizeDomain(input && input.domainName);
+  if (!domainName) throw new Error("domainName is required");
+  const records = Array.isArray(input && input.records) ? input.records : [];
+  const result = await provider.updateDnsRecords({ domainName, records });
+  return {
+    ...result,
+    provider: providerName,
+  };
+}
+
 module.exports = {
   selectedDomainProviderName,
   buildDomainCandidates,
   checkAvailability,
   checkAvailabilityMany,
   registerDomain,
+  getDnsZone,
+  updateNameservers,
+  updateDnsRecords,
 };

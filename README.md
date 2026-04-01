@@ -111,7 +111,7 @@ Leadpage build timing (payment-gated)
 
 Leadpage domain automation (registrar API)
 - `LEADPAGE_DOMAIN_AUTOMATION_ENABLED` (`0` default; set `1` to auto-run domain purchase step on first publish for `needs_domain` jobs)
-- `LEADPAGE_DOMAIN_PROVIDER` (`namecheap` default, or `mock`)
+- `LEADPAGE_DOMAIN_PROVIDER` (`namecheap` default, or `resellerclub`, or `mock`)
 - `LEADPAGE_DOMAIN_ALLOW_MOCK` (`1` default; set `0` to fail when registrar config is missing)
 - `LEADPAGE_DOMAIN_TLDS` (CSV list, default `com,com.ng,ng`)
 - `LEADPAGE_DOMAIN_SUGGEST_WINDOW_SECONDS` (default `120`)
@@ -138,6 +138,24 @@ Namecheap contact profile (required for registration)
 - `NAMECHEAP_CONTACT_COUNTRY`
 - `NAMECHEAP_CONTACT_PHONE`
 - `NAMECHEAP_CONTACT_EMAIL`
+
+ResellerClub registrar credentials
+- `RESCLUB_AUTH_USERID`
+- `RESCLUB_API_KEY`
+- `RESCLUB_USE_TEST` (`0` default; set `1` to use test.httpapi.com)
+- Optional override: `RESCLUB_API_BASE_URL`
+
+ResellerClub registration defaults
+- `RESCLUB_CUSTOMER_ID`
+- `RESCLUB_CONTACT_ID` (or set all 4 explicit contact IDs below)
+- `RESCLUB_REG_CONTACT_ID` (optional if `RESCLUB_CONTACT_ID` is set)
+- `RESCLUB_ADMIN_CONTACT_ID` (optional if `RESCLUB_CONTACT_ID` is set)
+- `RESCLUB_TECH_CONTACT_ID` (optional if `RESCLUB_CONTACT_ID` is set)
+- `RESCLUB_BILLING_CONTACT_ID` (optional if `RESCLUB_CONTACT_ID` is set)
+- `RESCLUB_NS1`
+- `RESCLUB_NS2`
+- Optional: `RESCLUB_INVOICE_OPTION` (default `KeepInvoice`)
+- Optional: `RESCLUB_DISCOUNT_AMOUNT` (default `0.0`)
 
 ## Internal Manual Review Page
 Use this URL after deploy:

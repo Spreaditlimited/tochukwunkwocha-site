@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Domain Management | Internal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              heading: ["Manrope", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#eef2fb",
+                100: "#dfe7f7",
+                200: "#ccd3e6",
+                300: "#99a9cc",
+                400: "#667eb2",
+                500: "#22345f",
+                600: "#1a2849",
+                700: "#14213d",
+                800: "#0f182d",
+                900: "#0a101e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        [hidden] { display: none !important; }
+        .status-filter__btn.is-active { @apply bg-white text-gray-900 shadow-sm ring-1 ring-gray-200; }
+        .status-filter__btn:not(.is-active) { @apply text-gray-500 hover:text-gray-700 hover:bg-gray-50; }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
+    <main id="internalShell" class="flex h-full w-full flex-col">
+      <section id="adminAppCard" class="flex h-full w-full" hidden>
+        <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+        <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+
+        <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+          <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+            <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+            <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
+          </div>
+
+          <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+            <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Dashboard Home</a>
+            <a href="/internal/manual-payments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Enrollments</a>
+            <a href="/internal/installments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Installments</a>
+            <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Lead Capture Jobs</a>
+            <a href="/internal/business-plan-manager/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Business Plan Manager</a>
+            <a href="/internal/domain-management/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">Domain Management</a>
+            <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Settings</a>
+          </div>
+
+          <div class="p-4 border-t border-white/10 shrink-0">
+            <button type="button" data-admin-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
+          </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
+          <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+            <div class="flex items-center gap-4">
+              <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </label>
+              <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Domain Management</h2>
+            </div>
+            <button id="adminLogoutBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Sign out</button>
+          </header>
+
+          <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div class="max-w-[92rem] mx-auto">
+              <section class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-6">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Provider</p>
+                    <h3 class="mt-1 text-xl font-heading font-bold text-gray-900" id="providerName">--</h3>
+                    <p class="mt-2 text-sm text-gray-500">Monitor registered domains, payment status, and renewals in one internal queue.</p>
+                  </div>
+                  <div id="adminStatusFilter" class="inline-flex w-full flex-wrap items-center gap-1 rounded-lg bg-gray-100/80 p-1 ring-1 ring-gray-200 lg:w-auto" role="tablist" aria-label="Filter by status">
+                    <button type="button" class="status-filter__btn is-active flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-all lg:flex-none" data-status="all">All</button>
+                    <button type="button" class="status-filter__btn flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-all lg:flex-none" data-status="registered">Registered</button>
+                    <button type="button" class="status-filter__btn flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-all lg:flex-none" data-status="registration_failed">Failed</button>
+                    <button type="button" class="status-filter__btn flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-all lg:flex-none" data-status="payment_pending">Pending Payment</button>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <article class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Domains</p><p class="mt-1 text-lg font-bold text-gray-900" id="summaryTotal">--</p></article>
+                  <article class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Registered</p><p class="mt-1 text-lg font-bold text-emerald-700" id="summaryRegistered">--</p></article>
+                  <article class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Failed</p><p class="mt-1 text-lg font-bold text-rose-700" id="summaryFailed">--</p></article>
+                  <article class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Renewals in 30 Days</p><p class="mt-1 text-lg font-bold text-amber-700" id="summaryRenewals">--</p></article>
+                </div>
+              </section>
+
+              <div class="mt-8 flex items-center gap-3">
+                <div class="relative w-full max-w-lg rounded-md shadow-sm">
+                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></div>
+                  <input id="adminSearchInput" type="text" placeholder="Search domain, email, provider order ID..." class="block w-full rounded-xl border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 transition-all" />
+                </div>
+                <button id="adminRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-white p-2.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors" title="Refresh Data">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                </button>
+              </div>
+
+              <p id="adminMessage" class="mt-4 hidden text-sm text-gray-500"></p>
+
+              <section class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-gray-200 px-5 py-4"><h4 class="text-sm font-heading font-bold uppercase tracking-wider text-gray-600">Registered Domains</h4></div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-[72rem] divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Domain</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Owner</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Payment</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Renewal Due</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Order Ref</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminDomainsRows" class="divide-y divide-gray-200 bg-white"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-gray-200 px-5 py-4"><h4 class="text-sm font-heading font-bold uppercase tracking-wider text-gray-600">Recent Domain Orders</h4></div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-[72rem] divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Created</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Domain</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Owner</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Order Status</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Payment</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Provider Order ID</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminOrdersRows" class="divide-y divide-gray-200 bg-white"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/admin-domain-management.js" defer></script>
+    <script src="/assets/internal-nav.js" defer></script>
+  </body>
+</html>

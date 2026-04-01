@@ -22,6 +22,7 @@
     if (path === "/internal/installments/") return { page: "Installments", doc: "Installments | Internal" };
     if (path === "/internal/leadpage-jobs/") return { page: "Lead Capture Queue", doc: "Leadpage Jobs | Internal" };
     if (path === "/internal/business-plan-manager/") return { page: "Business Plan Manager", doc: "Business Plan Manager | Internal" };
+    if (path === "/internal/domain-management/") return { page: "Domain Management", doc: "Domain Management | Internal" };
     if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
     if (path === "/internal/verifier/") return { page: "Business Plan Verification Queue", doc: "Business Plan Verifier | Internal" };
     return null;
@@ -59,12 +60,10 @@
     }
   }
 
-  function setLoadingState(linkEl) {
-    document.body.classList.add("internal-nav-loading");
-    if (linkEl) {
-      linkEl.style.opacity = "0.7";
-      linkEl.style.pointerEvents = "none";
-    }
+  function setPendingState(linkEl) {
+    if (!linkEl) return;
+    linkEl.style.opacity = "0.85";
+    linkEl.setAttribute("aria-busy", "true");
   }
 
   syncPageTitle();
@@ -92,13 +91,25 @@
         return;
       }
 
+      event.preventDefault();
       navLock = true;
-      setLoadingState(link);
+      setPendingState(link);
 
       var mobileMenuToggle = document.getElementById("mobile-menu-toggle");
       if (mobileMenuToggle && mobileMenuToggle.checked) {
         mobileMenuToggle.checked = false;
       }
+
+      var href = link.getAttribute("href");
+      if (!href) {
+        navLock = false;
+        return;
+      }
+
+      // Let the mobile drawer close before leaving the page.
+      window.setTimeout(function () {
+        window.location.href = href;
+      }, 45);
     });
   });
 
