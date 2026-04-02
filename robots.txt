@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /internal/
+Disallow: /.netlify/
+Disallow: /netlify/
+
+Sitemap: https://tochukwunkwocha.com/sitemap.xml
