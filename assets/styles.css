@@ -1848,7 +1848,8 @@ body.modal-open {
   }
 
   .course-hero .course-hero-copy h1 {
-    max-width: 14ch;
+    max-width: 100%;
+    width: 100%;
     margin-inline: auto;
     font-size: 2.25rem;
   }

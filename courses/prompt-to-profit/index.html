@@ -105,6 +105,32 @@
         gap: 24px;
       }
 
+      .testimonial-body {
+        line-height: 1.65;
+      }
+
+      .testimonial-body.testimonial-body--clamped {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 5;
+        overflow: hidden;
+      }
+
+      .testimonial-toggle {
+        margin-top: 10px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #22345f;
+        cursor: pointer;
+      }
+
+      .testimonial-toggle:hover {
+        text-decoration: underline;
+      }
+
       @media (min-width: 1024px) {
         .testimonial-grid {
           flex-direction: row;
@@ -362,6 +388,36 @@
         <h2 class="section-headline" style="text-align: center; margin-top: 8px;">What My Students are Saying</h2>
         
         <div class="testimonial-grid">
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/anuri.JPG" alt="Photo of Anuri Okongwu" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Anuri Okongwu</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Parent & Student Advocate, Batch 1</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Your Prompt to Profit class was so good. Your teaching ability is topnotch. I actually registered the course for my 2 boys in Secondary school but because they were writing an exam last week, I had to attend the class, so that I would be their instructor.
+              At the moment their website is almost ready and once they publish it I will send the Link.
+              I have referred 2 parents with your Facebook link, one has already paid yesterday for the next class. We are looking forward to registering for the advanced class before the week runs out.
+              I actually got value for the money spent, reason why I am registering for the advance class.
+              Thanks so much.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/ekpere.JPG" alt="Photo of Ekpereamaka Blessings" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Ekpereamaka Blessings</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student, Batch 1</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Honestly I want to say a big thank you to our outstanding coach @⁨Tochukwu Nkwocha⁩. It's been an amazing week with the prompt to profit rehearsal. I just built a website for my company for $100 and my boss was impressed. I had more offers from his two friends but Electricity wahala in Nigeria is really frustrating.&rdquo;
+            </p>
+          </article>
           
           <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
             <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
@@ -568,5 +624,29 @@
     </footer>
 
     <script src="/assets/site.js"></script>
+    <script>
+      (function initTestimonialClamp() {
+        var testimonials = document.querySelectorAll(".testimonial-body");
+        testimonials.forEach(function (body) {
+          body.classList.add("testimonial-body--clamped");
+          if (body.scrollHeight <= body.clientHeight + 1) {
+            body.classList.remove("testimonial-body--clamped");
+            return;
+          }
+
+          var toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "testimonial-toggle";
+          toggle.textContent = "Read more";
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.addEventListener("click", function () {
+            var expanded = body.classList.toggle("testimonial-body--clamped") === false;
+            toggle.textContent = expanded ? "Read less" : "Read more";
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+          });
+          body.insertAdjacentElement("afterend", toggle);
+        });
+      })();
+    </script>
   </body>
 </html>
