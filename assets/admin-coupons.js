@@ -6,6 +6,12 @@
   var rowsEl = document.getElementById("couponRows");
   var saveBtn = document.getElementById("couponSaveBtn");
   var resetBtn = document.getElementById("couponResetBtn");
+  var extendModal = null;
+  var extendModalInput = null;
+  var extendModalTitle = null;
+  var extendModalSaveBtn = null;
+  var extendModalCloseBtns = [];
+  var extendModalTarget = null;
 
   var fields = {
     id: document.getElementById("couponId"),
@@ -130,6 +136,124 @@
     if (!raw) return null;
     var n = Number(raw);
     return Number.isFinite(n) ? n : null;
+  }
+
+  function ensureExtendModal() {
+    if (extendModal) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      [
+        '<div id="couponExtendModal" class="fixed inset-0 z-[90] hidden" aria-hidden="true">',
+        '  <button type="button" class="absolute inset-0 bg-gray-900/70 backdrop-blur-sm" data-coupon-extend-close aria-label="Close"></button>',
+        '  <div class="relative z-10 mx-auto flex h-full w-full max-w-2xl items-center justify-center p-4 sm:p-6">',
+        '    <div class="w-full rounded-2xl border border-gray-200 bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="couponExtendTitle">',
+        '      <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 sm:px-6">',
+        "        <div>",
+        '          <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Coupon Validity</p>',
+        '          <h3 id="couponExtendTitle" class="mt-1 text-xl font-heading font-bold text-gray-900">Set end date/time</h3>',
+        '          <p class="mt-1 text-sm text-gray-500">Choose the new coupon end date/time (Lagos).</p>',
+        "        </div>",
+        '        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" data-coupon-extend-close aria-label="Close dialog">',
+        '          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 6l12 12M6 18L18 6"/></svg>',
+        "        </button>",
+        "      </div>",
+        '      <div class="px-5 py-5 sm:px-6">',
+        '        <label class="block">',
+        '          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Ends At (Lagos)</span>',
+        '          <input id="couponExtendEndsAtInput" type="datetime-local" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100" />',
+        "        </label>",
+        '        <p id="couponExtendModalMsg" class="hidden mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"></p>',
+        "      </div>",
+        '      <div class="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 sm:px-6">',
+        '        <button type="button" id="couponExtendModalCancel" class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-800 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-coupon-extend-close>Cancel</button>',
+        '        <button type="button" id="couponExtendModalSave" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500 transition-colors">Save</button>',
+        "      </div>",
+        "    </div>",
+        "  </div>",
+        "</div>",
+      ].join("")
+    );
+
+    extendModal = document.getElementById("couponExtendModal");
+    extendModalInput = document.getElementById("couponExtendEndsAtInput");
+    extendModalTitle = document.getElementById("couponExtendTitle");
+    extendModalSaveBtn = document.getElementById("couponExtendModalSave");
+    extendModalCloseBtns = Array.prototype.slice.call(document.querySelectorAll("[data-coupon-extend-close]"));
+
+    if (!extendModal) return;
+    extendModalCloseBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        closeExtendModal();
+      });
+    });
+    document.addEventListener("keydown", function (event) {
+      if (!extendModal || extendModal.getAttribute("aria-hidden") !== "false") return;
+      if (event.key === "Escape") closeExtendModal();
+    });
+    if (extendModalSaveBtn) {
+      extendModalSaveBtn.addEventListener("click", function () {
+        submitExtendModal().catch(function () {
+          return null;
+        });
+      });
+    }
+  }
+
+  function setExtendModalMsg(text) {
+    var el = document.getElementById("couponExtendModalMsg");
+    if (!el) return;
+    var msg = String(text || "").trim();
+    el.textContent = msg;
+    el.classList.toggle("hidden", !msg);
+  }
+
+  function openExtendModal(item) {
+    ensureExtendModal();
+    if (!extendModal || !extendModalInput) return;
+    extendModalTarget = item || null;
+    if (extendModalTitle) {
+      extendModalTitle.textContent = "Set end date/time" + (item && item.code ? " • " + String(item.code) : "");
+    }
+    extendModalInput.value = toLocalDatetime(item && item.ends_at) || "";
+    setExtendModalMsg("");
+    extendModal.classList.remove("hidden");
+    extendModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("overflow-hidden");
+    window.setTimeout(function () {
+      try {
+        extendModalInput.focus();
+      } catch (_error) {}
+    }, 20);
+  }
+
+  function closeExtendModal() {
+    if (!extendModal) return;
+    extendModal.classList.add("hidden");
+    extendModal.setAttribute("aria-hidden", "true");
+    setExtendModalMsg("");
+    extendModalTarget = null;
+    document.body.classList.remove("overflow-hidden");
+  }
+
+  async function submitExtendModal() {
+    if (!extendModalTarget || !extendModalInput || !extendModalSaveBtn) return;
+    var trimmed = String(extendModalInput.value || "").trim();
+    if (!trimmed) {
+      setExtendModalMsg("End date/time is required.");
+      return;
+    }
+    extendModalSaveBtn.disabled = true;
+    extendModalSaveBtn.textContent = "Saving...";
+    try {
+      await extendCoupon({ id: extendModalTarget.id, endsAt: trimmed });
+      setMessage("Coupon " + String(extendModalTarget.code || "") + " end date updated.", "ok");
+      closeExtendModal();
+    } catch (error) {
+      setExtendModalMsg(error.message || "Could not set coupon end date.");
+    } finally {
+      extendModalSaveBtn.disabled = false;
+      extendModalSaveBtn.textContent = "Save";
+    }
   }
 
   function resetForm() {
@@ -337,31 +461,7 @@
       if (dateBtn) {
         var dateIdx = Number(dateBtn.getAttribute("data-coupon-extend-date"));
         if (!Number.isFinite(dateIdx) || !items[dateIdx]) return;
-        var selected = items[dateIdx];
-        var currentEnd = toLocalDatetime(selected.ends_at);
-        var nextEnd = window.prompt(
-          "Enter new coupon end date/time in YYYY-MM-DDTHH:MM format (Lagos time):",
-          currentEnd || ""
-        );
-        if (nextEnd === null) return;
-        var trimmed = String(nextEnd || "").trim();
-        if (!trimmed) {
-          setMessage("End date/time is required.", "error");
-          return;
-        }
-        dateBtn.disabled = true;
-        dateBtn.textContent = "Saving...";
-        extendCoupon({ id: selected.id, endsAt: trimmed })
-          .then(function () {
-            setMessage("Coupon " + String(selected.code || "") + " end date updated.", "ok");
-          })
-          .catch(function (error) {
-            setMessage(error.message || "Could not set coupon end date.", "error");
-          })
-          .finally(function () {
-            dateBtn.disabled = false;
-            dateBtn.textContent = "Set date/time";
-          });
+        openExtendModal(items[dateIdx]);
       }
     });
   }
