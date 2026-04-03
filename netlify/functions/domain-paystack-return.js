@@ -30,6 +30,16 @@ function randomPassword() {
   return crypto.randomBytes(6).toString("base64url") + "A9!";
 }
 
+function parseSelectedServicesJson(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(String(value));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
 function buildWelcomeEmail({ fullName, email, tempPassword, resetLink }) {
   const safeName = String(fullName || "there").trim();
   const safeEmail = String(email || "").trim();
@@ -113,6 +123,8 @@ exports.handler = async function (event) {
     const years = Math.max(1, Math.min(Number(checkout.years) || 1, 10));
     const domainName = String(checkout.domain_name || "").trim().toLowerCase();
     const provider = String(checkout.provider || selectedDomainProviderName()).trim().toLowerCase() || "namecheap";
+    const selectedServices = parseSelectedServicesJson(checkout.selected_services_json);
+    const autoRenewEnabled = Number(checkout.auto_renew_enabled || 0) === 1;
 
     let account = await findStudentByEmail(pool, email);
     let setCookie = "";
@@ -168,6 +180,8 @@ exports.handler = async function (event) {
       purchaseCurrency: paidCurrency,
       purchaseAmountMinor: paidAmountMinor,
       providerOrderId: reference,
+      selectedServices,
+      autoRenewEnabled,
     });
 
     const registration = await registerDomain({ domainName, years });
@@ -179,6 +193,8 @@ exports.handler = async function (event) {
         purchaseCurrency: paidCurrency,
         purchaseAmountMinor: paidAmountMinor,
         providerOrderId: registration.orderId || reference,
+        selectedServices,
+        autoRenewEnabled,
         note: clean(registration.reason || "registration_failed", 500),
         setRegisteredAt: false,
       });
@@ -200,6 +216,8 @@ exports.handler = async function (event) {
       purchaseCurrency: paidCurrency,
       purchaseAmountMinor: paidAmountMinor,
       providerOrderId: registration.orderId || reference,
+      selectedServices,
+      autoRenewEnabled,
       setRegisteredAt: true,
     });
     await upsertUserDomain(pool, {
@@ -212,6 +230,8 @@ exports.handler = async function (event) {
       purchaseCurrency: paidCurrency,
       purchaseAmountMinor: paidAmountMinor,
       providerOrderId: registration.orderId || "",
+      selectedServices,
+      autoRenewEnabled,
       registeredAt,
       renewalDueAt: addYearsSql(registeredAt, years),
     });

@@ -2,6 +2,8 @@
   const metaEl = document.getElementById("domainsMeta");
   const listEl = document.getElementById("domainsList");
   const ordersEl = document.getElementById("domainOrdersList");
+  const domainsAutoRenewToggle = document.getElementById("domainsAutoRenewToggle");
+  const domainsAutoRenewStatus = document.getElementById("domainsAutoRenewStatus");
   const dnsTypeOptions = ["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "CAA", "NS"];
 
   function escapeHtml(value) {
@@ -72,6 +74,19 @@
     }
   }
 
+  function serviceLabel(key) {
+    const value = String(key || "").trim().toLowerCase();
+    if (value === "ssl") return "SSL";
+    if (value === "business_email") return "Business Email";
+    return value || "Service";
+  }
+
+  function renderServices(selectedServices) {
+    const list = Array.isArray(selectedServices) ? selectedServices : [];
+    if (!list.length) return "None";
+    return list.map(serviceLabel).join(", ");
+  }
+
   async function api(path, payload) {
     const res = await fetch(path, {
       method: "POST",
@@ -89,6 +104,32 @@
       throw new Error((json && json.error) || "Request failed");
     }
     return json;
+  }
+
+  async function saveDomainAutoRenewPreference(enabled) {
+    const res = await fetch("/.netlify/functions/user-domain-preferences-save", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ autoRenewEnabled: enabled === true }),
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not save preference");
+    }
+    return json;
+  }
+
+  async function startDomainRenewal(domainName, years) {
+    return api("/.netlify/functions/domain-renew-create-payment", {
+      domainName: String(domainName || "").trim().toLowerCase(),
+      years: Math.max(1, Math.min(Number(years) || 1, 10)),
+    });
   }
 
   function statusText(el, message, tone) {
@@ -346,6 +387,24 @@
   function bindDnsEvents() {
     if (!listEl) return;
     listEl.addEventListener("click", async function (event) {
+      const renewBtn = event.target.closest("[data-domain-renew]");
+      if (renewBtn) {
+        const domainName = String(renewBtn.getAttribute("data-domain-renew") || "").trim().toLowerCase();
+        if (!domainName) return;
+        try {
+          renewBtn.disabled = true;
+          renewBtn.textContent = "Preparing renewal...";
+          const json = await startDomainRenewal(domainName, 1);
+          if (!json || !json.checkoutUrl) throw new Error("Missing payment checkout URL.");
+          window.location.href = json.checkoutUrl;
+        } catch (error) {
+          renewBtn.disabled = false;
+          renewBtn.textContent = "Renew (1 year)";
+          alert(error.message || "Could not start renewal payment.");
+        }
+        return;
+      }
+
       const toggle = event.target.closest("[data-dns-toggle]");
       if (toggle) {
         const domainName = String(toggle.getAttribute("data-dns-toggle") || "").trim().toLowerCase();
@@ -479,10 +538,39 @@
       const domains = Array.isArray(json.domains) ? json.domains : [];
       const orders = Array.isArray(json.orders) ? json.orders : [];
       const email = json.account && json.account.email ? String(json.account.email) : "";
+      const accountAutoRenewEnabled = json.account && json.account.domainsAutoRenewEnabled === true;
+
+      if (domainsAutoRenewToggle) {
+        domainsAutoRenewToggle.checked = accountAutoRenewEnabled;
+      }
+      if (domainsAutoRenewStatus) {
+        statusText(
+          domainsAutoRenewStatus,
+          accountAutoRenewEnabled
+            ? "Auto-renew is enabled for your domain services."
+            : "Auto-renew is currently off for your domain services.",
+          "neutral"
+        );
+      }
 
       if (metaEl) {
         metaEl.textContent = `Showing ${domains.length} domain(s)${email ? ` for ${email}` : ""}.`;
       }
+      (function showRenewalReturnState() {
+        const query = new URLSearchParams(window.location.search || "");
+        const renewal = String(query.get("renewal") || "").trim().toLowerCase();
+        if (!renewal || !metaEl) return;
+        const domain = String(query.get("domain") || "").trim().toLowerCase();
+        if (renewal === "success") {
+          metaEl.textContent = domain
+            ? `Renewal payment confirmed for ${domain}. Your renewal due date has been updated.`
+            : "Renewal payment confirmed. Your renewal due date has been updated.";
+          return;
+        }
+        if (renewal === "failed") {
+          metaEl.textContent = "Renewal payment was not completed. Please try again.";
+        }
+      })();
 
       if (!domains.length) {
         if (listEl) {
@@ -514,7 +602,18 @@
                 formatMoney(item.purchaseCurrency, item.purchaseAmountMinor)
               )}</div>`,
               "</div>",
+              '<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-600">',
+              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Add-ons:</span> ${escapeHtml(
+                renderServices(item.selectedServices)
+              )}</div>`,
+              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Auto-renew:</span> ${
+                item.autoRenewEnabled ? "On" : "Off"
+              }</div>`,
+              "</div>",
               '<div class="mt-4 flex flex-wrap gap-2">',
+              `<button type="button" data-domain-renew="${escapeAttr(
+                item.domainName
+              )}" class="inline-flex items-center justify-center rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors">Renew (1 year)</button>`,
               `<button type="button" data-dns-toggle="${escapeAttr(
                 item.domainName
               )}" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">Manage DNS</button>`,
@@ -549,6 +648,9 @@
               `<p class="text-xs text-gray-500 mt-1">Placed: ${escapeHtml(formatDate(item.createdAt))} • Amount: ${escapeHtml(
                 formatMoney(item.purchaseCurrency, item.purchaseAmountMinor)
               )}</p>`,
+              `<p class="text-xs text-gray-500 mt-1">Add-ons: ${escapeHtml(renderServices(item.selectedServices))} • Auto-renew: ${
+                item.autoRenewEnabled ? "On" : "Off"
+              }</p>`,
               "</article>",
             ].join("");
           })
@@ -562,5 +664,31 @@
   }
 
   bindDnsEvents();
+  if (domainsAutoRenewToggle) {
+    domainsAutoRenewToggle.addEventListener("change", async function () {
+      const enabled = domainsAutoRenewToggle.checked === true;
+      try {
+        domainsAutoRenewToggle.disabled = true;
+        if (domainsAutoRenewStatus) {
+          statusText(domainsAutoRenewStatus, "Saving preference...", "neutral");
+        }
+        await saveDomainAutoRenewPreference(enabled);
+        if (domainsAutoRenewStatus) {
+          statusText(
+            domainsAutoRenewStatus,
+            enabled ? "Auto-renew enabled for your domain services." : "Auto-renew disabled for your domain services.",
+            "success"
+          );
+        }
+      } catch (error) {
+        domainsAutoRenewToggle.checked = !enabled;
+        if (domainsAutoRenewStatus) {
+          statusText(domainsAutoRenewStatus, error.message || "Could not save preference.", "error");
+        }
+      } finally {
+        domainsAutoRenewToggle.disabled = false;
+      }
+    });
+  }
   load();
 })();

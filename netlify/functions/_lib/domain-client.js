@@ -247,6 +247,28 @@ async function getRegistrationPrice(input) {
   };
 }
 
+async function getServicePrices(input) {
+  const providerName = selectedDomainProviderName();
+  const provider = selectedProvider();
+  if (!hasProviderConfig(providerName)) {
+    throw new Error(`Missing registrar config for provider: ${providerName}`);
+  }
+  if (!provider || typeof provider.getServicePrices !== "function") {
+    throw new Error(`Service pricing is not supported for provider: ${providerName}`);
+  }
+  const domainName = normalizeDomain(input && input.domainName);
+  if (!domainName) throw new Error("domainName is required");
+  const years = Math.max(1, Math.min(Number(input && input.years) || 1, 10));
+  const serviceCodes = Array.isArray(input && input.serviceCodes) ? input.serviceCodes : [];
+  const result = await provider.getServicePrices({ domainName, years, serviceCodes });
+  return {
+    ...result,
+    provider: providerName,
+    domainName,
+    years,
+  };
+}
+
 async function getDnsZone(input) {
   const providerName = selectedDomainProviderName();
   const provider = selectedProvider();
@@ -310,6 +332,7 @@ module.exports = {
   checkAvailabilityMany,
   registerDomain,
   getRegistrationPrice,
+  getServicePrices,
   getDnsZone,
   updateNameservers,
   updateDnsRecords,

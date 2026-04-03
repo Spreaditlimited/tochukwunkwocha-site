@@ -10,11 +10,17 @@
   const customerNameInput = document.getElementById("domainCustomerName");
   const customerEmailInput = document.getElementById("domainCustomerEmail");
   const yearsInput = document.getElementById("domainYears");
+  const autoRenewInput = document.getElementById("domainAutoRenew");
+  const quoteCard = document.getElementById("domainQuoteCard");
+  const quoteRowsEl = document.getElementById("domainQuoteRows");
+  const quoteTotalEl = document.getElementById("domainQuoteTotal");
+  const quoteStatusEl = document.getElementById("domainQuoteStatus");
   const registerBtn = document.getElementById("domainRegisterBtn");
   const customerStatusEl = document.getElementById("domainCustomerStatus");
   const unsupportedTlds = new Set(["ng", "com.ng"]);
 
   let selectedDomain = "";
+  let latestQuote = null;
 
   function setStatus(message, ok) {
     if (!statusEl) return;
@@ -83,6 +89,106 @@
       .replace(/'/g, "&#39;");
   }
 
+  function collectSelectedServices() {
+    return [];
+  }
+
+  function readAutoRenewEnabled() {
+    if (!autoRenewInput) return true;
+    return autoRenewInput.checked === true;
+  }
+
+  function formatMoney(currency, amountMinor) {
+    const amt = Number(amountMinor || 0);
+    const code = String(currency || "").toUpperCase();
+    if (!code || !Number.isFinite(amt) || amt < 0) return "-";
+    const amount = amt / 100;
+    try {
+      return new Intl.NumberFormat("en-NG", { style: "currency", currency: code }).format(amount);
+    } catch (_error) {
+      return code + " " + amount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  function setQuoteStatus(message, ok) {
+    if (!quoteStatusEl) return;
+    quoteStatusEl.textContent = String(message || "");
+    quoteStatusEl.style.color = ok ? "#6b7280" : "#b91c1c";
+  }
+
+  function clearQuote() {
+    latestQuote = null;
+    if (quoteCard) quoteCard.classList.add("hidden");
+    if (quoteRowsEl) quoteRowsEl.innerHTML = "";
+    if (quoteTotalEl) quoteTotalEl.textContent = "-";
+    setQuoteStatus("", true);
+  }
+
+  function renderQuote(quote) {
+    if (!quoteRowsEl || !quoteTotalEl) return;
+    const rows = [];
+    rows.push(
+      `<div class="flex items-center justify-between text-sm"><span class="text-gray-600">Domain registration (${Number(
+        quote.years || 1
+      )} year${Number(quote.years || 1) > 1 ? "s" : ""})</span><span class="font-semibold text-gray-900">${escapeHtml(
+        formatMoney(quote.currency, quote.baseAmountMinor)
+      )}</span></div>`
+    );
+    (Array.isArray(quote.addOns) ? quote.addOns : []).forEach(function (item) {
+      rows.push(
+        `<div class="flex items-center justify-between text-sm"><span class="text-gray-600">${escapeHtml(
+          item.label || "Add-on"
+        )} x${Number(item.quantity || 1)}</span><span class="font-semibold text-gray-900">${escapeHtml(
+          formatMoney(quote.currency, item.amountMinor)
+        )}</span></div>`
+      );
+    });
+    rows.push(
+      `<div class="flex items-center justify-between text-sm pt-1"><span class="text-gray-600">Subtotal</span><span class="font-semibold text-gray-900">${escapeHtml(
+        formatMoney(quote.currency, quote.subtotalMinor)
+      )}</span></div>`
+    );
+    rows.push(
+      `<div class="flex items-center justify-between text-sm"><span class="text-gray-600">VAT (${Number(
+        quote.vatPercent || 0
+      ).toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span><span class="font-semibold text-gray-900">${escapeHtml(
+        formatMoney(quote.currency, quote.vatAmountMinor)
+      )}</span></div>`
+    );
+    quoteRowsEl.innerHTML = rows.join("");
+    quoteTotalEl.textContent = formatMoney(quote.currency, quote.totalAmountMinor);
+  }
+
+  async function refreshQuote() {
+    if (!selectedDomain) {
+      clearQuote();
+      return;
+    }
+    const years = Math.max(1, Math.min(Number(yearsInput ? yearsInput.value : 1) || 1, 10));
+    const selectedServices = collectSelectedServices();
+    if (quoteCard) quoteCard.classList.remove("hidden");
+    setQuoteStatus("Updating total...", true);
+    try {
+      const json = await request("/.netlify/functions/domain-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domainName: selectedDomain,
+          years,
+          selectedServices,
+        }),
+      });
+      latestQuote = json.quote || null;
+      if (latestQuote) renderQuote(latestQuote);
+      setQuoteStatus("Total includes selected add-ons.", true);
+    } catch (error) {
+      latestQuote = null;
+      if (quoteRowsEl) quoteRowsEl.innerHTML = "";
+      if (quoteTotalEl) quoteTotalEl.textContent = "-";
+      setQuoteStatus(error.message || "Could not load pricing.", false);
+    }
+  }
+
   async function request(path, options) {
     const res = await fetch(path, options || {});
     const json = await res.json().catch(function () {
@@ -108,12 +214,14 @@
     if (selectedNameEl) selectedNameEl.textContent = name;
     if (checkoutCard) checkoutCard.classList.remove("hidden");
     setStatus(`${name} is available. Continue below to complete payment details.`, true);
+    refreshQuote();
   }
 
   function resetDomainSelection() {
     selectedDomain = "";
     if (checkoutCard) checkoutCard.classList.add("hidden");
     if (selectedNameEl) selectedNameEl.textContent = "";
+    clearQuote();
   }
 
   function renderSuggestions(list, options) {
@@ -194,6 +302,9 @@
       }
       if (customerEmailInput && session.account && session.account.email && !customerEmailInput.value) {
         customerEmailInput.value = String(session.account.email || "");
+      }
+      if (autoRenewInput && session.account && typeof session.account.domainsAutoRenewEnabled === "boolean") {
+        autoRenewInput.checked = session.account.domainsAutoRenewEnabled;
       }
     } catch (_error) {}
   }
@@ -297,6 +408,8 @@
       const fullName = String(customerNameInput ? customerNameInput.value : "").trim();
       const email = normalizeEmail(customerEmailInput ? customerEmailInput.value : "");
       const years = Math.max(1, Math.min(Number(yearsInput ? yearsInput.value : 1) || 1, 10));
+      const selectedServices = collectSelectedServices();
+      const autoRenewEnabled = readAutoRenewEnabled();
 
       if (!fullName) {
         setCustomerStatus("Enter your full name.", false);
@@ -328,8 +441,14 @@
             email,
             domainName: selectedDomain,
             years,
+            selectedServices,
+            autoRenewEnabled,
           }),
         });
+        if (json && json.quote) {
+          latestQuote = json.quote;
+          renderQuote(json.quote);
+        }
         if (!json.checkoutUrl) throw new Error("Missing payment checkout URL.");
         window.location.href = json.checkoutUrl;
       } catch (error) {
@@ -348,6 +467,8 @@
       if (value) setSelectedDomain(value);
     });
   }
+
+  if (yearsInput) yearsInput.addEventListener("change", refreshQuote);
 
   (function readReturnState() {
     const query = new URLSearchParams(window.location.search || "");

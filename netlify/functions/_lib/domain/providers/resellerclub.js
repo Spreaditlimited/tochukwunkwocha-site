@@ -197,16 +197,57 @@ function tldToProductKey(tld) {
 
   const customMap = parseJsonMapEnv("RESCLUB_DOMAIN_PRODUCT_KEYS_JSON");
   const customKey = clean(customMap[cleanTld], 120);
+  return customKey;
+}
+
+function tldToProductKeys(tld) {
+  const cleanTld = clean(tld, 80).toLowerCase().replace(/^\.+/, "");
+  if (!cleanTld) return [];
+
+  const customMap = parseJsonMapEnv("RESCLUB_DOMAIN_PRODUCT_KEYS_JSON");
+  const customValue = customMap[cleanTld];
+  const customKeys = Array.isArray(customValue) ? customValue : customValue ? [customValue] : [];
+  const ordered = []
+    .concat(customKeys)
+    .concat(tldToProductKey(cleanTld) || [])
+    .map((x) => clean(x, 120))
+    .filter(Boolean);
+  return ordered.filter((x, idx) => ordered.indexOf(x) === idx);
+}
+
+function serviceToProductKey(serviceCode) {
+  const code = clean(serviceCode, 120).toLowerCase();
+  if (!code) return "";
+  if (code === "business_email") return "enterpriseemailus";
+  const customMap = parseJsonMapEnv("RESCLUB_SERVICE_PRODUCT_KEYS_JSON");
+  const customKey = clean(customMap[code], 120);
   if (customKey) return customKey;
+  const fallbackMap = {
+    business_email: "enterpriseemailus",
+  };
+  return clean(fallbackMap[code], 120);
+}
+
+function serviceToProductKeys(serviceCode) {
+  const code = clean(serviceCode, 120).toLowerCase();
+  if (!code) return [];
+  if (code === "business_email") return ["enterpriseemailus", "gappsin"];
+
+  const customMap = parseJsonMapEnv("RESCLUB_SERVICE_PRODUCT_KEYS_JSON");
+  const customValue = customMap[code];
+  const customKeys = Array.isArray(customValue) ? customValue : customValue ? [customValue] : [];
 
   const fallbackMap = {
-    com: "domcno",
-    net: "domnet",
-    org: "domorg",
-    io: "domio",
-    co: "domco",
+    business_email: ["enterpriseemailus", "gappsin"],
   };
-  return clean(fallbackMap[cleanTld], 120);
+  const fallbackKeys = fallbackMap[code] || [];
+  const ordered = []
+    .concat(customKeys)
+    .concat(serviceToProductKey(code) || [])
+    .concat(fallbackKeys)
+    .map((x) => clean(x, 120))
+    .filter(Boolean);
+  return ordered.filter((x, idx) => ordered.indexOf(x) === idx);
 }
 
 function valueHasToken(value, token) {
@@ -280,39 +321,241 @@ function extractAddNewPricingBlock(product) {
   return null;
 }
 
+function normalizeMoneyMinorFlexible(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || value < 0) return null;
+    return value >= 1000 ? Math.round(value) : Math.round(value * 100);
+  }
+  const raw = clean(value, 120).replace(/[, ]/g, "");
+  if (!raw) return null;
+  const num = Number(raw);
+  if (!Number.isFinite(num) || num < 0) return null;
+  return num >= 1000 ? Math.round(num) : Math.round(num * 100);
+}
+
+function extractAnyPricingBlock(product) {
+  if (!product || typeof product !== "object") return null;
+
+  const directCandidates = [
+    product.addnewdomain,
+    product.add_new_domain,
+    product.addnew,
+    product.register,
+    product.registration,
+    product.renew,
+    product.renewal,
+    product.pricing && product.pricing.addnewdomain,
+    product.pricing && product.pricing.add_new_domain,
+    product.pricing && product.pricing.addnew,
+    product.pricing && product.pricing.register,
+    product.pricing && product.pricing.registration,
+    product.pricing && product.pricing.renew,
+    product.pricing && product.pricing.renewal,
+  ];
+  for (const candidate of directCandidates) {
+    if (candidate && typeof candidate === "object") return candidate;
+  }
+
+  // Recursive fallback: find any nested object that looks like a pricing map.
+  const stack = [product];
+  const seen = new Set();
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== "object") continue;
+    if (seen.has(current)) continue;
+    seen.add(current);
+    const keys = Object.keys(current).map((k) => String(k || "").toLowerCase());
+    const hasYearKey = keys.some((k) => k === "1" || k === "1y" || k === "1yr" || k === "1year");
+    const hasPriceKey = keys.some((k) =>
+      ["price", "sellingprice", "amount", "cost", "unitprice", "registration", "renewal", "monthly", "yearly"].includes(k)
+    );
+    if (hasYearKey || hasPriceKey) return current;
+
+    Object.values(current).forEach((value) => {
+      if (value && typeof value === "object") stack.push(value);
+    });
+  }
+  return null;
+}
+
+function pickAmountMinorFromPricingBlock(block, years) {
+  if (!block || typeof block !== "object") return null;
+  const wantedYears = Math.max(1, Math.min(Number(years) || 1, 10));
+
+  const yearKeys = [String(wantedYears), `${wantedYears}y`, `${wantedYears}yr`, `${wantedYears}year`, `${wantedYears}years`];
+  for (const key of yearKeys) {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      const amount = normalizeMoneyMinorFlexible(block[key]);
+      if (amount !== null) return amount;
+    }
+  }
+
+  const oneYearKeys = ["1", "1y", "1yr", "1year", "1years"];
+  for (const key of oneYearKeys) {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      const unit = normalizeMoneyMinorFlexible(block[key]);
+      if (unit !== null) return unit * wantedYears;
+    }
+  }
+
+  const monthlyKeys = ["monthly", "month", "1m", "1mo", "permonth", "pricepermonth"];
+  for (const key of monthlyKeys) {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      const monthly = normalizeMoneyMinorFlexible(block[key]);
+      if (monthly !== null) return monthly * 12 * wantedYears;
+    }
+  }
+
+  const flatCandidates = ["price", "sellingprice", "amount", "cost", "base", "unitprice", "fee"];
+  for (const key of flatCandidates) {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      const unit = normalizeMoneyMinorFlexible(block[key]);
+      if (unit !== null) return unit * wantedYears;
+    }
+  }
+
+  for (const value of Object.values(block)) {
+    if (value && typeof value === "object") {
+      const nested = pickAmountMinorFromPricingBlock(value, years);
+      if (nested !== null) return nested;
+    }
+  }
+  return null;
+}
+
+function collectMoneyCandidatesFromBlock(block) {
+  const out = [];
+  const stack = [block];
+  const seen = new Set();
+  while (stack.length) {
+    const current = stack.pop();
+    if (current === undefined || current === null) continue;
+    if (typeof current === "number" || typeof current === "string") {
+      const minor = normalizeMoneyMinorFlexible(current);
+      if (minor !== null) out.push(minor);
+      continue;
+    }
+    if (typeof current !== "object") continue;
+    if (seen.has(current)) continue;
+    seen.add(current);
+    Object.values(current).forEach((v) => {
+      if (v !== undefined && v !== null) stack.push(v);
+    });
+  }
+  return out;
+}
+
+function collectKeyedMoneyCandidates(value, trail) {
+  const out = [];
+  const stack = [{ node: value, path: String(trail || "").toLowerCase() }];
+  const seen = new Set();
+  while (stack.length) {
+    const current = stack.pop();
+    const node = current.node;
+    const path = String(current.path || "").toLowerCase();
+    if (node === undefined || node === null) continue;
+    if (typeof node === "number" || typeof node === "string") {
+      const minor = normalizeMoneyMinorFlexible(node);
+      if (minor !== null) out.push({ minor, path });
+      continue;
+    }
+    if (typeof node !== "object") continue;
+    if (seen.has(node)) continue;
+    seen.add(node);
+    Object.entries(node).forEach(([k, v]) => {
+      const p = path ? `${path}.${String(k || "").toLowerCase()}` : String(k || "").toLowerCase();
+      stack.push({ node: v, path: p });
+    });
+  }
+  return out;
+}
+
+function rangeStartValue(key) {
+  const raw = String(key || "").toLowerCase();
+  const m = raw.match(/(\d+)/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  return Number(m[1]);
+}
+
+function firstEmailRange(emailRanges) {
+  const entries = Object.entries(emailRanges || {}).filter(([, value]) => value && typeof value === "object");
+  if (!entries.length) return null;
+  entries.sort((a, b) => rangeStartValue(a[0]) - rangeStartValue(b[0]));
+  return entries[0][1];
+}
+
+function pickFromTenureMap(map, months) {
+  if (!map || typeof map !== "object") return null;
+  const exact = normalizeMoneyMinorFlexible(map[String(months)]);
+  if (exact !== null) return exact;
+  const one = normalizeMoneyMinorFlexible(map["1"]);
+  if (one !== null) return one;
+  const numericKeys = Object.keys(map)
+    .map((k) => Number(k))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+  if (!numericKeys.length) return null;
+  return normalizeMoneyMinorFlexible(map[String(numericKeys[0])]);
+}
+
+function parseBusinessEmailAmountMinorStrict(product, years) {
+  const months = Math.max(1, Math.min(Number(years) || 1, 10)) * 12;
+  const root = product && typeof product === "object" ? product : null;
+  const ranges =
+    (root && root.email_account_ranges && typeof root.email_account_ranges === "object" && root.email_account_ranges) ||
+    (root && root.pricing && root.pricing.email_account_ranges && typeof root.pricing.email_account_ranges === "object"
+      ? root.pricing.email_account_ranges
+      : null);
+  if (!ranges) return null;
+
+  const firstRange = firstEmailRange(ranges);
+  if (!firstRange) return null;
+
+  const addMap =
+    (firstRange.add && typeof firstRange.add === "object" && firstRange.add) ||
+    (firstRange.addnew && typeof firstRange.addnew === "object" && firstRange.addnew) ||
+    (firstRange.registration && typeof firstRange.registration === "object" && firstRange.registration) ||
+    null;
+  const renewMap =
+    (firstRange.renew && typeof firstRange.renew === "object" && firstRange.renew) ||
+    (firstRange.renewal && typeof firstRange.renewal === "object" && firstRange.renewal) ||
+    null;
+
+  return pickFromTenureMap(addMap, months) || pickFromTenureMap(renewMap, months);
+}
+
+async function getProductsPricingCatalog() {
+  const source = clean(process.env.RESCLUB_PRICE_SOURCE || process.env.RESELLERCLUB_PRICE_SOURCE || "customer", 20).toLowerCase();
+  const customerId = clean(process.env.RESCLUB_CUSTOMER_ID || process.env.RESELLERCLUB_CUSTOMER_ID, 120);
+  const customerParams = customerId ? { "customer-id": customerId } : {};
+  if (source === "reseller") {
+    return {
+      endpoint: "/api/products/reseller-price.json",
+      payload: await callApi("/api/products/reseller-price.json", {}),
+    };
+  }
+  if (source !== "customer") {
+    throw new Error(`Unsupported RESCLUB_PRICE_SOURCE: ${source}. Use 'customer' or 'reseller'.`);
+  }
+  return {
+    endpoint: "/api/products/customer-price.json",
+    payload: await callApi("/api/products/customer-price.json", customerParams),
+  };
+}
+
 function resolveProductForTld(pricingJson, tld) {
   const safeTld = clean(tld, 80).toLowerCase().replace(/^\.+/, "");
   if (!pricingJson || typeof pricingJson !== "object") return { key: "", product: null };
 
-  const mappedKey = tldToProductKey(safeTld);
-  if (mappedKey && pricingJson[mappedKey] && typeof pricingJson[mappedKey] === "object") {
-    return { key: mappedKey, product: pricingJson[mappedKey] };
-  }
-
-  const entries = Object.entries(pricingJson);
-
-  // Pass 1: key/name hints + addnewdomain present
-  for (const [key, product] of entries) {
-    if (!product || typeof product !== "object") continue;
-    const addBlock = extractAddNewPricingBlock(product);
-    if (!addBlock) continue;
-    if (valueHasToken(key, safeTld) || objectContainsTldHint(product, safeTld)) {
-      return { key, product };
+  const candidates = tldToProductKeys(safeTld);
+  for (const mappedKey of candidates) {
+    if (!mappedKey) continue;
+    if (pricingJson[mappedKey] && typeof pricingJson[mappedKey] === "object") {
+      return { key: mappedKey, product: pricingJson[mappedKey] };
     }
   }
-
-  // Pass 2: any product that has addnewdomain and a direct TLD key in pricing map
-  for (const [key, product] of entries) {
-    if (!product || typeof product !== "object") continue;
-    const addBlock = extractAddNewPricingBlock(product);
-    if (!addBlock) continue;
-    if (Object.prototype.hasOwnProperty.call(addBlock, "1")) {
-      // last-resort candidate only if key somewhat resembles domain family
-      if (key.toLowerCase().startsWith("dom")) return { key, product };
-    }
-  }
-
-  return { key: mappedKey || "", product: null };
+  return { key: candidates[0] || tldToProductKey(safeTld) || "", product: null };
 }
 
 function collectPricingKeys(pricingJson) {
@@ -724,20 +967,23 @@ async function getRegistrationPrice(input) {
   const parts = splitDomain(domainName);
   if (!parts.sld || !parts.tld) throw new Error("Invalid domain name");
 
-  const preferredKey = tldToProductKey(parts.tld);
-  if (!preferredKey) {
-    throw new Error(`Pricing lookup is not configured for .${parts.tld} yet.`);
+  const configuredKeys = tldToProductKeys(parts.tld);
+  if (!configuredKeys.length) {
+    throw new Error(
+      `Pricing lookup for .${parts.tld} requires explicit mapping. Set RESCLUB_DOMAIN_PRODUCT_KEYS_JSON (example: {\"${parts.tld}\":[\"product_key\"]}).`
+    );
   }
 
-  const pricingJson = await callApi("/api/products/reseller-price.json", {});
+  const catalog = await getProductsPricingCatalog();
+  const pricingJson = catalog.payload;
   const resolved = resolveProductForTld(pricingJson, parts.tld);
   const product = resolved.product;
-  const productKey = resolved.key || preferredKey;
+  const productKey = resolved.key || configuredKeys[0];
   if (!product || typeof product !== "object") {
     const keys = collectPricingKeys(pricingJson);
     const keysSnippet = keys.length ? ` Available keys: ${keys.join(", ")}` : " Available keys: <none>";
     const debug = pricingDebugSnippet(pricingJson);
-    throw new Error(`Could not find pricing for ${parts.tld} domains on ResellerClub.${keysSnippet} ${debug}`);
+    throw new Error(`Could not find pricing for ${parts.tld} domains on ResellerClub (${catalog.endpoint}).${keysSnippet} ${debug}`);
   }
 
   const addNewPricing = extractAddNewPricingBlock(product) || product.add_new_domain || {};
@@ -766,8 +1012,106 @@ async function getRegistrationPrice(input) {
     productKey,
     amountMinor,
     currency,
+    priceSource: catalog.endpoint,
     raw: null,
   };
+}
+
+function resolveServiceProduct(pricingJson, serviceCode) {
+  const preferredKey = serviceToProductKey(serviceCode);
+  if (!pricingJson || typeof pricingJson !== "object") return { key: preferredKey, product: null };
+
+  const exactKeys = serviceToProductKeys(serviceCode);
+  for (const key of exactKeys) {
+    if (key && pricingJson[key] && typeof pricingJson[key] === "object") {
+      return { key, product: pricingJson[key] };
+    }
+  }
+  return { key: preferredKey, product: null };
+}
+
+function buildServiceDebugCandidates(pricingJson, serviceCode, years) {
+  const code = clean(serviceCode, 120).toLowerCase();
+  const keysToCheck = serviceToProductKeys(code);
+  const out = [];
+  for (const key of keysToCheck) {
+    const product = pricingJson && pricingJson[key];
+    if (!product || typeof product !== "object") continue;
+    const block = extractAnyPricingBlock(product) || product || {};
+    let amountMinor = pickAmountMinorFromPricingBlock(block, years);
+    if (code === "business_email") amountMinor = parseBusinessEmailAmountMinorStrict(product, years);
+    out.push({
+      key,
+      amountMinor: Number.isFinite(amountMinor) ? Math.round(amountMinor) : null,
+      blockPreview: clean(JSON.stringify(block), 260),
+    });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
+async function getServicePrices(input) {
+  const serviceCodes = Array.isArray(input && input.serviceCodes) ? input.serviceCodes : [];
+  const domainName = normalizeDomain(input && input.domainName);
+  const years = Math.max(1, Math.min(Number(input && input.years) || 1, 10));
+  const debugMode = Boolean(input && input.debug);
+  const wanted = serviceCodes.map((x) => clean(x, 80).toLowerCase()).filter(Boolean);
+  if (!wanted.length) return { currency: "NGN", items: [] };
+
+  const catalog = await getProductsPricingCatalog();
+  const pricingJson = catalog.payload;
+  const detailsJson = await callApi("/api/resellers/details.json", {});
+  const currency = extractCurrencyFromResellerDetails(detailsJson);
+  if (!currency) throw new Error("Could not determine selling currency from ResellerClub.");
+
+  const labels = {
+    business_email: "Business Email",
+  };
+  const items = [];
+  const debug = {};
+  for (const code of wanted) {
+    if (debugMode) {
+      debug[code] = {
+        triedProductKeys: serviceToProductKeys(code),
+        tokenCandidates: buildServiceDebugCandidates(pricingJson, code, years),
+        priceSource: catalog.endpoint,
+      };
+    }
+    const resolved = resolveServiceProduct(pricingJson, code);
+    if (!resolved.product || typeof resolved.product !== "object") {
+      const availableKeys = collectPricingKeys(pricingJson).slice(0, 50).join(", ");
+      const debug = pricingDebugSnippet(pricingJson);
+      throw new Error(
+        `${labels[code] || code} product key was not found on ResellerClub (${catalog.endpoint}). Tried: ${serviceToProductKeys(code).join(", ") || "none"}. Available keys: ${availableKeys || "none"}. ${debug}`
+      );
+    }
+    const block = extractAnyPricingBlock(resolved.product) || resolved.product || {};
+    let amountMinor = pickAmountMinorFromPricingBlock(block, years);
+    if (code === "business_email") {
+      amountMinor = parseBusinessEmailAmountMinorStrict(resolved.product, years);
+    }
+    if (debugMode && debug[code]) {
+      debug[code].matchedProductKey = resolved.key || "";
+      debug[code].matchedBlockPreview = clean(JSON.stringify(block), 500);
+      debug[code].matchedAmountMinor = Number.isFinite(amountMinor) ? Math.round(amountMinor) : null;
+    }
+    if (!Number.isFinite(amountMinor) || amountMinor < 0) {
+      const sample = clean(JSON.stringify(resolved.product), 900);
+      throw new Error(
+        `${labels[code] || code} price could not be parsed from ResellerClub product ${resolved.key || "<unknown>"}. Product sample: ${sample}`
+      );
+    }
+    items.push({
+      code,
+      label: labels[code] || code,
+      amountMinor: Math.round(amountMinor),
+      productKey: resolved.key || serviceToProductKey(code),
+      domainName,
+      years,
+      priceSource: catalog.endpoint,
+    });
+  }
+  return debugMode ? { currency, items, debug, priceSource: catalog.endpoint } : { currency, items, priceSource: catalog.endpoint };
 }
 
 async function getDnsZone(input) {
@@ -858,6 +1202,7 @@ module.exports = {
   checkAvailabilityMany,
   registerDomain,
   getRegistrationPrice,
+  getServicePrices,
   getDnsZone,
   updateNameservers,
   updateDnsRecords,

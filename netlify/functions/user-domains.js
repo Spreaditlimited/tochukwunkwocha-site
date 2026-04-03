@@ -3,6 +3,16 @@ const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
 const { ensureDomainTables, listUserDomains, listDomainOrders } = require("./_lib/domains");
 
+function parseSelectedServicesJson(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(String(value));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -24,6 +34,7 @@ exports.handler = async function (event) {
         accountUuid: session.account.accountUuid,
         fullName: session.account.fullName,
         email: session.account.email,
+        domainsAutoRenewEnabled: session.account.domainsAutoRenewEnabled === true,
       },
       domains: (domains || []).map((row) => ({
         // Prefer actual checkout payment amount/currency when available.
@@ -31,6 +42,8 @@ exports.handler = async function (event) {
         provider: row.provider,
         status: row.status,
         years: Number(row.years || 1),
+        selectedServices: parseSelectedServicesJson(row.selected_services_json),
+        autoRenewEnabled: Number(row.auto_renew_enabled || 0) === 1,
         purchaseCurrency: row.checkout_payment_currency || row.purchase_currency,
         purchaseAmountMinor: Number(row.checkout_payment_amount_minor || row.purchase_amount_minor || 0) || null,
         providerOrderId: row.provider_order_id,
@@ -47,6 +60,8 @@ exports.handler = async function (event) {
         status: row.status,
         paymentProvider: row.payment_provider,
         paymentStatus: row.payment_status,
+        selectedServices: parseSelectedServicesJson(row.selected_services_json),
+        autoRenewEnabled: Number(row.auto_renew_enabled || 0) === 1,
         purchaseCurrency: row.checkout_payment_currency || row.purchase_currency,
         purchaseAmountMinor: Number(row.checkout_payment_amount_minor || row.purchase_amount_minor || 0) || null,
         providerOrderId: row.provider_order_id,

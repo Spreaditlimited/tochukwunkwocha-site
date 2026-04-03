@@ -4,6 +4,8 @@ const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-
 const { checkAvailability, registerDomain, selectedDomainProviderName } = require("./_lib/domain-client");
 const {
   normalizeDomain,
+  normalizeSelectedServices,
+  normalizeAutoRenew,
   ensureDomainTables,
   findDomainForAccount,
   createDomainOrder,
@@ -28,6 +30,8 @@ exports.handler = async function (event) {
 
   const domainName = normalizeDomain(body.domainName || body.domain_name);
   const years = Math.max(1, Math.min(Number(body.years) || 1, 10));
+  const selectedServices = normalizeSelectedServices(body.selectedServices);
+  const autoRenewEnabled = normalizeAutoRenew(body.autoRenewEnabled, true);
   if (!domainName) return json(400, { ok: false, error: "domainName is required" });
 
   const pool = getPool();
@@ -75,6 +79,8 @@ exports.handler = async function (event) {
       status: "registration_in_progress",
       paymentProvider: "direct",
       paymentStatus: "paid",
+      selectedServices,
+      autoRenewEnabled,
     });
 
     const result = await registerDomain({ domainName, years });
@@ -86,6 +92,8 @@ exports.handler = async function (event) {
         purchaseCurrency: result.currency || "USD",
         purchaseAmountMinor: result.amountMinor,
         providerOrderId: result.orderId || "",
+        selectedServices,
+        autoRenewEnabled,
         note: clean(result.reason || "registration_failed", 500),
         setRegisteredAt: false,
       });
@@ -104,6 +112,8 @@ exports.handler = async function (event) {
       purchaseCurrency: result.currency || "USD",
       purchaseAmountMinor: result.amountMinor,
       providerOrderId: result.orderId || "",
+      selectedServices,
+      autoRenewEnabled,
       setRegisteredAt: true,
     });
 
@@ -118,6 +128,8 @@ exports.handler = async function (event) {
       purchaseCurrency: result.currency || "USD",
       purchaseAmountMinor: result.amountMinor,
       providerOrderId: result.orderId || "",
+      selectedServices,
+      autoRenewEnabled,
       registeredAt: now,
       renewalDueAt: addYearsSql(now, years),
     });

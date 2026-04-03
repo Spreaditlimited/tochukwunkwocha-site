@@ -165,6 +165,79 @@ function nowInTimeZoneWallClockMs(timeZone) {
   );
 }
 
+function wallClockMsToSql(ms) {
+  var value = Number(ms);
+  if (!Number.isFinite(value)) return null;
+  var d = new Date(value);
+  var pad = function (n) {
+    return String(n).padStart(2, "0");
+  };
+  return (
+    String(d.getUTCFullYear()) +
+    "-" +
+    pad(d.getUTCMonth() + 1) +
+    "-" +
+    pad(d.getUTCDate()) +
+    " " +
+    pad(d.getUTCHours()) +
+    ":" +
+    pad(d.getUTCMinutes()) +
+    ":" +
+    pad(d.getUTCSeconds())
+  );
+}
+
+async function extendCouponValidity(pool, input) {
+  await ensureCouponsTables(pool);
+  var id = Number(input && input.id);
+  var code = normalizeCouponCode(input && input.code);
+  var extendMinutes = Number(input && input.extendMinutes);
+  var explicitEndsAt = normalizeDateTime(input && input.endsAt);
+
+  if ((!Number.isFinite(id) || id <= 0) && !code) {
+    throw new Error("Coupon id or code is required.");
+  }
+
+  var whereSql = Number.isFinite(id) && id > 0 ? "id = ?" : "code = ?";
+  var whereValue = Number.isFinite(id) && id > 0 ? id : code;
+  var [rows] = await pool.query(
+    `SELECT id, code, starts_at, ends_at, is_active FROM course_coupons WHERE ${whereSql} LIMIT 1`,
+    [whereValue]
+  );
+  var coupon = rows && rows.length ? rows[0] : null;
+  if (!coupon) throw new Error("Coupon not found.");
+
+  var nowMs = nowInTimeZoneWallClockMs("Africa/Lagos");
+  var currentEndMs = toWallClockMs(parseDateTimeParts(coupon.ends_at));
+  var nextEndsAt = null;
+
+  if (explicitEndsAt) {
+    var explicitMs = toWallClockMs(parseDateTimeParts(explicitEndsAt));
+    if (explicitMs === null || explicitMs <= nowMs) {
+      throw new Error("End date/time must be in the future.");
+    }
+    nextEndsAt = explicitEndsAt;
+  } else {
+    if (!Number.isFinite(extendMinutes) || extendMinutes <= 0) {
+      throw new Error("Enter a valid extension duration.");
+    }
+    var baseMs = currentEndMs !== null && currentEndMs > nowMs ? currentEndMs : nowMs;
+    var nextMs = baseMs + Math.round(extendMinutes) * 60000;
+    nextEndsAt = wallClockMsToSql(nextMs);
+    if (!nextEndsAt) throw new Error("Could not compute new coupon expiry.");
+  }
+
+  await pool.query(
+    `UPDATE course_coupons
+     SET ends_at = ?, updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [nextEndsAt, nowSql(), Number(coupon.id)]
+  );
+
+  return getCouponByCode(pool, coupon.code);
+}
+
 async function evaluateCouponForOrder(pool, input) {
   await ensureCouponsTables(pool);
 
@@ -269,8 +342,12 @@ async function listCoupons(pool) {
   await ensureCouponsTables(pool);
   const [rows] = await pool.query(
     `SELECT c.id, c.code, c.description, c.discount_type, c.percent_off, c.fixed_ngn_minor, c.fixed_gbp_minor,
-            c.course_slug, c.starts_at, c.ends_at, c.max_uses, c.max_uses_per_email, c.is_active,
-            c.created_at, c.updated_at,
+            c.course_slug,
+            DATE_FORMAT(c.starts_at, '%Y-%m-%d %H:%i:%s') AS starts_at,
+            DATE_FORMAT(c.ends_at, '%Y-%m-%d %H:%i:%s') AS ends_at,
+            c.max_uses, c.max_uses_per_email, c.is_active,
+            DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+            DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at,
             COALESCE(u.total_uses, 0) AS total_uses
      FROM course_coupons c
      LEFT JOIN (
@@ -411,4 +488,5 @@ module.exports = {
   recordCouponRedemption,
   listCoupons,
   upsertCoupon,
+  extendCouponValidity,
 };

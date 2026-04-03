@@ -71,6 +71,7 @@ async function ensureStudentAuthTables(pool) {
       password_hash VARCHAR(255) NOT NULL,
       password_salt VARCHAR(255) NOT NULL,
       must_reset_password TINYINT(1) NOT NULL DEFAULT 0,
+      domains_auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1,
       reset_token_hash VARCHAR(128) NULL,
       reset_token_expires_at DATETIME NULL,
       reset_requested_at DATETIME NULL,
@@ -84,6 +85,7 @@ async function ensureStudentAuthTables(pool) {
   `);
 
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN domains_auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_expires_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_requested_at DATETIME NULL`);
@@ -149,6 +151,7 @@ async function findStudentByEmail(pool, emailInput) {
   if (!email) return null;
   const [rows] = await pool.query(
     `SELECT id, account_uuid, full_name, email, password_hash, password_salt, must_reset_password
+            , domains_auto_renew_enabled
      FROM student_accounts
      WHERE email = ?
      LIMIT 1`,
@@ -219,7 +222,8 @@ async function requireStudentSession(pool, event) {
             a.account_uuid,
             a.full_name,
             a.email,
-            a.must_reset_password
+            a.must_reset_password,
+            a.domains_auto_renew_enabled
      FROM student_sessions s
      JOIN student_accounts a ON a.id = s.account_id
      WHERE s.token_hash = ?
@@ -242,9 +246,23 @@ async function requireStudentSession(pool, event) {
       fullName: row.full_name,
       email: row.email,
       mustResetPassword: Number(row.must_reset_password || 0) === 1,
+      domainsAutoRenewEnabled: Number(row.domains_auto_renew_enabled || 0) === 1,
     },
     token,
   };
+}
+
+async function updateStudentDomainAutoRenew(pool, input) {
+  const accountId = Number(input && input.accountId);
+  const enabled = input && input.enabled ? 1 : 0;
+  if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
+  await pool.query(
+    `UPDATE student_accounts
+     SET domains_auto_renew_enabled = ?, updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [enabled, nowSql(), accountId]
+  );
 }
 
 async function setStudentPassword(pool, input) {
@@ -334,6 +352,7 @@ module.exports = {
   verifyStudentCredentials,
   createStudentSession,
   requireStudentSession,
+  updateStudentDomainAutoRenew,
   clearStudentSession,
   setStudentPassword,
   createPasswordResetToken,

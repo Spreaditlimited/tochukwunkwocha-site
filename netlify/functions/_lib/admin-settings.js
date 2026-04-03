@@ -27,6 +27,7 @@ const SETTINGS_DEFINITIONS = [
   { key: "PROMPT_TO_PRODUCTION_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "PROMPT_TO_PRODUCTION_PRICE_GBP", category: "Pricing", secret: false },
   { key: "INSTALLMENT_SURCHARGE_PERCENT", category: "Pricing", secret: false },
+  { key: "DOMAIN_VAT_PERCENT", category: "Pricing", secret: false },
   { key: "LEADPAGE_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "BUSINESS_PLAN_PRICE_NGN_MINOR", category: "Pricing", secret: false },
 
@@ -91,6 +92,10 @@ const SETTINGS_DEFINITIONS = [
   { key: "NAMECHEAP_CONTACT_COUNTRY", category: "Registrar (Namecheap)", secret: false },
   { key: "NAMECHEAP_CONTACT_PHONE", category: "Registrar (Namecheap)", secret: false },
   { key: "NAMECHEAP_CONTACT_EMAIL", category: "Registrar (Namecheap)", secret: false },
+
+  { key: "RESCLUB_PRICE_SOURCE", category: "Registrar (ResellerClub)", secret: false },
+  { key: "RESCLUB_DOMAIN_PRODUCT_KEYS_JSON", category: "Registrar (ResellerClub)", secret: false },
+  { key: "RESCLUB_SERVICE_PRODUCT_KEYS_JSON", category: "Registrar (ResellerClub)", secret: false },
 
   { key: "NETLIFY_API_TOKEN", category: "Netlify", secret: true },
   { key: "NETLIFY_SITE_ID", category: "Netlify", secret: false },

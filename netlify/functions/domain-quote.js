@@ -1,27 +1,8 @@
-const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { checkAvailability, getRegistrationPrice, getServicePrices, selectedDomainProviderName } = require("./_lib/domain-client");
-const { paystackInitialize, paystackPublicKey, siteBaseUrl } = require("./_lib/payments");
-const {
-  ensureDomainTables,
-  normalizeDomain,
-  findDomainByName,
-  createDomainCheckout,
-  normalizeSelectedServices,
-  normalizeAutoRenew,
-} = require("./_lib/domains");
+const { checkAvailability, getRegistrationPrice, getServicePrices } = require("./_lib/domain-client");
+const { ensureDomainTables, normalizeDomain, normalizeSelectedServices } = require("./_lib/domains");
 const { buildDomainCheckoutQuote } = require("./_lib/domain-pricing");
-
-function clean(value, max) {
-  return String(value || "").trim().slice(0, max);
-}
-
-function normalizeEmail(value) {
-  const email = String(value || "").trim().toLowerCase();
-  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  return ok ? email : "";
-}
 
 function registrarLookupUnavailableError(error) {
   const message = String((error && error.message) || "").toLowerCase();
@@ -57,23 +38,15 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "Invalid JSON body" });
   }
 
-  const fullName = clean(body.fullName || body.full_name, 180);
-  const email = normalizeEmail(body.email);
   const domainName = normalizeDomain(body.domainName || body.domain_name);
   const years = Math.max(1, Math.min(Number(body.years) || 1, 10));
   const selectedServices = normalizeSelectedServices(body.selectedServices);
-  const autoRenewEnabled = normalizeAutoRenew(body.autoRenewEnabled, true);
-  if (!fullName || !email || !domainName) {
-    return json(400, { ok: false, error: "Full name, valid email, and domain are required." });
-  }
+  const debug = Boolean(body.debug);
+  if (!domainName) return json(400, { ok: false, error: "domainName is required." });
 
   const pool = getPool();
   try {
     await ensureDomainTables(pool);
-    const taken = await findDomainByName(pool, { domainName });
-    if (taken && String(taken.status || "").toLowerCase() === "registered") {
-      return json(400, { ok: false, error: "This domain has already been registered on the platform." });
-    }
 
     let availability;
     try {
@@ -100,16 +73,18 @@ exports.handler = async function (event) {
         return json(503, {
           ok: false,
           error: reason
-            ? `We could not fetch live registrar pricing to start payment. ${reason}`
-            : "We could not fetch live registrar pricing to start payment. Please try again in a moment.",
+            ? `We could not fetch live registrar pricing. ${reason}`
+            : "We could not fetch live registrar pricing. Please try again shortly.",
         });
       }
       throw error;
     }
+
     const servicesPricing = await getServicePrices({
       domainName,
       years,
       serviceCodes: selectedServices,
+      debug,
     });
     const serviceCurrency = String((servicesPricing && servicesPricing.currency) || "").toUpperCase();
     if (serviceCurrency && serviceCurrency !== "NGN") {
@@ -138,55 +113,18 @@ exports.handler = async function (event) {
       selectedServices,
       servicePrices: servicePriceMap,
     });
-    const reference = `DMN_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    const provider = availability.provider || selectedDomainProviderName();
-    const checkoutUuid = await createDomainCheckout(pool, {
-      fullName,
-      email,
-      domainName,
-      years,
-      provider,
-      paymentProvider: "paystack",
-      paymentReference: reference,
-      paymentCurrency: quote.currency,
-      paymentAmountMinor: quote.totalAmountMinor,
-      selectedServices,
-      autoRenewEnabled,
-    });
-
-    const payment = await paystackInitialize({
-      email,
-      amountMinor: quote.totalAmountMinor,
-      reference,
-      callbackUrl: `${siteBaseUrl()}/.netlify/functions/domain-paystack-return`,
-      metadata: {
-        domain_checkout_uuid: checkoutUuid,
-        domain_name: domainName,
-        years,
-        full_name: fullName,
-        email,
-        selected_services: selectedServices,
-        auto_renew_enabled: autoRenewEnabled,
-      },
-    });
 
     return json(200, {
       ok: true,
-      checkoutUuid,
-      provider: "paystack",
-      paymentReference: reference,
-      amountMinor: quote.totalAmountMinor,
-      currency: quote.currency,
+      domainName,
       quote,
-      checkoutUrl: payment.checkoutUrl || "",
-      accessCode: payment.accessCode || "",
-      publicKey: paystackPublicKey(),
+      ...(debug ? { debug: servicesPricing.debug || null } : {}),
     });
   } catch (error) {
-    console.error("[domain-create-payment] failed", {
+    console.error("[domain-quote] failed", {
       message: error && error.message ? String(error.message) : "unknown",
       stack: error && error.stack ? String(error.stack) : "",
     });
-    return json(500, { ok: false, error: error.message || "Could not initialize payment" });
+    return json(500, { ok: false, error: error.message || "Could not build domain quote" });
   }
 };

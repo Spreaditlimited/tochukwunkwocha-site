@@ -16,10 +16,10 @@ exports.handler = async function (event) {
         accountUuid: session.account.accountUuid,
         fullName: session.account.fullName,
         email: session.account.email,
+        domainsAutoRenewEnabled: session.account.domainsAutoRenewEnabled === true,
       },
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load session" });
   }
 };
-

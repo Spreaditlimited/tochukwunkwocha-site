@@ -35,6 +35,9 @@
   let dashboard = null;
   let authMode = "signin";
   let appliedPlanCoupon = null;
+  const PLAN_START_ENABLED = false;
+  const PLAN_PAY_ENABLED = false;
+  const PLAN_START_DISABLED_MSG = "Start plan is temporarily unavailable while Paystack approves our new business account.";
 
   function selectedCourseSlug() {
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
@@ -134,6 +137,26 @@
     if (type === "ok") el.classList.add("ok");
   }
 
+  function enforcePlanStartAvailability() {
+    if (PLAN_START_ENABLED) return;
+    if (createPlanBtn) {
+      createPlanBtn.disabled = true;
+      createPlanBtn.textContent = "Temporarily unavailable";
+      createPlanBtn.setAttribute("aria-disabled", "true");
+      createPlanBtn.title = PLAN_START_DISABLED_MSG;
+      createPlanBtn.classList.add("wallet-plan-btn--enrol", "is-locked");
+    }
+    if (createPlanForm) {
+      var fields = createPlanForm.querySelectorAll("input, select, button");
+      Array.prototype.forEach.call(fields, function (el) {
+        if (!el) return;
+        if (el === createPlanBtn) return;
+        el.disabled = true;
+      });
+    }
+    setMsg(planMsg, PLAN_START_DISABLED_MSG, "error");
+  }
+
   function setCouponStatus(text, type) {
     if (!couponStatusEl) return;
     const msg = String(text || "").trim();
@@ -211,7 +234,7 @@
         const paid = Number(plan.totalPaidMinor || 0);
         const remaining = Math.max(0, target - paid);
         const progress = target > 0 ? Math.min(100, Math.round((paid / target) * 100)) : 0;
-        const disabledPay = String(plan.status || "") !== "open";
+        const disabledPay = String(plan.status || "") !== "open" || !PLAN_PAY_ENABLED;
         const canEnrolNow =
           !!plan.canEnrolNow &&
           target > 0 &&
@@ -234,7 +257,7 @@
           `<div class="wallet-progress"><span style="width:${progress}%"></span></div>`,
           `<div class="wallet-plan-actions">`,
           `<input class="tw-input wallet-input wallet-topup-input" type="number" min="100" step="100" placeholder="Top-up amount (NGN)" data-topup-input ${disabledPay ? "disabled" : ""} />`,
-          `<button class="btn btn-primary wallet-plan-btn" type="button" data-action="pay" ${disabledPay ? "disabled" : ""}>Pay Part</button>`,
+          `<button class="btn btn-primary wallet-plan-btn wallet-plan-btn--enrol ${disabledPay ? "is-locked" : ""}" type="button" data-action="pay" ${disabledPay ? 'disabled aria-disabled="true" title="Pay Part is temporarily unavailable while Paystack approves our new business account."' : ""}>Pay Part</button>`,
           `<button class="btn btn-outline wallet-plan-btn wallet-plan-btn--enrol ${disableEnrol ? "is-locked" : ""}" type="button" data-action="enrol" ${disableEnrol ? "disabled aria-disabled=\"true\" title=\"Complete full payment to unlock enrolment\"" : ""}>${enrolLabel}</button>`,
           showCancel
             ? `<button class="btn btn-outline wallet-plan-btn" type="button" data-action="cancel">Cancel Plan</button>`
@@ -364,6 +387,10 @@
   }
 
   async function createPlan() {
+    if (!PLAN_START_ENABLED) {
+      setMsg(planMsg, PLAN_START_DISABLED_MSG, "error");
+      return;
+    }
     const batchKey = String((batchSelect && batchSelect.value) || "").trim();
     if (!batchKey) {
       setMsg(planMsg, "Select a batch.", "error");
@@ -611,6 +638,10 @@
   if (createPlanForm) {
     createPlanForm.addEventListener("submit", function (event) {
       event.preventDefault();
+      if (!PLAN_START_ENABLED) {
+        setMsg(planMsg, PLAN_START_DISABLED_MSG, "error");
+        return;
+      }
       createPlan().catch(function (error) {
         setMsg(planMsg, error.message || "Could not start plan", "error");
       });
@@ -685,4 +716,5 @@
     return null;
   });
   setAuthView("signin");
+  enforcePlanStartAvailability();
 })();
