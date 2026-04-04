@@ -23,6 +23,7 @@
     if (path === "/internal/leadpage-jobs/") return { page: "Lead Capture Queue", doc: "Leadpage Jobs | Internal" };
     if (path === "/internal/business-plan-manager/") return { page: "Business Plan Manager", doc: "Business Plan Manager | Internal" };
     if (path === "/internal/domain-management/") return { page: "Domain Management", doc: "Domain Management | Internal" };
+    if (path === "/internal/video-library/") return { page: "Video Library", doc: "Video Library | Internal" };
     if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
     if (path === "/internal/verifier/") return { page: "Business Plan Verification Queue", doc: "Business Plan Verifier | Internal" };
     return null;
@@ -53,6 +54,30 @@
   var currentPath = normalizePath(window.location.pathname);
   var hiddenInternalPaths = ["/internal/leadpage-jobs/", "/internal/business-plan-manager/", "/internal/verifier/"];
 
+  function ensureVideoLibraryNavLink() {
+    var added = [];
+    var asides = Array.prototype.slice.call(document.querySelectorAll("aside"));
+    asides.forEach(function (aside) {
+      if (!aside) return;
+      var existing = aside.querySelector('a[href="/internal/video-library/"]');
+      if (existing) return;
+
+      var settingsLink = aside.querySelector('a[href="/internal/settings/"]');
+      if (!settingsLink || !settingsLink.parentNode) return;
+
+      var a = document.createElement("a");
+      a.href = "/internal/video-library/";
+      a.className = "flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group";
+      a.textContent = "Video Library";
+      settingsLink.parentNode.insertBefore(a, settingsLink);
+      added.push(a);
+    });
+
+    if (added.length) {
+      menuLinks = menuLinks.concat(added);
+    }
+  }
+
   function ensureSidebarIcons() {
     var iconMap = {
       "/internal/":
@@ -67,6 +92,8 @@
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
       "/internal/domain-management/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5V6a2 2 0 00-2-2h-2.5M3 7.5V6a2 2 0 012-2h2.5M21 16.5V18a2 2 0 01-2 2h-2.5M3 16.5V18a2 2 0 002 2h2.5M8 12h8M8 9h8M8 15h5" /></svg>',
+      "/internal/video-library/":
+        '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-9 5h7a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>',
       "/internal/settings/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.591 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.59c1.756.427 1.756 2.925 0 3.352a1.724 1.724 0 00-1.066 2.59c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.59 1.066c-.427 1.756-2.925 1.756-3.352 0a1.724 1.724 0 00-2.59-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.59c-1.756-.427-1.756-2.925 0-3.352a1.724 1.724 0 001.066-2.59c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.59-1.066z" /></svg>',
       "/internal/verifier/":
@@ -120,6 +147,7 @@
   }
 
   syncPageTitle();
+  ensureVideoLibraryNavLink();
   hideInternalEntries();
   ensureSidebarIcons();
 

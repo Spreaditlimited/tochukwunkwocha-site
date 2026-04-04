@@ -67,6 +67,9 @@ const SETTINGS_DEFINITIONS = [
   { key: "OPENAI_API_KEY", category: "Leadpage AI", secret: true },
   { key: "OPENAI_MODEL", category: "Leadpage AI", secret: false },
 
+  { key: "CLOUDFLARE_ACCOUNT_ID", category: "Cloudflare Stream", secret: false },
+  { key: "CLOUDFLARE_STREAM_API_TOKEN", category: "Cloudflare Stream", secret: true },
+
   { key: "LEADPAGE_DOMAIN_AUTOMATION_ENABLED", category: "Domain Automation", secret: false },
   { key: "LEADPAGE_DOMAIN_PROVIDER", category: "Domain Automation", secret: false },
   { key: "LEADPAGE_DOMAIN_ALLOW_MOCK", category: "Domain Automation", secret: false },
