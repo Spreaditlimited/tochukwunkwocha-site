@@ -10,6 +10,11 @@ const {
 } = require("./_lib/schools");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
+const TEMP_CERT_PREVIEW_ENABLED = true;
+
+function siteBaseUrl() {
+  return String(process.env.SITE_BASE_URL || "https://tochukwunkwocha.com").trim().replace(/\/$/, "");
+}
 
 function parseBody(event) {
   try {
@@ -25,6 +30,7 @@ exports.handler = async function (event) {
   if (!body) return json(400, { ok: false, error: "Invalid JSON payload" });
 
   const studentId = Number(body.studentId || 0);
+  const previewRequested = body.preview === true;
   if (!Number.isFinite(studentId) || studentId <= 0) return json(400, { ok: false, error: "studentId is required" });
 
   const pool = getPool();
@@ -76,7 +82,22 @@ exports.handler = async function (event) {
       [accountId, session.admin.courseSlug]
     );
     const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
-    if (completedLessons < totalLessons) {
+    var previewAllowed = false;
+    if (completedLessons < totalLessons && previewRequested && TEMP_CERT_PREVIEW_ENABLED) {
+      const [previewRows] = await pool.query(
+        `SELECT id
+         FROM ${SCHOOL_STUDENTS_TABLE}
+         WHERE school_id = ?
+           AND status = 'active'
+         ORDER BY created_at DESC, id DESC
+         LIMIT 1`,
+        [Number(session.admin.schoolId)]
+      );
+      const previewStudentId = Number(previewRows && previewRows[0] && previewRows[0].id || 0);
+      previewAllowed = previewStudentId > 0 && previewStudentId === Number(studentId);
+    }
+
+    if (completedLessons < totalLessons && !previewAllowed) {
       return json(400, { ok: false, error: "Student has not completed 100% of the course." });
     }
 
@@ -115,8 +136,12 @@ exports.handler = async function (event) {
 
     return json(200, {
       ok: true,
+      previewIssued: !!(completedLessons < totalLessons),
       certificate: {
         certificateNo: certRows && certRows[0] ? String(certRows[0].certificate_no || certNo) : certNo,
+        certificateUrl:
+          `${siteBaseUrl()}/schools/certificate/?certificate_no=` +
+          encodeURIComponent(certRows && certRows[0] ? String(certRows[0].certificate_no || certNo) : certNo),
         issuedAt: certRows && certRows[0] && certRows[0].issued_at
           ? new Date(certRows[0].issued_at).toISOString()
           : new Date().toISOString(),
@@ -131,4 +156,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not issue certificate." });
   }
 };
-

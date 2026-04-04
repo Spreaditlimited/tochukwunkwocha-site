@@ -281,6 +281,9 @@ async function ensureSchoolTables(pool) {
 
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN school_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN account_id BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_expires_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_requested_at DATETIME NULL`);
 }
 
 function hashPassword(password, salt) {
@@ -292,11 +295,24 @@ function hashPassword(password, salt) {
   });
 }
 
+function randomToken() {
+  return crypto.randomBytes(48).toString("base64url");
+}
+
+function shaToken(token) {
+  return crypto.createHash("sha256").update(String(token || "")).digest("hex");
+}
+
+function sqlDateFromNow(ms) {
+  return new Date(Date.now() + Math.max(0, Number(ms) || 0)).toISOString().slice(0, 19).replace("T", " ");
+}
+
 async function findSchoolAdminByEmail(pool, emailInput) {
   const email = normalizeEmail(emailInput);
   if (!email) return null;
   const [rows] = await pool.query(
-    `SELECT id, school_id, admin_uuid, full_name, email, password_hash, password_salt, is_active
+    `SELECT id, school_id, admin_uuid, full_name, email, password_hash, password_salt, is_active,
+            reset_token_hash, reset_token_expires_at
      FROM ${SCHOOL_ADMINS_TABLE}
      WHERE email = ?
      LIMIT 1`,
@@ -350,9 +366,78 @@ async function createSchoolAdmin(pool, input) {
   return rows && rows.length ? rows[0] : null;
 }
 
+async function setSchoolAdminPassword(pool, input) {
+  const adminId = Number(input && input.adminId);
+  const password = String((input && input.password) || "");
+  if (!Number.isFinite(adminId) || adminId <= 0) throw new Error("Invalid admin id");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = await hashPassword(password, salt);
+  await pool.query(
+    `UPDATE ${SCHOOL_ADMINS_TABLE}
+     SET password_hash = ?, password_salt = ?,
+         reset_token_hash = NULL, reset_token_expires_at = NULL, reset_requested_at = NULL,
+         updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [hash, salt, nowSql(), adminId]
+  );
+}
+
+async function createSchoolAdminPasswordResetToken(pool, emailInput) {
+  const admin = await findSchoolAdminByEmail(pool, emailInput);
+  if (!admin || !admin.id || Number(admin.is_active || 0) !== 1) return null;
+
+  const rawToken = randomToken();
+  const tokenHash = shaToken(rawToken);
+  await pool.query(
+    `UPDATE ${SCHOOL_ADMINS_TABLE}
+     SET reset_token_hash = ?, reset_token_expires_at = ?, reset_requested_at = ?, updated_at = ?
+     WHERE id = ?
+     LIMIT 1`,
+    [tokenHash, sqlDateFromNow(1000 * 60 * 60), nowSql(), nowSql(), Number(admin.id)]
+  );
+
+  return {
+    token: rawToken,
+    adminId: Number(admin.id),
+    email: clean(admin.email, 220),
+    fullName: clean(admin.full_name, 180),
+  };
+}
+
+async function consumeSchoolAdminPasswordResetToken(pool, input) {
+  const token = String((input && input.token) || "").trim();
+  const password = String((input && input.password) || "");
+  if (!token) throw new Error("Reset token is required");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
+
+  const tokenHash = shaToken(token);
+  const [rows] = await pool.query(
+    `SELECT id, email, full_name, is_active, reset_token_expires_at
+     FROM ${SCHOOL_ADMINS_TABLE}
+     WHERE reset_token_hash = ?
+     LIMIT 1`,
+    [tokenHash]
+  );
+  if (!rows || !rows.length) throw new Error("Invalid or expired reset token");
+  const admin = rows[0];
+  if (Number(admin.is_active || 0) !== 1) throw new Error("Admin account disabled");
+  const exp = new Date(admin.reset_token_expires_at).getTime();
+  if (!Number.isFinite(exp) || exp < Date.now()) throw new Error("Invalid or expired reset token");
+
+  await setSchoolAdminPassword(pool, { adminId: Number(admin.id), password });
+  return {
+    id: Number(admin.id),
+    email: clean(admin.email, 220),
+    fullName: clean(admin.full_name, 180),
+  };
+}
+
 async function createSchoolAdminSession(pool, adminId) {
-  const token = crypto.randomBytes(48).toString("base64url");
-  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const token = randomToken();
+  const tokenHash = shaToken(token);
   const sessionUuid = `scs_${crypto.randomUUID().replace(/-/g, "")}`;
   const now = nowSql();
   const expires = new Date(Date.now() + SCHOOL_ADMIN_SESSION_MAX_AGE * 1000).toISOString().slice(0, 19).replace("T", " ");
@@ -381,7 +466,7 @@ function setSchoolAdminCookieHeader(event, token) {
 async function clearSchoolAdminSession(pool, event) {
   const token = parseCookieValue(readCookieHeader(event), SCHOOL_ADMIN_COOKIE);
   if (token) {
-    const hash = crypto.createHash("sha256").update(token).digest("hex");
+    const hash = shaToken(token);
     await pool.query(`DELETE FROM ${SCHOOL_ADMIN_SESSIONS_TABLE} WHERE token_hash = ?`, [hash]);
   }
   return clearSchoolAdminCookie(event);
@@ -390,7 +475,7 @@ async function clearSchoolAdminSession(pool, event) {
 async function requireSchoolAdminSession(pool, event) {
   const token = parseCookieValue(readCookieHeader(event), SCHOOL_ADMIN_COOKIE);
   if (!token) return { ok: false, statusCode: 401, error: "Not signed in" };
-  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const tokenHash = shaToken(token);
 
   const [rows] = await pool.query(
     `SELECT
@@ -888,6 +973,8 @@ module.exports = {
   markSchoolOrderPaidBy,
   findSchoolAdminByEmail,
   verifySchoolAdminCredentials,
+  createSchoolAdminPasswordResetToken,
+  consumeSchoolAdminPasswordResetToken,
   createSchoolAdmin,
   createSchoolAdminSession,
   setSchoolAdminCookieHeader,

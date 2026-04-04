@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Set New School Admin Password</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-900 min-h-screen flex items-center justify-center p-4">
+    <section class="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
+      <h1 class="text-2xl font-extrabold">Set New Password</h1>
+      <p class="mt-2 text-sm text-slate-600">Choose a new password for your school admin account.</p>
+      <form id="schoolResetPasswordForm" class="mt-5 space-y-4">
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">New Password</span>
+          <input id="schoolResetPassword" name="password" type="password" minlength="8" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+        </label>
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Confirm Password</span>
+          <input id="schoolResetPasswordConfirm" name="confirmPassword" type="password" minlength="8" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+        </label>
+        <p id="schoolResetPasswordStatus" class="text-sm text-slate-600"></p>
+        <button id="schoolResetPasswordBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700">
+          Reset Password
+        </button>
+      </form>
+    </section>
+    <script src="/assets/school-reset-password.js?v=20260404a" defer></script>
+  </body>
+</html>
