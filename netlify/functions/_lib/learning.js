@@ -23,6 +23,14 @@ function slugify(value, fallback) {
   return clean(fallback || "item", 60).toLowerCase();
 }
 
+function toSqlDateTime(value) {
+  var raw = clean(value, 64);
+  if (!raw) return null;
+  var d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace("T", " ");
+}
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -33,7 +41,8 @@ async function safeAlter(pool, sql) {
       msg.indexOf("duplicate key name") !== -1 ||
       msg.indexOf("already exists") !== -1 ||
       msg.indexOf("can't drop") !== -1 ||
-      msg.indexOf("check that column/key exists") !== -1
+      msg.indexOf("check that column/key exists") !== -1 ||
+      msg.indexOf("unknown column") !== -1
     ) {
       return;
     }
@@ -77,6 +86,12 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_video_uid (video_uid)`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD KEY idx_tochukwu_learning_video_provider (provider, updated_at)`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD KEY idx_tochukwu_learning_video_filename (filename(190))`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN course_slug VARCHAR(120) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN module_slug VARCHAR(160) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN module_title VARCHAR(220) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN lesson_title VARCHAR(220) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN lesson_slug VARCHAR(160) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} MODIFY COLUMN lesson_order INT NOT NULL DEFAULT 1`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${MODULES_TABLE} (
@@ -105,6 +120,8 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_module_slug (course_slug, module_slug)`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD KEY idx_tochukwu_learning_module_course (course_slug, sort_order, id)`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} MODIFY COLUMN course_slug VARCHAR(120) NOT NULL DEFAULT ''`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} MODIFY COLUMN module_slug VARCHAR(160) NOT NULL DEFAULT ''`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${LESSONS_TABLE} (
@@ -139,6 +156,90 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD KEY idx_tochukwu_learning_lesson_asset (video_asset_id)`);
 }
 
+async function hasColumn(pool, tableName, columnName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function backfillLearningFromLegacyAssetColumns(pool) {
+  const hasCourse = await hasColumn(pool, VIDEO_ASSETS_TABLE, "course_slug");
+  const hasModuleTitle = await hasColumn(pool, VIDEO_ASSETS_TABLE, "module_title");
+  const hasModuleSlug = await hasColumn(pool, VIDEO_ASSETS_TABLE, "module_slug");
+  const hasLessonTitle = await hasColumn(pool, VIDEO_ASSETS_TABLE, "lesson_title");
+  const hasLessonSlug = await hasColumn(pool, VIDEO_ASSETS_TABLE, "lesson_slug");
+  const hasLessonOrder = await hasColumn(pool, VIDEO_ASSETS_TABLE, "lesson_order");
+  if (!hasCourse || !hasModuleTitle || !hasLessonTitle) return { migrated: 0 };
+
+  const selectCols = [
+    "id",
+    "video_uid",
+    "filename",
+    "hls_url",
+    "dash_url",
+    "course_slug",
+    "module_title",
+    hasModuleSlug ? "module_slug" : "NULL AS module_slug",
+    "lesson_title",
+    hasLessonSlug ? "lesson_slug" : "NULL AS lesson_slug",
+    hasLessonOrder ? "lesson_order" : "NULL AS lesson_order",
+  ];
+
+  const [rows] = await pool.query(
+    `SELECT ${selectCols.join(", ")}
+     FROM ${VIDEO_ASSETS_TABLE}
+     WHERE COALESCE(TRIM(course_slug), '') <> ''
+       AND COALESCE(TRIM(module_title), '') <> ''
+       AND COALESCE(TRIM(lesson_title), '') <> ''
+     ORDER BY id ASC`
+  );
+  if (!Array.isArray(rows) || !rows.length) return { migrated: 0 };
+
+  let migrated = 0;
+  const moduleCache = new Map();
+
+  for (const row of rows) {
+    const courseSlug = clean(row.course_slug, 120).toLowerCase();
+    const moduleTitle = clean(row.module_title, 220);
+    const lessonTitle = clean(row.lesson_title, 220);
+    if (!courseSlug || !moduleTitle || !lessonTitle) continue;
+
+    const moduleKey = `${courseSlug}::${moduleTitle}`;
+    let module = moduleCache.get(moduleKey);
+    if (!module) {
+      module = await findOrCreateModule(pool, {
+        course_slug: courseSlug,
+        module_slug: clean(row.module_slug, 160) || null,
+        module_title: moduleTitle,
+        sort_order: 0,
+        is_active: 1,
+      });
+      if (!module || !module.id) continue;
+      moduleCache.set(moduleKey, module);
+    }
+
+    const lessonSlug = slugify(clean(row.lesson_slug, 160) || lessonTitle, "lesson");
+    const lessonOrder = Number.isFinite(Number(row.lesson_order)) ? Number(row.lesson_order) : migrated + 1;
+    const now = nowSql();
+    const [ins] = await pool.query(
+      `INSERT IGNORE INTO ${LESSONS_TABLE}
+        (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+      [Number(module.id), lessonSlug, lessonTitle, lessonOrder, Number(row.id || 0) || null, now, now]
+    );
+    if (Number(ins && ins.affectedRows || 0) > 0) migrated += 1;
+  }
+
+  return { migrated };
+}
+
 async function upsertVideoAsset(pool, input) {
   const now = nowSql();
   const uid = clean(input && input.video_uid, 120);
@@ -152,7 +253,7 @@ async function upsertVideoAsset(pool, input) {
     ? Number(input.duration_seconds)
     : null;
   const ready = Number(input && input.ready_to_stream ? 1 : 0);
-  const sourceCreatedAt = clean(input && input.source_created_at, 30) || null;
+  const sourceCreatedAt = toSqlDateTime(input && input.source_created_at);
   const sourcePayload = input && input.source_payload_json ? JSON.stringify(input.source_payload_json) : null;
 
   await pool.query(
@@ -204,9 +305,37 @@ async function findOrCreateModule(pool, input) {
   const moduleDescription = clean(input && input.module_description, 4000) || null;
   const sortOrder = toInt(input && input.sort_order, 0);
   const isActive = Number(input && input.is_active === false ? 0 : 1);
-  const baseSlug = slugify(input && input.module_slug ? input.module_slug : moduleTitle, "module");
+  const preferredSlug = slugify(input && input.module_slug ? input.module_slug : moduleTitle, "module");
 
-  let moduleSlug = baseSlug;
+  const [existingByTitle] = await pool.query(
+    `SELECT id, course_slug, module_slug, module_title, module_description, sort_order, is_active, created_at, updated_at
+     FROM ${MODULES_TABLE}
+     WHERE course_slug = ? AND module_title = ?
+     ORDER BY id ASC
+     LIMIT 1`,
+    [courseSlug, moduleTitle]
+  );
+  if (Array.isArray(existingByTitle) && existingByTitle.length) {
+    const existing = existingByTitle[0];
+    const keepSlug = clean(existing.module_slug, 160) || preferredSlug;
+    await pool.query(
+      `UPDATE ${MODULES_TABLE}
+       SET module_slug = ?, module_description = ?, sort_order = ?, is_active = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [keepSlug, moduleDescription, sortOrder, isActive, now, Number(existing.id)]
+    );
+    const [rows] = await pool.query(
+      `SELECT id, course_slug, module_slug, module_title, module_description, sort_order, is_active, created_at, updated_at
+       FROM ${MODULES_TABLE}
+       WHERE id = ?
+       LIMIT 1`,
+      [Number(existing.id)]
+    );
+    return rows && rows[0] ? rows[0] : null;
+  }
+
+  let moduleSlug = preferredSlug;
   let attempt = 0;
   let done = false;
   while (!done && attempt < 8) {
@@ -223,7 +352,7 @@ async function findOrCreateModule(pool, input) {
       const msg = String(error && error.message || "");
       if (msg.toLowerCase().indexOf("duplicate") === -1) throw error;
       const suffix = attempt + 1;
-      moduleSlug = `${baseSlug}-${suffix}`;
+      moduleSlug = `${preferredSlug}-${suffix}`;
     }
   }
 
@@ -320,4 +449,5 @@ module.exports = {
   findOrCreateModule,
   ensureModuleById,
   upsertLesson,
+  backfillLearningFromLegacyAssetColumns,
 };

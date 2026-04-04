@@ -65,8 +65,10 @@
     </style>
   </head>
   <body class="bg-[#F3F4F6] text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
+    <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+    <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
     <div class="flex h-full w-full">
-      <aside class="hidden md:flex w-72 bg-brand-800 text-white flex-col">
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
         <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
           <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
           <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
@@ -88,7 +90,12 @@
 
       <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
-          <h2 class="text-xl font-heading font-extrabold text-gray-900 tracking-tight">Settings</h2>
+          <div class="flex items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <h2 class="text-xl font-heading font-extrabold text-gray-900 tracking-tight">Settings</h2>
+          </div>
           <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
             Sign out
           </button>
@@ -110,6 +117,41 @@
               </div>
             </div>
             <p id="settingsMessage" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm font-semibold"></p>
+
+            <section class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-heading font-extrabold text-gray-900">Pricing Controls</h3>
+                  <p class="text-sm text-gray-500">Pinned controls for VAT and school pricing. Default site VAT is 7.5%.</p>
+                </div>
+                <button id="pricingControlsSaveBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500 transition-colors">
+                  Save Pricing Controls
+                </button>
+              </div>
+
+              <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <label class="block">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Site VAT %</span>
+                  <input id="pricingSiteVatPercent" data-pricing-key="SITE_VAT_PERCENT" type="number" min="0" step="0.01" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900" placeholder="7.5" />
+                </label>
+                <label class="block">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Domain VAT %</span>
+                  <input id="pricingDomainVatPercent" data-pricing-key="DOMAIN_VAT_PERCENT" type="number" min="0" step="0.01" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900" placeholder="7.5" />
+                </label>
+                <label class="block">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Schools VAT %</span>
+                  <input id="pricingSchoolsVatPercent" data-pricing-key="SCHOOLS_VAT_PERCENT" type="number" min="0" step="0.01" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900" placeholder="7.5" />
+                </label>
+                <label class="block">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Schools Min Seats</span>
+                  <input id="pricingSchoolsMinSeats" data-pricing-key="SCHOOLS_MIN_SEATS" type="number" min="1" step="1" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900" placeholder="50" />
+                </label>
+                <label class="block">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">School Fee NGN (minor) / student</span>
+                  <input id="pricingSchoolsFeeMinor" data-pricing-key="SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR" type="number" min="1" step="1" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900" placeholder="850000" />
+                </label>
+              </div>
+            </section>
 
             <section class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const {
   ensureLearningTables,
+  backfillLearningFromLegacyAssetColumns,
   VIDEO_ASSETS_TABLE,
   MODULES_TABLE,
   LESSONS_TABLE,
@@ -20,23 +21,28 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    await backfillLearningFromLegacyAssetColumns(pool);
 
     const [modules] = await pool.query(
       `SELECT
-         m.id,
+         MIN(m.id) AS id,
          m.course_slug,
-         m.module_slug,
-         m.module_title,
-         m.module_description,
-         m.sort_order,
-         m.is_active,
-         m.created_at,
-         m.updated_at,
-         COUNT(l.id) AS lesson_count
+         MIN(m.module_slug) AS module_slug,
+         MIN(TRIM(m.module_title)) AS module_title,
+         MIN(m.module_description) AS module_description,
+         MIN(m.sort_order) AS sort_order,
+         MAX(m.is_active) AS is_active,
+         MIN(m.created_at) AS created_at,
+         MAX(m.updated_at) AS updated_at,
+         MAX(COALESCE(x.lesson_count, 0)) AS lesson_count
        FROM ${MODULES_TABLE} m
-       LEFT JOIN ${LESSONS_TABLE} l ON l.module_id = m.id
-       GROUP BY m.id
-       ORDER BY m.course_slug ASC, m.sort_order ASC, m.id ASC`
+       LEFT JOIN (
+         SELECT module_id, COUNT(*) AS lesson_count
+         FROM ${LESSONS_TABLE}
+         GROUP BY module_id
+       ) x ON x.module_id = m.id
+       GROUP BY m.course_slug, LOWER(TRIM(m.module_title))
+       ORDER BY m.course_slug ASC, MIN(m.sort_order) ASC, MIN(m.id) ASC`
     );
 
     const [assets] = await pool.query(

@@ -31,6 +31,15 @@
     selectedModuleId: 0,
   };
   var dragLessonIndex = -1;
+
+  function clampHorizontalScroll() {
+    try {
+      document.documentElement.scrollLeft = 0;
+      if (document.body) document.body.scrollLeft = 0;
+      var main = document.querySelector("main");
+      if (main && typeof main.scrollLeft === "number") main.scrollLeft = 0;
+    } catch (_error) {}
+  }
   var toastWrap = null;
 
   function showApp() {
@@ -131,6 +140,12 @@
     return "[" + mod.course_slug + "] " + mod.module_title;
   }
 
+  function normalizeModuleKey(mod) {
+    var course = String((mod && mod.course_slug) || "").trim().toLowerCase();
+    var title = String((mod && mod.module_title) || "").trim().toLowerCase().replace(/\s+/g, " ");
+    return course + "::" + title;
+  }
+
   function renderModuleSelect() {
     if (!moduleSelect) return;
     var options = ['<option value="">Create new module</option>'];
@@ -187,7 +202,7 @@
       return [
         '<tr draggable="true" data-row-index="' + idx + '" data-lesson-id="' + escapeHtml(row.id || "") + '" class="cursor-move">',
         '<td class="px-3 py-2"><span class="inline-flex rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-500">::</span></td>',
-        '<td class="px-3 py-2"><input data-field="lesson_title" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_title || "") + '" /></td>',
+        '<td class="px-3 py-2 md:min-w-[22rem]"><input data-field="lesson_title" type="text" class="w-full md:min-w-[20rem] rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_title || "") + '" /></td>',
         '<td class="px-3 py-2"><input data-field="lesson_order" type="number" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_order || idx + 1) + '" /></td>',
         '<td class="px-3 py-2"><select data-field="video_asset_id" class="min-w-[18rem] rounded-lg border border-gray-300 px-3 py-2 text-sm">' + assetOptions.join("") + "</select></td>",
         '<td class="px-3 py-2"><label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600"><input data-field="is_active" type="checkbox" ' + (Number(row.is_active) === 0 ? "" : "checked") + ' class="h-4 w-4 rounded border-gray-300 text-brand-600" />Active</label></td>',
@@ -220,7 +235,16 @@
 
     var payload = await api(url, { method: "GET", headers: { Accept: "application/json" } });
     if (!payload) return;
-    state.modules = Array.isArray(payload.modules) ? payload.modules : [];
+    var incomingModules = Array.isArray(payload.modules) ? payload.modules : [];
+    var uniqueModules = [];
+    var seenModuleKeys = new Set();
+    incomingModules.forEach(function (mod) {
+      var key = normalizeModuleKey(mod);
+      if (!key || seenModuleKeys.has(key)) return;
+      seenModuleKeys.add(key);
+      uniqueModules.push(mod);
+    });
+    state.modules = uniqueModules;
     state.assets = Array.isArray(payload.assets) ? payload.assets : [];
     state.lessons = Array.isArray(payload.lessons) ? payload.lessons : [];
     state.selectedModuleId = moduleParam > 0 ? moduleParam : 0;
@@ -234,6 +258,7 @@
     } else {
       hydrateModuleForm(null);
     }
+    clampHorizontalScroll();
   }
 
   function collectLessonRows() {
@@ -537,10 +562,13 @@
   }
 
   showApp();
+  clampHorizontalScroll();
+  window.addEventListener("resize", clampHorizontalScroll);
   setMessage("Loading video library...", "");
   loadLibrary(0)
     .then(function () {
       setMessage("Video library ready.", "ok");
+      clampHorizontalScroll();
     })
     .catch(function (error) {
       setMessage(error.message || "Could not load video library.", "error");

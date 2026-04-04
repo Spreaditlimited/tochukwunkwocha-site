@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt to Profit for Schools</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <main class="max-w-3xl mx-auto px-4 py-10 sm:py-14">
+      <a href="/" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Back to site</a>
+      <h1 class="mt-3 text-3xl sm:text-4xl font-extrabold">Prompt to Profit for Schools</h1>
+      <p id="schoolsPricingIntro" class="mt-2 text-slate-600">Bulk school access starts at 50 students. Price is N8,500 per student + VAT.</p>
+
+      <section class="mt-8 bg-white rounded-2xl border border-slate-200 p-5 sm:p-7">
+        <form id="schoolRegisterForm" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">School Name</span>
+              <input id="schoolName" type="text" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">Admin Name</span>
+              <input id="adminName" type="text" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">Admin Email</span>
+              <input id="adminEmail" type="email" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">Admin Phone</span>
+              <input id="adminPhone" type="text" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-700">Number of Students (min 50)</span>
+            <input id="seatCount" type="number" min="50" step="1" value="50" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+          </label>
+
+          <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700 space-y-1">
+            <p><strong>Course:</strong> Prompt to Profit</p>
+            <p id="priceSubtotal">Subtotal: N0</p>
+            <p id="priceVat">VAT: N0</p>
+            <p id="priceTotal" class="font-bold text-slate-900">Total: N0</p>
+          </div>
+
+          <p id="schoolRegisterStatus" class="text-sm text-slate-600"></p>
+          <button id="schoolRegisterBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700">
+            Continue to Payment
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <script src="/assets/school-register.js?v=20260404a" defer></script>
+  </body>
+</html>

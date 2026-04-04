@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Dashboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <main class="max-w-7xl mx-auto px-4 py-8 sm:py-10">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold">School Dashboard</h1>
+          <p id="schoolDashboardMeta" class="text-sm text-slate-600 mt-1">Loading school account...</p>
+        </div>
+        <button id="schoolLogoutBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Sign out</button>
+      </div>
+
+      <section class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <article class="rounded-xl bg-white border border-slate-200 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Seats</p>
+          <p id="metricSeats" class="mt-1 text-xl font-extrabold">0 / 0</p>
+          <p id="metricSeatsSub" class="text-xs text-slate-500 mt-1">Available: 0</p>
+        </article>
+        <article class="rounded-xl bg-white border border-slate-200 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg Completion</p>
+          <p id="metricAvgCompletion" class="mt-1 text-xl font-extrabold">0%</p>
+        </article>
+        <article class="rounded-xl bg-white border border-slate-200 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Active in 7 Days</p>
+          <p id="metricActive7" class="mt-1 text-xl font-extrabold">0</p>
+        </article>
+        <article class="rounded-xl bg-white border border-slate-200 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Course Access Ends</p>
+          <p id="metricExpiry" class="mt-1 text-base font-bold">-</p>
+        </article>
+      </section>
+
+      <section class="mt-6 rounded-2xl bg-white border border-slate-200 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-lg font-extrabold">Bulk Enroll Students (CSV)</h2>
+          <a href="/.netlify/functions/school-students-template" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Download CSV Template</a>
+        </div>
+        <p class="mt-2 text-sm text-slate-600">Upload `full_name,email` rows. Seat cap is enforced automatically.</p>
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2">
+            <textarea id="studentsCsvInput" rows="7" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-mono" placeholder="full_name,email&#10;Jane Doe,jane@example.com"></textarea>
+          </div>
+          <div class="space-y-3">
+            <label class="block text-sm">
+              <span class="font-semibold text-slate-700">Or select CSV file</span>
+              <input id="studentsCsvFile" type="file" accept=".csv,text/csv" class="mt-1 block w-full text-sm" />
+            </label>
+            <button id="studentsUploadBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-700">Upload Students</button>
+            <p id="studentsUploadStatus" class="text-sm text-slate-600"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-6 rounded-2xl bg-white border border-slate-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="text-lg font-extrabold">Students</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wide">
+              <tr>
+                <th class="text-left px-4 py-3">Student</th>
+                <th class="text-left px-4 py-3">Progress</th>
+                <th class="text-left px-4 py-3">Last Activity</th>
+                <th class="text-left px-4 py-3">Status</th>
+                <th class="text-right px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="schoolStudentsRows" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/assets/school-dashboard.js?v=20260404a" defer></script>
+  </body>
+</html>
+

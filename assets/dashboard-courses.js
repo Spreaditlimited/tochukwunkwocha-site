@@ -35,7 +35,7 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -43,6 +43,14 @@
     const s = String(slug || "").trim().toLowerCase();
     if (!s) return "/courses/";
     return `/courses/${encodeURIComponent(s)}/`;
+  }
+
+  function coursePlayerUrl(slug, lessonId) {
+    const s = String(slug || "").trim().toLowerCase();
+    const base = `/dashboard/courses/player/?course=${encodeURIComponent(s)}`;
+    const id = Number(lessonId || 0);
+    if (!Number.isFinite(id) || id <= 0) return base;
+    return `${base}&lesson=${encodeURIComponent(String(Math.trunc(id)))}`;
   }
 
   function normalizeSlug(value) {
@@ -235,6 +243,12 @@
               : '<span class="status-pill status-approved">Paid</span>';
             const theme = themeForSlug(item.courseSlug);
             const timing = batchTimingMeta(item);
+            const resumeLessonId = Number(item.resumeLessonId || 0);
+            const hasResume = Number.isFinite(resumeLessonId) && resumeLessonId > 0;
+            const resumeLabel = hasResume ? "Resume where you stopped" : "Open Course Player";
+            const resumeDetail = hasResume && item.lastActivityAt
+              ? `Last watched: ${escapeHtml(new Date(item.lastActivityAt).toLocaleString())}`
+              : "";
             return [
               `<article class="rounded-2xl p-5 shadow-sm ring-1 ${theme.card}">`,
               '<div class="flex items-start justify-between gap-3">',
@@ -249,9 +263,15 @@
               `<div class="mt-3"><span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${timing.css}">${escapeHtml(
                 timing.label
               )}</span></div>`,
-              `<a class="mt-4 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${theme.button}" href="${escapeHtml(
+              resumeDetail ? `<p class="mt-2 text-xs text-gray-600">${resumeDetail}</p>` : "",
+              '<div class="mt-4 flex flex-wrap gap-2">',
+              `<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${theme.button}" href="${escapeHtml(
+                coursePlayerUrl(item.courseSlug, resumeLessonId)
+              )}">${escapeHtml(resumeLabel)}</a>`,
+              `<a class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50" href="${escapeHtml(
                 courseUrl(item.courseSlug)
-              )}">Open Course Page</a>`,
+              )}">Course Page</a>`,
+              "</div>",
               "</article>",
             ].join("");
           })

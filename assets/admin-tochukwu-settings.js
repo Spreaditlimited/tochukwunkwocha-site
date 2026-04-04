@@ -4,6 +4,15 @@
   const auditRowsEl = document.getElementById("settingsAuditRows");
   const saveTopBtn = document.getElementById("settingsSaveBtnTop");
   const saveBottomBtn = document.getElementById("settingsSaveBtnBottom");
+  const pricingSaveBtn = document.getElementById("pricingControlsSaveBtn");
+
+  const PINNED_PRICING_KEYS = [
+    "SITE_VAT_PERCENT",
+    "DOMAIN_VAT_PERCENT",
+    "SCHOOLS_VAT_PERCENT",
+    "SCHOOLS_MIN_SEATS",
+    "SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR",
+  ];
 
   let items = [];
   let auditItems = [];
@@ -123,6 +132,21 @@
       .join("");
   }
 
+  function renderPinnedPricing() {
+    const byKey = new Map(
+      (items || []).map(function (item) {
+        return [String(item.key || ""), String(item.value || "")];
+      })
+    );
+    Array.from(document.querySelectorAll("[data-pricing-key]")).forEach(function (input) {
+      const key = String(input.getAttribute("data-pricing-key") || "");
+      if (!key || PINNED_PRICING_KEYS.indexOf(key) === -1) return;
+      if (Object.prototype.hasOwnProperty.call(input, "value")) {
+        input.value = byKey.get(key) || "";
+      }
+    });
+  }
+
   async function loadSettings() {
     setMessage("Loading settings...", "ok");
     const res = await fetch("/.netlify/functions/admin-tochukwu-settings-get", {
@@ -143,17 +167,27 @@
     items = Array.isArray(json.items) ? json.items : [];
     auditItems = Array.isArray(json.audit) ? json.audit : [];
     renderItems();
+    renderPinnedPricing();
     renderAudit();
     setMessage("Settings loaded.", "ok");
   }
 
   function collectPayload() {
-    const inputs = Array.from(document.querySelectorAll("input[data-key]"));
-    return inputs.map(function (input) {
-      return {
-        key: String(input.getAttribute("data-key") || ""),
-        value: String(input.value || "").trim(),
-      };
+    const merged = new Map();
+    const mainInputs = Array.from(document.querySelectorAll("input[data-key]"));
+    mainInputs.forEach(function (input) {
+      const key = String(input.getAttribute("data-key") || "");
+      if (!key) return;
+      merged.set(key, String(input.value || "").trim());
+    });
+    const pricingInputs = Array.from(document.querySelectorAll("[data-pricing-key]"));
+    pricingInputs.forEach(function (input) {
+      const key = String(input.getAttribute("data-pricing-key") || "");
+      if (!key || PINNED_PRICING_KEYS.indexOf(key) === -1) return;
+      merged.set(key, String(input.value || "").trim());
+    });
+    return Array.from(merged.entries()).map(function (entry) {
+      return { key: entry[0], value: entry[1] };
     });
   }
 
@@ -194,6 +228,7 @@
       items = Array.isArray(json.items) ? json.items : items;
       auditItems = Array.isArray(json.audit) ? json.audit : auditItems;
       renderItems();
+      renderPinnedPricing();
       renderAudit();
       setMessage("Settings saved successfully.", "ok");
     } catch (error) {
@@ -210,6 +245,11 @@
   }
   if (saveBottomBtn) {
     saveBottomBtn.addEventListener("click", function () {
+      saveSettings();
+    });
+  }
+  if (pricingSaveBtn) {
+    pricingSaveBtn.addEventListener("click", function () {
       saveSettings();
     });
   }

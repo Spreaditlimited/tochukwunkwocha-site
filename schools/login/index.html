@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Admin Login</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-900 min-h-screen flex items-center justify-center p-4">
+    <section class="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
+      <h1 class="text-2xl font-extrabold">School Admin Login</h1>
+      <p class="mt-2 text-sm text-slate-600">Sign in to manage students, seats, progress, and certificates.</p>
+      <form id="schoolLoginForm" class="mt-5 space-y-4">
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Email</span>
+          <input id="schoolLoginEmail" type="email" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+        </label>
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Password</span>
+          <input id="schoolLoginPassword" type="password" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+        </label>
+        <p id="schoolLoginStatus" class="text-sm text-slate-600"></p>
+        <button id="schoolLoginBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700">
+          Sign In
+        </button>
+      </form>
+    </section>
+    <script src="/assets/school-login.js?v=20260404a" defer></script>
+  </body>
+</html>
+

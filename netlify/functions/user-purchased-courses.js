@@ -5,6 +5,9 @@ const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureManualPaymentsTable } = require("./_lib/manual-payments");
 const { ensureCourseBatchesTable } = require("./_lib/batch-store");
 const { getCourseName } = require("./_lib/course-config");
+const { ensureLearningProgressTables, LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
+const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
+const { ensureSchoolTables } = require("./_lib/schools");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -42,6 +45,118 @@ function extractBatchNumber(text) {
   return String(m[1] || "").trim();
 }
 
+function normalizeDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d.toISOString();
+}
+
+async function loadResumeMetaByCourse(pool, accountId, courseSlugs) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return new Map();
+
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+
+  const resumeMap = new Map();
+
+  const [lastWatchedRows] = await pool.query(
+    `SELECT
+       m.course_slug,
+       p.lesson_id,
+       COALESCE(p.last_watched_at, p.updated_at, p.completed_at) AS last_activity_at
+     FROM ${LESSON_PROGRESS_TABLE} p
+     JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id AND l.is_active = 1
+     JOIN ${MODULES_TABLE} m ON m.id = l.module_id AND m.is_active = 1
+     WHERE p.account_id = ?
+       AND m.course_slug IN (${placeholders})
+     ORDER BY COALESCE(p.last_watched_at, p.updated_at, p.completed_at) DESC, p.updated_at DESC, p.lesson_id DESC`,
+    [Number(accountId)].concat(slugs)
+  );
+
+  (Array.isArray(lastWatchedRows) ? lastWatchedRows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug || resumeMap.has(slug)) return;
+    const lessonId = Number(row.lesson_id || 0);
+    if (!Number.isFinite(lessonId) || lessonId <= 0) return;
+    resumeMap.set(slug, {
+      resume_lesson_id: lessonId,
+      resume_source: "last_watched",
+      last_activity_at: normalizeDate(row.last_activity_at),
+    });
+  });
+
+  const needsFallback = slugs.filter(function (slug) {
+    return !resumeMap.has(slug);
+  });
+  if (!needsFallback.length) return resumeMap;
+
+  const fallbackPlaceholders = needsFallback.map(function () {
+    return "?";
+  }).join(",");
+
+  const [firstIncompleteRows] = await pool.query(
+    `SELECT
+       m.course_slug,
+       l.id AS lesson_id
+     FROM ${MODULES_TABLE} m
+     JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
+     LEFT JOIN ${LESSON_PROGRESS_TABLE} p ON p.lesson_id = l.id AND p.account_id = ?
+     WHERE m.is_active = 1
+       AND m.course_slug IN (${fallbackPlaceholders})
+       AND COALESCE(p.is_completed, 0) = 0
+     ORDER BY m.course_slug ASC, m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
+    [Number(accountId)].concat(needsFallback)
+  );
+
+  (Array.isArray(firstIncompleteRows) ? firstIncompleteRows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug || resumeMap.has(slug)) return;
+    const lessonId = Number(row.lesson_id || 0);
+    if (!Number.isFinite(lessonId) || lessonId <= 0) return;
+    resumeMap.set(slug, {
+      resume_lesson_id: lessonId,
+      resume_source: "first_incomplete",
+      last_activity_at: null,
+    });
+  });
+
+  const needsFirstLesson = needsFallback.filter(function (slug) {
+    return !resumeMap.has(slug);
+  });
+  if (!needsFirstLesson.length) return resumeMap;
+
+  const firstLessonPlaceholders = needsFirstLesson.map(function () {
+    return "?";
+  }).join(",");
+  const [firstLessonRows] = await pool.query(
+    `SELECT
+       m.course_slug,
+       l.id AS lesson_id
+     FROM ${MODULES_TABLE} m
+     JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
+     WHERE m.is_active = 1
+       AND m.course_slug IN (${firstLessonPlaceholders})
+     ORDER BY m.course_slug ASC, m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
+    needsFirstLesson
+  );
+  (Array.isArray(firstLessonRows) ? firstLessonRows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug || resumeMap.has(slug)) return;
+    const lessonId = Number(row.lesson_id || 0);
+    if (!Number.isFinite(lessonId) || lessonId <= 0) return;
+    resumeMap.set(slug, {
+      resume_lesson_id: lessonId,
+      resume_source: "first_lesson",
+      last_activity_at: null,
+    });
+  });
+
+  return resumeMap;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -51,6 +166,8 @@ exports.handler = async function (event) {
     await ensureCourseOrdersBatchColumns(pool);
     await ensureManualPaymentsTable(pool);
     await ensureCourseBatchesTable(pool);
+    await ensureLearningProgressTables(pool);
+    await ensureSchoolTables(pool);
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
@@ -138,6 +255,32 @@ exports.handler = async function (event) {
       upsert(row, "manual_payment", "pending_verification", row.submitted_at || null);
     });
 
+    const [schoolRows] = await pool.query(
+      `SELECT
+         sc.course_slug,
+         sc.access_starts_at AS paid_at
+       FROM school_students ss
+       JOIN school_accounts sc ON sc.id = ss.school_id
+       WHERE (LOWER(ss.email) = ? OR ss.account_id = ?)
+         AND ss.status = 'active'
+         AND sc.status = 'active'
+         AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())`,
+      [email, Number(session.account.id || 0)]
+    );
+    (schoolRows || []).forEach(function (row) {
+      upsert(
+        {
+          course_slug: row.course_slug,
+          batch_key: "school",
+          batch_label: "School Access",
+          paid_at: row.paid_at,
+        },
+        "school",
+        "paid",
+        null
+      );
+    });
+
     const [batchRows] = await pool.query(
       `SELECT course_slug, batch_key, batch_label, status, is_active, DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
        FROM course_batches`
@@ -169,7 +312,17 @@ exports.handler = async function (event) {
       const ta = a.paidAt ? new Date(a.paidAt).getTime() : 0;
       const tb = b.paidAt ? new Date(b.paidAt).getTime() : 0;
       return tb - ta;
-    }).map(function (item) {
+    });
+
+    const resumeByCourse = await loadResumeMetaByCourse(
+      pool,
+      Number(session.account.id || 0),
+      items.map(function (item) {
+        return item.courseSlug;
+      })
+    );
+
+    const enrichedItems = items.map(function (item) {
       const courseSlug = normalizeKey(item.courseSlug);
       const rawBatchKey = normalizeKey(item.batchKey);
       const batchLabel = normalizeLabel(item.batchLabel);
@@ -185,11 +338,15 @@ exports.handler = async function (event) {
         const number = extractBatchNumber(rawBatchKey) || extractBatchNumber(batchLabel);
         if (number) meta = batchMetaByNumber.get(`${courseSlug}::${number}`) || null;
       }
+      const resume = resumeByCourse.get(courseSlug) || null;
       return {
         ...item,
         batchStartAt: meta ? meta.batchStartAt : null,
         batchStatus: meta ? meta.batchStatus : null,
         batchIsActive: meta ? meta.batchIsActive : false,
+        resumeLessonId: resume ? Number(resume.resume_lesson_id || 0) : 0,
+        resumeSource: resume ? String(resume.resume_source || "") : "",
+        lastActivityAt: resume ? resume.last_activity_at : null,
       };
     });
 
@@ -199,7 +356,7 @@ exports.handler = async function (event) {
         fullName: session.account.fullName,
         email: session.account.email,
       },
-      items,
+      items: enrichedItems,
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load purchased courses" });
