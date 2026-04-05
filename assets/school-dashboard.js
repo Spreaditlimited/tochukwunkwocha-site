@@ -1,5 +1,5 @@
 (function () {
-  var TEMP_CERT_PREVIEW_ENABLED = true;
+  var SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
   var metaEl = document.getElementById("schoolDashboardMeta");
   var metricSeatsEl = document.getElementById("metricSeats");
   var metricSeatsSubEl = document.getElementById("metricSeatsSub");
@@ -75,26 +75,16 @@
 
   function renderStudents(students) {
     if (!rowsEl) return;
-    var previewCandidateId = 0;
-    if (TEMP_CERT_PREVIEW_ENABLED) {
-      for (var i = 0; i < students.length; i += 1) {
-        var candidate = students[i] || {};
-        if (String(candidate.status || "").toLowerCase() !== "active") continue;
-        if (Number(candidate.completion_percent || 0) >= 100) continue;
-        previewCandidateId = Number(candidate.id || 0);
-        if (previewCandidateId > 0) break;
-      }
-    }
     if (!students.length) {
-      rowsEl.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-sm text-slate-500">No students yet.</td></tr>';
+      rowsEl.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-sm text-slate-500">No students yet.</td></tr>';
       return;
     }
     rowsEl.innerHTML = students.map(function (student) {
       var isActive = String(student.status || "").toLowerCase() === "active";
       var completed = Number(student.completion_percent || 0) >= 100;
-      var isPreviewStudent = TEMP_CERT_PREVIEW_ENABLED && Number(student.id || 0) === previewCandidateId;
-      var canIssue = (completed && isActive) || isPreviewStudent;
-      var certBtnLabel = isPreviewStudent ? "Issue cert (preview)" : "Issue cert";
+      var hasWebsite = clean(student.website_url).length > 0;
+      var canIssue = completed && isActive && hasWebsite;
+      var certBtnLabel = "Issue cert";
       return [
         "<tr>",
         '<td class="px-4 py-3">',
@@ -103,6 +93,10 @@
         "</td>",
         '<td class="px-4 py-3 text-slate-700">' + String(student.completion_percent || 0) + "%</td>",
         '<td class="px-4 py-3 text-slate-600">' + escapeHtml(fmtDate(student.last_activity_at)) + "</td>",
+        '<td class="px-4 py-3 text-slate-700">' + (hasWebsite
+          ? ('<a class="text-brand-700 underline hover:text-brand-900" target="_blank" rel="noopener noreferrer" href="' + escapeHtml(student.website_url) + '">View site</a>')
+          : '<span class="text-slate-400">Not submitted</span>') + "</td>",
+        '<td class="px-4 py-3 text-slate-600">' + escapeHtml(fmtDate(student.website_submitted_at)) + "</td>",
         '<td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ' +
           (String(student.status || "").toLowerCase() === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700") +
           '">' + escapeHtml(student.status || "active") + "</span></td>",
@@ -110,7 +104,7 @@
         '<button type="button" data-student-toggle="' + String(student.id) + '" data-next-active="' + (String(student.status || "").toLowerCase() === "active" ? "0" : "1") + '" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">' +
           (String(student.status || "").toLowerCase() === "active" ? "Disable" : "Enable") +
           "</button>",
-        '<button type="button" data-student-cert="' + String(student.id) + '" data-student-cert-preview="' + (isPreviewStudent ? "1" : "0") + '" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 ' + (canIssue ? "" : "opacity-40 cursor-not-allowed") + '"' + (canIssue ? "" : " disabled") + ">" + certBtnLabel + "</button>",
+        '<button type="button" data-student-cert="' + String(student.id) + '" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 ' + (canIssue ? "" : "opacity-40 cursor-not-allowed") + '"' + (canIssue ? "" : " disabled") + ">" + certBtnLabel + "</button>",
         "</td>",
         "</tr>",
       ].join("");
@@ -130,8 +124,7 @@
       btn.addEventListener("click", function () {
         if (btn.disabled) return;
         var studentId = Number(btn.getAttribute("data-student-cert") || 0);
-        var preview = String(btn.getAttribute("data-student-cert-preview") || "") === "1";
-        issueCertificate(studentId, preview).catch(function (error) {
+        issueCertificate(studentId).catch(function (error) {
           setUploadStatus(error.message || "Could not issue certificate", true);
         });
       });
@@ -163,17 +156,16 @@
     await Promise.all([loadSummary(), loadStudents()]);
   }
 
-  async function issueCertificate(studentId, preview) {
+  async function issueCertificate(studentId) {
     var data = await api("/.netlify/functions/school-certificate-issue", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ studentId: studentId, preview: !!preview }),
+      body: JSON.stringify({ studentId: studentId }),
     });
     var label = "Certificate issued: " + clean(data.certificate && data.certificate.certificateNo);
-    if (data && data.previewIssued) label += " (preview override)";
     setUploadStatus(label, false);
     var certUrl = clean(data && data.certificate && data.certificate.certificateUrl);
     if (certUrl) {
@@ -290,6 +282,9 @@
           return null;
         })
         .finally(function () {
+          try {
+            sessionStorage.setItem(SIGNOUT_MARKER_KEY, "1");
+          } catch (_error) {}
           window.location.href = "/schools/login/";
         });
     });

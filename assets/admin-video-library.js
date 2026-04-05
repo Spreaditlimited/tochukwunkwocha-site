@@ -5,6 +5,14 @@
   var messageEl = document.getElementById("videoLibraryMessage");
   var syncBtn = document.getElementById("syncCloudflareBtn");
   var syncMaxPagesInput = document.getElementById("syncMaxPagesInput");
+  var enableSignedPlaybackBtn = document.getElementById("enableSignedPlaybackBtn");
+  var actionConfirmModal = document.getElementById("actionConfirmModal");
+  var actionConfirmBackdrop = document.getElementById("actionConfirmBackdrop");
+  var actionConfirmCloseBtn = document.getElementById("actionConfirmCloseBtn");
+  var actionConfirmCancelBtn = document.getElementById("actionConfirmCancelBtn");
+  var actionConfirmConfirmBtn = document.getElementById("actionConfirmConfirmBtn");
+  var actionConfirmTitle = document.getElementById("actionConfirmTitle");
+  var actionConfirmMessage = document.getElementById("actionConfirmMessage");
 
   var moduleSelect = document.getElementById("moduleSelect");
   var moduleRows = document.getElementById("moduleRows");
@@ -13,6 +21,8 @@
   var moduleDescriptionInput = document.getElementById("moduleDescriptionInput");
   var moduleSortOrderInput = document.getElementById("moduleSortOrderInput");
   var moduleIsActiveInput = document.getElementById("moduleIsActiveInput");
+  var moduleDripEnabledInput = document.getElementById("moduleDripEnabledInput");
+  var moduleDripAtInput = document.getElementById("moduleDripAtInput");
   var saveModuleBtn = document.getElementById("saveModuleBtn");
 
   var lessonsRows = document.getElementById("lessonsRows");
@@ -108,6 +118,31 @@
     }, 2800);
   }
 
+  function closeActionConfirm(result) {
+    if (!actionConfirmModal) return;
+    actionConfirmModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (typeof actionConfirmModal._resolve === "function") {
+      var resolve = actionConfirmModal._resolve;
+      actionConfirmModal._resolve = null;
+      resolve(!!result);
+    }
+  }
+
+  function requestActionConfirm(input) {
+    if (!actionConfirmModal) return Promise.resolve(true);
+    var title = input && input.title ? String(input.title) : "Confirm action";
+    var message = input && input.message ? String(input.message) : "Please confirm this action.";
+    if (actionConfirmTitle) actionConfirmTitle.textContent = title;
+    if (actionConfirmMessage) actionConfirmMessage.textContent = message;
+    actionConfirmModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    return new Promise(function (resolve) {
+      actionConfirmModal._resolve = resolve;
+      if (actionConfirmConfirmBtn) actionConfirmConfirmBtn.focus();
+    });
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -140,6 +175,14 @@
     return "[" + mod.course_slug + "] " + mod.module_title;
   }
 
+  function toDatetimeLocalValue(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return "";
+    var m = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})/);
+    if (!m) return "";
+    return m[1] + "T" + m[2] + ":" + m[3];
+  }
+
   function normalizeModuleKey(mod) {
     var course = String((mod && mod.course_slug) || "").trim().toLowerCase();
     var title = String((mod && mod.module_title) || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -164,16 +207,20 @@
     }
     moduleRows.innerHTML = state.modules.map(function (mod) {
       var isActive = Number(mod.is_active || 0) !== 0;
+      var isDrip = Number(mod.drip_enabled || 0) === 1;
       var activeBadge = isActive
         ? '<span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">published</span>'
         : '<span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">unpublished</span>';
+      var dripBadge = isDrip
+        ? '<span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">drip</span>'
+        : "";
       var toggleLabel = isActive ? "Unpublish" : "Publish";
       return [
         "<tr>",
         '<td class="px-3 py-2 text-sm font-medium text-gray-700">' + escapeHtml(mod.course_slug || "-") + "</td>",
         '<td class="px-3 py-2 text-sm font-semibold text-gray-900">' + escapeHtml(mod.module_title || "-") + "</td>",
         '<td class="px-3 py-2 text-sm text-gray-700">' + escapeHtml(mod.lesson_count || 0) + "</td>",
-        '<td class="px-3 py-2">' + activeBadge + "</td>",
+        '<td class="px-3 py-2"><div class="flex items-center gap-2">' + activeBadge + dripBadge + "</div></td>",
         '<td class="px-3 py-2"><div class="flex flex-wrap gap-2">' +
           '<button type="button" data-select-module="' + escapeHtml(mod.id) + '" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Open</button>' +
           '<button type="button" data-toggle-module="' + escapeHtml(mod.id) + '" class="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100">' + toggleLabel + "</button>" +
@@ -187,7 +234,7 @@
     if (!lessonsRows) return;
     var rows = state.lessons || [];
     if (!rows.length) {
-      lessonsRows.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No lessons yet. Add rows and save.</td></tr>';
+      lessonsRows.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No lessons yet. Add rows and save.</td></tr>';
       return;
     }
 
@@ -205,6 +252,7 @@
         '<td class="px-3 py-2 md:min-w-[22rem]"><input data-field="lesson_title" type="text" class="w-full md:min-w-[20rem] rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_title || "") + '" /></td>',
         '<td class="px-3 py-2"><input data-field="lesson_order" type="number" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_order || idx + 1) + '" /></td>',
         '<td class="px-3 py-2"><select data-field="video_asset_id" class="min-w-[18rem] rounded-lg border border-gray-300 px-3 py-2 text-sm">' + assetOptions.join("") + "</select></td>",
+        '<td class="px-3 py-2 md:min-w-[18rem]"><textarea data-field="lesson_notes" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Optional notes visible to students">' + escapeHtml(row.lesson_notes || "") + "</textarea></td>",
         '<td class="px-3 py-2"><label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600"><input data-field="is_active" type="checkbox" ' + (Number(row.is_active) === 0 ? "" : "checked") + ' class="h-4 w-4 rounded border-gray-300 text-brand-600" />Active</label></td>',
         '<td class="px-3 py-2"><button type="button" data-remove-row class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Remove</button></td>',
         "</tr>",
@@ -219,6 +267,8 @@
       if (moduleDescriptionInput) moduleDescriptionInput.value = "";
       if (moduleSortOrderInput) moduleSortOrderInput.value = "0";
       if (moduleIsActiveInput) moduleIsActiveInput.checked = true;
+      if (moduleDripEnabledInput) moduleDripEnabledInput.checked = false;
+      if (moduleDripAtInput) moduleDripAtInput.value = "";
       return;
     }
     if (moduleCourseSlugInput) moduleCourseSlugInput.value = String(mod.course_slug || "");
@@ -226,6 +276,8 @@
     if (moduleDescriptionInput) moduleDescriptionInput.value = String(mod.module_description || "");
     if (moduleSortOrderInput) moduleSortOrderInput.value = String(mod.sort_order || 0);
     if (moduleIsActiveInput) moduleIsActiveInput.checked = Number(mod.is_active || 0) !== 0;
+    if (moduleDripEnabledInput) moduleDripEnabledInput.checked = Number(mod.drip_enabled || 0) === 1;
+    if (moduleDripAtInput) moduleDripAtInput.value = toDatetimeLocalValue(mod.drip_at || "");
   }
 
   async function loadLibrary(moduleId) {
@@ -235,16 +287,7 @@
 
     var payload = await api(url, { method: "GET", headers: { Accept: "application/json" } });
     if (!payload) return;
-    var incomingModules = Array.isArray(payload.modules) ? payload.modules : [];
-    var uniqueModules = [];
-    var seenModuleKeys = new Set();
-    incomingModules.forEach(function (mod) {
-      var key = normalizeModuleKey(mod);
-      if (!key || seenModuleKeys.has(key)) return;
-      seenModuleKeys.add(key);
-      uniqueModules.push(mod);
-    });
-    state.modules = uniqueModules;
+    state.modules = Array.isArray(payload.modules) ? payload.modules : [];
     state.assets = Array.isArray(payload.assets) ? payload.assets : [];
     state.lessons = Array.isArray(payload.lessons) ? payload.lessons : [];
     state.selectedModuleId = moduleParam > 0 ? moduleParam : 0;
@@ -268,12 +311,14 @@
       var titleInput = tr.querySelector('input[data-field="lesson_title"]');
       var orderInput = tr.querySelector('input[data-field="lesson_order"]');
       var assetInput = tr.querySelector('select[data-field="video_asset_id"]');
+      var notesInput = tr.querySelector('textarea[data-field="lesson_notes"]');
       var activeInput = tr.querySelector('input[data-field="is_active"]');
       return {
         id: lessonId > 0 ? lessonId : null,
         lesson_title: String(titleInput && titleInput.value || "").trim(),
         lesson_order: Number(orderInput && orderInput.value || 1),
         video_asset_id: Number(assetInput && assetInput.value || 0) || null,
+        lesson_notes: String(notesInput && notesInput.value || "").trim(),
         is_active: Boolean(activeInput && activeInput.checked),
       };
     });
@@ -286,6 +331,7 @@
       lesson_title: "",
       lesson_order: nextOrder,
       video_asset_id: null,
+      lesson_notes: "",
       is_active: 1,
     }, initial || {}));
     renderLessonRows();
@@ -341,6 +387,9 @@
           module_description: mod.module_description || "",
           sort_order: mod.sort_order || 0,
           is_active: nextActive,
+          drip_enabled: Number(mod.drip_enabled || 0) === 1,
+          drip_at: mod.drip_at || null,
+          apply_to_title_group: true,
         }),
       })
         .then(function () {
@@ -433,6 +482,8 @@
         module_description: moduleDescriptionInput ? moduleDescriptionInput.value : "",
         sort_order: moduleSortOrderInput ? Number(moduleSortOrderInput.value || 0) : 0,
         is_active: moduleIsActiveInput ? Boolean(moduleIsActiveInput.checked) : true,
+        drip_enabled: moduleDripEnabledInput ? Boolean(moduleDripEnabledInput.checked) : false,
+        drip_at: moduleDripAtInput ? String(moduleDripAtInput.value || "").trim() : "",
       };
       saveModuleBtn.disabled = true;
       setMessage("Saving module...", "");
@@ -487,6 +538,11 @@
 
   if (syncBtn) {
     syncBtn.addEventListener("click", async function () {
+      var proceed = await requestActionConfirm({
+        title: "Sync Cloudflare Assets",
+        message: "This will fetch videos from Cloudflare Stream and update your internal video library mappings.",
+      });
+      if (!proceed) return;
       syncBtn.disabled = true;
       setMessage("Sync in progress...", "");
       try {
@@ -502,6 +558,61 @@
         setMessage(error.message || "Cloudflare sync failed.", "error");
       } finally {
         syncBtn.disabled = false;
+      }
+    });
+  }
+
+  if (enableSignedPlaybackBtn) {
+    enableSignedPlaybackBtn.addEventListener("click", async function () {
+      var proceed = await requestActionConfirm({
+        title: "Enable Signed Playback",
+        message: "This will enforce Cloudflare signed playback on all lesson videos and create a signing key automatically if one is missing.",
+      });
+      if (!proceed) return;
+      enableSignedPlaybackBtn.disabled = true;
+      setMessage("Enabling signed playback protection across all videos...", "");
+      try {
+        var res = await api("/.netlify/functions/admin-learning-stream-protection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apply_all: true }),
+        });
+        var signingSource = (res && res.signing && res.signing.source) ? String(res.signing.source) : "unknown";
+        var reasons = [];
+        var reasonCounts = (res && res.failure_reason_counts && typeof res.failure_reason_counts === "object") ? res.failure_reason_counts : null;
+        if (reasonCounts) {
+          if (Number(reasonCounts.permission || 0) > 0) reasons.push("permission: " + Number(reasonCounts.permission || 0));
+          if (Number(reasonCounts.not_found || 0) > 0) reasons.push("not_found: " + Number(reasonCounts.not_found || 0));
+          if (Number(reasonCounts.invalid_request || 0) > 0) reasons.push("invalid_request: " + Number(reasonCounts.invalid_request || 0));
+          if (Number(reasonCounts.other || 0) > 0) reasons.push("other: " + Number(reasonCounts.other || 0));
+          if (Number(reasonCounts.unknown || 0) > 0) reasons.push("unknown: " + Number(reasonCounts.unknown || 0));
+        }
+        var sampleFailures = Array.isArray(res && res.failures) ? res.failures.slice(0, 2) : [];
+        var sampleFailureText = sampleFailures
+          .map(function (row) {
+            return String(row.video_uid || "video") + " (" + String(row.reason || "other") + "): " + String(row.error || "failed");
+          })
+          .join(" | ");
+        var msg = [
+          "Signed playback protection complete.",
+          "Videos scanned: " + Number(res.total_videos || 0),
+          "Protected: " + Number(res.protected_videos || 0),
+          "Failed: " + Number(res.failed_videos || 0),
+          "Signing key: " + signingSource,
+        ].join(" ");
+        if (reasons.length) msg += " Reasons: " + reasons.join(", ") + ".";
+        if (sampleFailureText) msg += " Samples: " + sampleFailureText;
+        setMessage(msg, Number(res.failed_videos || 0) > 0 ? "error" : "ok");
+        showToast(
+          Number(res.failed_videos || 0) > 0
+            ? "Signed playback applied with some failures. Check message panel."
+            : "Signed playback enabled for lesson videos.",
+          Number(res.failed_videos || 0) > 0 ? "error" : "ok"
+        );
+      } catch (error) {
+        setMessage(error.message || "Could not enable signed playback protection.", "error");
+      } finally {
+        enableSignedPlaybackBtn.disabled = false;
       }
     });
   }
@@ -560,6 +671,32 @@
       window.location.href = "/internal/";
     });
   }
+
+  if (actionConfirmBackdrop) {
+    actionConfirmBackdrop.addEventListener("click", function () {
+      closeActionConfirm(false);
+    });
+  }
+  if (actionConfirmCloseBtn) {
+    actionConfirmCloseBtn.addEventListener("click", function () {
+      closeActionConfirm(false);
+    });
+  }
+  if (actionConfirmCancelBtn) {
+    actionConfirmCancelBtn.addEventListener("click", function () {
+      closeActionConfirm(false);
+    });
+  }
+  if (actionConfirmConfirmBtn) {
+    actionConfirmConfirmBtn.addEventListener("click", function () {
+      closeActionConfirm(true);
+    });
+  }
+  window.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    if (!actionConfirmModal || actionConfirmModal.getAttribute("aria-hidden") !== "false") return;
+    closeActionConfirm(false);
+  });
 
   showApp();
   clampHorizontalScroll();

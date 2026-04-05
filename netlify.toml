@@ -36,3 +36,6 @@
   for = "/internal/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[functions."learning-drip-cron"]
+  schedule = "*/10 * * * *"

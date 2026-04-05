@@ -5,9 +5,16 @@
   var sidebarEl = document.getElementById("playerSidebar");
   var paneEl = document.getElementById("playerPane");
   var emptyEl = document.getElementById("playerEmpty");
+  var emptyTitleEl = document.getElementById("playerEmptyTitle");
+  var emptyBodyEl = document.getElementById("playerEmptyBody");
+  var emptyHintEl = document.getElementById("playerEmptyHint");
+  var emptyChipEl = document.getElementById("playerEmptyChip");
+  var emptyRefreshBtn = document.getElementById("playerEmptyRefreshBtn");
   var frameHostEl = document.getElementById("lessonVideoFrameHost");
+  var watermarkEl = document.getElementById("playerWatermark");
   var lessonTitleEl = document.getElementById("lessonTitle");
   var lessonMetaEl = document.getElementById("lessonMeta");
+  var lessonNotesEl = document.getElementById("lessonNotes");
   var markBtn = document.getElementById("markCompleteBtn");
   var progressBarEl = document.getElementById("playerProgressBar");
   var progressTextEl = document.getElementById("playerProgressText");
@@ -28,6 +35,11 @@
     activeEmbedToken: 0,
     activeLessonIndex: -1,
     lessonOrder: [],
+    playbackCache: new Map(),
+    playbackRefreshTimer: null,
+    watermarkTimer: null,
+    watermarkIndex: 0,
+    account: null,
     pendingWatchSeconds: 0,
     lastTrackedPlayerSecond: null,
     isPlaying: false,
@@ -64,6 +76,55 @@
     return d.toLocaleString();
   }
 
+  function sanitizeLabel(value, max) {
+    return clean(value || "").replace(/\s+/g, " ").slice(0, max || 120);
+  }
+
+  function compactTimeLabel(date) {
+    var d = date instanceof Date ? date : new Date();
+    if (!Number.isFinite(d.getTime())) return "";
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mm = String(d.getMinutes()).padStart(2, "0");
+    var ss = String(d.getSeconds()).padStart(2, "0");
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + " " + hh + ":" + mm + ":" + ss;
+  }
+
+  function stopWatermarkTicker() {
+    if (state.watermarkTimer) {
+      clearInterval(state.watermarkTimer);
+      state.watermarkTimer = null;
+    }
+  }
+
+  function renderWatermarkStamp() {
+    if (!watermarkEl) return;
+    var email = sanitizeLabel(state.account && state.account.email, 180);
+    if (!email) {
+      watermarkEl.hidden = true;
+      watermarkEl.setAttribute("aria-hidden", "true");
+      watermarkEl.textContent = "";
+      return;
+    }
+    var name = sanitizeLabel(state.account && state.account.full_name, 80);
+    var who = name ? (name + " (" + email + ")") : email;
+    var stamp = compactTimeLabel(new Date());
+    watermarkEl.textContent = who + " • " + stamp;
+    var positions = ["tr", "bl", "tl", "br", "c"];
+    var idx = Math.abs(Number(state.watermarkIndex || 0)) % positions.length;
+    watermarkEl.setAttribute("data-pos", positions[idx]);
+    watermarkEl.hidden = false;
+    watermarkEl.setAttribute("aria-hidden", "false");
+    state.watermarkIndex = idx + 1;
+  }
+
+  function startWatermarkTicker() {
+    stopWatermarkTicker();
+    renderWatermarkStamp();
+    state.watermarkTimer = setInterval(function () {
+      renderWatermarkStamp();
+    }, 30000);
+  }
+
   function queryCourseSlug() {
     var qs = new URLSearchParams(window.location.search || "");
     var slug = clean(qs.get("course")).toLowerCase();
@@ -81,6 +142,19 @@
     if (!statusEl) return;
     statusEl.textContent = clean(text);
     statusEl.className = "text-sm font-medium mb-3 " + (bad ? "text-red-600" : "text-gray-600");
+  }
+
+  function showEmptyState(config) {
+    if (!emptyEl) return;
+    var data = config || {};
+    var variant = clean(data.variant || "info").toLowerCase();
+    if (variant !== "error") variant = "info";
+    emptyEl.setAttribute("data-variant", variant);
+    if (emptyTitleEl) emptyTitleEl.textContent = clean(data.title || "Lessons are not available yet");
+    if (emptyBodyEl) emptyBodyEl.textContent = clean(data.body || "This course is currently empty. Lessons will appear here once they are published.");
+    if (emptyHintEl) emptyHintEl.textContent = clean(data.hint || "If this is unexpected, refresh this page or return to My Courses.");
+    if (emptyChipEl) emptyChipEl.textContent = clean(data.chip || (variant === "error" ? "Action needed" : "Course update"));
+    emptyEl.hidden = false;
   }
 
   function setPlayerSkeleton(visible) {
@@ -357,8 +431,82 @@
     }
   }
 
+  function clearPlaybackRefreshTimer() {
+    if (state.playbackRefreshTimer) {
+      clearTimeout(state.playbackRefreshTimer);
+      state.playbackRefreshTimer = null;
+    }
+  }
+
+  function parseDateMs(value) {
+    var ms = new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function getCachedPlayback(lessonId, minValidityMs) {
+    var id = Number(lessonId || 0);
+    if (!id) return null;
+    var cached = state.playbackCache.get(id) || null;
+    if (!cached) return null;
+    var now = Date.now();
+    var minMs = Math.max(0, Number(minValidityMs || 0));
+    if (!Number.isFinite(cached.expiresAtMs) || cached.expiresAtMs <= now + minMs) return null;
+    return cached;
+  }
+
+  function cachePlayback(lessonId, playback) {
+    var id = Number(lessonId || 0);
+    if (!id || !playback) return null;
+    var now = Date.now();
+    var ttlSeconds = Number(playback.ttl_seconds || 0);
+    var expiresAtMs = parseDateMs(playback.expires_at);
+    if (!expiresAtMs && Number.isFinite(ttlSeconds) && ttlSeconds > 0) {
+      expiresAtMs = now + (ttlSeconds * 1000);
+    }
+    var refreshAfterSeconds = Number(playback.refresh_after_seconds || 0);
+    var refreshAtMs = now + (Math.max(45, Number.isFinite(refreshAfterSeconds) ? refreshAfterSeconds : 240) * 1000);
+    if (expiresAtMs > 0 && refreshAtMs >= expiresAtMs - 15000) {
+      refreshAtMs = Math.max(now + 45000, expiresAtMs - 60000);
+    }
+    var normalized = {
+      embedUrl: clean(playback.embed_url),
+      expiresAtMs: expiresAtMs,
+      refreshAtMs: refreshAtMs,
+      ttlSeconds: Number.isFinite(ttlSeconds) ? ttlSeconds : 0,
+    };
+    state.playbackCache.set(id, normalized);
+    return normalized;
+  }
+
+  function schedulePlaybackRefresh(lessonId, embedToken) {
+    clearPlaybackRefreshTimer();
+    var id = Number(lessonId || 0);
+    var cached = state.playbackCache.get(id) || null;
+    if (!id || !cached || !Number.isFinite(cached.refreshAtMs) || cached.refreshAtMs <= 0) return;
+    var delayMs = Math.max(15000, cached.refreshAtMs - Date.now());
+    state.playbackRefreshTimer = setTimeout(function () {
+      if (id !== Number(state.activeLessonId || 0)) return;
+      if (embedToken !== state.activeEmbedToken) return;
+      fetchLessonPlayback(id, { force: true, silent: true })
+        .then(function () {
+          if (id !== Number(state.activeLessonId || 0)) return;
+          if (embedToken !== state.activeEmbedToken) return;
+          schedulePlaybackRefresh(id, embedToken);
+        })
+        .catch(function () {
+          if (id !== Number(state.activeLessonId || 0)) return;
+          if (embedToken !== state.activeEmbedToken) return;
+          state.playbackRefreshTimer = setTimeout(function () {
+            schedulePlaybackRefresh(id, embedToken);
+          }, 45000);
+        });
+    }, delayMs);
+  }
+
   function detachPlayer() {
     if (!frameHostEl) return;
+    clearPlaybackRefreshTimer();
+    stopWatermarkTicker();
     stopWatchTracking(false, false);
     if (state.iframeEl) {
       try {
@@ -422,28 +570,8 @@
     return true;
   }
 
-  function buildCloudflareEmbedUrl(hlsUrl, videoUid) {
-    var uid = clean(videoUid);
-    var hls = clean(hlsUrl);
-    if (uid && hls && hls.indexOf("cloudflarestream.com") !== -1) {
-      try {
-        var parsed = new URL(hls);
-        return "https://" + parsed.hostname + "/" + encodeURIComponent(uid) + "/iframe";
-      } catch (_error) {}
-    }
-    if (hls && hls.indexOf("cloudflarestream.com") !== -1) {
-      var match = hls.match(/^https:\/\/([^\/]+)\/([^\/]+)\/manifest\/video\.m3u8/i);
-      if (match && match[1] && match[2]) {
-        return "https://" + match[1] + "/" + encodeURIComponent(match[2]) + "/iframe";
-      }
-    }
-    if (uid) return "https://iframe.videodelivery.net/" + encodeURIComponent(uid);
-    return "";
-  }
-
-  function setVideoSource(hlsUrl, videoUid) {
-    var cleanedHls = clean(hlsUrl);
-    var embed = buildCloudflareEmbedUrl(cleanedHls, videoUid);
+  function setVideoSource(embedUrl) {
+    var embed = clean(embedUrl);
     var embedToken = state.activeEmbedToken;
     if (embed && showIframeMode(embed, embedToken)) {
       setStatus("Loading player...", false);
@@ -453,6 +581,27 @@
     setPlayerSkeleton(false);
     state.lastErroredLessonId = Number(state.activeLessonId || 0);
     setStatus("This lesson has no playable video URL yet.", true);
+  }
+
+  async function fetchLessonPlayback(lessonId, options) {
+    var opts = options || {};
+    var id = Number(lessonId || 0);
+    var cached = !opts.force ? getCachedPlayback(id, 30000) : null;
+    if (cached && cached.embedUrl) return cached;
+    var payload = await api("/.netlify/functions/user-learning-playback-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ lesson_id: id }),
+    });
+    var playback = payload && payload.playback ? payload.playback : null;
+    var normalized = cachePlayback(id, playback);
+    if (!normalized || !normalized.embedUrl) {
+      throw new Error("Could not load secure playback URL for this lesson.");
+    }
+    return normalized;
   }
 
   function flattenLessons(modules) {
@@ -567,6 +716,11 @@
     var doneText = lesson.progress && lesson.progress.is_completed ? "Completed" : "Not completed";
     var lastText = lesson.progress && lesson.progress.last_watched_at ? "Last watched: " + fmtDate(lesson.progress.last_watched_at) : "";
     if (lessonMetaEl) lessonMetaEl.textContent = [doneText, lastText].filter(Boolean).join(" • ");
+    if (lessonNotesEl) {
+      var notes = clean(lesson.notes || "");
+      lessonNotesEl.textContent = notes ? "Notes: " + notes : "";
+      lessonNotesEl.hidden = !notes;
+    }
 
     if (markBtn) {
       markBtn.disabled = !!(lesson.progress && lesson.progress.is_completed);
@@ -574,9 +728,26 @@
       markBtn.setAttribute("data-lesson-id", String(lesson.id));
     }
 
-    setStatus("Loading lesson...", false);
+    setStatus("Authorizing lesson access...", false);
     updateLessonNavButtons();
-    setVideoSource(lesson.video && lesson.video.hls_url ? lesson.video.hls_url : "", lesson.video && lesson.video.uid ? lesson.video.uid : "");
+    clearPlaybackRefreshTimer();
+    if (!lesson.video || lesson.video.has_video !== true) {
+      setVideoSource("");
+      return;
+    }
+    var activeEmbedToken = state.activeEmbedToken;
+    fetchLessonPlayback(lesson.id, { force: false })
+      .then(function (playback) {
+        if (activeEmbedToken !== state.activeEmbedToken) return;
+        if (!playback || !playback.embedUrl) throw new Error("Could not load secure playback URL for this lesson.");
+        setVideoSource(playback.embedUrl);
+        schedulePlaybackRefresh(lesson.id, activeEmbedToken);
+      })
+      .catch(function (error) {
+        if (activeEmbedToken !== state.activeEmbedToken) return;
+        setPlayerSkeleton(false);
+        setStatus(error && error.message ? error.message : "Could not authorize this lesson video.", true);
+      });
   }
 
   async function api(url, init) {
@@ -593,6 +764,9 @@
   async function refreshCourse(openLessonId) {
     var payload = await api("/.netlify/functions/user-learning-course?course_slug=" + encodeURIComponent(state.courseSlug));
     var course = payload && payload.course ? payload.course : null;
+    var account = payload && payload.account ? payload.account : null;
+    state.account = account && typeof account === "object" ? account : null;
+    startWatermarkTicker();
     var payloadError = validateCoursePayloadShape(course);
     if (payloadError) throw new Error(payloadError);
 
@@ -619,13 +793,19 @@
       stopWatchTracking(true, false);
       detachPlayer();
       if (paneEl) paneEl.hidden = true;
-      if (emptyEl) emptyEl.hidden = false;
+      showEmptyState({
+        variant: "info",
+        chip: "Course update",
+        title: "Lessons are not available yet",
+        body: "No lesson is currently available for this course. Content may still be scheduled for your batch or awaiting publication.",
+        hint: "Please check back later or refresh this page.",
+      });
       setPlayerSkeleton(false);
       state.lessonOrder = [];
       state.activeLessonIndex = -1;
       updateLessonNavButtons();
       renderSidebar();
-      setStatus("No lessons are available yet for this course.", true);
+      setStatus("No lessons are available for your account right now.", false);
       return;
     }
 
@@ -658,10 +838,13 @@
     state.initialLessonId = queryLessonId();
     if (!state.courseSlug) {
       setStatus("Missing course slug. Open this page from My Courses.", true);
-      if (emptyEl) {
-        emptyEl.hidden = false;
-        emptyEl.textContent = "Open this page from your My Courses list.";
-      }
+      showEmptyState({
+        variant: "error",
+        chip: "Invalid link",
+        title: "This player link is incomplete",
+        body: "Open the course player directly from your My Courses page so we can load the right course.",
+        hint: "Use the Back to My Courses button below.",
+      });
       return;
     }
 
@@ -669,10 +852,13 @@
       await refreshCourse();
     } catch (error) {
       setStatus(error.message || "Could not load course player.", true);
-      if (emptyEl) {
-        emptyEl.hidden = false;
-        emptyEl.textContent = error.message || "Could not load course lessons.";
-      }
+      showEmptyState({
+        variant: "error",
+        chip: "Load issue",
+        title: "We could not load this course right now",
+        body: clean(error.message || "Could not load course lessons."),
+        hint: "Refresh this page. If it continues, sign out and back in.",
+      });
       if (paneEl) paneEl.hidden = true;
     }
   }
@@ -710,6 +896,29 @@
     });
   }
 
+  if (emptyRefreshBtn) {
+    emptyRefreshBtn.addEventListener("click", function () {
+      if (emptyRefreshBtn.disabled) return;
+      emptyRefreshBtn.disabled = true;
+      emptyRefreshBtn.textContent = "Refreshing...";
+      refreshCourse(state.activeLessonId)
+        .catch(function (error) {
+          setStatus(error.message || "Could not refresh course.", true);
+          showEmptyState({
+            variant: "error",
+            chip: "Load issue",
+            title: "Refresh failed",
+            body: clean(error.message || "Could not refresh this course."),
+            hint: "Try again in a moment or return to My Courses.",
+          });
+        })
+        .finally(function () {
+          emptyRefreshBtn.disabled = false;
+          emptyRefreshBtn.textContent = "Refresh";
+        });
+    });
+  }
+
   if (prevLessonBtn) {
     prevLessonBtn.addEventListener("click", function () {
       var idx = Number(state.activeLessonIndex || -1);
@@ -732,6 +941,7 @@
 
   window.addEventListener("beforeunload", function () {
     clearEmbedFallbackTimer();
+    stopWatermarkTicker();
     stopWatchTracking(true, true);
     detachPlayer();
   });

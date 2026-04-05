@@ -258,7 +258,9 @@ exports.handler = async function (event) {
     const [schoolRows] = await pool.query(
       `SELECT
          sc.course_slug,
-         sc.access_starts_at AS paid_at
+         sc.access_starts_at AS paid_at,
+         ss.website_url,
+         DATE_FORMAT(ss.website_submitted_at, '%Y-%m-%d %H:%i:%s') AS website_submitted_at
        FROM school_students ss
        JOIN school_accounts sc ON sc.id = ss.school_id
        WHERE (LOWER(ss.email) = ? OR ss.account_id = ?)
@@ -279,6 +281,12 @@ exports.handler = async function (event) {
         "paid",
         null
       );
+      const key = `${String(row.course_slug || "").trim()}::school`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.schoolWebsiteUrl = clean(row.website_url, 1000) || "";
+        existing.schoolWebsiteSubmittedAt = row.website_submitted_at || null;
+      }
     });
 
     const [batchRows] = await pool.query(

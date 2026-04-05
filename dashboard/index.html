@@ -110,11 +110,17 @@
         </header>
         <main id="userDashboardMain" class="user-dashboard-main flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div id="userGuestStack" class="w-full max-w-2xl mx-auto space-y-6">
-          <div class="flex justify-start">
-            <button type="button" id="userDashboardBackBtn" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-              Back to home
-            </button>
-          </div>
+          <button
+            type="button"
+            id="userDashboardBackBtn"
+            data-auth-back
+            aria-label="Go back"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-brand-700 transition-colors hover:bg-brand-100 hover:text-brand-800"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
           <section id="userWorkspaceIntro" class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto">
             <p class="text-xs font-bold uppercase tracking-wider text-brand-600">User Dashboard Area</p>
             <h2 class="mt-1 text-2xl font-heading font-extrabold text-gray-900">Wallet, Courses, and Domains</h2>
@@ -198,7 +204,8 @@
       </div>
     </section>
     <script src="https://js.paystack.co/v1/inline.js" defer></script>
-    <script src="/assets/user-dashboard-shell.js" defer></script>
+    <script src="/assets/auth-back.js?v=20260405a" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260405a" defer></script>
     <script src="/assets/installments.js" defer></script>
   </body>
 </html>

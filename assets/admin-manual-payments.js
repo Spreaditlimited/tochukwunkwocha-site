@@ -15,6 +15,8 @@
   const batchStartInput = document.getElementById("adminBatchStartAt");
   const activeBatchText = document.getElementById("adminActiveBatchText");
   const refreshBtn = document.getElementById("adminRefreshBtn");
+  const accessCheckEmailInput = document.getElementById("adminAccessCheckEmail");
+  const accessCheckBtn = document.getElementById("adminAccessCheckBtn");
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const rowsEl = document.getElementById("adminRows");
   const messageEl = document.getElementById("adminMessage");
@@ -38,6 +40,12 @@
   const reviewModalConfirmBtn = document.getElementById("reviewModalConfirmBtn");
   const addStudentModal = document.getElementById("addStudentModal");
   const addStudentForm = document.getElementById("addStudentForm");
+  const addStudentCourse = document.getElementById("addStudentCourse");
+  const addStudentCourseDisplay = document.getElementById("addStudentCourseDisplay");
+  const addStudentHasDiscount = document.getElementById("addStudentHasDiscount");
+  const addStudentCouponWrap = document.getElementById("addStudentCouponWrap");
+  const addStudentCouponCode = document.getElementById("addStudentCouponCode");
+  const addStudentDiscountSummary = document.getElementById("addStudentDiscountSummary");
   const addStudentBatch = document.getElementById("addStudentBatch");
   const addStudentProofFile = document.getElementById("addStudentProofFile");
   const addStudentError = document.getElementById("addStudentError");
@@ -54,6 +62,9 @@
   let debounceTimer = null;
   let pendingReviewAction = null;
   let latestBatches = [];
+  let availableCourses = [];
+  let availableCoupons = [];
+  let addStudentBatchMetaByKey = {};
   const COURSE_DEFAULTS = {
     "prompt-to-profit": { prefix: "PTP", amountMinor: 1075000, paypalAmountMinor: 2400 },
     "prompt-to-production": { prefix: "PTPROD", amountMinor: 25000000, paypalAmountMinor: 2400 },
@@ -94,11 +105,258 @@
     return value || "prompt-to-profit";
   }
 
+  function selectedAddStudentCourseSlug() {
+    const value = String((addStudentCourse && addStudentCourse.value) || "").trim().toLowerCase();
+    if (!value) return selectedCourseSlug();
+    if (availableCourses.some(function (item) { return item.slug === value; })) return value;
+    return selectedCourseSlug();
+  }
+
+  function selectedAddStudentCourseLabel() {
+    const slug = selectedAddStudentCourseSlug();
+    const found = availableCourses.find(function (item) {
+      return item.slug === slug;
+    });
+    return String((found && found.label) || slug || "Course").trim();
+  }
+
+  function hasAddStudentDiscount() {
+    return String((addStudentHasDiscount && addStudentHasDiscount.value) || "no").trim().toLowerCase() === "yes";
+  }
+
+  function selectedAddStudentCouponCode() {
+    return String((addStudentCouponCode && addStudentCouponCode.value) || "").trim().toUpperCase();
+  }
+
   function selectedSummaryCourseSlug() {
     if (!summaryCourseFilter) return selectedCourseSlug();
     const value = String(summaryCourseFilter.value || "").trim().toLowerCase();
-    if (value === "all" || value === "prompt-to-profit" || value === "prompt-to-production") return value;
+    if (value === "all") return value;
+    if (availableCourses.some(function (item) { return item.slug === value; })) return value;
     return selectedCourseSlug();
+  }
+
+  function setCourseFilterOptions(items) {
+    if (!courseFilter) return;
+    const current = selectedCourseSlug();
+    const list = Array.isArray(items) && items.length ? items : [
+      { slug: "prompt-to-profit", label: "Prompt To Profit" },
+      { slug: "prompt-to-production", label: "Prompt To Production" },
+    ];
+    courseFilter.innerHTML = list
+      .map(function (item) {
+        const slug = String(item.slug || "").trim().toLowerCase();
+        const label = String(item.label || slug || "Course").trim();
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean)
+      .join("");
+    if (list.some(function (item) { return item.slug === current; })) {
+      courseFilter.value = current;
+    }
+  }
+
+  function setSummaryCourseFilterOptions(items) {
+    if (!summaryCourseFilter) return;
+    const current = selectedSummaryCourseSlug();
+    const list = Array.isArray(items) && items.length ? items : [];
+    const options = ['<option value="all">All courses</option>'].concat(
+      list.map(function (item) {
+        const slug = String(item.slug || "").trim().toLowerCase();
+        const label = String(item.label || slug || "Course").trim();
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      }).filter(Boolean)
+    );
+    summaryCourseFilter.innerHTML = options.join("");
+    if (current === "all" || list.some(function (item) { return item.slug === current; })) {
+      summaryCourseFilter.value = current;
+    }
+  }
+
+  function setAddStudentCourseOptions(items) {
+    if (!addStudentCourse) return;
+    const current = selectedAddStudentCourseSlug();
+    const list = Array.isArray(items) && items.length ? items : [];
+    addStudentCourse.innerHTML = list
+      .map(function (item) {
+        const slug = String(item.slug || "").trim().toLowerCase();
+        const label = String(item.label || slug || "Course").trim();
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean)
+      .join("");
+    if (list.some(function (item) { return item.slug === current; })) {
+      addStudentCourse.value = current;
+    }
+  }
+
+  function syncAddStudentCourseDisplay() {
+    if (!addStudentCourseDisplay) return;
+    addStudentCourseDisplay.textContent = selectedAddStudentCourseLabel();
+  }
+
+  function setAddStudentDiscountVisibility() {
+    if (!addStudentCouponWrap) return;
+    addStudentCouponWrap.classList.toggle("hidden", !hasAddStudentDiscount());
+  }
+
+  function couponMatchesCourse(coupon, courseSlug) {
+    const scoped = String((coupon && coupon.course_slug) || "").trim().toLowerCase();
+    if (!scoped) return true;
+    return scoped === String(courseSlug || "").trim().toLowerCase();
+  }
+
+  function couponLabel(coupon) {
+    const code = String((coupon && coupon.code) || "").trim().toUpperCase();
+    const type = String((coupon && coupon.discount_type) || "").trim().toLowerCase();
+    let discountText = "";
+    if (type === "percent") {
+      const pct = Number(coupon && coupon.percent_off);
+      discountText = Number.isFinite(pct) && pct > 0 ? `${pct}% off` : "Percent discount";
+    } else {
+      const fixedNgn = Number(coupon && coupon.fixed_ngn_minor);
+      discountText = Number.isFinite(fixedNgn) && fixedNgn > 0 ? `- ${fmtMoney(fixedNgn, "NGN")}` : "Fixed discount";
+    }
+    const active = Number(coupon && coupon.is_active) === 1 ? "" : " (inactive)";
+    return `${code} (${discountText})${active}`;
+  }
+
+  function selectedAddStudentBatchAmountMinor() {
+    const key = String((addStudentBatch && addStudentBatch.value) || "").trim();
+    if (!key || !addStudentBatchMetaByKey[key]) return 0;
+    return Math.max(0, Number(addStudentBatchMetaByKey[key].paystackAmountMinor || 0));
+  }
+
+  function selectedAddStudentCoupon() {
+    const code = selectedAddStudentCouponCode();
+    if (!code) return null;
+    return availableCoupons.find(function (item) {
+      return String(item.code || "").trim().toUpperCase() === code;
+    }) || null;
+  }
+
+  function computeDiscountPreview(coupon, baseAmountMinor) {
+    const base = Math.max(0, Number(baseAmountMinor || 0));
+    if (!coupon || base <= 0) return null;
+    const type = String(coupon.discount_type || "").trim().toLowerCase();
+    let discountMinor = 0;
+    if (type === "percent") {
+      const pct = Number(coupon.percent_off || 0);
+      if (!Number.isFinite(pct) || pct <= 0) return null;
+      discountMinor = Math.min(base, Math.round((base * pct) / 100));
+    } else {
+      const fixed = Number(coupon.fixed_ngn_minor || 0);
+      if (!Number.isFinite(fixed) || fixed <= 0) return null;
+      discountMinor = Math.min(base, Math.round(fixed));
+    }
+    const finalAmountMinor = Math.max(0, base - discountMinor);
+    if (discountMinor <= 0 || finalAmountMinor <= 0) return null;
+    return { baseAmountMinor: base, discountMinor, finalAmountMinor };
+  }
+
+  function syncAddStudentDiscountSummary() {
+    if (!addStudentDiscountSummary) return;
+    if (!hasAddStudentDiscount()) {
+      addStudentDiscountSummary.classList.add("hidden");
+      addStudentDiscountSummary.textContent = "";
+      return;
+    }
+    const coupon = selectedAddStudentCoupon();
+    const pricing = computeDiscountPreview(coupon, selectedAddStudentBatchAmountMinor());
+    if (!coupon || !pricing) {
+      addStudentDiscountSummary.classList.remove("hidden");
+      addStudentDiscountSummary.textContent = "Select a valid code to preview discounted amount.";
+      return;
+    }
+    addStudentDiscountSummary.classList.remove("hidden");
+    addStudentDiscountSummary.textContent =
+      `Base: ${fmtMoney(pricing.baseAmountMinor, "NGN")} • Discount: -${fmtMoney(pricing.discountMinor, "NGN")} • Final: ${fmtMoney(pricing.finalAmountMinor, "NGN")}`;
+  }
+
+  function setAddStudentCouponOptions() {
+    if (!addStudentCouponCode) return;
+    const courseSlug = selectedAddStudentCourseSlug();
+    const previous = selectedAddStudentCouponCode();
+    const scoped = availableCoupons.filter(function (item) {
+      return couponMatchesCourse(item, courseSlug);
+    });
+    const options = ['<option value="">Select discount code</option>'].concat(
+      scoped.map(function (item) {
+        const code = String(item.code || "").trim().toUpperCase();
+        if (!code) return "";
+        return '<option value="' + escapeHtml(code) + '">' + escapeHtml(couponLabel(item)) + "</option>";
+      }).filter(Boolean)
+    );
+    addStudentCouponCode.innerHTML = options.join("");
+    if (previous && scoped.some(function (item) { return String(item.code || "").trim().toUpperCase() === previous; })) {
+      addStudentCouponCode.value = previous;
+    }
+    syncAddStudentDiscountSummary();
+  }
+
+  async function loadAvailableCourses() {
+    const res = await fetch("/.netlify/functions/admin-course-slugs-list", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load course list");
+    }
+    const items = Array.isArray(json.items) ? json.items : [];
+    availableCourses = items.map(function (item) {
+      return {
+        slug: String(item.slug || "").trim().toLowerCase(),
+        label: String(item.label || item.slug || "").trim(),
+      };
+    }).filter(function (item) {
+      return !!item.slug;
+    });
+    if (!availableCourses.length) {
+      availableCourses = [
+        { slug: "prompt-to-profit", label: "Prompt To Profit" },
+        { slug: "prompt-to-production", label: "Prompt To Production" },
+      ];
+    }
+    setCourseFilterOptions(availableCourses);
+    setSummaryCourseFilterOptions(availableCourses);
+    setAddStudentCourseOptions(availableCourses);
+    syncAddStudentCourseDisplay();
+    return availableCourses;
+  }
+
+  async function loadAvailableCoupons() {
+    const res = await fetch("/.netlify/functions/admin-coupons-list", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load discount codes");
+    }
+    const items = Array.isArray(json.items) ? json.items : [];
+    availableCoupons = items.map(function (item) {
+      return {
+        code: String(item.code || "").trim().toUpperCase(),
+        course_slug: String(item.course_slug || "").trim().toLowerCase(),
+        discount_type: String(item.discount_type || "").trim().toLowerCase(),
+        percent_off: item.percent_off !== null && item.percent_off !== undefined ? Number(item.percent_off) : null,
+        fixed_ngn_minor:
+          item.fixed_ngn_minor !== null && item.fixed_ngn_minor !== undefined ? Number(item.fixed_ngn_minor) : null,
+        is_active: Number(item.is_active || 0),
+      };
+    }).filter(function (item) {
+      return !!item.code;
+    });
+    setAddStudentCouponOptions();
+    return availableCoupons;
   }
 
   function selectedSummaryBatchKey() {
@@ -120,6 +378,8 @@
     if (!messageEl) return;
     messageEl.textContent = text || "";
     messageEl.classList.remove("is-error", "is-ok");
+    if (text) messageEl.classList.remove("hidden");
+    else messageEl.classList.add("hidden");
     if (type === "error") messageEl.classList.add("is-error");
     if (type === "ok") messageEl.classList.add("is-ok");
   }
@@ -173,6 +433,18 @@
       addStudentError.textContent = "";
       addStudentError.classList.add("hidden");
     }
+    if (addStudentCourse) addStudentCourse.value = selectedCourseSlug();
+    syncAddStudentCourseDisplay();
+    if (addStudentHasDiscount) addStudentHasDiscount.value = "no";
+    if (addStudentCouponCode) addStudentCouponCode.value = "";
+    setAddStudentDiscountVisibility();
+    setAddStudentCouponOptions();
+    loadAddStudentBatches(selectedAddStudentCourseSlug(), selectedBatchKey()).catch(function (error) {
+      if (addStudentError) {
+        addStudentError.textContent = error.message || "Could not load batches";
+        addStudentError.classList.remove("hidden");
+      }
+    });
     addStudentModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     if (addStudentForm && addStudentForm.firstName) addStudentForm.firstName.focus();
@@ -187,6 +459,8 @@
       addStudentError.classList.add("hidden");
     }
     if (addStudentForm) addStudentForm.reset();
+    setAddStudentDiscountVisibility();
+    syncAddStudentDiscountSummary();
   }
 
   function openCreateBatchModal() {
@@ -452,8 +726,9 @@
     }
   }
 
-  async function loadCourseBatches() {
-    const res = await fetch(`/.netlify/functions/admin-course-batches-list?course_slug=${encodeURIComponent(selectedCourseSlug())}`, {
+  async function loadCourseBatches(courseSlug) {
+    const slug = String(courseSlug || selectedCourseSlug()).trim().toLowerCase() || selectedCourseSlug();
+    const res = await fetch(`/.netlify/functions/admin-course-batches-list?course_slug=${encodeURIComponent(slug)}`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
@@ -463,8 +738,37 @@
     if (!res.ok || !json || !json.ok) {
       throw new Error((json && json.error) || "Could not load batches");
     }
-    latestBatches = Array.isArray(json.batches) ? json.batches : [];
-    return latestBatches;
+    const batches = Array.isArray(json.batches) ? json.batches : [];
+    if (!courseSlug || slug === selectedCourseSlug()) {
+      latestBatches = batches;
+    }
+    return batches;
+  }
+
+  async function loadAddStudentBatches(courseSlug, preferredBatchKey) {
+    if (!addStudentBatch) return;
+    const batches = await loadCourseBatches(courseSlug);
+    addStudentBatchMetaByKey = {};
+    batches.forEach(function (item) {
+      const key = String(item.batchKey || "").trim();
+      if (!key) return;
+      addStudentBatchMetaByKey[key] = {
+        paystackAmountMinor: Number(item.paystackAmountMinor || 0),
+      };
+    });
+    const options = batches
+      .map(function (item) {
+        const key = String(item.batchKey || "").trim();
+        const label = String(item.batchLabel || key).trim();
+        if (!key) return "";
+        return '<option value="' + escapeHtml(key) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean);
+    addStudentBatch.innerHTML = options.join("");
+    const preferred = String(preferredBatchKey || "").trim();
+    if (preferred) addStudentBatch.value = preferred;
+    if (!addStudentBatch.value && options.length) addStudentBatch.selectedIndex = 0;
+    syncAddStudentDiscountSummary();
   }
 
   function formatSummaryCurrency(currency, totalMinor) {
@@ -480,7 +784,6 @@
     const batchLabel = String(summary.batchLabel || "Batch 1").trim();
     const registrationStatus = String(summary.registrationStatus || "Closed").trim();
     const totalStudents = Number(summary.totalStudents || 0);
-    const totalRegistrations = Number(summary.totalRegistrations || 0);
     const paidApprovedCount = Number(summary.paidApprovedCount || totalStudents);
     const manualPendingCount = Number(summary.manualPendingCount || 0);
 
@@ -506,7 +809,7 @@
     if (summaryStatusEl) summaryStatusEl.textContent = `Registration: ${registrationStatus}`;
     if (summaryPendingEl) summaryPendingEl.textContent = `Pending manual approvals: ${manualPendingCount}`;
     if (summaryCourseEl) summaryCourseEl.textContent = `${courseName} (${batchLabel})`;
-    if (summaryStudentsEl) summaryStudentsEl.textContent = String(totalRegistrations || totalStudents);
+    if (summaryStudentsEl) summaryStudentsEl.textContent = String(totalStudents);
     if (summaryTotalEl) summaryTotalEl.textContent = totalAmount;
     if (summarySourcesEl) {
       summarySourcesEl.textContent = `Manual: ${manualCount}, Paystack: ${paystackCount}, PayPal: ${paypalCount} | Approved/Paid: ${paidApprovedCount}`;
@@ -670,9 +973,115 @@
     });
   }
 
+  async function runAccessCheck() {
+    const email = String((accessCheckEmailInput && accessCheckEmailInput.value) || "").trim().toLowerCase();
+    if (!email) {
+      setMessage("Enter an email to check access.", "error");
+      return;
+    }
+    if (!accessCheckBtn) return;
+
+    accessCheckBtn.disabled = true;
+    const prev = accessCheckBtn.textContent;
+    accessCheckBtn.textContent = "Checking...";
+    setMessage("Checking learning access...", "ok");
+
+    try {
+      const res = await fetch(
+        "/.netlify/functions/admin-learning-access-check?course_slug=" +
+          encodeURIComponent("prompt-to-profit") +
+          "&email=" +
+          encodeURIComponent(email),
+        { method: "GET", headers: { Accept: "application/json" } }
+      );
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok || !json.audit) {
+        throw new Error((json && json.error) || "Could not check course access");
+      }
+      const access = json.audit.access || {};
+      if (access.allowed) {
+        setMessage(
+          "Access ALLOWED for " + email + " (" + String(access.reason || "allowed") + ").",
+          "ok"
+        );
+      } else {
+        const details = access.next_start_at
+          ? " Starts at: " + String(access.next_start_at) + "."
+          : "";
+        setMessage(
+          "Access BLOCKED for " +
+            email +
+            " (" +
+            String(access.reason || "blocked") +
+            "). " +
+            String(access.message || "Not eligible.") +
+            details,
+          "error"
+        );
+      }
+    } catch (error) {
+      setMessage(error.message || "Could not check course access", "error");
+    } finally {
+      accessCheckBtn.disabled = false;
+      accessCheckBtn.textContent = prev || "Check Course Access";
+    }
+  }
+
+  if (accessCheckBtn) {
+    accessCheckBtn.addEventListener("click", function () {
+      runAccessCheck().catch(function (error) {
+        setMessage(error.message || "Could not check course access", "error");
+      });
+    });
+  }
+
+  if (accessCheckEmailInput) {
+    accessCheckEmailInput.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      runAccessCheck().catch(function (error) {
+        setMessage(error.message || "Could not check course access", "error");
+      });
+    });
+  }
+
   if (addStudentModal) {
     addStudentModal.querySelectorAll("[data-add-student-close]").forEach(function (el) {
       el.addEventListener("click", closeAddStudentModal);
+    });
+  }
+
+  if (addStudentCourse) {
+    addStudentCourse.addEventListener("change", function () {
+      syncAddStudentCourseDisplay();
+      setAddStudentCouponOptions();
+      loadAddStudentBatches(selectedAddStudentCourseSlug(), "").catch(function (error) {
+        if (addStudentError) {
+          addStudentError.textContent = error.message || "Could not load batches";
+          addStudentError.classList.remove("hidden");
+        }
+      });
+    });
+  }
+
+  if (addStudentHasDiscount) {
+    addStudentHasDiscount.addEventListener("change", function () {
+      setAddStudentDiscountVisibility();
+      syncAddStudentDiscountSummary();
+    });
+  }
+
+  if (addStudentCouponCode) {
+    addStudentCouponCode.addEventListener("change", function () {
+      syncAddStudentDiscountSummary();
+    });
+  }
+
+  if (addStudentBatch) {
+    addStudentBatch.addEventListener("change", function () {
+      syncAddStudentDiscountSummary();
     });
   }
 
@@ -915,6 +1324,8 @@
         email: String((addStudentForm.email && addStudentForm.email.value) || "").trim(),
         country: String((addStudentForm.country && addStudentForm.country.value) || "").trim(),
         batchKey: String((addStudentForm.batchKey && addStudentForm.batchKey.value) || "").trim(),
+        hasDiscount: hasAddStudentDiscount(),
+        couponCode: selectedAddStudentCouponCode(),
         adminNote: String((addStudentForm.adminNote && addStudentForm.adminNote.value) || "").trim(),
         proofUrl: "",
         proofPublicId: "",
@@ -923,6 +1334,13 @@
       if (!payload.firstName || !payload.email) {
         if (addStudentError) {
           addStudentError.textContent = "Full Name and email are required.";
+          addStudentError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (payload.hasDiscount && !payload.couponCode) {
+        if (addStudentError) {
+          addStudentError.textContent = "Select the exact discount code.";
           addStudentError.classList.remove("hidden");
         }
         return;
@@ -943,7 +1361,7 @@
         const res = await fetch("/.netlify/functions/admin-payments-add-student", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(Object.assign({}, payload, { courseSlug: selectedCourseSlug() })),
+          body: JSON.stringify(Object.assign({}, payload, { courseSlug: selectedAddStudentCourseSlug() })),
         });
         const json = await res.json().catch(function () {
           return null;
@@ -1095,7 +1513,12 @@
   });
 
   bootAppShell();
-  Promise.all([loadCourseBatches().catch(function () { return []; }), loadItems({ reconcile: false })]).catch(function (_error) {
+  Promise.all([
+    loadAvailableCourses().catch(function () { return []; }),
+    loadAvailableCoupons().catch(function () { return []; }),
+    loadCourseBatches().catch(function () { return []; }),
+    loadItems({ reconcile: false }),
+  ]).catch(function (_error) {
     redirectToInternalSignIn();
   });
 })();

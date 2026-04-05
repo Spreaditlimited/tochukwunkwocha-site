@@ -116,6 +116,9 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN module_description TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN sort_order INT NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_enabled TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_notified_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_module_slug (course_slug, module_slug)`);
@@ -148,6 +151,7 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN lesson_title VARCHAR(220) NOT NULL`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN lesson_order INT NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN video_asset_id BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN lesson_notes TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
@@ -306,14 +310,15 @@ async function findOrCreateModule(pool, input) {
   const sortOrder = toInt(input && input.sort_order, 0);
   const isActive = Number(input && input.is_active === false ? 0 : 1);
   const preferredSlug = slugify(input && input.module_slug ? input.module_slug : moduleTitle, "module");
+  const titleNorm = moduleTitle.toLowerCase().replace(/\s+/g, " ").trim();
 
   const [existingByTitle] = await pool.query(
     `SELECT id, course_slug, module_slug, module_title, module_description, sort_order, is_active, created_at, updated_at
      FROM ${MODULES_TABLE}
-     WHERE course_slug = ? AND module_title = ?
+     WHERE course_slug = ? AND LOWER(TRIM(module_title)) = ?
      ORDER BY id ASC
      LIMIT 1`,
-    [courseSlug, moduleTitle]
+    [courseSlug, titleNorm]
   );
   if (Array.isArray(existingByTitle) && existingByTitle.length) {
     const existing = existingByTitle[0];
@@ -351,6 +356,23 @@ async function findOrCreateModule(pool, input) {
     } catch (error) {
       const msg = String(error && error.message || "");
       if (msg.toLowerCase().indexOf("duplicate") === -1) throw error;
+
+      // If another request inserted the same logical module title first,
+      // lock onto that row instead of creating slug-suffixed replicas.
+      const [titleRows] = await pool.query(
+        `SELECT id, course_slug, module_slug, module_title, module_description, sort_order, is_active, created_at, updated_at
+         FROM ${MODULES_TABLE}
+         WHERE course_slug = ? AND LOWER(TRIM(module_title)) = ?
+         ORDER BY id ASC
+         LIMIT 1`,
+        [courseSlug, titleNorm]
+      );
+      if (Array.isArray(titleRows) && titleRows.length) {
+        moduleSlug = clean(titleRows[0].module_slug, 160) || moduleSlug;
+        done = true;
+        break;
+      }
+
       const suffix = attempt + 1;
       moduleSlug = `${preferredSlug}-${suffix}`;
     }
@@ -394,7 +416,39 @@ async function upsertLesson(pool, input) {
   const lessonOrder = toInt(input && input.lesson_order, 1);
   const videoAssetId = Number(input && input.video_asset_id || 0);
   const safeVideoAssetId = Number.isFinite(videoAssetId) && videoAssetId > 0 ? videoAssetId : null;
+  const lessonNotes = clean(input && input.lesson_notes, 4000) || null;
   const isActive = Number(input && input.is_active === false ? 0 : 1);
+  const titleNorm = lessonTitle.toLowerCase().replace(/\s+/g, " ").trim();
+
+  const [existingByTitle] = await pool.query(
+    `SELECT id, module_id, lesson_slug
+     FROM ${LESSONS_TABLE}
+     WHERE module_id = ? AND LOWER(TRIM(lesson_title)) = ?
+     ORDER BY id ASC
+     LIMIT 1`,
+    [moduleId, titleNorm]
+  );
+  if (Array.isArray(existingByTitle) && existingByTitle.length) {
+    const existing = existingByTitle[0];
+    const keepSlug = clean(existing.lesson_slug, 160) || slugify(input && input.lesson_slug ? input.lesson_slug : lessonTitle, "lesson");
+    await pool.query(
+      `UPDATE ${LESSONS_TABLE}
+       SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, Number(existing.id)]
+    );
+    const [rows] = await pool.query(
+      `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.is_active, l.created_at, l.updated_at,
+              a.video_uid, a.filename, a.hls_url, a.dash_url
+       FROM ${LESSONS_TABLE} l
+       LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
+       WHERE l.id = ?
+       LIMIT 1`,
+      [Number(existing.id)]
+    );
+    return rows && rows[0] ? rows[0] : null;
+  }
 
   const baseSlug = slugify(input && input.lesson_slug ? input.lesson_slug : lessonTitle, "lesson");
   let lessonSlug = baseSlug;
@@ -405,14 +459,29 @@ async function upsertLesson(pool, input) {
     try {
       await pool.query(
         `INSERT INTO ${LESSONS_TABLE}
-          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [moduleId, lessonSlug, lessonTitle, lessonOrder, safeVideoAssetId, isActive, now, now]
+          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [moduleId, lessonSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, now]
       );
       done = true;
     } catch (error) {
       const msg = String(error && error.message || "");
       if (msg.toLowerCase().indexOf("duplicate") === -1) throw error;
+
+      const [titleRows] = await pool.query(
+        `SELECT id, module_id, lesson_slug
+         FROM ${LESSONS_TABLE}
+         WHERE module_id = ? AND LOWER(TRIM(lesson_title)) = ?
+         ORDER BY id ASC
+         LIMIT 1`,
+        [moduleId, titleNorm]
+      );
+      if (Array.isArray(titleRows) && titleRows.length) {
+        lessonSlug = clean(titleRows[0].lesson_slug, 160) || lessonSlug;
+        done = true;
+        break;
+      }
+
       const suffix = attempt + 1;
       lessonSlug = `${baseSlug}-${suffix}`;
     }
@@ -420,13 +489,13 @@ async function upsertLesson(pool, input) {
 
   await pool.query(
     `UPDATE ${LESSONS_TABLE}
-     SET lesson_title = ?, lesson_order = ?, video_asset_id = ?, is_active = ?, updated_at = ?
+     SET lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
      WHERE module_id = ? AND lesson_slug = ?`,
-    [lessonTitle, lessonOrder, safeVideoAssetId, isActive, now, moduleId, lessonSlug]
+    [lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, moduleId, lessonSlug]
   );
 
   const [rows] = await pool.query(
-    `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.is_active, l.created_at, l.updated_at,
+    `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.is_active, l.created_at, l.updated_at,
             a.video_uid, a.filename, a.hls_url, a.dash_url
      FROM ${LESSONS_TABLE} l
      LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id

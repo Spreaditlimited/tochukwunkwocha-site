@@ -30,7 +30,6 @@
   const createPlanBtn = document.getElementById("walletCreatePlanBtn");
   const plansWrap = document.getElementById("walletPlans");
   const planMsg = document.getElementById("walletPlanMsg");
-  const backBtn = document.getElementById("userDashboardBackBtn");
 
   let dashboard = null;
   let authMode = "signin";
@@ -612,12 +611,6 @@
       applyInstallmentCoupon().catch(function () {
         return null;
       });
-    });
-  }
-
-  if (backBtn) {
-    backBtn.addEventListener("click", function () {
-      window.location.href = "/";
     });
   }
 

@@ -42,6 +42,64 @@
         background: #eef2fb;
         border-color: #b8c7eb;
       }
+      .player-empty-card {
+        border: 1px solid #dbe3f5;
+        background: linear-gradient(145deg, #f8faff 0%, #eef3ff 100%);
+      }
+      .player-empty-icon {
+        background: linear-gradient(145deg, #22345f 0%, #314a85 100%);
+        box-shadow: 0 10px 30px rgba(20, 33, 61, 0.18);
+      }
+      .player-empty-chip {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+      }
+      .player-empty-card[data-variant="error"] {
+        border-color: #fecaca;
+        background: linear-gradient(145deg, #fff8f8 0%, #fff1f1 100%);
+      }
+      .player-empty-card[data-variant="error"] .player-empty-icon {
+        background: linear-gradient(145deg, #b91c1c 0%, #dc2626 100%);
+        box-shadow: 0 10px 30px rgba(185, 28, 28, 0.2);
+      }
+      .player-empty-card[data-variant="error"] .player-empty-chip {
+        border-color: #fecaca;
+        background: #fff1f2;
+        color: #9f1239;
+      }
+      .player-watermark {
+        position: absolute;
+        z-index: 20;
+        max-width: min(80%, 32rem);
+        padding: 0.3rem 0.55rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        background: rgba(5, 8, 14, 0.34);
+        color: rgba(255, 255, 255, 0.78);
+        font-size: clamp(10px, 1.75vw, 12px);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: transform 0.32s ease, opacity 0.22s ease;
+      }
+      .player-watermark[data-pos="tl"] { top: 0.75rem; left: 0.75rem; }
+      .player-watermark[data-pos="tr"] { top: 0.75rem; right: 0.75rem; text-align: right; }
+      .player-watermark[data-pos="bl"] { bottom: 0.75rem; left: 0.75rem; }
+      .player-watermark[data-pos="br"] { bottom: 0.75rem; right: 0.75rem; text-align: right; }
+      .player-watermark[data-pos="c"] {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: min(88%, 34rem);
+        text-align: center;
+      }
     </style>
   </head>
   <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
@@ -104,6 +162,7 @@
                         <span class="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-gray-100">Loading video...</span>
                       </div>
                     </div>
+                    <div id="playerWatermark" class="player-watermark" data-pos="tr" hidden aria-hidden="true"></div>
                     <div id="lessonVideoFrameHost" class="absolute inset-0 bg-black"></div>
                   </div>
                 </div>
@@ -111,6 +170,7 @@
                   <div>
                     <h2 id="lessonTitle" class="text-xl font-heading font-bold text-gray-900"></h2>
                     <p id="lessonMeta" class="text-sm text-gray-500"></p>
+                    <p id="lessonNotes" class="mt-2 text-sm text-gray-700" hidden></p>
                   </div>
                   <div class="flex flex-wrap items-center gap-2">
                     <button id="prevLessonBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Previous lesson</button>
@@ -121,8 +181,26 @@
                 </div>
               </div>
 
-              <div id="playerEmpty" hidden class="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
-                No lessons are mapped for this course yet.
+              <div id="playerEmpty" hidden class="player-empty-card rounded-2xl p-5 sm:p-6" data-variant="info">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="flex items-start gap-3 sm:gap-4">
+                    <span class="player-empty-icon inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white">
+                      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-4m0-4h.01M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p id="playerEmptyChip" class="player-empty-chip inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">Course update</p>
+                      <h3 id="playerEmptyTitle" class="mt-2 text-base sm:text-lg font-heading font-bold text-gray-900">Lessons are not available yet</h3>
+                      <p id="playerEmptyBody" class="mt-1 text-sm text-gray-700">This course is currently empty. Lessons will appear here once they are published for your cohort.</p>
+                      <p id="playerEmptyHint" class="mt-2 text-xs text-gray-600">If this is unexpected, refresh this page or return to My Courses.</p>
+                    </div>
+                  </div>
+                  <div class="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[12rem]">
+                    <button id="playerEmptyRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-800">Refresh</button>
+                    <a href="/dashboard/courses/" class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50">Back to My Courses</a>
+                  </div>
+                </div>
               </div>
             </section>
           </div>
@@ -130,7 +208,7 @@
       </div>
     </section>
 
-    <script src="/assets/user-dashboard-shell.js" defer></script>
-    <script src="/assets/dashboard-course-player.js?v=20260404v" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260405a" defer></script>
+    <script src="/assets/dashboard-course-player.js?v=20260405c" defer></script>
   </body>
 </html>

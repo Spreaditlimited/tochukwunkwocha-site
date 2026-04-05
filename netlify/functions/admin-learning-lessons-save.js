@@ -49,18 +49,50 @@ exports.handler = async function (event) {
       const lessonOrder = Number.isFinite(Number(row.lesson_order)) ? Number(row.lesson_order) : i + 1;
       const videoAssetId = Number(row.video_asset_id || 0);
       const safeVideoAssetId = Number.isFinite(videoAssetId) && videoAssetId > 0 ? videoAssetId : null;
+      const lessonNotes = clean(row.lesson_notes, 4000) || null;
       const isActive = row.is_active === false || Number(row.is_active) === 0 ? 0 : 1;
       const now = nowSql();
+      const lessonTitleNorm = lessonTitle.toLowerCase().replace(/\s+/g, " ").trim();
+
+      const [existingByTitle] = await conn.query(
+        `SELECT id, lesson_slug
+         FROM ${LESSONS_TABLE}
+         WHERE module_id = ? AND LOWER(TRIM(lesson_title)) = ?
+         ORDER BY id ASC
+         LIMIT 1`,
+        [moduleId, lessonTitleNorm]
+      );
+      const existingTitleRow = Array.isArray(existingByTitle) && existingByTitle.length ? existingByTitle[0] : null;
 
       if (Number.isFinite(lessonId) && lessonId > 0) {
+        const targetLessonId = existingTitleRow && Number(existingTitleRow.id || 0) > 0
+          ? Number(existingTitleRow.id)
+          : lessonId;
+        const keepSlug = existingTitleRow && existingTitleRow.lesson_slug
+          ? String(existingTitleRow.lesson_slug)
+          : slugify(clean(row.lesson_slug, 160) || lessonTitle, "lesson");
         await conn.query(
           `UPDATE ${LESSONS_TABLE}
-           SET lesson_title = ?, lesson_order = ?, video_asset_id = ?, is_active = ?, updated_at = ?
+           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
            WHERE id = ? AND module_id = ?
            LIMIT 1`,
-          [lessonTitle, lessonOrder, safeVideoAssetId, isActive, now, lessonId, moduleId]
+          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, targetLessonId, moduleId]
         );
-        keepIds.push(lessonId);
+        keepIds.push(targetLessonId);
+        continue;
+      }
+
+      if (existingTitleRow && Number(existingTitleRow.id || 0) > 0) {
+        const targetLessonId = Number(existingTitleRow.id);
+        const keepSlug = String(existingTitleRow.lesson_slug || slugify(clean(row.lesson_slug, 160) || lessonTitle, "lesson"));
+        await conn.query(
+          `UPDATE ${LESSONS_TABLE}
+           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+           WHERE id = ? AND module_id = ?
+           LIMIT 1`,
+          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, targetLessonId, moduleId]
+        );
+        keepIds.push(targetLessonId);
         continue;
       }
 
@@ -71,15 +103,36 @@ exports.handler = async function (event) {
         try {
           const [ins] = await conn.query(
             `INSERT INTO ${LESSONS_TABLE}
-              (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [moduleId, nextSlug, lessonTitle, lessonOrder, safeVideoAssetId, isActive, now, now]
+              (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [moduleId, nextSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, now]
           );
           createdId = Number(ins && ins.insertId ? ins.insertId : 0);
           break;
         } catch (error) {
           const msg = String(error && error.message || "").toLowerCase();
           if (msg.indexOf("duplicate") === -1) throw error;
+          const [titleRows] = await conn.query(
+            `SELECT id, lesson_slug
+             FROM ${LESSONS_TABLE}
+             WHERE module_id = ? AND LOWER(TRIM(lesson_title)) = ?
+             ORDER BY id ASC
+             LIMIT 1`,
+            [moduleId, lessonTitleNorm]
+          );
+          if (Array.isArray(titleRows) && titleRows.length) {
+            createdId = Number(titleRows[0].id || 0);
+            if (createdId > 0) {
+              await conn.query(
+                `UPDATE ${LESSONS_TABLE}
+                 SET lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+                 WHERE id = ? AND module_id = ?
+                 LIMIT 1`,
+                [lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, createdId, moduleId]
+              );
+              break;
+            }
+          }
           nextSlug = `${baseSlug}-${attempt + 1}`;
         }
       }
@@ -110,6 +163,7 @@ exports.handler = async function (event) {
          l.lesson_title,
          l.lesson_order,
          l.video_asset_id,
+         l.lesson_notes,
          l.is_active,
          l.created_at,
          l.updated_at,

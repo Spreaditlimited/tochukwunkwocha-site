@@ -73,6 +73,9 @@ const SETTINGS_DEFINITIONS = [
 
   { key: "CLOUDFLARE_ACCOUNT_ID", category: "Cloudflare Stream", secret: false },
   { key: "CLOUDFLARE_STREAM_API_TOKEN", category: "Cloudflare Stream", secret: true },
+  { key: "CLOUDFLARE_STREAM_SIGNING_KEY_ID", category: "Cloudflare Stream", secret: false },
+  { key: "CLOUDFLARE_STREAM_SIGNING_PRIVATE_KEY", category: "Cloudflare Stream", secret: true },
+  { key: "CLOUDFLARE_STREAM_TOKEN_TTL_SECONDS", category: "Cloudflare Stream", secret: false },
 
   { key: "LEADPAGE_DOMAIN_AUTOMATION_ENABLED", category: "Domain Automation", secret: false },
   { key: "LEADPAGE_DOMAIN_PROVIDER", category: "Domain Automation", secret: false },

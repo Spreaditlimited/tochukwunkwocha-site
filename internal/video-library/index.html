@@ -87,6 +87,52 @@
         box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
         background-color: #ffffff;
       }
+      body.modal-open {
+        overflow: hidden;
+      }
+      .review-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 550;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+      }
+      .review-modal[aria-hidden="false"] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .review-modal__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(20, 33, 61, 0.48);
+        border: 0;
+        backdrop-filter: blur(2px);
+      }
+      .review-modal__panel {
+        position: relative;
+        width: min(560px, 94vw);
+        border-radius: 18px;
+        border: 1px solid #d7deee;
+        background: #fff;
+        box-shadow: 0 28px 64px rgba(18, 31, 63, 0.24);
+        padding: 20px;
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+      .review-modal[aria-hidden="false"] .review-modal__panel {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .review-modal__close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+      }
     </style>
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
@@ -141,10 +187,13 @@
                     <h3 class="mt-1 text-xl font-heading font-bold text-gray-900">Video Asset Sync</h3>
                     <p class="mt-2 text-sm text-gray-500 break-words">Pull all uploaded videos into your internal library, then map them to modules and lessons.</p>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <label class="text-xs text-gray-600">Max pages</label>
-                    <input id="syncMaxPagesInput" type="number" min="1" max="50" value="20" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-                    <button id="syncCloudflareBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Sync from Cloudflare</button>
+                  <div class="grid w-full gap-2 sm:grid-cols-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
+                    <div class="col-span-full flex items-center gap-2 md:col-span-1">
+                      <label for="syncMaxPagesInput" class="text-xs font-medium text-gray-600 whitespace-nowrap">Max pages</label>
+                      <input id="syncMaxPagesInput" type="number" min="1" max="50" value="20" class="h-11 w-24 rounded-xl border border-gray-300 px-3 py-2 text-sm" />
+                    </div>
+                    <button id="syncCloudflareBtn" type="button" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-brand-700 px-5 py-2.5 text-center text-sm font-semibold leading-tight text-white hover:bg-brand-800 sm:min-w-[12.5rem] sm:w-auto">Sync from Cloudflare</button>
+                    <button id="enableSignedPlaybackBtn" type="button" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-5 py-2.5 text-center text-sm font-semibold leading-tight text-emerald-700 hover:bg-emerald-100 sm:min-w-[12.5rem] sm:w-auto">Enable Signed Playback</button>
                   </div>
                 </div>
                 <p id="videoLibraryMessage" class="mt-4 hidden rounded-xl border px-4 py-3 text-sm"></p>
@@ -197,6 +246,16 @@
                             </label>
                           </div>
                         </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <input id="moduleDripEnabledInput" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600" />
+                            Enable module drip
+                          </label>
+                          <div>
+                            <label class="block text-sm font-semibold text-gray-700">Drip Date (optional)</label>
+                            <input id="moduleDripAtInput" type="datetime-local" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                          </div>
+                        </div>
                         <button id="saveModuleBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Save Module</button>
                       </div>
                     </div>
@@ -217,6 +276,7 @@
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Lesson</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Order</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Video Asset</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Notes</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Active</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                             </tr>
@@ -248,7 +308,25 @@
       </section>
     </main>
 
-    <script src="/assets/admin-video-library.js?v=20260404e" defer></script>
+    <div id="actionConfirmModal" class="review-modal" aria-hidden="true">
+      <button id="actionConfirmBackdrop" type="button" class="review-modal__backdrop" aria-label="Close confirmation"></button>
+      <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="actionConfirmTitle">
+        <button id="actionConfirmCloseBtn" type="button" class="review-modal__close inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" aria-label="Close dialog">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div class="p-6 sm:p-7">
+          <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Confirm Action</p>
+          <h3 id="actionConfirmTitle" class="mt-1 text-2xl font-heading font-bold text-gray-900">Proceed?</h3>
+          <p id="actionConfirmMessage" class="mt-2 text-sm text-gray-600">Please confirm this action.</p>
+          <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button id="actionConfirmCancelBtn" type="button" class="inline-flex w-full items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors sm:w-auto">Cancel</button>
+            <button id="actionConfirmConfirmBtn" type="button" class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors sm:w-auto">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/admin-video-library.js?v=20260405d" defer></script>
     <script src="/assets/internal-nav.js?v=20260404e" defer></script>
   </body>
 </html>

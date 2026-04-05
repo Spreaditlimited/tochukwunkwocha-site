@@ -193,6 +193,28 @@
     };
   }
 
+  async function submitSchoolWebsite(courseSlug, websiteUrl) {
+    const res = await fetch("/.netlify/functions/school-student-website-submit", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: String(courseSlug || "").trim().toLowerCase(),
+        website_url: String(websiteUrl || "").trim(),
+      }),
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not submit website link.");
+    }
+    return json;
+  }
+
   async function load() {
     try {
       const res = await fetch("/.netlify/functions/user-purchased-courses", {
@@ -249,6 +271,27 @@
             const resumeDetail = hasResume && item.lastActivityAt
               ? `Last watched: ${escapeHtml(new Date(item.lastActivityAt).toLocaleString())}`
               : "";
+            const isSchool = String(item.source || "").toLowerCase() === "school";
+            const websiteSubmittedAt = item.schoolWebsiteSubmittedAt
+              ? new Date(item.schoolWebsiteSubmittedAt).toLocaleString()
+              : "";
+            const websiteBlock = isSchool
+              ? [
+                  '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
+                  '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">School Submission</p>',
+                  '<p class="mt-1 text-xs text-gray-600">Submit your project website link for school admin review before certificate issuance.</p>',
+                  `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <input type="url" data-school-website-input="${escapeHtml(item.courseSlug)}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="https://yourwebsite.com" value="${escapeHtml(item.schoolWebsiteUrl || "")}" />
+                    <button type="button" data-submit-school-website="${escapeHtml(item.courseSlug)}" class="inline-flex items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white hover:bg-brand-600">Submit Link</button>
+                  </div>`,
+                  `<p data-school-website-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${websiteSubmittedAt ? "text-emerald-700" : "text-gray-500"}">${
+                    websiteSubmittedAt
+                      ? "Submitted: " + escapeHtml(websiteSubmittedAt)
+                      : "No website submitted yet."
+                  }</p>`,
+                  "</div>",
+                ].join("")
+              : "";
             return [
               `<article class="rounded-2xl p-5 shadow-sm ring-1 ${theme.card}">`,
               '<div class="flex items-start justify-between gap-3">',
@@ -263,6 +306,7 @@
               `<div class="mt-3"><span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${timing.css}">${escapeHtml(
                 timing.label
               )}</span></div>`,
+              websiteBlock,
               resumeDetail ? `<p class="mt-2 text-xs text-gray-600">${resumeDetail}</p>` : "",
               '<div class="mt-4 flex flex-wrap gap-2">',
               `<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${theme.button}" href="${escapeHtml(
@@ -287,6 +331,46 @@
         discoverEl.innerHTML = "";
       }
     }
+  }
+
+  if (listEl) {
+    listEl.addEventListener("click", function (event) {
+      const target = event.target && event.target.closest ? event.target.closest("[data-submit-school-website]") : null;
+      if (!target) return;
+      const courseSlug = String(target.getAttribute("data-submit-school-website") || "").trim().toLowerCase();
+      if (!courseSlug) return;
+      const input = listEl.querySelector('[data-school-website-input="' + courseSlug + '"]');
+      const status = listEl.querySelector('[data-school-website-status="' + courseSlug + '"]');
+      const websiteUrl = String(input && input.value || "").trim();
+      if (!websiteUrl) {
+        if (status) {
+          status.textContent = "Enter website URL.";
+          status.className = "mt-2 text-xs text-red-600";
+        }
+        return;
+      }
+      target.disabled = true;
+      const prev = target.textContent;
+      target.textContent = "Submitting...";
+      submitSchoolWebsite(courseSlug, websiteUrl)
+        .then(function (json) {
+          if (status) {
+            const ts = json && json.submitted_at ? new Date(json.submitted_at).toLocaleString() : "Just now";
+            status.textContent = "Submitted: " + ts;
+            status.className = "mt-2 text-xs text-emerald-700";
+          }
+        })
+        .catch(function (error) {
+          if (status) {
+            status.textContent = error.message || "Could not submit website link.";
+            status.className = "mt-2 text-xs text-red-600";
+          }
+        })
+        .finally(function () {
+          target.disabled = false;
+          target.textContent = prev || "Submit Link";
+        });
+    });
   }
 
   load();

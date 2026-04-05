@@ -238,7 +238,7 @@ async function extendCouponValidity(pool, input) {
   return getCouponByCode(pool, coupon.code);
 }
 
-async function evaluateCouponForOrder(pool, input) {
+async function evaluateCouponForOrder(pool, input, options) {
   await ensureCouponsTables(pool);
 
   const code = normalizeCouponCode(input && input.couponCode);
@@ -254,6 +254,7 @@ async function evaluateCouponForOrder(pool, input) {
   if (!coupon) return { ok: false, error: "Coupon not found." };
   if (!Number(coupon.is_active || 0)) return { ok: false, error: "This coupon is not active." };
 
+  const ignoreExpiry = !!(options && options.ignoreExpiry);
   // Coupon windows follow Lagos wall-clock semantics (consistent with the rest of the platform scheduling UX).
   const nowMs = nowInTimeZoneWallClockMs("Africa/Lagos");
   const startsAtMs = toWallClockMs(parseDateTimeParts(coupon.starts_at));
@@ -261,7 +262,7 @@ async function evaluateCouponForOrder(pool, input) {
   if (startsAtMs !== null && startsAtMs > nowMs) {
     return { ok: false, error: "This coupon is not active yet." };
   }
-  if (endsAtMs !== null && endsAtMs < nowMs) {
+  if (!ignoreExpiry && endsAtMs !== null && endsAtMs < nowMs) {
     return { ok: false, error: "This coupon has expired." };
   }
 

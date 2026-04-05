@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
 const { ensureLearningProgressTables, listCourseForLearner } = require("./_lib/learning-progress");
+const { notifyDueDripModules } = require("./_lib/learning-drip");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -33,6 +34,10 @@ exports.handler = async function (event) {
 
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
+
+    await notifyDueDripModules(pool, courseSlug).catch(function () {
+      return null;
+    });
 
     const payload = await listCourseForLearner(pool, {
       account_id: session.account.id,

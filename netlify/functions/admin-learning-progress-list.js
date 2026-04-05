@@ -1,10 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { ensureStudentAuthTables } = require("./_lib/user-auth");
-const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
-const { ensureManualPaymentsTable } = require("./_lib/manual-payments");
-const { ensureLearningProgressTables, listStudentsProgressByCourse } = require("./_lib/learning-progress");
+const { listStudentsProgressByCourse } = require("./_lib/learning-progress");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -18,21 +15,36 @@ exports.handler = async function (event) {
 
   const courseSlug = clean(event.queryStringParameters && event.queryStringParameters.course_slug, 120).toLowerCase() || "prompt-to-profit";
   const search = clean(event.queryStringParameters && event.queryStringParameters.search, 180);
+  const batchKey = clean(event.queryStringParameters && event.queryStringParameters.batch_key, 120).toLowerCase() || "all";
+  const enrollmentType = clean(event.queryStringParameters && event.queryStringParameters.enrollment_type, 40).toLowerCase() || "all";
+  const debugEnabled = process.env.LEARNING_PROGRESS_DEBUG === "1";
+  if (debugEnabled) {
+    console.log("[admin-learning-progress-list][debug] query", {
+      course_slug: courseSlug,
+      enrollment_type: enrollmentType,
+      batch_key: batchKey,
+      search,
+    });
+  }
 
   const pool = getPool();
   try {
-    await ensureStudentAuthTables(pool);
-    await ensureCourseOrdersBatchColumns(pool);
-    await ensureManualPaymentsTable(pool);
-    await ensureLearningProgressTables(pool);
-
     const payload = await listStudentsProgressByCourse(pool, {
       course_slug: courseSlug,
       search,
+      batch_key: batchKey,
+      enrollment_type: enrollmentType,
     });
 
     return json(200, { ok: true, ...payload });
   } catch (error) {
+    console.error("[admin-learning-progress-list] failed", {
+      course_slug: courseSlug,
+      enrollment_type: enrollmentType,
+      batch_key: batchKey,
+      search,
+      message: error && error.message ? error.message : "Unknown error",
+    });
     return json(500, { ok: false, error: error.message || "Could not load learning progress." });
   }
 };

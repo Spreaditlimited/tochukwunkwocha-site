@@ -1,4 +1,5 @@
 (function () {
+  var SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
   const signoutButtons = Array.from(document.querySelectorAll("[data-user-signout]"));
   if (!signoutButtons.length) return;
 
@@ -14,6 +15,9 @@
     }).catch(function () {
       return null;
     });
+    try {
+      sessionStorage.setItem(SIGNOUT_MARKER_KEY, "1");
+    } catch (_error) {}
 
     window.location.href = "/dashboard/";
   }

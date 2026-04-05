@@ -10,7 +10,6 @@ const {
 } = require("./_lib/schools");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
-const TEMP_CERT_PREVIEW_ENABLED = true;
 
 function siteBaseUrl() {
   return String(process.env.SITE_BASE_URL || "https://tochukwunkwocha.com").trim().replace(/\/$/, "");
@@ -30,7 +29,6 @@ exports.handler = async function (event) {
   if (!body) return json(400, { ok: false, error: "Invalid JSON payload" });
 
   const studentId = Number(body.studentId || 0);
-  const previewRequested = body.preview === true;
   if (!Number.isFinite(studentId) || studentId <= 0) return json(400, { ok: false, error: "studentId is required" });
 
   const pool = getPool();
@@ -40,7 +38,7 @@ exports.handler = async function (event) {
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
     const [studentRows] = await pool.query(
-      `SELECT id, full_name, email, account_id, status
+      `SELECT id, full_name, email, account_id, status, website_url, website_submitted_at
        FROM ${SCHOOL_STUDENTS_TABLE}
        WHERE id = ?
          AND school_id = ?
@@ -51,6 +49,9 @@ exports.handler = async function (event) {
     const student = studentRows[0];
     if (String(student.status || "").toLowerCase() !== "active") {
       return json(400, { ok: false, error: "Student must be active before certificate can be issued" });
+    }
+    if (!String(student.website_url || "").trim()) {
+      return json(400, { ok: false, error: "Student must submit website link before certificate can be issued" });
     }
     const accountId = Number(student.account_id || 0);
     if (!Number.isFinite(accountId) || accountId <= 0) {
@@ -82,22 +83,8 @@ exports.handler = async function (event) {
       [accountId, session.admin.courseSlug]
     );
     const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
-    var previewAllowed = false;
-    if (completedLessons < totalLessons && previewRequested && TEMP_CERT_PREVIEW_ENABLED) {
-      const [previewRows] = await pool.query(
-        `SELECT id
-         FROM ${SCHOOL_STUDENTS_TABLE}
-         WHERE school_id = ?
-           AND status = 'active'
-         ORDER BY created_at DESC, id DESC
-         LIMIT 1`,
-        [Number(session.admin.schoolId)]
-      );
-      const previewStudentId = Number(previewRows && previewRows[0] && previewRows[0].id || 0);
-      previewAllowed = previewStudentId > 0 && previewStudentId === Number(studentId);
-    }
 
-    if (completedLessons < totalLessons && !previewAllowed) {
+    if (completedLessons < totalLessons) {
       return json(400, { ok: false, error: "Student has not completed 100% of the course." });
     }
 
@@ -136,7 +123,6 @@ exports.handler = async function (event) {
 
     return json(200, {
       ok: true,
-      previewIssued: !!(completedLessons < totalLessons),
       certificate: {
         certificateNo: certRows && certRows[0] ? String(certRows[0].certificate_no || certNo) : certNo,
         certificateUrl:
