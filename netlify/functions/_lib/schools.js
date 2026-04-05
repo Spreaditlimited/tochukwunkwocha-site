@@ -764,6 +764,7 @@ async function addSchoolStudents(pool, input) {
     reactivated: 0,
     skipped: 0,
     errors: [],
+    invites: [],
   };
 
   for (let i = 0; i < rows.length; i += 1) {
@@ -779,6 +780,7 @@ async function addSchoolStudents(pool, input) {
     }
 
     let account = await findStudentByEmail(pool, email);
+    let createdAccount = false;
     if (!account) {
       const tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
       account = await createStudentAccount(pool, {
@@ -787,6 +789,7 @@ async function addSchoolStudents(pool, input) {
         password: tempPassword,
         mustResetPassword: true,
       });
+      createdAccount = true;
     }
 
     const [existingRows] = await pool.query(
@@ -811,8 +814,16 @@ async function addSchoolStudents(pool, input) {
          LIMIT 1`,
         [fullName, Number(account && account.id || 0) || null, now, Number(existingRows[0].id)]
       );
-      if (prevStatus !== "active") results.reactivated += 1;
+      const reactivated = prevStatus !== "active";
+      if (reactivated) results.reactivated += 1;
       results.updated += 1;
+      results.invites.push({
+        full_name: fullName,
+        email,
+        account_id: Number(account && account.id || 0) || null,
+        created_account: !!createdAccount,
+        reactivated: !!reactivated,
+      });
       continue;
     }
 
@@ -823,6 +834,13 @@ async function addSchoolStudents(pool, input) {
       [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, email, Number(account && account.id || 0) || null, now, now]
     );
     results.created += 1;
+    results.invites.push({
+      full_name: fullName,
+      email,
+      account_id: Number(account && account.id || 0) || null,
+      created_account: !!createdAccount,
+      reactivated: false,
+    });
   }
 
   return Object.assign(results, {

@@ -215,7 +215,11 @@
         .then(function (data) {
           var result = data && data.result ? data.result : {};
           setUploadStatus(
-            "Created: " + String(result.created || 0) + ", Updated: " + String(result.updated || 0) + (Array.isArray(result.errors) && result.errors.length ? ", Errors: " + String(result.errors.length) : ""),
+            "Created: " + String(result.created || 0) +
+              ", Updated: " + String(result.updated || 0) +
+              ", Invites sent: " + String(result.invites_sent || 0) +
+              (Number(result.invites_failed || 0) > 0 ? ", Invite failures: " + String(result.invites_failed || 0) : "") +
+              (Array.isArray(result.errors) && result.errors.length ? ", Errors: " + String(result.errors.length) : ""),
             false
           );
           return Promise.all([loadSummary(), loadStudents()]);
@@ -255,7 +259,11 @@
         .then(function (data) {
           var result = data && data.result ? data.result : {};
           setUploadStatus(
-            "Added. Created: " + String(result.created || 0) + ", Updated: " + String(result.updated || 0) + ", Reactivated: " + String(result.reactivated || 0),
+            "Added. Created: " + String(result.created || 0) +
+              ", Updated: " + String(result.updated || 0) +
+              ", Reactivated: " + String(result.reactivated || 0) +
+              ", Invites sent: " + String(result.invites_sent || 0) +
+              (Number(result.invites_failed || 0) > 0 ? ", Invite failures: " + String(result.invites_failed || 0) : ""),
             false
           );
           if (singleNameEl) singleNameEl.value = "";

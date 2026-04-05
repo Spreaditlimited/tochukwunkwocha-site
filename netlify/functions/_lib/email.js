@@ -20,7 +20,7 @@ function smtpConfig() {
 function fromAddress() {
   const email = String(process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "").trim();
   if (!email) throw new Error("Missing SMTP_FROM_EMAIL or SMTP_USER");
-  const name = String(process.env.SMTP_FROM_NAME || "Tochukwu Nkwocha").trim() || "Tochukwu Nkwocha";
+  const name = String(process.env.SMTP_FROM_NAME || "Tochukwu Tech and AI Academy").trim() || "Tochukwu Tech and AI Academy";
   return `${name} <${email}>`;
 }
 
