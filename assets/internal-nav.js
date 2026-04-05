@@ -242,19 +242,9 @@
         var txt = String(signout.textContent || "").replace(/\s+/g, " ").trim() || "Sign out";
         signout.textContent = "";
 
-        var icon = document.createElement("span");
-        icon.setAttribute("data-signout-icon", "1");
-        icon.className = "inline-flex shrink-0 text-white/95";
-        icon.setAttribute("aria-hidden", "true");
-        icon.innerHTML =
-          '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">' +
-          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />' +
-          "</svg>";
-        signout.appendChild(icon);
-
         var s = document.createElement("span");
         s.setAttribute("data-signout-label", "1");
-        s.className = "ml-2";
+        s.className = "w-full text-center";
         s.textContent = txt;
         signout.appendChild(s);
       }
@@ -281,11 +271,16 @@
       if (brandLabel) brandLabel.style.display = "";
       if (menuLabel) menuLabel.style.display = "";
       if (signoutIcon) signoutIcon.style.display = "";
-      if (signoutLabel) signoutLabel.style.display = "";
+      if (signoutLabel) {
+        signoutLabel.style.display = "";
+        signoutLabel.style.fontSize = "";
+        signoutLabel.style.whiteSpace = "";
+      }
       if (signout) {
         signout.classList.remove("justify-center");
         signout.style.paddingLeft = "";
         signout.style.paddingRight = "";
+        signout.removeAttribute("title");
       }
       aside.setAttribute("data-collapsed", "0");
       return;
@@ -301,7 +296,11 @@
     if (brandLabel) brandLabel.style.display = "none";
     if (menuLabel) menuLabel.style.display = "none";
     if (signoutIcon) signoutIcon.style.display = "";
-    if (signoutLabel) signoutLabel.style.display = "none";
+    if (signoutLabel) {
+      signoutLabel.style.display = "";
+      signoutLabel.style.fontSize = "0.65rem";
+      signoutLabel.style.whiteSpace = "nowrap";
+    }
     if (signout) {
       signout.classList.add("justify-center");
       signout.style.paddingLeft = "0.5rem";

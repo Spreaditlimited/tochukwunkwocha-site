@@ -18,6 +18,8 @@
   const registerBtn = document.getElementById("domainRegisterBtn");
   const customerStatusEl = document.getElementById("domainCustomerStatus");
   const unsupportedTlds = new Set(["ng", "com.ng"]);
+  const DOMAIN_LOOKUP_ENABLED = false;
+  const DOMAIN_REGISTRATION_ENABLED = false;
 
   let selectedDomain = "";
   let latestQuote = null;
@@ -32,6 +34,27 @@
     if (!customerStatusEl) return;
     customerStatusEl.textContent = String(message || "");
     customerStatusEl.style.color = ok ? "#166534" : "#b91c1c";
+  }
+
+  function lockRegisterButton() {
+    if (!registerBtn) return;
+    registerBtn.disabled = true;
+    registerBtn.setAttribute("aria-disabled", "true");
+    registerBtn.setAttribute("title", "Coming soon");
+  }
+
+  function lockLookupButtons() {
+    if (suggestBtn) {
+      suggestBtn.disabled = true;
+      suggestBtn.setAttribute("aria-disabled", "true");
+      suggestBtn.setAttribute("title", "Coming soon");
+    }
+    if (checkBtn) {
+      checkBtn.disabled = true;
+      checkBtn.setAttribute("aria-disabled", "true");
+      checkBtn.setAttribute("title", "Coming soon");
+    }
+    setStatus("Coming soon", false);
   }
 
   function normalizeDomain(value) {
@@ -311,6 +334,10 @@
 
   if (suggestBtn) {
     suggestBtn.addEventListener("click", async function () {
+      if (!DOMAIN_LOOKUP_ENABLED) {
+        lockLookupButtons();
+        return;
+      }
       setStatus("", true);
       resetDomainSelection();
       const preferredName = normalizeDomain(domainInput ? domainInput.value : "");
@@ -354,6 +381,10 @@
 
   if (checkBtn) {
     checkBtn.addEventListener("click", async function () {
+      if (!DOMAIN_LOOKUP_ENABLED) {
+        lockLookupButtons();
+        return;
+      }
       setStatus("", true);
       resetDomainSelection();
       const domainName = normalizeDomain(domainInput ? domainInput.value : "");
@@ -399,6 +430,11 @@
 
   if (registerBtn) {
     registerBtn.addEventListener("click", async function () {
+      if (!DOMAIN_REGISTRATION_ENABLED) {
+        lockRegisterButton();
+        setCustomerStatus("Coming soon", false);
+        return;
+      }
       setCustomerStatus("", true);
       if (!selectedDomain) {
         setCustomerStatus("Search and pick an available domain first.", false);
@@ -466,6 +502,13 @@
       const value = normalizeDomain(button.getAttribute("data-domain-pick") || "");
       if (value) setSelectedDomain(value);
     });
+  }
+
+  if (!DOMAIN_LOOKUP_ENABLED) {
+    lockLookupButtons();
+  }
+  if (!DOMAIN_REGISTRATION_ENABLED) {
+    lockRegisterButton();
   }
 
   if (yearsInput) yearsInput.addEventListener("change", refreshQuote);
