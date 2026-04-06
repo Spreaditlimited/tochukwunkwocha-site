@@ -1,7 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
-const { ensureLearningProgressTables, hasCourseAccess } = require("./_lib/learning-progress");
+const { requireStudentSession } = require("./_lib/user-auth");
+const { hasCourseAccess } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE, VIDEO_ASSETS_TABLE } = require("./_lib/learning");
 const { buildSignedLessonEmbedUrl } = require("./_lib/learning-playback");
 
@@ -70,9 +70,6 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureStudentAuthTables(pool);
-    await ensureLearningProgressTables(pool);
-
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
     const nowMs = Date.now();

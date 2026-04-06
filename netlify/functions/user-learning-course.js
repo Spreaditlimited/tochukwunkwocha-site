@@ -1,25 +1,10 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
-const { ensureLearningProgressTables, listCourseForLearner } = require("./_lib/learning-progress");
-const { notifyDueDripModules } = require("./_lib/learning-drip");
+const { requireStudentSession } = require("./_lib/user-auth");
+const { listCourseForLearner } = require("./_lib/learning-progress");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
-}
-
-let ensureReadyPromise = null;
-async function ensureLearningReaderReady(pool) {
-  if (!ensureReadyPromise) {
-    ensureReadyPromise = (async function () {
-      await ensureStudentAuthTables(pool);
-      await ensureLearningProgressTables(pool);
-    })().catch(function (error) {
-      ensureReadyPromise = null;
-      throw error;
-    });
-  }
-  await ensureReadyPromise;
 }
 
 exports.handler = async function (event) {
@@ -30,14 +15,8 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureLearningReaderReady(pool);
-
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
-
-    await notifyDueDripModules(pool, courseSlug).catch(function () {
-      return null;
-    });
 
     const payload = await listCourseForLearner(pool, {
       account_id: session.account.id,
