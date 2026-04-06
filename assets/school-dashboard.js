@@ -39,7 +39,7 @@
   function setUploadStatus(text, bad) {
     if (!uploadStatusEl) return;
     uploadStatusEl.textContent = clean(text);
-    uploadStatusEl.className = "text-sm " + (bad ? "text-red-600" : "text-slate-600");
+    uploadStatusEl.className = "text-sm " + (bad ? "text-red-600" : "text-gray-600");
   }
 
   async function api(url, init) {
