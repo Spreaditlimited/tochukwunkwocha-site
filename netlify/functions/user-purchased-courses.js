@@ -1,13 +1,9 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
-const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
-const { ensureManualPaymentsTable } = require("./_lib/manual-payments");
-const { ensureCourseBatchesTable } = require("./_lib/batch-store");
+const { requireStudentSession } = require("./_lib/user-auth");
 const { getCourseName } = require("./_lib/course-config");
-const { ensureLearningProgressTables, LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
+const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
-const { ensureSchoolTables } = require("./_lib/schools");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -65,14 +61,28 @@ async function loadResumeMetaByCourse(pool, accountId, courseSlugs) {
   const [lastWatchedRows] = await pool.query(
     `SELECT
        m.course_slug,
-       p.lesson_id,
-       COALESCE(p.last_watched_at, p.updated_at, p.completed_at) AS last_activity_at
+       CAST(SUBSTRING_INDEX(
+         GROUP_CONCAT(
+           p.lesson_id
+           ORDER BY COALESCE(p.last_watched_at, p.updated_at, p.completed_at) DESC, p.updated_at DESC, p.lesson_id DESC
+         ),
+         ',',
+         1
+       ) AS UNSIGNED) AS lesson_id,
+       SUBSTRING_INDEX(
+         GROUP_CONCAT(
+           DATE_FORMAT(COALESCE(p.last_watched_at, p.updated_at, p.completed_at), '%Y-%m-%d %H:%i:%s')
+           ORDER BY COALESCE(p.last_watched_at, p.updated_at, p.completed_at) DESC, p.updated_at DESC, p.lesson_id DESC
+         ),
+         ',',
+         1
+       ) AS last_activity_at
      FROM ${LESSON_PROGRESS_TABLE} p
      JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id AND l.is_active = 1
      JOIN ${MODULES_TABLE} m ON m.id = l.module_id AND m.is_active = 1
      WHERE p.account_id = ?
        AND m.course_slug IN (${placeholders})
-     ORDER BY COALESCE(p.last_watched_at, p.updated_at, p.completed_at) DESC, p.updated_at DESC, p.lesson_id DESC`,
+     GROUP BY m.course_slug`,
     [Number(accountId)].concat(slugs)
   );
 
@@ -100,14 +110,18 @@ async function loadResumeMetaByCourse(pool, accountId, courseSlugs) {
   const [firstIncompleteRows] = await pool.query(
     `SELECT
        m.course_slug,
-       l.id AS lesson_id
+       CAST(SUBSTRING_INDEX(
+         GROUP_CONCAT(l.id ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC),
+         ',',
+         1
+       ) AS UNSIGNED) AS lesson_id
      FROM ${MODULES_TABLE} m
      JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
      LEFT JOIN ${LESSON_PROGRESS_TABLE} p ON p.lesson_id = l.id AND p.account_id = ?
      WHERE m.is_active = 1
        AND m.course_slug IN (${fallbackPlaceholders})
        AND COALESCE(p.is_completed, 0) = 0
-     ORDER BY m.course_slug ASC, m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
+     GROUP BY m.course_slug`,
     [Number(accountId)].concat(needsFallback)
   );
 
@@ -134,12 +148,16 @@ async function loadResumeMetaByCourse(pool, accountId, courseSlugs) {
   const [firstLessonRows] = await pool.query(
     `SELECT
        m.course_slug,
-       l.id AS lesson_id
+       CAST(SUBSTRING_INDEX(
+         GROUP_CONCAT(l.id ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC),
+         ',',
+         1
+       ) AS UNSIGNED) AS lesson_id
      FROM ${MODULES_TABLE} m
      JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
      WHERE m.is_active = 1
        AND m.course_slug IN (${firstLessonPlaceholders})
-     ORDER BY m.course_slug ASC, m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
+     GROUP BY m.course_slug`,
     needsFirstLesson
   );
   (Array.isArray(firstLessonRows) ? firstLessonRows : []).forEach(function (row) {
@@ -162,12 +180,6 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureStudentAuthTables(pool);
-    await ensureCourseOrdersBatchColumns(pool);
-    await ensureManualPaymentsTable(pool);
-    await ensureCourseBatchesTable(pool);
-    await ensureLearningProgressTables(pool);
-    await ensureSchoolTables(pool);
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
@@ -289,10 +301,28 @@ exports.handler = async function (event) {
       }
     });
 
-    const [batchRows] = await pool.query(
-      `SELECT course_slug, batch_key, batch_label, status, is_active, DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
-       FROM course_batches`
+    const distinctOwnedSlugs = Array.from(
+      new Set(
+        Array.from(map.values())
+          .map(function (item) {
+            return normalizeKey(item.courseSlug);
+          })
+          .filter(Boolean)
+      )
     );
+    let batchRows = [];
+    if (distinctOwnedSlugs.length) {
+      const batchPlaceholders = distinctOwnedSlugs.map(function () {
+        return "?";
+      }).join(",");
+      const [rows] = await pool.query(
+        `SELECT course_slug, batch_key, batch_label, status, is_active, DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
+         FROM course_batches
+         WHERE course_slug IN (${batchPlaceholders})`,
+        distinctOwnedSlugs
+      );
+      batchRows = rows || [];
+    }
     const batchMetaByKey = new Map();
     const batchMetaByLabel = new Map();
     const batchMetaByNumber = new Map();
