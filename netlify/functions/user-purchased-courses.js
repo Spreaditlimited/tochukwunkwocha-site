@@ -1,9 +1,11 @@
+const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireStudentSession } = require("./_lib/user-auth");
 const { getCourseName } = require("./_lib/course-config");
 const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
+const STUDENT_CERTIFICATES_TABLE = "student_certificates";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -46,6 +48,150 @@ function normalizeDate(value) {
   const d = new Date(value);
   if (!Number.isFinite(d.getTime())) return null;
   return d.toISOString();
+}
+
+function nowSqlDateTime() {
+  return new Date().toISOString().slice(0, 19).replace("T", " ");
+}
+
+function certificateNo() {
+  return `TN-IND-${crypto.randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`;
+}
+
+async function ensureStudentCertificatesTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${STUDENT_CERTIFICATES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      account_id BIGINT NOT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      certificate_no VARCHAR(120) NOT NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'issued',
+      issued_at DATETIME NOT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_student_cert_no (certificate_no),
+      UNIQUE KEY uniq_student_cert_account_course (account_id, course_slug),
+      KEY idx_student_cert_account (account_id, issued_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function loadCourseCompletionMap(pool, accountId, courseSlugs) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  const map = new Map();
+  if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return map;
+
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+
+  const [totalRows] = await pool.query(
+    `SELECT m.course_slug, COUNT(*) AS total_lessons
+     FROM ${LESSONS_TABLE} l
+     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
+     WHERE m.is_active = 1
+       AND l.is_active = 1
+       AND m.course_slug IN (${placeholders})
+     GROUP BY m.course_slug`,
+    slugs
+  );
+  (Array.isArray(totalRows) ? totalRows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug) return;
+    map.set(slug, {
+      totalLessons: Number(row.total_lessons || 0),
+      completedLessons: 0,
+      completionPercent: 0,
+    });
+  });
+
+  const [doneRows] = await pool.query(
+    `SELECT m.course_slug, COUNT(*) AS completed_lessons
+     FROM ${LESSON_PROGRESS_TABLE} p
+     JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id
+     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
+     WHERE p.account_id = ?
+       AND p.is_completed = 1
+       AND m.is_active = 1
+       AND l.is_active = 1
+       AND m.course_slug IN (${placeholders})
+     GROUP BY m.course_slug`,
+    [Number(accountId)].concat(slugs)
+  );
+  (Array.isArray(doneRows) ? doneRows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug) return;
+    const existing = map.get(slug) || {
+      totalLessons: 0,
+      completedLessons: 0,
+      completionPercent: 0,
+    };
+    existing.completedLessons = Number(row.completed_lessons || 0);
+    map.set(slug, existing);
+  });
+
+  map.forEach(function (value) {
+    const total = Number(value.totalLessons || 0);
+    const done = Number(value.completedLessons || 0);
+    value.completionPercent = total > 0 ? Math.round((done / total) * 100) : 0;
+  });
+
+  return map;
+}
+
+async function issueAndLoadStudentCertificates(pool, accountId, courseSlugs, completionMap) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  const certMap = new Map();
+  if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return certMap;
+
+  await ensureStudentCertificatesTable(pool);
+  const now = nowSqlDateTime();
+  for (let i = 0; i < slugs.length; i += 1) {
+    const slug = slugs[i];
+    const progress = completionMap.get(slug);
+    if (!progress) continue;
+    const totalLessons = Number(progress.totalLessons || 0);
+    const completedLessons = Number(progress.completedLessons || 0);
+    if (totalLessons <= 0 || completedLessons < totalLessons) continue;
+    await pool.query(
+      `INSERT INTO ${STUDENT_CERTIFICATES_TABLE}
+        (account_id, course_slug, certificate_no, status, issued_at, created_at, updated_at)
+       VALUES (?, ?, ?, 'issued', ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         certificate_no = certificate_no,
+         status = 'issued',
+         issued_at = issued_at,
+         updated_at = VALUES(updated_at)`,
+      [Number(accountId), slug, certificateNo(), now, now, now]
+    );
+  }
+
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+  const [rows] = await pool.query(
+    `SELECT course_slug, certificate_no, issued_at
+     FROM ${STUDENT_CERTIFICATES_TABLE}
+     WHERE account_id = ?
+       AND status = 'issued'
+       AND course_slug IN (${placeholders})`,
+    [Number(accountId)].concat(slugs)
+  );
+  (Array.isArray(rows) ? rows : []).forEach(function (row) {
+    const slug = normalizeKey(row.course_slug);
+    if (!slug) return;
+    const certNo = clean(row.certificate_no, 140);
+    certMap.set(slug, {
+      certificateNo: certNo,
+      issuedAt: row.issued_at ? new Date(row.issued_at).toISOString() : null,
+      certificateUrl: certNo
+        ? `/dashboard/certificate/?certificate_no=${encodeURIComponent(certNo)}`
+        : "",
+    });
+  });
+
+  return certMap;
 }
 
 async function loadResumeMetaByCourse(pool, accountId, courseSlugs) {
@@ -272,9 +418,14 @@ exports.handler = async function (event) {
          sc.course_slug,
          sc.access_starts_at AS paid_at,
          ss.website_url,
-         DATE_FORMAT(ss.website_submitted_at, '%Y-%m-%d %H:%i:%s') AS website_submitted_at
+         DATE_FORMAT(ss.website_submitted_at, '%Y-%m-%d %H:%i:%s') AS website_submitted_at,
+         cert.certificate_no,
+         DATE_FORMAT(cert.issued_at, '%Y-%m-%d %H:%i:%s') AS certificate_issued_at
        FROM school_students ss
        JOIN school_accounts sc ON sc.id = ss.school_id
+       LEFT JOIN school_certificates cert ON cert.student_id = ss.id
+         AND cert.course_slug = sc.course_slug
+         AND cert.status = 'issued'
        WHERE (LOWER(ss.email) = ? OR ss.account_id = ?)
          AND ss.status = 'active'
          AND sc.status = 'active'
@@ -298,6 +449,12 @@ exports.handler = async function (event) {
       if (existing) {
         existing.schoolWebsiteUrl = clean(row.website_url, 1000) || "";
         existing.schoolWebsiteSubmittedAt = row.website_submitted_at || null;
+        const certificateNo = clean(row.certificate_no, 140);
+        existing.schoolCertificateNo = certificateNo || "";
+        existing.schoolCertificateIssuedAt = row.certificate_issued_at || null;
+        existing.schoolCertificateUrl = certificateNo
+          ? `/schools/certificate/?certificate_no=${encodeURIComponent(certificateNo)}`
+          : "";
       }
     });
 
@@ -359,6 +516,31 @@ exports.handler = async function (event) {
         return item.courseSlug;
       })
     );
+    const individualEligibleCourseSlugs = Array.from(
+      new Set(
+        items
+          .filter(function (item) {
+            const source = normalizeKey(item.source);
+            const status = normalizeKey(item.status);
+            return source !== "school" && (status === "paid" || status === "approved");
+          })
+          .map(function (item) {
+            return normalizeKey(item.courseSlug);
+          })
+          .filter(Boolean)
+      )
+    );
+    const completionByCourse = await loadCourseCompletionMap(
+      pool,
+      Number(session.account.id || 0),
+      individualEligibleCourseSlugs
+    );
+    const individualCertificatesByCourse = await issueAndLoadStudentCertificates(
+      pool,
+      Number(session.account.id || 0),
+      individualEligibleCourseSlugs,
+      completionByCourse
+    );
 
     const enrichedItems = items.map(function (item) {
       const courseSlug = normalizeKey(item.courseSlug);
@@ -377,6 +559,9 @@ exports.handler = async function (event) {
         if (number) meta = batchMetaByNumber.get(`${courseSlug}::${number}`) || null;
       }
       const resume = resumeByCourse.get(courseSlug) || null;
+      const isSchool = normalizeKey(item.source) === "school";
+      const completion = completionByCourse.get(courseSlug) || null;
+      const certificate = individualCertificatesByCourse.get(courseSlug) || null;
       return {
         ...item,
         batchStartAt: meta ? meta.batchStartAt : null,
@@ -385,6 +570,12 @@ exports.handler = async function (event) {
         resumeLessonId: resume ? Number(resume.resume_lesson_id || 0) : 0,
         resumeSource: resume ? String(resume.resume_source || "") : "",
         lastActivityAt: resume ? resume.last_activity_at : null,
+        individualCompletedLessons: !isSchool && completion ? Number(completion.completedLessons || 0) : 0,
+        individualTotalLessons: !isSchool && completion ? Number(completion.totalLessons || 0) : 0,
+        individualCompletionPercent: !isSchool && completion ? Number(completion.completionPercent || 0) : 0,
+        individualCertificateNo: !isSchool && certificate ? String(certificate.certificateNo || "") : "",
+        individualCertificateIssuedAt: !isSchool && certificate ? certificate.issuedAt : null,
+        individualCertificateUrl: !isSchool && certificate ? String(certificate.certificateUrl || "") : "",
       };
     });
 

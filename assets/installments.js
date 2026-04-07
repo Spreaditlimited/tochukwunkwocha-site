@@ -4,6 +4,7 @@
   const workspaceSidebar = document.getElementById("userWorkspaceSidebar");
   const workspaceTopbar = document.getElementById("userWorkspaceTopbar");
   const dashboardMain = document.getElementById("userDashboardMain");
+  const bootSplash = document.getElementById("userDashboardBootSplash");
   const guestStack = document.getElementById("userGuestStack");
 
   const signInForm = document.getElementById("walletSignInForm");
@@ -58,6 +59,7 @@
       if (workspaceSidebar) workspaceSidebar.hidden = true;
       if (workspaceTopbar) workspaceTopbar.hidden = true;
       if (guestStack) guestStack.hidden = true;
+      if (bootSplash) bootSplash.hidden = false;
       if (dashboardMain) {
         dashboardMain.classList.add("flex", "items-center", "justify-center");
       }
@@ -79,6 +81,7 @@
     if (workspaceSidebar) workspaceSidebar.hidden = !showPlan;
     if (workspaceTopbar) workspaceTopbar.hidden = !showPlan;
     if (guestStack) guestStack.hidden = showPlan;
+    if (bootSplash) bootSplash.hidden = true;
     if (dashboardMain) {
       if (showPlan) {
         dashboardMain.classList.remove("flex", "items-center", "justify-center");
@@ -703,11 +706,17 @@
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
 
-  setWalletState(false);
-  Promise.all([loadBatches(), loadDashboard()]).catch(function () {
-    setWalletState(false);
-    return null;
-  });
+  setWalletState(null);
+  loadDashboard()
+    .then(function () {
+      return loadBatches().catch(function () {
+        return null;
+      });
+    })
+    .catch(function () {
+      setWalletState(false);
+      return null;
+    });
   setAuthView("signin");
   enforcePlanStartAvailability();
 })();

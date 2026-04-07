@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
-const { getPool } = require("./_lib/db");
+const { getPool, nowSql } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureManualPaymentsTable, createManualPayment, reviewManualPayment, markMainSynced, STATUS_APPROVED } = require("./_lib/manual-payments");
@@ -196,6 +196,28 @@ exports.handler = async function (event) {
       reviewedBy: "admin",
       reviewNote,
     });
+    await pool.query(
+      `UPDATE course_manual_payments
+       SET status = 'rejected',
+           reviewed_by = 'admin',
+           review_note = ?,
+           reviewed_at = ?,
+           updated_at = ?
+       WHERE course_slug = ?
+         AND batch_key = ?
+         AND email = ?
+         AND status = 'pending_verification'
+         AND payment_uuid <> ?`,
+      [
+        `[ADMIN_ADD_STUDENT] Superseded by admin-added approved payment ${paymentUuid}.`,
+        nowSql(),
+        nowSql(),
+        courseSlug,
+        batch.batch_key,
+        email,
+        paymentUuid,
+      ]
+    );
 
     let createdAccount = false;
     let welcomeEmailSent = false;

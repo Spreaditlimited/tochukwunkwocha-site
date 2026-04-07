@@ -275,6 +275,17 @@
             const websiteSubmittedAt = item.schoolWebsiteSubmittedAt
               ? new Date(item.schoolWebsiteSubmittedAt).toLocaleString()
               : "";
+            const certificateIssuedAt = item.schoolCertificateIssuedAt
+              ? new Date(item.schoolCertificateIssuedAt).toLocaleString()
+              : "";
+            const schoolCertificateUrl = String(item.schoolCertificateUrl || "").trim();
+            const individualCompletionPercent = Number(item.individualCompletionPercent || 0);
+            const individualCompletedLessons = Number(item.individualCompletedLessons || 0);
+            const individualTotalLessons = Number(item.individualTotalLessons || 0);
+            const individualCertificateIssuedAt = item.individualCertificateIssuedAt
+              ? new Date(item.individualCertificateIssuedAt).toLocaleString()
+              : "";
+            const individualCertificateUrl = String(item.individualCertificateUrl || "").trim();
             const websiteBlock = isSchool
               ? [
                   '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
@@ -289,6 +300,34 @@
                       ? "Submitted: " + escapeHtml(websiteSubmittedAt)
                       : "No website submitted yet."
                   }</p>`,
+                  schoolCertificateUrl
+                    ? [
+                        '<div class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">',
+                        '<p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Certificate</p>',
+                        `<a href="${escapeHtml(schoolCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
+                        certificateIssuedAt
+                          ? `<p class="mt-1 text-xs text-emerald-700">Issued: ${escapeHtml(certificateIssuedAt)}</p>`
+                          : "",
+                        "</div>",
+                      ].join("")
+                    : '<p class="mt-3 text-xs text-gray-500">Certificate will appear here once your school admin issues it.</p>',
+                  "</div>",
+                ].join("")
+              : "";
+            const individualCertificateBlock = !isSchool
+              ? [
+                  '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
+                  '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Certificate</p>',
+                  individualCertificateUrl
+                    ? [
+                        `<a href="${escapeHtml(individualCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
+                        individualCertificateIssuedAt
+                          ? `<p class="mt-1 text-xs text-emerald-700">Issued: ${escapeHtml(individualCertificateIssuedAt)}</p>`
+                          : "",
+                      ].join("")
+                    : isPending
+                      ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
+                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
                   "</div>",
                 ].join("")
               : "";
@@ -307,6 +346,7 @@
                 timing.label
               )}</span></div>`,
               websiteBlock,
+              individualCertificateBlock,
               resumeDetail ? `<p class="mt-2 text-xs text-gray-600">${resumeDetail}</p>` : "",
               '<div class="mt-4 flex flex-wrap gap-2">',
               `<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${theme.button}" href="${escapeHtml(

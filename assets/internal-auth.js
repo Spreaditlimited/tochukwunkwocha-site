@@ -92,15 +92,9 @@
     });
   }
 
-  setView(false);
   checkSession()
     .then(function (authed) {
       if (authed) {
-        const next = nextUrl();
-        if (next && window.location.pathname === "/internal/") {
-          window.location.href = next;
-          return;
-        }
         setView(true);
       } else {
         setView(false);
@@ -110,4 +104,3 @@
       setView(false);
     });
 })();
-
