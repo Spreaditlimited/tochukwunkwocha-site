@@ -3,10 +3,49 @@ const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const {
   ensureLearningTables,
+  listLearningCourses,
   VIDEO_ASSETS_TABLE,
   MODULES_TABLE,
+  MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
 } = require("./_lib/learning");
+const { ensureCourseBatchesTable } = require("./_lib/batch-store");
+
+let hasDripBatchKeyColumnCached = null;
+let hasDripOffsetSecondsColumnCached = null;
+
+async function hasModuleColumn(pool, columnName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [MODULES_TABLE, String(columnName || "")]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function hasDripBatchKeyColumn(pool) {
+  if (typeof hasDripBatchKeyColumnCached === "boolean") return hasDripBatchKeyColumnCached;
+  try {
+    hasDripBatchKeyColumnCached = await hasModuleColumn(pool, "drip_batch_key");
+  } catch (_error) {
+    hasDripBatchKeyColumnCached = false;
+  }
+  return hasDripBatchKeyColumnCached;
+}
+
+async function hasDripOffsetSecondsColumn(pool) {
+  if (typeof hasDripOffsetSecondsColumnCached === "boolean") return hasDripOffsetSecondsColumnCached;
+  try {
+    hasDripOffsetSecondsColumnCached = await hasModuleColumn(pool, "drip_offset_seconds");
+  } catch (_error) {
+    hasDripOffsetSecondsColumnCached = false;
+  }
+  return hasDripOffsetSecondsColumnCached;
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -20,6 +59,12 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    await ensureCourseBatchesTable(pool);
+    const courses = await listLearningCourses(pool);
+    const hasBatchKey = await hasDripBatchKeyColumn(pool);
+    const hasOffset = await hasDripOffsetSecondsColumn(pool);
+    const dripBatchKeySelect = hasBatchKey ? "m.drip_batch_key" : "NULL AS drip_batch_key";
+    const dripOffsetSecondsSelect = hasOffset ? "m.drip_offset_seconds" : "NULL AS drip_offset_seconds";
 
     const [modules] = await pool.query(
       `SELECT
@@ -32,6 +77,8 @@ exports.handler = async function (event) {
          m.is_active,
          m.drip_enabled,
          DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+         ${dripBatchKeySelect},
+         ${dripOffsetSecondsSelect},
          DATE_FORMAT(m.drip_notified_at, '%Y-%m-%d %H:%i:%s') AS drip_notified_at,
          m.created_at,
          m.updated_at,
@@ -60,6 +107,19 @@ exports.handler = async function (event) {
        FROM ${VIDEO_ASSETS_TABLE}
        ORDER BY updated_at DESC
        LIMIT 1000`
+    );
+
+    const [courseBatches] = await pool.query(
+      `SELECT course_slug, batch_key, batch_label, status, is_active,
+              DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
+       FROM course_batches
+       ORDER BY course_slug ASC, batch_start_at ASC, batch_key ASC`
+    );
+
+    const [moduleDripSchedules] = await pool.query(
+      `SELECT module_id, batch_key, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
+       FROM ${MODULE_BATCH_DRIPS_TABLE}
+       ORDER BY module_id ASC, batch_key ASC`
     );
 
     let lessons = [];
@@ -91,7 +151,10 @@ exports.handler = async function (event) {
 
     return json(200, {
       ok: true,
+      courses: Array.isArray(courses) ? courses : [],
       modules: Array.isArray(modules) ? modules : [],
+      course_batches: Array.isArray(courseBatches) ? courseBatches : [],
+      module_drip_schedules: Array.isArray(moduleDripSchedules) ? moduleDripSchedules : [],
       assets: Array.isArray(assets) ? assets : [],
       lessons,
     });

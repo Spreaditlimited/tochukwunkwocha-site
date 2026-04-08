@@ -7,6 +7,7 @@ const {
 } = require("./_lib/manual-payments");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { sendEmail } = require("./_lib/email");
 const { siteBaseUrl } = require("./_lib/payments");
@@ -88,6 +89,11 @@ exports.handler = async function (event) {
   const pool = getPool();
 
   try {
+    await ensureLearningTables(pool);
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    if (!learningCourse) {
+      return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
+    }
     await ensureManualPaymentsTable(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);

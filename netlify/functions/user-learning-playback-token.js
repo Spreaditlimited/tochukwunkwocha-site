@@ -1,8 +1,9 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireStudentSession } = require("./_lib/user-auth");
-const { hasCourseAccess } = require("./_lib/learning-progress");
-const { MODULES_TABLE, LESSONS_TABLE, VIDEO_ASSETS_TABLE } = require("./_lib/learning");
+const { hasCourseAccess, isModuleReleasedForLearner } = require("./_lib/learning-progress");
+const { COURSES_TABLE, MODULES_TABLE, LESSONS_TABLE, VIDEO_ASSETS_TABLE } = require("./_lib/learning");
 const { buildSignedLessonEmbedUrl } = require("./_lib/learning-playback");
 
 const playbackRateWindowMs = 60 * 1000;
@@ -58,6 +59,26 @@ function applyWindowLimit(store, key, limit, nowMs) {
   return { ok: true, retryAfterSeconds: 0 };
 }
 
+let hasDripBatchKeyColumnCached = null;
+async function hasDripBatchKeyColumn(pool) {
+  if (typeof hasDripBatchKeyColumnCached === "boolean") return hasDripBatchKeyColumnCached;
+  try {
+    const [rows] = await pool.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = DATABASE()
+         AND table_name = ?
+         AND column_name = 'drip_batch_key'
+       LIMIT 1`,
+      [MODULES_TABLE]
+    );
+    hasDripBatchKeyColumnCached = Array.isArray(rows) && rows.length > 0;
+  } catch (_error) {
+    hasDripBatchKeyColumnCached = false;
+  }
+  return hasDripBatchKeyColumnCached;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -70,6 +91,7 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    await applyRuntimeSettings(pool);
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
     const nowMs = Date.now();
@@ -92,18 +114,25 @@ exports.handler = async function (event) {
       });
     }
 
+    const hasBatchKey = await hasDripBatchKeyColumn(pool);
+    const batchKeySelect = hasBatchKey ? "m.drip_batch_key" : "NULL AS drip_batch_key";
     const [rows] = await pool.query(
       `SELECT
          l.id AS lesson_id,
+         m.id AS module_id,
          l.is_active AS lesson_active,
          m.course_slug,
          m.is_active AS module_active,
+         c.is_published AS course_published,
+         c.release_at,
          COALESCE(m.drip_enabled, 0) AS drip_enabled,
          m.drip_at,
+         ${batchKeySelect},
          a.video_uid,
          a.hls_url
        FROM ${LESSONS_TABLE} l
        JOIN ${MODULES_TABLE} m ON m.id = l.module_id
+       JOIN ${COURSES_TABLE} c ON c.course_slug = m.course_slug
        LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
        WHERE l.id = ?
        LIMIT 1`,
@@ -114,11 +143,25 @@ exports.handler = async function (event) {
     if (Number(row.lesson_active || 0) !== 1 || Number(row.module_active || 0) !== 1) {
       return json(403, { ok: false, error: "Lesson is unavailable." });
     }
-    if (Number(row.drip_enabled || 0) === 1 && row.drip_at) {
-      const dripAt = new Date(row.drip_at).getTime();
-      if (Number.isFinite(dripAt) && dripAt > Date.now()) {
-        return json(403, { ok: false, error: "This lesson is not yet released for your batch." });
+    if (Number(row.course_published || 0) !== 1) {
+      return json(403, { ok: false, error: "This course is not yet available." });
+    }
+    if (row.release_at) {
+      const releaseAt = new Date(row.release_at).getTime();
+      if (Number.isFinite(releaseAt) && releaseAt > Date.now()) {
+        return json(403, { ok: false, error: "This course is not yet available." });
       }
+    }
+    const isReleased = await isModuleReleasedForLearner(pool, {
+      account_email: session.account.email,
+      course_slug: String(row.course_slug || "").trim().toLowerCase(),
+      module_id: Number(row.module_id || 0),
+      drip_enabled: row.drip_enabled,
+      drip_at: row.drip_at,
+      drip_batch_key: row.drip_batch_key,
+    });
+    if (!isReleased) {
+      return json(403, { ok: false, error: "This lesson is not yet released for your batch." });
     }
     if (!String(row.video_uid || "").trim()) {
       return json(404, { ok: false, error: "This lesson has no playable video yet." });
@@ -140,6 +183,18 @@ exports.handler = async function (event) {
       playback: signed,
     });
   } catch (error) {
-    return json(500, { ok: false, error: error.message || "Could not issue lesson playback token." });
+    const raw = String(error && error.message || "");
+    const lower = raw.toLowerCase();
+    if (
+      lower.indexOf("cloudflare_stream_signing_private_key") !== -1 ||
+      lower.indexOf("decoder routines") !== -1 ||
+      lower.indexOf("unsupported key type") !== -1
+    ) {
+      return json(500, {
+        ok: false,
+        error: "Video signing is misconfigured. Please ask support to regenerate Cloudflare signed playback keys in Video Library.",
+      });
+    }
+    return json(500, { ok: false, error: raw || "Could not issue lesson playback token." });
   }
 };

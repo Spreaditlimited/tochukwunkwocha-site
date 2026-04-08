@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { nowSql } = require("./db");
 const { listCourseBatches, getCourseBatchByKey, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName } = require("./course-config");
+const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 
 const STATUS_PENDING = "pending_verification";
 const STATUS_APPROVED = "approved";
@@ -12,6 +13,8 @@ function buildPaymentUuid() {
 }
 
 async function ensureManualPaymentsTable(pool) {
+  await ensureLearningTables(pool);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS course_manual_payments (
       id BIGINT NOT NULL AUTO_INCREMENT,
@@ -121,6 +124,11 @@ async function ensureManualPaymentsTable(pool) {
      WHERE course_slug = 'prompt-to-profit'
        AND (batch_key IS NULL OR batch_key = '')`
   );
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: "course_manual_payments",
+    columnName: "course_slug",
+    constraintName: "fk_manual_payments_learning_course_slug",
+  });
 }
 
 async function createManualPayment(pool, input) {

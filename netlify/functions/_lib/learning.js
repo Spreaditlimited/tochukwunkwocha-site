@@ -1,7 +1,10 @@
 const { nowSql } = require("./db");
+const { listCourseConfigs } = require("./course-config");
 
+const COURSES_TABLE = "tochukwu_learning_courses";
 const VIDEO_ASSETS_TABLE = "tochukwu_learning_video_assets";
 const MODULES_TABLE = "tochukwu_learning_modules";
+const MODULE_BATCH_DRIPS_TABLE = "tochukwu_learning_module_batch_drips";
 const LESSONS_TABLE = "tochukwu_learning_lessons";
 
 function clean(value, max) {
@@ -21,6 +24,88 @@ function slugify(value, fallback) {
     .replace(/^-+|-+$/g, "");
   if (base) return base;
   return clean(fallback || "item", 60).toLowerCase();
+}
+
+function titleizeSlug(value) {
+  return String(value || "")
+    .trim()
+    .split("-")
+    .filter(Boolean)
+    .map(function (part) {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join(" ");
+}
+
+function configuredCourseSlugs() {
+  const set = new Set();
+  (listCourseConfigs() || []).forEach(function (cfg) {
+    const slug = clean(cfg && cfg.slug, 120).toLowerCase();
+    if (slug) set.add(slug);
+  });
+  return set;
+}
+
+function inferCanonicalCourseSlugFromModuleSlug(rawSlug) {
+  const slug = clean(rawSlug, 120).toLowerCase();
+  if (!slug) return "";
+  if (slug === "prompt-to-production" || slug.indexOf("prompt-to-production-") === 0) return "prompt-to-production";
+  if (slug === "prompt-to-profit-schools" || slug.indexOf("prompt-to-profit-schools-") === 0) return "prompt-to-profit-schools";
+  if (slug === "prompt-to-profit-for-schools" || slug.indexOf("prompt-to-profit-for-schools-") === 0) return "prompt-to-profit-schools";
+  if (slug === "prompt-to-profit" || slug.indexOf("prompt-to-profit-") === 0) return "prompt-to-profit";
+  return "";
+}
+
+async function canonicalizeLegacyModuleCourseSlugs(pool) {
+  const allowed = configuredCourseSlugs();
+  const [rows] = await pool.query(
+    `SELECT id, course_slug, module_slug
+     FROM ${MODULES_TABLE}
+     ORDER BY id ASC`
+  );
+  if (!Array.isArray(rows) || !rows.length) return { updated: 0 };
+
+  let updated = 0;
+  for (const row of rows) {
+    const id = Number(row && row.id || 0);
+    if (!(id > 0)) continue;
+    const current = clean(row && row.course_slug, 120).toLowerCase();
+    if (allowed.has(current)) continue;
+
+    const inferred = inferCanonicalCourseSlugFromModuleSlug(current);
+    if (!inferred || !allowed.has(inferred)) continue;
+
+    let nextModuleSlug = clean(row && row.module_slug, 160).toLowerCase();
+    if (!nextModuleSlug) nextModuleSlug = `module-${id}`;
+    const [dupeRows] = await pool.query(
+      `SELECT id
+       FROM ${MODULES_TABLE}
+       WHERE course_slug = ?
+         AND module_slug = ?
+         AND id <> ?
+       LIMIT 1`,
+      [inferred, nextModuleSlug, id]
+    );
+    if (Array.isArray(dupeRows) && dupeRows.length) {
+      nextModuleSlug = `${nextModuleSlug.slice(0, 145)}-${id}`;
+    }
+
+    await pool.query(
+      `UPDATE ${MODULES_TABLE}
+       SET course_slug = ?, module_slug = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [inferred, nextModuleSlug, nowSql(), id]
+    );
+    updated += 1;
+  }
+  return { updated };
+}
+
+function ident(name) {
+  const raw = clean(name, 128);
+  if (!/^[a-zA-Z0-9_]+$/.test(raw)) throw new Error("Invalid SQL identifier");
+  return `\`${raw}\``;
 }
 
 function toSqlDateTime(value) {
@@ -51,6 +136,32 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureLearningTables(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      course_slug VARCHAR(120) NOT NULL,
+      course_title VARCHAR(220) NOT NULL,
+      course_description TEXT NULL,
+      is_published TINYINT(1) NOT NULL DEFAULT 0,
+      release_at DATETIME NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_tochukwu_learning_course_slug (course_slug),
+      KEY idx_tochukwu_learning_course_publish (is_published, release_at, course_slug)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_slug VARCHAR(120) NOT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_title VARCHAR(220) NOT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_description TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN release_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_course_slug (course_slug)`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD KEY idx_tochukwu_learning_course_publish (is_published, release_at, course_slug)`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${VIDEO_ASSETS_TABLE} (
       id BIGINT NOT NULL AUTO_INCREMENT,
@@ -102,6 +213,11 @@ async function ensureLearningTables(pool) {
       module_description TEXT NULL,
       sort_order INT NOT NULL DEFAULT 0,
       is_active TINYINT(1) NOT NULL DEFAULT 1,
+      drip_enabled TINYINT(1) NOT NULL DEFAULT 0,
+      drip_at DATETIME NULL,
+      drip_batch_key VARCHAR(64) NULL,
+      drip_offset_seconds INT NULL,
+      drip_notified_at DATETIME NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
       PRIMARY KEY (id),
@@ -118,6 +234,8 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_enabled TINYINT(1) NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_batch_key VARCHAR(64) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_offset_seconds INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN drip_notified_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
@@ -125,6 +243,22 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} ADD KEY idx_tochukwu_learning_module_course (course_slug, sort_order, id)`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} MODIFY COLUMN course_slug VARCHAR(120) NOT NULL DEFAULT ''`);
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} MODIFY COLUMN module_slug VARCHAR(160) NOT NULL DEFAULT ''`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${MODULE_BATCH_DRIPS_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      module_id BIGINT NOT NULL,
+      batch_key VARCHAR(64) NOT NULL,
+      drip_at DATETIME NOT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_module_batch_drip (module_id, batch_key),
+      KEY idx_module_batch_drip_module (module_id),
+      KEY idx_module_batch_drip_batch (batch_key),
+      CONSTRAINT fk_module_batch_drip_module FOREIGN KEY (module_id) REFERENCES ${MODULES_TABLE}(id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${LESSONS_TABLE} (
@@ -158,6 +292,25 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_lesson_slug (module_id, lesson_slug)`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD KEY idx_tochukwu_learning_lesson_module (module_id, lesson_order, id)`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD KEY idx_tochukwu_learning_lesson_asset (video_asset_id)`);
+
+  // Seed configured canonical courses.
+  const courseConfigs = listCourseConfigs() || [];
+  for (const cfg of courseConfigs) {
+    const slug = clean(cfg && cfg.slug, 120).toLowerCase();
+    if (!slug) continue;
+    const title = clean(cfg && cfg.name, 220) || titleizeSlug(slug) || slug;
+    await pool.query(
+      `INSERT INTO ${COURSES_TABLE}
+        (course_slug, course_title, course_description, is_published, release_at, created_at, updated_at)
+       VALUES (?, ?, NULL, 1, NULL, ?, ?)
+       ON DUPLICATE KEY UPDATE
+        course_title = VALUES(course_title),
+        updated_at = VALUES(updated_at)`,
+      [slug, title, nowSql(), nowSql()]
+    );
+  }
+
+  await canonicalizeLegacyModuleCourseSlugs(pool);
 }
 
 async function hasColumn(pool, tableName, columnName) {
@@ -171,6 +324,129 @@ async function hasColumn(pool, tableName, columnName) {
     [tableName, columnName]
   );
   return Array.isArray(rows) && rows.length > 0;
+}
+
+async function hasTable(pool, tableName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [tableName]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function findColumnMeta(pool, tableName, columnName) {
+  const [rows] = await pool.query(
+    `SELECT is_nullable, data_type, character_maximum_length
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function hasConstraint(pool, tableName, constraintName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.table_constraints
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND constraint_name = ?
+       AND constraint_type = 'FOREIGN KEY'
+     LIMIT 1`,
+    [tableName, constraintName]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function ensureCourseSlugForeignKey(pool, input) {
+  const tableName = clean(input && input.tableName, 128);
+  const columnName = clean(input && input.columnName, 128);
+  const constraintName = clean(input && input.constraintName, 128);
+  if (!tableName || !columnName || !constraintName) {
+    throw new Error("tableName, columnName, and constraintName are required");
+  }
+
+  const [coursesReady, childReady] = await Promise.all([
+    hasTable(pool, COURSES_TABLE),
+    hasTable(pool, tableName),
+  ]);
+  if (!coursesReady || !childReady) return { skipped: true, reason: "table_missing" };
+
+  const columnMeta = await findColumnMeta(pool, tableName, columnName);
+  if (!columnMeta) return { skipped: true, reason: "column_missing" };
+
+  if (await hasConstraint(pool, tableName, constraintName)) {
+    return { added: false, reason: "exists" };
+  }
+
+  const qt = ident(tableName);
+  const qc = ident(columnName);
+  const qconstraint = ident(constraintName);
+  const qcourses = ident(COURSES_TABLE);
+  const nullable = String(columnMeta.is_nullable || "").toUpperCase() === "YES";
+
+  if (nullable) {
+    await pool.query(
+      `UPDATE ${qt}
+       SET ${qc} = NULL
+       WHERE ${qc} IS NOT NULL
+         AND TRIM(${qc}) = ''`
+    );
+  }
+
+  if (!nullable) {
+    const [blankRows] = await pool.query(
+      `SELECT COUNT(*) AS blank_count
+       FROM ${qt}
+       WHERE TRIM(${qc}) = ''`
+    );
+    const blankCount = Number(blankRows && blankRows[0] && blankRows[0].blank_count || 0);
+    if (blankCount > 0) {
+      throw new Error(`Cannot add FK ${constraintName}: found ${blankCount} blank ${tableName}.${columnName} values.`);
+    }
+  }
+
+  const [orphanRows] = await pool.query(
+    `SELECT COUNT(*) AS orphan_count
+     FROM ${qt} t
+     LEFT JOIN ${qcourses} c
+       ON c.course_slug COLLATE utf8mb4_general_ci = t.${qc} COLLATE utf8mb4_general_ci
+     WHERE t.${qc} IS NOT NULL
+       AND TRIM(t.${qc}) <> ''
+       AND c.id IS NULL`
+  );
+  const orphanCount = Number(orphanRows && orphanRows[0] && orphanRows[0].orphan_count || 0);
+  if (orphanCount > 0) {
+    throw new Error(`Cannot add FK ${constraintName}: found ${orphanCount} orphan ${tableName}.${columnName} values.`);
+  }
+
+  try {
+    await pool.query(
+      `ALTER TABLE ${qt}
+       ADD CONSTRAINT ${qconstraint}
+       FOREIGN KEY (${qc}) REFERENCES ${qcourses}(course_slug)
+       ON DELETE RESTRICT
+       ON UPDATE CASCADE`
+    );
+  } catch (error) {
+    const msg = String((error && error.message) || "").toLowerCase();
+    if (
+      msg.indexOf("duplicate") !== -1 ||
+      msg.indexOf("already exists") !== -1
+    ) {
+      return { added: false, reason: "exists" };
+    }
+    throw error;
+  }
+
+  return { added: true };
 }
 
 async function backfillLearningFromLegacyAssetColumns(pool) {
@@ -406,6 +682,101 @@ async function ensureModuleById(pool, moduleId) {
   return rows && rows[0] ? rows[0] : null;
 }
 
+async function listLearningCourses(pool) {
+  const allowed = configuredCourseSlugs();
+  const [rows] = await pool.query(
+    `SELECT id,
+            course_slug,
+            course_title,
+            course_description,
+            is_published,
+            DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
+            created_at,
+            updated_at
+     FROM ${COURSES_TABLE}
+     ORDER BY course_slug ASC, id ASC`
+  );
+  return (Array.isArray(rows) ? rows : []).filter(function (row) {
+    return allowed.has(clean(row && row.course_slug, 120).toLowerCase());
+  });
+}
+
+async function findLearningCourseBySlug(pool, courseSlug) {
+  const slug = clean(courseSlug, 120).toLowerCase();
+  if (!configuredCourseSlugs().has(slug)) return null;
+  if (!slug) return null;
+  const [rows] = await pool.query(
+    `SELECT id,
+            course_slug,
+            course_title,
+            course_description,
+            is_published,
+            DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
+            created_at,
+            updated_at
+     FROM ${COURSES_TABLE}
+     WHERE course_slug = ?
+     LIMIT 1`,
+    [slug]
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function upsertLearningCourse(pool, input) {
+  const now = nowSql();
+  const id = Number(input && input.id || 0);
+  const slug = clean(input && input.course_slug, 120).toLowerCase();
+  const title = clean(input && input.course_title, 220) || titleizeSlug(slug) || "Course";
+  const description = clean(input && input.course_description, 4000) || null;
+  const isPublished = input && (input.is_published === true || Number(input.is_published) === 1) ? 1 : 0;
+  const releaseAt = toSqlDateTime(input && input.release_at);
+
+  if (!slug) throw new Error("course_slug is required");
+  if (!configuredCourseSlugs().has(slug)) {
+    throw new Error("Unknown course_slug. Allowed: prompt-to-profit, prompt-to-production, prompt-to-profit-schools.");
+  }
+  if (!title) throw new Error("course_title is required");
+
+  if (Number.isFinite(id) && id > 0) {
+    await pool.query(
+      `UPDATE ${COURSES_TABLE}
+       SET course_slug = ?, course_title = ?, course_description = ?, is_published = ?, release_at = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [slug, title, description, isPublished, releaseAt, now, id]
+    );
+    const [rows] = await pool.query(
+      `SELECT id,
+              course_slug,
+              course_title,
+              course_description,
+              is_published,
+              DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
+              created_at,
+              updated_at
+       FROM ${COURSES_TABLE}
+       WHERE id = ?
+       LIMIT 1`,
+      [id]
+    );
+    return Array.isArray(rows) && rows.length ? rows[0] : null;
+  }
+
+  await pool.query(
+    `INSERT INTO ${COURSES_TABLE}
+      (course_slug, course_title, course_description, is_published, release_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+      course_title = VALUES(course_title),
+      course_description = VALUES(course_description),
+      is_published = VALUES(is_published),
+      release_at = VALUES(release_at),
+      updated_at = VALUES(updated_at)`,
+    [slug, title, description, isPublished, releaseAt, now, now]
+  );
+  return findLearningCourseBySlug(pool, slug);
+}
+
 async function upsertLesson(pool, input) {
   const now = nowSql();
   const moduleId = Number(input && input.module_id || 0);
@@ -507,8 +878,10 @@ async function upsertLesson(pool, input) {
 }
 
 module.exports = {
+  COURSES_TABLE,
   VIDEO_ASSETS_TABLE,
   MODULES_TABLE,
+  MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
   clean,
   slugify,
@@ -517,6 +890,10 @@ module.exports = {
   upsertVideoAsset,
   findOrCreateModule,
   ensureModuleById,
+  listLearningCourses,
+  findLearningCourseBySlug,
+  upsertLearningCourse,
   upsertLesson,
   backfillLearningFromLegacyAssetColumns,
+  ensureCourseSlugForeignKey,
 };

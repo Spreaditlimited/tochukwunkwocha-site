@@ -1,5 +1,6 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
+const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 const {
   DEFAULT_COURSE_SLUG,
   getCourseConfig,
@@ -95,6 +96,7 @@ async function safeAlter(pool, sql) {
 
 async function ensureCourseBatchesTable(pool) {
   await applyRuntimeSettings(pool);
+  await ensureLearningTables(pool);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS course_batches (
@@ -178,6 +180,12 @@ async function ensureCourseBatchesTable(pool) {
       );
     }
   }
+
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: "course_batches",
+    columnName: "course_slug",
+    constraintName: "fk_course_batches_learning_course_slug",
+  });
 }
 
 async function listCourseBatches(pool, courseSlug) {

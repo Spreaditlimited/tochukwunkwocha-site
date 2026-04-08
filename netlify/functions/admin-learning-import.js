@@ -10,6 +10,7 @@ const {
   LESSONS_TABLE,
   upsertVideoAsset,
   findOrCreateModule,
+  listLearningCourses,
 } = require("./_lib/learning");
 
 function parseCsvLine(line) {
@@ -135,6 +136,20 @@ exports.handler = async function (event) {
   const conn = await pool.getConnection();
   try {
     await ensureLearningTables(pool);
+    const courses = await listLearningCourses(pool);
+    const knownCourseSlugs = new Set((Array.isArray(courses) ? courses : []).map(function (row) {
+      return clean(row && row.course_slug, 120).toLowerCase();
+    }).filter(Boolean));
+    const unknownCourseSlugs = Array.from(new Set(normalizedRows
+      .map(function (row) { return clean(row.course_slug, 120).toLowerCase(); })
+      .filter(Boolean)
+      .filter(function (slug) { return !knownCourseSlugs.has(slug); })));
+    if (unknownCourseSlugs.length) {
+      return json(400, {
+        ok: false,
+        error: "Create these courses first before import: " + unknownCourseSlugs.join(", "),
+      });
+    }
     await conn.beginTransaction();
 
     let moduleWrites = 0;

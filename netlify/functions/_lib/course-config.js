@@ -15,6 +15,14 @@ const COURSE_CONFIGS = {
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "PTPROD",
   },
+  "prompt-to-profit-schools": {
+    slug: "prompt-to-profit-schools",
+    name: "Prompt to Profit for Schools",
+    landingPath: "/courses/prompt-to-profit-schools",
+    defaultBatchKey: "ptps-batch-1",
+    defaultBatchLabel: "Batch 1",
+    defaultPrefix: "PTPS",
+  },
 };
 
 const DEFAULT_COURSE_SLUG = "prompt-to-profit";

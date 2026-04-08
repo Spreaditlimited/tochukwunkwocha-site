@@ -1,4 +1,5 @@
 const { applyRuntimeSettings } = require("./runtime-settings");
+const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 
 async function safeAlter(pool, sql) {
   try {
@@ -10,6 +11,7 @@ async function safeAlter(pool, sql) {
 
 async function ensureCourseOrdersBatchColumns(pool) {
   await applyRuntimeSettings(pool);
+  await ensureLearningTables(pool);
 
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_key VARCHAR(64) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_label VARCHAR(120) NULL`);
@@ -39,6 +41,11 @@ async function ensureCourseOrdersBatchColumns(pool) {
      SET final_amount_minor = amount_minor
      WHERE final_amount_minor IS NULL`
   );
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: "course_orders",
+    columnName: "course_slug",
+    constraintName: "fk_course_orders_learning_course_slug",
+  });
 }
 
 module.exports = { ensureCourseOrdersBatchColumns };

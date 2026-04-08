@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const { paystackInitialize, siteBaseUrl } = require("./_lib/payments");
 const { ensureSchoolTables, createSchoolOrder } = require("./_lib/schools");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 
 function parseBody(event) {
   try {
@@ -22,6 +23,12 @@ exports.handler = async function (event) {
     try {
       await applyRuntimeSettings(pool);
     } catch (_error) {}
+    await ensureLearningTables(pool);
+    const courseSlug = String(body.courseSlug || "prompt-to-profit").trim().toLowerCase() || "prompt-to-profit";
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    if (!learningCourse) {
+      return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
+    }
     await ensureSchoolTables(pool);
     const order = await createSchoolOrder(pool, {
       schoolName: body.schoolName,
@@ -29,7 +36,7 @@ exports.handler = async function (event) {
       adminEmail: body.adminEmail,
       adminPhone: body.adminPhone,
       seatsRequested: body.seatCount,
-      courseSlug: body.courseSlug || "prompt-to-profit",
+      courseSlug,
       provider: "paystack",
     });
 
@@ -43,7 +50,7 @@ exports.handler = async function (event) {
         school_order_uuid: order.orderUuid,
         school_name: String(body.schoolName || "").trim(),
         admin_email: String(body.adminEmail || "").trim().toLowerCase(),
-        course_slug: "prompt-to-profit",
+        course_slug: courseSlug,
         seat_count: Number(order.pricing.seats || 0),
       },
     });

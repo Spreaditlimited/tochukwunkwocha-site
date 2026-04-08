@@ -5,6 +5,7 @@ const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
@@ -76,6 +77,11 @@ exports.handler = async function (event) {
   const pool = getPool();
 
   try {
+    await ensureLearningTables(pool);
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    if (!learningCourse) {
+      return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
+    }
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);

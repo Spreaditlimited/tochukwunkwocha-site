@@ -1,5 +1,12 @@
 const { nowSql } = require("./db");
-const { MODULES_TABLE, LESSONS_TABLE, VIDEO_ASSETS_TABLE, ensureLearningTables } = require("./learning");
+const {
+  COURSES_TABLE,
+  MODULES_TABLE,
+  MODULE_BATCH_DRIPS_TABLE,
+  LESSONS_TABLE,
+  VIDEO_ASSETS_TABLE,
+  ensureLearningTables,
+} = require("./learning");
 const { hasSchoolCourseAccess, getSchoolCourseAccessState, SCHOOL_ACCOUNTS_TABLE, SCHOOL_STUDENTS_TABLE } = require("./schools");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
@@ -16,6 +23,233 @@ function toInt(value, fallback) {
 
 function normKey(value) {
   return clean(value, 300).toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function parseSqlDateMs(value) {
+  const raw = clean(value, 64);
+  if (!raw) return NaN;
+  const normalized = raw.indexOf("T") !== -1 ? raw : raw.replace(" ", "T");
+  const ms = new Date(normalized + "Z").getTime();
+  return Number.isFinite(ms) ? ms : NaN;
+}
+
+const moduleColumnCache = new Map();
+let moduleBatchDripsTableExists = null;
+
+async function hasModuleColumn(pool, columnName) {
+  const key = clean(columnName, 80).toLowerCase();
+  if (!key) return false;
+  if (moduleColumnCache.has(key)) return moduleColumnCache.get(key);
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [MODULES_TABLE, key]
+  );
+  const exists = Array.isArray(rows) && rows.length > 0;
+  moduleColumnCache.set(key, exists);
+  return exists;
+}
+
+async function hasModuleBatchDripsTable(pool) {
+  if (typeof moduleBatchDripsTableExists === "boolean") return moduleBatchDripsTableExists;
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [MODULE_BATCH_DRIPS_TABLE]
+  );
+  moduleBatchDripsTableExists = Array.isArray(rows) && rows.length > 0;
+  return moduleBatchDripsTableExists;
+}
+
+async function loadModuleBatchDripMap(pool, moduleIds) {
+  const ids = Array.from(new Set((Array.isArray(moduleIds) ? moduleIds : []).map(function (n) {
+    return Number(n || 0);
+  }).filter(function (n) {
+    return n > 0;
+  })));
+  if (!ids.length) return new Map();
+  const exists = await hasModuleBatchDripsTable(pool).catch(function () { return false; });
+  if (!exists) return new Map();
+  const placeholders = ids.map(function () { return "?"; }).join(",");
+  const [rows] = await pool.query(
+    `SELECT module_id, batch_key, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
+     FROM ${MODULE_BATCH_DRIPS_TABLE}
+     WHERE module_id IN (${placeholders})`,
+    ids
+  );
+  const map = new Map();
+  (Array.isArray(rows) ? rows : []).forEach(function (row) {
+    const moduleId = Number(row && row.module_id || 0);
+    const batchKey = clean(row && row.batch_key, 64).toLowerCase();
+    const dripAtMs = parseSqlDateMs(row && row.drip_at);
+    if (!(moduleId > 0) || !batchKey || !Number.isFinite(dripAtMs)) return;
+    if (!map.has(moduleId)) map.set(moduleId, new Map());
+    map.get(moduleId).set(batchKey, dripAtMs);
+  });
+  return map;
+}
+
+async function resolveCourseDripAnchorStartMs(pool, courseSlug) {
+  const slug = clean(courseSlug, 120).toLowerCase();
+  if (!slug) return NaN;
+  const [rows] = await pool.query(
+    `SELECT DATE_FORMAT(
+        COALESCE(
+          MAX(CASE WHEN is_active = 1 THEN batch_start_at ELSE NULL END),
+          MIN(batch_start_at)
+        ),
+        '%Y-%m-%d %H:%i:%s'
+      ) AS anchor_start_at
+     FROM course_batches
+     WHERE course_slug = ?
+       AND batch_start_at IS NOT NULL`,
+    [slug]
+  );
+  return parseSqlDateMs(rows && rows[0] && rows[0].anchor_start_at ? rows[0].anchor_start_at : "");
+}
+
+async function resolveCourseActiveBatchKey(pool, courseSlug) {
+  const slug = clean(courseSlug, 120).toLowerCase();
+  if (!slug) return "";
+  const [rows] = await pool.query(
+    `SELECT batch_key
+     FROM course_batches
+     WHERE course_slug = ?
+       AND is_active = 1
+     ORDER BY updated_at DESC, id DESC
+     LIMIT 1`,
+    [slug]
+  );
+  return clean(rows && rows[0] && rows[0].batch_key ? rows[0].batch_key : "", 64).toLowerCase();
+}
+
+async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
+  const email = clean(accountEmail, 220).toLowerCase();
+  const slug = clean(courseSlug, 120).toLowerCase();
+  if (!email || !slug) return { batch_key: "", batch_start_ms: NaN };
+  const [rows] = await pool.query(
+    `SELECT x.batch_key,
+            DATE_FORMAT(x.batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
+     FROM (
+       SELECT b.batch_key, b.batch_start_at
+       FROM course_orders o
+       JOIN course_batches b
+         ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
+        AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
+       WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
+         AND o.course_slug = ?
+         AND o.status = 'paid'
+         AND COALESCE(TRIM(o.batch_key), '') <> ''
+         AND b.batch_start_at IS NOT NULL
+         AND b.batch_start_at <= NOW()
+         AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+       UNION ALL
+       SELECT b.batch_key, b.batch_start_at
+       FROM course_manual_payments m
+       JOIN course_batches b
+         ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
+        AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
+       WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
+         AND m.course_slug = ?
+         AND m.status = 'approved'
+         AND COALESCE(TRIM(m.batch_key), '') <> ''
+         AND b.batch_start_at IS NOT NULL
+         AND b.batch_start_at <= NOW()
+         AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+     ) x
+     ORDER BY x.batch_start_at DESC
+     LIMIT 1`,
+    [email, slug, email, slug]
+  );
+  const batchKey = clean(rows && rows[0] && rows[0].batch_key ? rows[0].batch_key : "", 64).toLowerCase();
+  const batchStartMs = parseSqlDateMs(rows && rows[0] && rows[0].batch_start_at ? rows[0].batch_start_at : "");
+  return { batch_key: batchKey, batch_start_ms: batchStartMs };
+}
+
+function moduleIsReleasedForContext(moduleRow, context, nowMsInput) {
+  const row = moduleRow || {};
+  const nowMs = Number(nowMsInput || Date.now());
+  const dripEnabled = Number(row.drip_enabled || 0) === 1;
+  if (!dripEnabled) return true;
+  const moduleId = Number(row.module_id || 0);
+  const learnerBatchKey = clean(context && context.learner_batch_key, 64).toLowerCase();
+  const schedules = context && context.module_batch_drip_map instanceof Map && moduleId > 0
+    ? context.module_batch_drip_map.get(moduleId)
+    : null;
+  if (schedules && schedules instanceof Map && schedules.size > 0) {
+    if (!learnerBatchKey) return true;
+    if (!schedules.has(learnerBatchKey)) return true;
+    return nowMs >= Number(schedules.get(learnerBatchKey));
+  }
+  const targetBatchKey = clean(row.drip_batch_key, 64).toLowerCase();
+  const activeBatchKey = clean(context && context.course_active_batch_key, 64).toLowerCase();
+  if (targetBatchKey) {
+    if (!learnerBatchKey) return true;
+    if (targetBatchKey !== learnerBatchKey) return true;
+    const targetedDripMs = parseSqlDateMs(row.drip_at);
+    if (Number.isFinite(targetedDripMs)) return nowMs >= targetedDripMs;
+    return true;
+  }
+  if (activeBatchKey && learnerBatchKey && activeBatchKey !== learnerBatchKey) {
+    return true;
+  }
+
+  const absoluteDripMs = parseSqlDateMs(row.drip_at);
+  const directOffset = Number(row.drip_offset_seconds);
+  const storedOffset = Number.isFinite(directOffset) ? Math.trunc(directOffset) : null;
+  const learnerBatchStartMs = Number(context && context.learner_batch_start_ms);
+  const courseAnchorStartMs = Number(context && context.course_anchor_start_ms);
+  let offsetSeconds = storedOffset;
+
+  if (!Number.isFinite(offsetSeconds) && Number.isFinite(absoluteDripMs) && Number.isFinite(courseAnchorStartMs)) {
+    offsetSeconds = Math.round((absoluteDripMs - courseAnchorStartMs) / 1000);
+  }
+  if (Number.isFinite(offsetSeconds) && Number.isFinite(learnerBatchStartMs)) {
+    const effectiveMs = learnerBatchStartMs + (offsetSeconds * 1000);
+    return nowMs >= effectiveMs;
+  }
+  if (Number.isFinite(absoluteDripMs)) {
+    return nowMs >= absoluteDripMs;
+  }
+  return false;
+}
+
+async function getLearnerDripContext(pool, accountEmail, courseSlug) {
+  const [courseAnchorStartMs, courseActiveBatchKey, learnerBatch] = await Promise.all([
+    resolveCourseDripAnchorStartMs(pool, courseSlug).catch(function () { return NaN; }),
+    resolveCourseActiveBatchKey(pool, courseSlug).catch(function () { return ""; }),
+    resolveLearnerActiveBatch(pool, accountEmail, courseSlug).catch(function () { return { batch_key: "", batch_start_ms: NaN }; }),
+  ]);
+  return {
+    course_anchor_start_ms: Number.isFinite(courseAnchorStartMs) ? courseAnchorStartMs : NaN,
+    course_active_batch_key: clean(courseActiveBatchKey, 64).toLowerCase(),
+    learner_batch_key: clean(learnerBatch && learnerBatch.batch_key, 64).toLowerCase(),
+    learner_batch_start_ms: Number.isFinite(learnerBatch && learnerBatch.batch_start_ms) ? learnerBatch.batch_start_ms : NaN,
+  };
+}
+
+async function isModuleReleasedForLearner(pool, input) {
+  const accountEmail = clean(input && input.account_email, 220).toLowerCase();
+  const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
+  if (!accountEmail || !courseSlug) return false;
+  const context = await getLearnerDripContext(pool, accountEmail, courseSlug);
+  const moduleId = Number(input && input.module_id || 0);
+  const scheduleMap = await loadModuleBatchDripMap(pool, moduleId > 0 ? [moduleId] : []);
+  context.module_batch_drip_map = scheduleMap;
+  return moduleIsReleasedForContext({
+    module_id: moduleId,
+    drip_enabled: input && input.drip_enabled,
+    drip_at: input && input.drip_at,
+    drip_batch_key: input && input.drip_batch_key,
+    drip_offset_seconds: input && input.drip_offset_seconds,
+  }, context, Date.now());
 }
 
 async function safeAlter(pool, sql) {
@@ -109,9 +343,17 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
        AND o.course_slug = ?
        AND o.status = 'paid'
        AND (
-         b.batch_start_at IS NULL
-         OR b.batch_start_at <= NOW()
-         OR b.id IS NULL
+         COALESCE(TRIM(o.batch_key), '') = ''
+         OR (
+           b.id IS NOT NULL
+           AND (
+             b.batch_start_at IS NULL
+             OR (
+               b.batch_start_at <= NOW()
+               AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+             )
+           )
+         )
        )
      LIMIT 1`,
     [email, slug]
@@ -130,9 +372,17 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
        AND m.course_slug = ?
        AND m.status = 'approved'
        AND (
-         b.batch_start_at IS NULL
-         OR b.batch_start_at <= NOW()
-         OR b.id IS NULL
+         COALESCE(TRIM(m.batch_key), '') = ''
+         OR (
+           b.id IS NOT NULL
+           AND (
+             b.batch_start_at IS NULL
+             OR (
+               b.batch_start_at <= NOW()
+               AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+             )
+           )
+         )
        )
      LIMIT 1`,
     [email, slug]
@@ -150,6 +400,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
+       AND COALESCE(TRIM(o.batch_key), '') <> ''
        AND b.batch_start_at > NOW()`,
     [email, slug]
   );
@@ -162,6 +413,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
+       AND COALESCE(TRIM(m.batch_key), '') <> ''
        AND b.batch_start_at > NOW()`,
     [email, slug]
   );
@@ -181,6 +433,46 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
       allowed: false,
       reason: "batch_not_started",
       next_start_at: futureStarts[0],
+    };
+  }
+
+  const [expiredOrderRows] = await pool.query(
+    `SELECT DATE_FORMAT(MAX(DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
+     FROM course_orders o
+     JOIN course_batches b
+       ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
+      AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
+     WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
+       AND o.course_slug = ?
+       AND o.status = 'paid'
+       AND COALESCE(TRIM(o.batch_key), '') <> ''
+       AND b.batch_start_at IS NOT NULL
+       AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) < NOW()`,
+    [email, slug]
+  );
+  const [expiredManualRows] = await pool.query(
+    `SELECT DATE_FORMAT(MAX(DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
+     FROM course_manual_payments m
+     JOIN course_batches b
+       ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
+      AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
+     WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
+       AND m.course_slug = ?
+       AND m.status = 'approved'
+       AND COALESCE(TRIM(m.batch_key), '') <> ''
+       AND b.batch_start_at IS NOT NULL
+       AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) < NOW()`,
+    [email, slug]
+  );
+  const endedAtCandidates = [];
+  if (expiredOrderRows && expiredOrderRows[0] && expiredOrderRows[0].access_ended_at) endedAtCandidates.push(String(expiredOrderRows[0].access_ended_at));
+  if (expiredManualRows && expiredManualRows[0] && expiredManualRows[0].access_ended_at) endedAtCandidates.push(String(expiredManualRows[0].access_ended_at));
+  endedAtCandidates.sort();
+  if (endedAtCandidates.length) {
+    return {
+      allowed: false,
+      reason: "batch_access_expired",
+      access_ended_at: endedAtCandidates[endedAtCandidates.length - 1],
     };
   }
 
@@ -213,6 +505,18 @@ async function getCourseAccessState(pool, input) {
       reason: "batch_not_started",
       next_start_at: futureStarts[0],
       error: `Course access begins on ${futureStarts[0]}.`,
+    };
+  }
+
+  const endedAtCandidates = [];
+  if (individual && individual.access_ended_at) endedAtCandidates.push(String(individual.access_ended_at));
+  endedAtCandidates.sort();
+  if (endedAtCandidates.length) {
+    return {
+      allowed: false,
+      reason: "batch_access_expired",
+      access_ended_at: endedAtCandidates[endedAtCandidates.length - 1],
+      error: `Your batch access ended on ${endedAtCandidates[endedAtCandidates.length - 1]}.`,
     };
   }
 
@@ -527,6 +831,8 @@ async function listCourseForLearner(pool, input) {
   if (!accessState.allowed) {
     return { ok: false, error: accessState.error || "You do not currently have access to this course." };
   }
+  const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
+  const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
 
   const [rows] = await pool.query(
     `SELECT
@@ -535,6 +841,9 @@ async function listCourseForLearner(pool, input) {
        m.module_title,
        m.module_description,
        m.sort_order,
+       m.drip_enabled,
+       DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+       ${dripBatchKeySelect},
        l.id AS lesson_id,
        l.lesson_slug,
        l.lesson_title,
@@ -547,22 +856,36 @@ async function listCourseForLearner(pool, input) {
        a.filename,
        a.duration_seconds
      FROM ${MODULES_TABLE} m
+     JOIN ${COURSES_TABLE} c
+       ON c.course_slug = m.course_slug
      LEFT JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
      LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
      WHERE m.course_slug = ?
-       AND m.is_active = 1
+       AND c.is_published = 1
        AND (
-         COALESCE(m.drip_enabled, 0) = 0
-         OR m.drip_at IS NULL
-         OR m.drip_at <= NOW()
+         c.release_at IS NULL
+         OR c.release_at <= NOW()
        )
+       AND m.is_active = 1
      ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
     [courseSlug]
   );
 
+  const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
+  const moduleIdsForSchedule = Array.from(new Set((Array.isArray(rows) ? rows : []).map(function (row) {
+    return Number(row && row.module_id || 0);
+  }).filter(function (id) {
+    return id > 0;
+  })));
+  dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, moduleIdsForSchedule);
+  const nowMs = Date.now();
+  const gatedRows = (Array.isArray(rows) ? rows : []).filter(function (row) {
+    return moduleIsReleasedForContext(row, dripContext, nowMs);
+  });
+
   const byModule = new Map();
   const lessonIds = [];
-  (Array.isArray(rows) ? rows : []).forEach(function (row) {
+  gatedRows.forEach(function (row) {
     const moduleId = Number(row.module_id || 0);
     if (!moduleId) return;
     const moduleKey = [
@@ -640,14 +963,22 @@ async function saveLessonProgress(pool, input) {
   if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account_id");
   if (!accountEmail) throw new Error("Invalid account_email");
   if (!Number.isFinite(lessonId) || lessonId <= 0) throw new Error("lesson_id is required");
+  const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
+  const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
 
   const [lessonRows] = await pool.query(
-    `SELECT l.id AS lesson_id, l.module_id, m.course_slug
+    `SELECT l.id AS lesson_id, l.module_id, m.course_slug,
+            COALESCE(m.drip_enabled, 0) AS drip_enabled,
+            DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+            ${dripBatchKeySelect}
      FROM ${LESSONS_TABLE} l
      JOIN ${MODULES_TABLE} m ON m.id = l.module_id
+     JOIN ${COURSES_TABLE} c ON c.course_slug = m.course_slug
      WHERE l.id = ?
        AND l.is_active = 1
        AND m.is_active = 1
+       AND c.is_published = 1
+       AND (c.release_at IS NULL OR c.release_at <= NOW())
      LIMIT 1`,
     [lessonId]
   );
@@ -669,6 +1000,16 @@ async function saveLessonProgress(pool, input) {
       ok: false,
       statusCode: 403,
       error: accessState.error || "You do not currently have access to this course.",
+    };
+  }
+
+  const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
+  dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, [moduleId]);
+  if (!moduleIsReleasedForContext(lesson, dripContext, Date.now())) {
+    return {
+      ok: false,
+      statusCode: 403,
+      error: "This lesson is not yet released for your batch.",
     };
   }
 
@@ -1282,6 +1623,7 @@ module.exports = {
   LESSON_PROGRESS_TABLE,
   ensureLearningProgressTables,
   hasCourseAccess,
+  isModuleReleasedForLearner,
   listCourseForLearner,
   saveLessonProgress,
   getStudentCourseAccessAudit,

@@ -6,7 +6,7 @@ const {
   findStudentByEmail,
   createStudentAccount,
 } = require("./student-auth");
-const { MODULES_TABLE, LESSONS_TABLE } = require("./learning");
+const { MODULES_TABLE, LESSONS_TABLE, ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 
 const SCHOOL_ORDERS_TABLE = "school_orders";
@@ -159,6 +159,7 @@ async function safeAlter(pool, sql) {
 
 async function ensureSchoolTables(pool) {
   await applyRuntimeSettings(pool);
+  await ensureLearningTables(pool);
   await ensureStudentAuthTables(pool);
 
   await pool.query(`
@@ -300,6 +301,17 @@ async function ensureSchoolTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_expires_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_requested_at DATETIME NULL`);
+
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: SCHOOL_ORDERS_TABLE,
+    columnName: "course_slug",
+    constraintName: "fk_school_orders_learning_course_slug",
+  });
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: SCHOOL_ACCOUNTS_TABLE,
+    columnName: "course_slug",
+    constraintName: "fk_school_accounts_learning_course_slug",
+  });
 }
 
 function hashPassword(password, salt) {

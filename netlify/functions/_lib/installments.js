@@ -1,9 +1,11 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
+const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 
 async function ensureInstallmentTables(pool) {
   await applyRuntimeSettings(pool);
+  await ensureLearningTables(pool);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_installment_plans (
@@ -74,6 +76,12 @@ async function ensureInstallmentTables(pool) {
       KEY idx_installment_payment_reference (provider_reference)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: "student_installment_plans",
+    columnName: "course_slug",
+    constraintName: "fk_installment_plans_learning_course_slug",
+  });
 }
 
 async function createInstallmentPlan(pool, input) {

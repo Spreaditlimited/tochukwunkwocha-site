@@ -5,6 +5,7 @@ const { ensureInstallmentTables, findOpenPlan, createInstallmentPlan } = require
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables, recordCouponRedemption } = require("./_lib/coupons");
 const { getCoursePaymentLock } = require("./_lib/course-payment-lock");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -21,6 +22,11 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    await ensureLearningTables(pool);
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    if (!learningCourse) {
+      return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
+    }
     await ensureStudentAuthTables(pool);
     await ensureInstallmentTables(pool);
     await ensureCourseBatchesTable(pool);
