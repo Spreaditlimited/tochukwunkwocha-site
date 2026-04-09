@@ -39,3 +39,6 @@
 
 [functions."learning-drip-cron"]
   schedule = "*/10 * * * *"
+
+[functions."domain-renewal-notify-cron"]
+  schedule = "15 8 * * *"

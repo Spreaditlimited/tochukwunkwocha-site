@@ -48,6 +48,27 @@
         }
       }
     </style>
+    <style>
+      @media (max-width: 380px) {
+        .internal-topbar {
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
+        }
+        .internal-topbar .internal-title {
+          font-size: 1.125rem;
+          line-height: 1.5rem;
+        }
+        .internal-topbar .internal-logout-btn {
+          width: 2.25rem;
+          min-width: 2.25rem;
+          height: 2.25rem;
+          padding: 0;
+        }
+        .internal-topbar .internal-logout-label {
+          display: none;
+        }
+      }
+    </style>
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden selection:bg-brand-100 selection:text-brand-900">
     
@@ -148,25 +169,27 @@
 
       <div class="flex-1 flex flex-col h-full min-w-0 bg-gray-50 overflow-hidden relative">
         
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+        <header class="internal-topbar h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
           
-          <div class="flex items-center gap-4">
+          <div class="flex min-w-0 items-center gap-2 sm:gap-4">
             <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </label>
-            <h2 class="text-xl font-heading font-bold text-gray-900 truncate">Dashboard Overview</h2>
+            <h2 class="internal-title text-xl font-heading font-bold text-gray-900 truncate">Dashboard Overview</h2>
           </div>
 
-          <div class="flex items-center gap-4">
+          <div class="flex items-center">
             <button
               id="internalLogoutBtn"
               type="button"
-              class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+              class="internal-logout-btn inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+              aria-label="Sign out"
+              title="Sign out"
             >
-              Sign out
-            </button>
-            <button type="button" class="sm:hidden p-2 text-gray-500 hover:text-gray-900">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span class="internal-logout-label">Sign out</span>
             </button>
           </div>
         </header>

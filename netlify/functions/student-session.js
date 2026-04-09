@@ -9,9 +9,9 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureStudentAuthTables(pool);
-    await ensureInstallmentTables(pool);
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
+    await ensureInstallmentTables(pool);
 
     const plans = await listPlansForAccount(pool, session.account.id);
     return json(200, {

@@ -152,6 +152,7 @@ async function ensureLearningTables(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ENGINE=InnoDB`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_slug VARCHAR(120) NOT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_title VARCHAR(220) NOT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_description TEXT NULL`);
@@ -338,9 +339,27 @@ async function hasTable(pool, tableName) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
+async function findTableEngine(pool, tableName) {
+  const [rows] = await pool.query(
+    `SELECT engine
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [tableName]
+  );
+  return rows && rows[0] ? String(rows[0].engine || "").trim() : "";
+}
+
 async function findColumnMeta(pool, tableName, columnName) {
   const [rows] = await pool.query(
-    `SELECT is_nullable, data_type, character_maximum_length
+    `SELECT is_nullable,
+            data_type,
+            column_type,
+            character_maximum_length,
+            character_set_name,
+            collation_name,
+            column_default
      FROM information_schema.columns
      WHERE table_schema = DATABASE()
        AND table_name = ?
@@ -349,6 +368,75 @@ async function findColumnMeta(pool, tableName, columnName) {
     [tableName, columnName]
   );
   return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+function isTextualDataType(dataType) {
+  const type = String(dataType || "").trim().toLowerCase();
+  return (
+    type === "char" ||
+    type === "varchar" ||
+    type === "tinytext" ||
+    type === "text" ||
+    type === "mediumtext" ||
+    type === "longtext" ||
+    type === "enum" ||
+    type === "set"
+  );
+}
+
+function sqlStringLiteral(value) {
+  return `'${String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+}
+
+function buildColumnDefaultSql(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return ` DEFAULT ${String(value)}`;
+  return ` DEFAULT ${sqlStringLiteral(value)}`;
+}
+
+async function alignForeignKeyColumnDefinition(pool, input) {
+  const tableName = clean(input && input.tableName, 128);
+  const columnName = clean(input && input.columnName, 128);
+  const referencedTableName = clean(input && input.referencedTableName, 128);
+  const referencedColumnName = clean(input && input.referencedColumnName, 128);
+  if (!tableName || !columnName || !referencedTableName || !referencedColumnName) {
+    throw new Error("table/column names are required");
+  }
+
+  const sourceMeta = await findColumnMeta(pool, tableName, columnName);
+  const refMeta = await findColumnMeta(pool, referencedTableName, referencedColumnName);
+  if (!sourceMeta || !refMeta) return { changed: false, reason: "missing_meta" };
+
+  const sourceType = String(sourceMeta.column_type || sourceMeta.data_type || "").trim().toLowerCase();
+  const refType = String(refMeta.column_type || refMeta.data_type || "").trim().toLowerCase();
+  const sourceCharset = String(sourceMeta.character_set_name || "").trim().toLowerCase();
+  const refCharset = String(refMeta.character_set_name || "").trim().toLowerCase();
+  const sourceCollation = String(sourceMeta.collation_name || "").trim().toLowerCase();
+  const refCollation = String(refMeta.collation_name || "").trim().toLowerCase();
+
+  const needsTypeAlignment = sourceType !== refType;
+  const needsCharsetAlignment = isTextualDataType(refMeta.data_type) && sourceCharset !== refCharset;
+  const needsCollationAlignment = isTextualDataType(refMeta.data_type) && sourceCollation !== refCollation;
+  if (!needsTypeAlignment && !needsCharsetAlignment && !needsCollationAlignment) {
+    return { changed: false, reason: "already_aligned" };
+  }
+
+  const nullable = String(sourceMeta.is_nullable || "").toUpperCase() === "YES";
+  const nullSql = nullable ? "NULL" : "NOT NULL";
+  const defaultSql = buildColumnDefaultSql(sourceMeta.column_default);
+  const charsetSql = isTextualDataType(refMeta.data_type) && refMeta.character_set_name
+    ? ` CHARACTER SET ${refMeta.character_set_name}`
+    : "";
+  const collationSql = isTextualDataType(refMeta.data_type) && refMeta.collation_name
+    ? ` COLLATE ${refMeta.collation_name}`
+    : "";
+
+  await pool.query(
+    `ALTER TABLE ${ident(tableName)}
+     MODIFY COLUMN ${ident(columnName)} ${refMeta.column_type}${charsetSql}${collationSql} ${nullSql}${defaultSql}`
+  );
+
+  return { changed: true };
 }
 
 async function hasConstraint(pool, tableName, constraintName) {
@@ -381,6 +469,16 @@ async function ensureCourseSlugForeignKey(pool, input) {
 
   const columnMeta = await findColumnMeta(pool, tableName, columnName);
   if (!columnMeta) return { skipped: true, reason: "column_missing" };
+
+  const refMeta = await findColumnMeta(pool, COURSES_TABLE, "course_slug");
+  if (!refMeta) return { skipped: true, reason: "referenced_column_missing" };
+
+  await alignForeignKeyColumnDefinition(pool, {
+    tableName,
+    columnName,
+    referencedTableName: COURSES_TABLE,
+    referencedColumnName: "course_slug",
+  });
 
   if (await hasConstraint(pool, tableName, constraintName)) {
     return { added: false, reason: "exists" };
@@ -417,7 +515,7 @@ async function ensureCourseSlugForeignKey(pool, input) {
     `SELECT COUNT(*) AS orphan_count
      FROM ${qt} t
      LEFT JOIN ${qcourses} c
-       ON c.course_slug COLLATE utf8mb4_general_ci = t.${qc} COLLATE utf8mb4_general_ci
+       ON c.course_slug = t.${qc}
      WHERE t.${qc} IS NOT NULL
        AND TRIM(t.${qc}) <> ''
        AND c.id IS NULL`
@@ -442,6 +540,29 @@ async function ensureCourseSlugForeignKey(pool, input) {
       msg.indexOf("already exists") !== -1
     ) {
       return { added: false, reason: "exists" };
+    }
+    if (msg.indexOf("incompatible") !== -1) {
+      const [childMetaNow, refMetaNow, childEngine, refEngine] = await Promise.all([
+        findColumnMeta(pool, tableName, columnName),
+        findColumnMeta(pool, COURSES_TABLE, "course_slug"),
+        findTableEngine(pool, tableName),
+        findTableEngine(pool, COURSES_TABLE),
+      ]);
+      throw new Error(
+        `FK ${constraintName} incompatible: ` +
+          `${tableName}.${columnName}=` +
+          `${String(childMetaNow && childMetaNow.column_type || "")} ` +
+          `${String(childMetaNow && childMetaNow.character_set_name || "")}/` +
+          `${String(childMetaNow && childMetaNow.collation_name || "")} ` +
+          `nullable=${String(childMetaNow && childMetaNow.is_nullable || "")} ` +
+          `engine=${childEngine}; ` +
+          `${COURSES_TABLE}.course_slug=` +
+          `${String(refMetaNow && refMetaNow.column_type || "")} ` +
+          `${String(refMetaNow && refMetaNow.character_set_name || "")}/` +
+          `${String(refMetaNow && refMetaNow.collation_name || "")} ` +
+          `nullable=${String(refMetaNow && refMetaNow.is_nullable || "")} ` +
+          `engine=${refEngine}`
+      );
     }
     throw error;
   }

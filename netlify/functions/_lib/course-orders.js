@@ -1,5 +1,6 @@
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+let courseOrdersEnsured = false;
 
 async function safeAlter(pool, sql) {
   try {
@@ -10,9 +11,14 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseOrdersBatchColumns(pool) {
+  if (courseOrdersEnsured) {
+    await applyRuntimeSettings(pool);
+    return;
+  }
   await applyRuntimeSettings(pool);
   await ensureLearningTables(pool);
 
+  await safeAlter(pool, `ALTER TABLE course_orders ENGINE=InnoDB`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_key VARCHAR(64) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN batch_label VARCHAR(120) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD KEY idx_course_orders_batch_created (batch_key, created_at)`);
@@ -33,6 +39,11 @@ async function ensureCourseOrdersBatchColumns(pool) {
   );
   await pool.query(
     `UPDATE course_orders
+     SET course_slug = 'prompt-to-profit-schools'
+     WHERE course_slug = 'prompt-to-profit-for-schools'`
+  );
+  await pool.query(
+    `UPDATE course_orders
      SET base_amount_minor = amount_minor
      WHERE base_amount_minor IS NULL`
   );
@@ -46,6 +57,7 @@ async function ensureCourseOrdersBatchColumns(pool) {
     columnName: "course_slug",
     constraintName: "fk_course_orders_learning_course_slug",
   });
+  courseOrdersEnsured = true;
 }
 
 module.exports = { ensureCourseOrdersBatchColumns };

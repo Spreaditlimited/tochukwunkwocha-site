@@ -7,9 +7,6 @@ const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./_lib/course-conf
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
-  try {
-    await applyRuntimeSettings(getPool());
-  } catch (_error) {}
 
   const auth = requireAdminSession(event);
   if (!auth.ok) return json(auth.statusCode || 401, { ok: false, error: auth.error || "Unauthorized" });
@@ -20,6 +17,9 @@ exports.handler = async function (event) {
   );
 
   const pool = getPool();
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
   try {
     await ensureCourseBatchesTable(pool);
     const batches = await listCourseBatches(pool, courseSlug);

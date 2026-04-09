@@ -15,11 +15,16 @@ const { sendMetaPurchase } = require("./_lib/meta");
 const { resolveCourseBatch } = require("./_lib/batch-store");
 const { recordCouponRedemption } = require("./_lib/coupons");
 
+function withTimeout(promise, timeoutMs) {
+  const ms = Math.max(200, Number(timeoutMs) || 2000);
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
-  try {
-    await applyRuntimeSettings(getPool());
-  } catch (_error) {}
 
   const auth = requireAdminSession(event);
   if (!auth.ok) return json(auth.statusCode || 401, { ok: false, error: auth.error || "Unauthorized" });
@@ -41,6 +46,9 @@ exports.handler = async function (event) {
   const nextStatus = action === "approve" ? STATUS_APPROVED : STATUS_REJECTED;
 
   const pool = getPool();
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   try {
     await ensureManualPaymentsTable(pool);
@@ -57,54 +65,71 @@ exports.handler = async function (event) {
 
     let flodeskSyncedMain = !!payment.flodesk_main_synced;
 
-    if (nextStatus === STATUS_APPROVED && !flodeskSyncedMain) {
-      const batch = await resolveCourseBatch(pool, { courseSlug: payment.course_slug, batchKey: payment.batch_key });
-      const listId = batch && batch.brevo_list_id ? batch.brevo_list_id : "";
-      const synced = await syncBrevoSubscriber({
-        fullName: payment.first_name,
-        email: payment.email,
-        listId,
-      });
-      if (synced.ok) {
-        await markMainSynced(pool, paymentUuid);
-        flodeskSyncedMain = true;
-      }
-    }
-
-    if (nextStatus === STATUS_APPROVED && !Number(payment.meta_purchase_sent || 0)) {
-      try {
-        const sent = await sendMetaPurchase({
-          eventId: `ptp_${payment.payment_uuid}`,
-          email: payment.email,
-          value: Number(payment.amount_minor || 0) / 100,
-          currency: payment.currency || "NGN",
-          contentName: payment.course_slug || "Course",
-          contentIds: [payment.course_slug || "course"],
-        });
-        if (sent && sent.ok) {
-          await pool.query(
-            `UPDATE course_manual_payments
-             SET meta_purchase_sent = 1,
-                 meta_purchase_sent_at = ?
-             WHERE payment_uuid = ?`,
-            [nowSql(), paymentUuid]
+    if (nextStatus === STATUS_APPROVED) {
+      if (!flodeskSyncedMain) {
+        try {
+          const batch = await withTimeout(
+            resolveCourseBatch(pool, { courseSlug: payment.course_slug, batchKey: payment.batch_key }),
+            1200
           );
-        }
-      } catch (_error) {}
-    }
+          const listId = batch && batch.brevo_list_id ? batch.brevo_list_id : "";
+          const synced = await withTimeout(
+            syncBrevoSubscriber({
+              fullName: payment.first_name,
+              email: payment.email,
+              listId,
+            }),
+            1800
+          );
+          if (synced && synced.ok) {
+            await withTimeout(markMainSynced(pool, paymentUuid), 1200);
+            flodeskSyncedMain = true;
+          }
+        } catch (_error) {}
+      }
 
-    if (
-      nextStatus === STATUS_APPROVED &&
-      Number(payment.coupon_id || 0) > 0 &&
-      Number(payment.discount_minor || 0) > 0
-    ) {
-      await recordCouponRedemption(pool, {
-        couponId: Number(payment.coupon_id),
-        orderUuid: String(payment.payment_uuid || ""),
-        email: payment.email,
-        currency: payment.currency || "NGN",
-        discountMinor: Number(payment.discount_minor || 0),
-      });
+      if (!Number(payment.meta_purchase_sent || 0)) {
+        try {
+          const sent = await withTimeout(
+            sendMetaPurchase({
+              eventId: `ptp_${payment.payment_uuid}`,
+              email: payment.email,
+              value: Number(payment.amount_minor || 0) / 100,
+              currency: payment.currency || "NGN",
+              contentName: payment.course_slug || "Course",
+              contentIds: [payment.course_slug || "course"],
+            }),
+            1800
+          );
+          if (sent && sent.ok) {
+            await withTimeout(
+              pool.query(
+                `UPDATE course_manual_payments
+                 SET meta_purchase_sent = 1,
+                     meta_purchase_sent_at = ?
+                 WHERE payment_uuid = ?`,
+                [nowSql(), paymentUuid]
+              ),
+              1200
+            );
+          }
+        } catch (_error) {}
+      }
+
+      if (Number(payment.coupon_id || 0) > 0 && Number(payment.discount_minor || 0) > 0) {
+        try {
+          await withTimeout(
+            recordCouponRedemption(pool, {
+              couponId: Number(payment.coupon_id),
+              orderUuid: String(payment.payment_uuid || ""),
+              email: payment.email,
+              currency: payment.currency || "NGN",
+              discountMinor: Number(payment.discount_minor || 0),
+            }),
+            1200
+          );
+        } catch (_error) {}
+      }
     }
 
     return json(200, {

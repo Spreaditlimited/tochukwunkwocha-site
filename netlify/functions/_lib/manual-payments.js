@@ -3,6 +3,7 @@ const { nowSql } = require("./db");
 const { listCourseBatches, getCourseBatchByKey, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName } = require("./course-config");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+let manualPaymentsEnsured = false;
 
 const STATUS_PENDING = "pending_verification";
 const STATUS_APPROVED = "approved";
@@ -13,6 +14,7 @@ function buildPaymentUuid() {
 }
 
 async function ensureManualPaymentsTable(pool) {
+  if (manualPaymentsEnsured) return;
   await ensureLearningTables(pool);
 
   await pool.query(`
@@ -124,11 +126,17 @@ async function ensureManualPaymentsTable(pool) {
      WHERE course_slug = 'prompt-to-profit'
        AND (batch_key IS NULL OR batch_key = '')`
   );
+  await pool.query(
+    `UPDATE course_manual_payments
+     SET course_slug = 'prompt-to-profit-schools'
+     WHERE course_slug = 'prompt-to-profit-for-schools'`
+  );
   await ensureCourseSlugForeignKey(pool, {
     tableName: "course_manual_payments",
     columnName: "course_slug",
     constraintName: "fk_manual_payments_learning_course_slug",
   });
+  manualPaymentsEnsured = true;
 }
 
 async function createManualPayment(pool, input) {

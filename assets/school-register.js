@@ -11,7 +11,6 @@
   var statusEl = document.getElementById("schoolRegisterStatus");
   var btn = document.getElementById("schoolRegisterBtn");
   var introEl = document.getElementById("schoolsPricingIntro");
-  var REGISTRATION_ENABLED = false;
 
   var MIN_SEATS = 50;
   var PRICE_PER_STUDENT_MINOR = 850000;
@@ -93,18 +92,14 @@
 
   if (!form) return;
 
-  if (!REGISTRATION_ENABLED && btn) {
-    btn.disabled = true;
-    btn.setAttribute("aria-disabled", "true");
-    btn.setAttribute("title", "Coming soon");
+  if (btn) {
+    btn.disabled = false;
+    btn.removeAttribute("aria-disabled");
+    btn.removeAttribute("title");
   }
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
-    if (!REGISTRATION_ENABLED) {
-      setStatus("Coming soon", false);
-      return;
-    }
     setStatus("", false);
     var seatCount = Math.trunc(Number(seatCountEl && seatCountEl.value || 0));
     if (!Number.isFinite(seatCount) || seatCount < MIN_SEATS) {

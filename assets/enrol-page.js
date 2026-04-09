@@ -191,7 +191,7 @@
   }
 
   function firstEnabledProvider() {
-    var fallback = "paypal";
+    var fallback = "paystack";
     for (var i = 0; i < paymentOptions.length; i += 1) {
       var el = paymentOptions[i];
       if (!isOptionDisabled(el)) {
@@ -462,7 +462,7 @@
         }
         setSuccess("Payment proof submitted. Redirecting you to your dashboard...");
         form.reset();
-        setActiveProvider("paypal");
+        setActiveProvider("paystack");
         window.location.href = "/dashboard/";
         return;
       }
@@ -495,7 +495,7 @@
   });
 
   updateIntro();
-  setActiveProvider((providerInput && providerInput.value) || "paypal");
+  setActiveProvider((providerInput && providerInput.value) || "paystack");
   loadActiveBatch()
     .then(function () {
       return ensureManualConfigLoaded();

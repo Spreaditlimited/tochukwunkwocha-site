@@ -1,7 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/student-auth");
-const { ensureInstallmentTables, listPlansForAccount, listPaymentsForPlan } = require("./_lib/installments");
+const { ensureInstallmentTables, listPlansForAccount, listPaymentCountsForPlanIds } = require("./_lib/installments");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -9,15 +9,18 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureStudentAuthTables(pool);
-    await ensureInstallmentTables(pool);
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
+    await ensureInstallmentTables(pool);
 
     const plans = await listPlansForAccount(pool, session.account.id);
+    const paymentCountByPlanId = await listPaymentCountsForPlanIds(
+      pool,
+      plans.map((plan) => Number(plan.id))
+    );
     const out = [];
     for (const plan of plans) {
-      const payments = await listPaymentsForPlan(pool, plan.id);
-      const hasStartedPayment = Array.isArray(payments) && payments.length > 0;
+      const hasStartedPayment = Number(paymentCountByPlanId.get(Number(plan.id)) || 0) > 0;
       out.push({
         planUuid: plan.plan_uuid,
         courseSlug: plan.course_slug,
@@ -40,16 +43,6 @@ exports.handler = async function (event) {
           String(plan.status || "").toLowerCase() === "open" &&
           Number(plan.total_paid_minor || 0) <= 0 &&
           !hasStartedPayment,
-        payments: (payments || []).map((p) => ({
-          paymentUuid: p.payment_uuid,
-          provider: p.provider,
-          providerReference: p.provider_reference,
-          currency: p.currency,
-          amountMinor: Number(p.amount_minor || 0),
-          status: p.status,
-          paidAt: p.paid_at,
-          createdAt: p.created_at,
-        })),
       });
     }
 

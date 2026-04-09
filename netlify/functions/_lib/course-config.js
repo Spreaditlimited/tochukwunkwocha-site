@@ -26,12 +26,24 @@ const COURSE_CONFIGS = {
 };
 
 const DEFAULT_COURSE_SLUG = "prompt-to-profit";
+const COURSE_SLUG_ALIASES = {
+  "prompt-to-profit-for-schools": "prompt-to-profit-schools",
+  "prompt-to-profit-school": "prompt-to-profit-schools",
+};
+
+function canonicalizeCourseSlug(raw) {
+  const slug = String(raw || "").trim().toLowerCase();
+  if (!slug) return "";
+  return COURSE_SLUG_ALIASES[slug] || slug;
+}
 
 function normalizeCourseSlug(raw, fallback) {
-  const slug = String(raw || "").trim().toLowerCase();
-  if (slug) return slug;
-  const fallbackSlug = String(fallback || DEFAULT_COURSE_SLUG).trim().toLowerCase() || DEFAULT_COURSE_SLUG;
-  return fallbackSlug || DEFAULT_COURSE_SLUG;
+  const slug = canonicalizeCourseSlug(raw);
+  if (slug && COURSE_CONFIGS[slug]) return slug;
+
+  const fallbackSlug = canonicalizeCourseSlug(fallback || DEFAULT_COURSE_SLUG) || DEFAULT_COURSE_SLUG;
+  if (fallbackSlug && COURSE_CONFIGS[fallbackSlug]) return fallbackSlug;
+  return DEFAULT_COURSE_SLUG;
 }
 
 function getCourseConfig(rawSlug) {
@@ -96,6 +108,7 @@ function getCourseDefaultPaypalMinor(rawSlug) {
 
 module.exports = {
   DEFAULT_COURSE_SLUG,
+  canonicalizeCourseSlug,
   normalizeCourseSlug,
   getCourseConfig,
   listCourseConfigs,

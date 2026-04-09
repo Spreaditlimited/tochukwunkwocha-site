@@ -68,7 +68,23 @@
   const COURSE_DEFAULTS = {
     "prompt-to-profit": { prefix: "PTP", amountMinor: 1075000, paypalAmountMinor: 2400 },
     "prompt-to-production": { prefix: "PTPROD", amountMinor: 25000000, paypalAmountMinor: 2400 },
+    "prompt-to-profit-schools": { prefix: "PTPS", amountMinor: 1075000, paypalAmountMinor: 2400 },
   };
+  const FALLBACK_COURSES = [
+    { slug: "prompt-to-profit", label: "Prompt To Profit" },
+    { slug: "prompt-to-production", label: "Prompt To Production" },
+    { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
+  ];
+  const COURSE_SLUG_ALIASES = {
+    "prompt-to-profit-for-schools": "prompt-to-profit-schools",
+    "prompt-to-profit-school": "prompt-to-profit-schools",
+  };
+
+  function canonicalCourseSlug(value) {
+    const slug = String(value || "").trim().toLowerCase();
+    if (!slug) return "";
+    return COURSE_SLUG_ALIASES[slug] || slug;
+  }
 
   function redirectToInternalSignIn() {
     const next = `${window.location.pathname}${window.location.search || ""}`;
@@ -101,12 +117,12 @@
 
   function selectedCourseSlug() {
     if (!courseFilter) return "prompt-to-profit";
-    const value = String(courseFilter.value || "").trim();
+    const value = canonicalCourseSlug(courseFilter.value);
     return value || "prompt-to-profit";
   }
 
   function selectedAddStudentCourseSlug() {
-    const value = String((addStudentCourse && addStudentCourse.value) || "").trim().toLowerCase();
+    const value = canonicalCourseSlug((addStudentCourse && addStudentCourse.value) || "");
     if (!value) return selectedCourseSlug();
     if (availableCourses.some(function (item) { return item.slug === value; })) return value;
     return selectedCourseSlug();
@@ -130,7 +146,7 @@
 
   function selectedSummaryCourseSlug() {
     if (!summaryCourseFilter) return selectedCourseSlug();
-    const value = String(summaryCourseFilter.value || "").trim().toLowerCase();
+    const value = canonicalCourseSlug(summaryCourseFilter.value);
     if (value === "all") return value;
     if (availableCourses.some(function (item) { return item.slug === value; })) return value;
     return selectedCourseSlug();
@@ -139,13 +155,10 @@
   function setCourseFilterOptions(items) {
     if (!courseFilter) return;
     const current = selectedCourseSlug();
-    const list = Array.isArray(items) && items.length ? items : [
-      { slug: "prompt-to-profit", label: "Prompt To Profit" },
-      { slug: "prompt-to-production", label: "Prompt To Production" },
-    ];
+    const list = Array.isArray(items) && items.length ? items : FALLBACK_COURSES;
     courseFilter.innerHTML = list
       .map(function (item) {
-        const slug = String(item.slug || "").trim().toLowerCase();
+        const slug = canonicalCourseSlug(item.slug);
         const label = String(item.label || slug || "Course").trim();
         if (!slug) return "";
         return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
@@ -163,7 +176,7 @@
     const list = Array.isArray(items) && items.length ? items : [];
     const options = ['<option value="all">All courses</option>'].concat(
       list.map(function (item) {
-        const slug = String(item.slug || "").trim().toLowerCase();
+        const slug = canonicalCourseSlug(item.slug);
         const label = String(item.label || slug || "Course").trim();
         if (!slug) return "";
         return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
@@ -181,7 +194,7 @@
     const list = Array.isArray(items) && items.length ? items : [];
     addStudentCourse.innerHTML = list
       .map(function (item) {
-        const slug = String(item.slug || "").trim().toLowerCase();
+        const slug = canonicalCourseSlug(item.slug);
         const label = String(item.label || slug || "Course").trim();
         if (!slug) return "";
         return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
@@ -301,6 +314,7 @@
     const res = await fetch("/.netlify/functions/admin-course-slugs-list", {
       method: "GET",
       headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const json = await res.json().catch(function () {
       return null;
@@ -309,20 +323,24 @@
       throw new Error((json && json.error) || "Could not load course list");
     }
     const items = Array.isArray(json.items) ? json.items : [];
-    availableCourses = items.map(function (item) {
+    const merged = new Map();
+    items.forEach(function (item) {
+      const slug = canonicalCourseSlug(item && item.slug);
+      const label = String((item && item.label) || slug || "").trim();
+      if (!slug) return;
+      if (!merged.has(slug)) {
+        merged.set(slug, { slug: slug, label: label || slug });
+      }
+    });
+    availableCourses = Array.from(merged.values()).map(function (item) {
       return {
-        slug: String(item.slug || "").trim().toLowerCase(),
+        slug: canonicalCourseSlug(item.slug),
         label: String(item.label || item.slug || "").trim(),
       };
     }).filter(function (item) {
       return !!item.slug;
     });
-    if (!availableCourses.length) {
-      availableCourses = [
-        { slug: "prompt-to-profit", label: "Prompt To Profit" },
-        { slug: "prompt-to-production", label: "Prompt To Production" },
-      ];
-    }
+    if (!availableCourses.length) availableCourses = FALLBACK_COURSES.slice();
     setCourseFilterOptions(availableCourses);
     setSummaryCourseFilterOptions(availableCourses);
     setAddStudentCourseOptions(availableCourses);
@@ -334,6 +352,7 @@
     const res = await fetch("/.netlify/functions/admin-coupons-list", {
       method: "GET",
       headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const json = await res.json().catch(function () {
       return null;
@@ -726,11 +745,31 @@
     }
   }
 
+  function resolvePreferredBatchKey(batches, preferredBatchKey) {
+    const list = Array.isArray(batches) ? batches : [];
+    const preferred = String(preferredBatchKey || "").trim();
+    if (preferred && preferred !== "all") {
+      const foundPreferred = list.find(function (item) {
+        return String(item.batchKey || "").trim() === preferred;
+      });
+      if (foundPreferred) return preferred;
+    }
+    const active = list.find(function (item) {
+      return !!item.isActive && String(item.batchKey || "").trim();
+    });
+    if (active) return String(active.batchKey || "").trim();
+    const first = list.find(function (item) {
+      return String(item.batchKey || "").trim();
+    });
+    return first ? String(first.batchKey || "").trim() : "";
+  }
+
   async function loadCourseBatches(courseSlug) {
-    const slug = String(courseSlug || selectedCourseSlug()).trim().toLowerCase() || selectedCourseSlug();
+    const slug = canonicalCourseSlug(courseSlug || selectedCourseSlug()) || selectedCourseSlug();
     const res = await fetch(`/.netlify/functions/admin-course-batches-list?course_slug=${encodeURIComponent(slug)}`, {
       method: "GET",
       headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const json = await res.json().catch(function () {
       return null;
@@ -846,29 +885,48 @@
   async function loadItems(options) {
     setMessage("", "");
     const shouldReconcile = !!(options && options.reconcile);
+    const includeSummary = !options || options.includeSummary !== false;
+    const redirectOnAuthError = !!(options && options.redirectOnAuthError);
 
     const status = selectedStatus();
-    const batchKey = selectedBatchKey();
+    const requestedCourseSlug = canonicalCourseSlug((options && options.courseSlug) || selectedCourseSlug()) || selectedCourseSlug();
+    const requestedBatchKey = String(
+      (options && options.batchKey) !== undefined ? options.batchKey : selectedBatchKey()
+    ).trim();
+    const requestedSummaryCourseSlugRaw = String(
+      (options && options.summaryCourseSlug) !== undefined ? options.summaryCourseSlug : selectedSummaryCourseSlug()
+    ).trim();
+    const requestedSummaryCourseSlug = requestedSummaryCourseSlugRaw === "all"
+      ? "all"
+      : (canonicalCourseSlug(requestedSummaryCourseSlugRaw) || requestedCourseSlug);
+    const requestedSummaryBatchKey = String(
+      (options && options.summaryBatchKey) !== undefined ? options.summaryBatchKey : selectedSummaryBatchKey()
+    ).trim() || "all";
     const search = searchInput ? searchInput.value.trim() : "";
     const qs = new URLSearchParams({
-      course_slug: selectedCourseSlug(),
-      summary_course_slug: selectedSummaryCourseSlug(),
-      summary_batch_key: selectedSummaryBatchKey(),
+      course_slug: requestedCourseSlug,
+      summary_course_slug: requestedSummaryCourseSlug,
+      summary_batch_key: requestedSummaryBatchKey,
       status,
       search,
       limit: "100",
+      include_summary: includeSummary ? "1" : "0",
       reconcile: shouldReconcile ? "1" : "0",
-      batch_key: batchKey || "all",
+      batch_key: requestedBatchKey || "all",
     });
 
     const res = await fetch(`/.netlify/functions/admin-manual-payments-list?${qs.toString()}`, {
       method: "GET",
       headers: { Accept: "application/json" },
+      credentials: "include",
     });
 
     if (res.status === 401) {
-      redirectToInternalSignIn();
-      return;
+      if (redirectOnAuthError) {
+        redirectToInternalSignIn();
+        return;
+      }
+      throw new Error("Your admin session expired. Refresh this page and sign in again.");
     }
 
     const json = await res.json().catch(function () {
@@ -881,13 +939,15 @@
 
     const items = Array.isArray(json.items) ? json.items : [];
     const summaryObj = json.summary || null;
-    const summaryBatches = summaryObj && Array.isArray(summaryObj.availableBatches) ? summaryObj.availableBatches : [];
-    if (!latestBatches.length && summaryBatches.length) {
-      latestBatches = summaryBatches;
+    if (summaryObj) {
+      const summaryBatches = Array.isArray(summaryObj.availableBatches) ? summaryObj.availableBatches : [];
+      if (!latestBatches.length && summaryBatches.length) {
+        latestBatches = summaryBatches;
+      }
+      renderSummary(summaryObj);
+      renderSummaryBatchOptions(summaryObj);
+      renderBatchOptions(summaryObj);
     }
-    renderSummary(summaryObj);
-    renderSummaryBatchOptions(summaryObj);
-    renderBatchOptions(summaryObj);
     const reconcile = json.reconcile && typeof json.reconcile === "object" ? json.reconcile : null;
     if (shouldReconcile && reconcile) {
       const markedPaid = Number(reconcile.markedPaid || 0);
@@ -931,7 +991,7 @@
       setMessage("Payment marked as rejected.", "ok");
     }
 
-    await loadItems({ reconcile: false });
+    await loadItems({ reconcile: false, includeSummary: false });
   }
 
   if (logoutBtn) {
@@ -1423,13 +1483,25 @@
 
   if (courseFilter) {
     courseFilter.addEventListener("change", function () {
-      if (batchFilter) batchFilter.value = "all";
-      loadCourseBatches()
-        .then(function () {
-          return loadItems({ reconcile: false });
+      const courseSlug = selectedCourseSlug();
+      loadCourseBatches(courseSlug)
+        .then(function (batches) {
+          const preferredBatchKey = resolvePreferredBatchKey(batches, "");
+          renderBatchOptions({
+            availableBatches: batches,
+            batchKey: preferredBatchKey || "all",
+          });
+          if (summaryCourseFilter) summaryCourseFilter.value = courseSlug;
+          return loadItems({
+            reconcile: false,
+            courseSlug: courseSlug,
+            batchKey: preferredBatchKey || "all",
+            summaryCourseSlug: courseSlug,
+            summaryBatchKey: preferredBatchKey || "all",
+          });
         })
         .catch(function (error) {
-          setMessage(error.message || "Could not filter by course", "error");
+          setMessage(error.message || "Could not refresh batches for selected course", "error");
         });
     });
   }
@@ -1516,9 +1588,31 @@
   Promise.all([
     loadAvailableCourses().catch(function () { return []; }),
     loadAvailableCoupons().catch(function () { return []; }),
-    loadCourseBatches().catch(function () { return []; }),
-    loadItems({ reconcile: false }),
-  ]).catch(function (_error) {
-    redirectToInternalSignIn();
-  });
+  ])
+    .then(function () {
+      const courseSlug = selectedCourseSlug();
+      if (summaryCourseFilter && String(summaryCourseFilter.value || "").trim().toLowerCase() === "all") {
+        summaryCourseFilter.value = courseSlug;
+      }
+      return loadCourseBatches(courseSlug).then(function (batches) {
+        const preferredBatchKey = resolvePreferredBatchKey(batches, "");
+        renderBatchOptions({
+          availableBatches: batches,
+          batchKey: preferredBatchKey || "all",
+        });
+        return loadItems({
+          reconcile: false,
+          redirectOnAuthError: true,
+          courseSlug: courseSlug,
+          batchKey: preferredBatchKey || "all",
+          summaryCourseSlug: selectedSummaryCourseSlug(),
+          summaryBatchKey: preferredBatchKey || "all",
+        });
+      });
+    })
+    .catch(function (error) {
+      if (appCard) appCard.hidden = false;
+      setAuthMode(false);
+      setMessage((error && error.message) || "Could not load enrollments. Please refresh.", "error");
+    });
 })();

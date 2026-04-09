@@ -65,13 +65,6 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "Invalid payment provider" });
   }
 
-  if (provider === "paystack") {
-    return json(400, {
-      ok: false,
-      error: "Paystack is temporarily unavailable. Please use PayPal or manual transfer.",
-    });
-  }
-
   const orderUuid = crypto.randomUUID();
 
   const pool = getPool();

@@ -11,6 +11,7 @@ const {
 } = require("./course-config");
 
 const FALLBACK_CONFIG = getCourseConfig(DEFAULT_COURSE_SLUG);
+let courseBatchesEnsured = false;
 
 function slugTokenFromBatchKey(value) {
   const raw = String(value || "").trim().toLowerCase();
@@ -95,6 +96,10 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseBatchesTable(pool) {
+  if (courseBatchesEnsured) {
+    await applyRuntimeSettings(pool);
+    return;
+  }
   await applyRuntimeSettings(pool);
   await ensureLearningTables(pool);
 
@@ -181,11 +186,18 @@ async function ensureCourseBatchesTable(pool) {
     }
   }
 
+  await pool.query(
+    `UPDATE course_batches
+     SET course_slug = 'prompt-to-profit-schools'
+     WHERE course_slug = 'prompt-to-profit-for-schools'`
+  );
+
   await ensureCourseSlugForeignKey(pool, {
     tableName: "course_batches",
     columnName: "course_slug",
     constraintName: "fk_course_batches_learning_course_slug",
   });
+  courseBatchesEnsured = true;
 }
 
 async function listCourseBatches(pool, courseSlug) {

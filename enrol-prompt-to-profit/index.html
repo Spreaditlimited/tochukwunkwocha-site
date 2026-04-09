@@ -366,14 +366,14 @@
 
 
               <div class="mt-2">
-                <input id="enrolProvider" name="provider" type="hidden" value="paypal" />
+                <input id="enrolProvider" name="provider" type="hidden" value="paystack" />
                 
                 <div class="payment-options" role="radiogroup" aria-label="Payment method">
-                  <button type="button" class="payment-option is-disabled" data-provider="paystack" data-disabled="true" role="radio" aria-checked="false" disabled>
+                  <button type="button" class="payment-option is-active" data-provider="paystack" role="radio" aria-checked="true">
                     <span class="payment-option__title">Paystack</span>
-                    <span class="payment-option__meta" id="paystackOptionMeta">Paystack will be restored soon</span>
+                    <span class="payment-option__meta" id="paystackOptionMeta">Pay in full</span>
                   </button>
-                  <button type="button" class="payment-option is-active" data-provider="paypal" role="radio" aria-checked="true">
+                  <button type="button" class="payment-option" data-provider="paypal" role="radio" aria-checked="false">
                     <span class="payment-option__title">PayPal</span>
                     <span class="payment-option__meta" id="paypalOptionMeta">International checkout (PayPal)</span>
                   </button>
@@ -440,6 +440,6 @@
     </footer>
 
     <script src="/assets/site.js" defer></script>
-    <script src="/assets/enrol-page.js" defer></script>
+    <script src="/assets/enrol-page.js?v=20260409a" defer></script>
   </body>
 </html>

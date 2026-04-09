@@ -35,8 +35,8 @@
   let dashboard = null;
   let authMode = "signin";
   let appliedPlanCoupon = null;
-  const PLAN_START_ENABLED = false;
-  const PLAN_PAY_ENABLED = false;
+  const PLAN_START_ENABLED = true;
+  const PLAN_PAY_ENABLED = true;
   const PLAN_START_DISABLED_MSG = "Start plan is temporarily unavailable while Paystack approves our new business account.";
 
   function selectedCourseSlug() {

@@ -1118,7 +1118,7 @@ async function listStudentsProgressByCourse(pool, input) {
            COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci AS batch_label,
            '' COLLATE utf8mb4_general_ci AS school_name,
            MIN(paid_at) AS first_paid_at,
-           '' COLLATE utf8mb4_general_ci AS full_name
+           MAX(COALESCE(first_name, '')) COLLATE utf8mb4_general_ci AS full_name
          FROM course_orders
          WHERE course_slug = ?
            AND status = 'paid'
@@ -1133,7 +1133,7 @@ async function listStudentsProgressByCourse(pool, input) {
            COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci AS batch_label,
            '' COLLATE utf8mb4_general_ci AS school_name,
            MIN(reviewed_at) AS first_paid_at,
-           '' COLLATE utf8mb4_general_ci AS full_name
+           MAX(COALESCE(first_name, '')) COLLATE utf8mb4_general_ci AS full_name
          FROM course_manual_payments
          WHERE course_slug = ?
            AND status = 'approved'
@@ -1452,7 +1452,7 @@ async function getStudentCourseProgressDetail(pool, input) {
     const [individualEnrollmentRows] = await pool.query(
       `SELECT full_name, email
        FROM (
-         SELECT '' AS full_name, LOWER(email) AS email
+         SELECT COALESCE(first_name, '') AS full_name, LOWER(email) AS email
          FROM course_orders
          WHERE course_slug = ?
            AND status = 'paid'

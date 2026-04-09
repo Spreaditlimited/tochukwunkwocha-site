@@ -12,6 +12,18 @@
   var extendModalSaveBtn = null;
   var extendModalCloseBtns = [];
   var extendModalTarget = null;
+  var courseOptions = [];
+  var courseLabelBySlug = {};
+
+  var COURSE_SLUG_ALIASES = {
+    "prompt-to-profit-for-schools": "prompt-to-profit-schools",
+    "prompt-to-profit-school": "prompt-to-profit-schools",
+  };
+  var FALLBACK_COURSES = [
+    { slug: "prompt-to-profit", label: "Prompt to Profit" },
+    { slug: "prompt-to-production", label: "Prompt to Production" },
+    { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
+  ];
 
   var fields = {
     id: document.getElementById("couponId"),
@@ -136,6 +148,56 @@
     if (!raw) return null;
     var n = Number(raw);
     return Number.isFinite(n) ? n : null;
+  }
+
+  function canonicalCourseSlug(value) {
+    var slug = String(value || "").trim().toLowerCase();
+    if (!slug || slug === "all") return "all";
+    return COURSE_SLUG_ALIASES[slug] || slug;
+  }
+
+  function normalizeCourseItems(items) {
+    var merged = {};
+    (Array.isArray(items) ? items : []).forEach(function (item) {
+      var slug = canonicalCourseSlug(item && item.slug);
+      if (!slug || slug === "all") return;
+      var label = String((item && item.label) || slug).trim();
+      if (!merged[slug]) {
+        merged[slug] = { slug: slug, label: label || slug };
+      }
+    });
+    var result = Object.keys(merged)
+      .map(function (slug) { return merged[slug]; })
+      .sort(function (a, b) { return a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0; });
+    return result.length ? result : FALLBACK_COURSES.slice();
+  }
+
+  function ensureCourseOption(slug) {
+    if (!fields.courseSlug) return;
+    var value = canonicalCourseSlug(slug);
+    if (!value || value === "all") return;
+    var has = courseOptions.some(function (item) { return item.slug === value; });
+    if (has) return;
+    var label = courseLabelBySlug[value] || value;
+    courseOptions.push({ slug: value, label: label });
+    courseLabelBySlug[value] = label;
+    setCourseOptions(fields.courseSlug.value || "all");
+  }
+
+  function setCourseOptions(selected) {
+    if (!fields.courseSlug) return;
+    var current = canonicalCourseSlug(selected || fields.courseSlug.value || "all") || "all";
+    var options = ['<option value="all">All Courses</option>'].concat(
+      courseOptions.map(function (item) {
+        return '<option value="' + esc(item.slug) + '">' + esc(item.label) + "</option>";
+      })
+    );
+    fields.courseSlug.innerHTML = options.join("");
+    if (current !== "all") {
+      var found = courseOptions.some(function (item) { return item.slug === current; });
+      if (!found) ensureCourseOption(current);
+    }
+    fields.courseSlug.value = current;
   }
 
   function ensureExtendModal() {
@@ -274,6 +336,7 @@
 
   function fillForm(item) {
     if (!item) return;
+    ensureCourseOption(item.course_slug);
     if (fields.id) fields.id.value = String(item.id || "");
     if (fields.code) fields.code.value = String(item.code || "");
     if (fields.description) fields.description.value = String(item.description || "");
@@ -281,7 +344,7 @@
     if (fields.percentOff) fields.percentOff.value = item.percent_off !== null && item.percent_off !== undefined ? String(item.percent_off) : "";
     if (fields.fixedNgnMinor) fields.fixedNgnMinor.value = item.fixed_ngn_minor !== null && item.fixed_ngn_minor !== undefined ? String(item.fixed_ngn_minor) : "";
     if (fields.fixedGbpMinor) fields.fixedGbpMinor.value = item.fixed_gbp_minor !== null && item.fixed_gbp_minor !== undefined ? String(item.fixed_gbp_minor) : "";
-    if (fields.courseSlug) fields.courseSlug.value = String(item.course_slug || "all");
+    if (fields.courseSlug) fields.courseSlug.value = canonicalCourseSlug(item.course_slug || "all");
     if (fields.maxUses) fields.maxUses.value = item.max_uses !== null && item.max_uses !== undefined ? String(item.max_uses) : "";
     if (fields.maxUsesPerEmail) fields.maxUsesPerEmail.value = item.max_uses_per_email !== null && item.max_uses_per_email !== undefined ? String(item.max_uses_per_email) : "";
     if (fields.startsAt) fields.startsAt.value = toLocalDatetime(item.starts_at);
@@ -303,7 +366,8 @@
         var discountLabel = type === "percent"
           ? (String(item.percent_off || "0") + "%")
           : ("NGN " + String(item.fixed_ngn_minor || "-") + " / GBP " + String(item.fixed_gbp_minor || "-"));
-        var scope = item.course_slug ? String(item.course_slug) : "All courses";
+        var scopeSlug = canonicalCourseSlug(item.course_slug || "");
+        var scope = scopeSlug && scopeSlug !== "all" ? String(courseLabelBySlug[scopeSlug] || scopeSlug) : "All courses";
         var uses = String(item.total_uses || 0) + (item.max_uses ? " / " + String(item.max_uses) : "");
         var active = statusLabel(item);
         return (
@@ -338,6 +402,12 @@
     }
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not load coupons.");
+    courseOptions = normalizeCourseItems(json.courses);
+    courseLabelBySlug = {};
+    courseOptions.forEach(function (item) {
+      courseLabelBySlug[item.slug] = String(item.label || item.slug);
+    });
+    setCourseOptions(fields.courseSlug && fields.courseSlug.value ? fields.courseSlug.value : "all");
     items = Array.isArray(json.items) ? json.items : [];
     renderRows();
   }
@@ -467,6 +537,14 @@
   }
 
   loadCoupons().catch(function (error) {
+    if (!courseOptions.length) {
+      courseOptions = FALLBACK_COURSES.slice();
+      courseLabelBySlug = {};
+      courseOptions.forEach(function (item) {
+        courseLabelBySlug[item.slug] = item.label;
+      });
+      setCourseOptions("all");
+    }
     setMessage(error.message || "Could not load coupons.", "error");
   });
 })();

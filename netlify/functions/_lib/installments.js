@@ -3,9 +3,13 @@ const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 
+let installmentTablesEnsured = false;
+
 async function ensureInstallmentTables(pool) {
+  if (installmentTablesEnsured) return;
   await applyRuntimeSettings(pool);
   await ensureLearningTables(pool);
+  let shouldBackfillBaseAmount = false;
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_installment_plans (
@@ -35,6 +39,7 @@ async function ensureInstallmentTables(pool) {
 
   try {
     await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN base_amount_minor INT NULL`);
+    shouldBackfillBaseAmount = true;
   } catch (_error) {}
   try {
     await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN discount_minor INT NOT NULL DEFAULT 0`);
@@ -48,13 +53,15 @@ async function ensureInstallmentTables(pool) {
   try {
     await pool.query(`ALTER TABLE student_installment_plans ADD KEY idx_installment_plan_coupon_id (coupon_id)`);
   } catch (_error) {}
-  try {
-    await pool.query(
-      `UPDATE student_installment_plans
-       SET base_amount_minor = target_amount_minor
-       WHERE base_amount_minor IS NULL`
-    );
-  } catch (_error) {}
+  if (shouldBackfillBaseAmount) {
+    try {
+      await pool.query(
+        `UPDATE student_installment_plans
+         SET base_amount_minor = target_amount_minor
+         WHERE base_amount_minor IS NULL`
+      );
+    } catch (_error) {}
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS student_installment_payments (
@@ -82,6 +89,8 @@ async function ensureInstallmentTables(pool) {
     columnName: "course_slug",
     constraintName: "fk_installment_plans_learning_course_slug",
   });
+
+  installmentTablesEnsured = true;
 }
 
 async function createInstallmentPlan(pool, input) {
@@ -219,6 +228,32 @@ async function listPaymentsForPlan(pool, planId) {
   return rows || [];
 }
 
+async function listPaymentCountsForPlanIds(pool, planIds) {
+  const ids = Array.isArray(planIds)
+    ? planIds
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  if (!ids.length) return new Map();
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const [rows] = await pool.query(
+    `SELECT plan_id, COUNT(*) AS payment_count
+     FROM student_installment_payments
+     WHERE plan_id IN (${placeholders})
+     GROUP BY plan_id`,
+    ids
+  );
+
+  const out = new Map();
+  for (const row of rows || []) {
+    const planId = Number(row.plan_id);
+    if (!Number.isFinite(planId) || planId <= 0) continue;
+    out.set(planId, Number(row.payment_count || 0));
+  }
+  return out;
+}
+
 async function findPlanByUuidForAccount(pool, input) {
   const [rows] = await pool.query(
     `SELECT *
@@ -297,6 +332,7 @@ module.exports = {
   markInstallmentPaymentPaidByReference,
   listPlansForAccount,
   listPaymentsForPlan,
+  listPaymentCountsForPlanIds,
   findPlanByUuidForAccount,
   markPlanEnrolled,
   cancelPlanIfUnpaid,
