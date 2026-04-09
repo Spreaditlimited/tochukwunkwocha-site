@@ -76,6 +76,51 @@
     return d.toLocaleString();
   }
 
+  function parseFutureAccessAt(message) {
+    var text = clean(message);
+    if (!text) return "";
+    var match = text.match(/^Course access begins on\s+(.+?)\.?$/i);
+    if (!match || !match[1]) return "";
+    return clean(match[1]).replace(/\.$/, "");
+  }
+
+  function friendlyAccessDate(raw) {
+    var value = clean(raw);
+    if (!value) return "";
+    var parsed = new Date(value);
+    if (!Number.isFinite(parsed.getTime())) {
+      parsed = new Date(value.replace(" ", "T"));
+    }
+    if (!Number.isFinite(parsed.getTime())) return value;
+    return parsed.toLocaleString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function isFutureAccessMessage(message) {
+    return !!parseFutureAccessAt(message);
+  }
+
+  function showFutureAccessState(message) {
+    var rawAt = parseFutureAccessAt(message);
+    var friendlyAt = friendlyAccessDate(rawAt);
+    setCourseMetaText("Access scheduled: " + (friendlyAt || rawAt));
+    setStatus("Course access is scheduled for " + (friendlyAt || rawAt) + ".", false);
+    showEmptyState({
+      variant: "info",
+      chip: "Scheduled access",
+      title: "Your course unlocks soon",
+      body: "Your access is confirmed and will start on " + (friendlyAt || rawAt) + ".",
+      hint: "No action is required now. Please return at that time or check My Courses for updates.",
+    });
+    if (paneEl) paneEl.hidden = true;
+  }
+
   function sanitizeLabel(value, max) {
     return clean(value || "").replace(/\s+/g, " ").slice(0, max || 120);
   }
@@ -142,6 +187,11 @@
     if (!statusEl) return;
     statusEl.textContent = clean(text);
     statusEl.className = "text-sm font-medium mb-3 " + (bad ? "text-red-600" : "text-gray-600");
+  }
+
+  function setCourseMetaText(text) {
+    if (!metaEl) return;
+    metaEl.textContent = clean(text);
   }
 
   function showEmptyState(config) {
@@ -762,6 +812,7 @@
   }
 
   async function refreshCourse(openLessonId) {
+    setCourseMetaText("Loading lessons...");
     var payload = await api("/.netlify/functions/user-learning-course?course_slug=" + encodeURIComponent(state.courseSlug));
     var course = payload && payload.course ? payload.course : null;
     var account = payload && payload.account ? payload.account : null;
@@ -790,6 +841,7 @@
     }
 
     if (!state.lessonById.size) {
+      setCourseMetaText("No lessons available right now");
       stopWatchTracking(true, false);
       detachPlayer();
       if (paneEl) paneEl.hidden = true;
@@ -837,6 +889,7 @@
     state.courseSlug = queryCourseSlug();
     state.initialLessonId = queryLessonId();
     if (!state.courseSlug) {
+      setCourseMetaText("Course link issue");
       setStatus("Missing course slug. Open this page from My Courses.", true);
       showEmptyState({
         variant: "error",
@@ -851,15 +904,21 @@
     try {
       await refreshCourse();
     } catch (error) {
-      setStatus(error.message || "Could not load course player.", true);
-      showEmptyState({
-        variant: "error",
-        chip: "Load issue",
-        title: "We could not load this course right now",
-        body: clean(error.message || "Could not load course lessons."),
-        hint: "Refresh this page. If it continues, sign out and back in.",
-      });
-      if (paneEl) paneEl.hidden = true;
+      var initError = clean(error && error.message);
+      if (isFutureAccessMessage(initError)) {
+        showFutureAccessState(initError);
+      } else {
+        setCourseMetaText("Course unavailable");
+        setStatus(initError || "Could not load course player.", true);
+        showEmptyState({
+          variant: "error",
+          chip: "Load issue",
+          title: "We could not load this course right now",
+          body: clean(initError || "Could not load course lessons."),
+          hint: "Refresh this page. If it continues, sign out and back in.",
+        });
+        if (paneEl) paneEl.hidden = true;
+      }
     }
   }
 
@@ -903,14 +962,20 @@
       emptyRefreshBtn.textContent = "Refreshing...";
       refreshCourse(state.activeLessonId)
         .catch(function (error) {
-          setStatus(error.message || "Could not refresh course.", true);
-          showEmptyState({
-            variant: "error",
-            chip: "Load issue",
-            title: "Refresh failed",
-            body: clean(error.message || "Could not refresh this course."),
-            hint: "Try again in a moment or return to My Courses.",
-          });
+          var refreshError = clean(error && error.message);
+          if (isFutureAccessMessage(refreshError)) {
+            showFutureAccessState(refreshError);
+          } else {
+            setCourseMetaText("Refresh failed");
+            setStatus(refreshError || "Could not refresh course.", true);
+            showEmptyState({
+              variant: "error",
+              chip: "Load issue",
+              title: "Refresh failed",
+              body: clean(refreshError || "Could not refresh this course."),
+              hint: "Try again in a moment or return to My Courses.",
+            });
+          }
         })
         .finally(function () {
           emptyRefreshBtn.disabled = false;
