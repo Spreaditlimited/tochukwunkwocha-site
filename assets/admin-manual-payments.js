@@ -64,6 +64,7 @@
   let latestBatches = [];
   let availableCourses = [];
   let availableCoupons = [];
+  let couponsLoadPromise = null;
   let addStudentBatchMetaByKey = {};
   const COURSE_DEFAULTS = {
     "prompt-to-profit": { prefix: "PTP", amountMinor: 1075000, paypalAmountMinor: 2400 },
@@ -378,6 +379,19 @@
     return availableCoupons;
   }
 
+  function ensureCouponsLoaded() {
+    if (availableCoupons.length) return Promise.resolve(availableCoupons);
+    if (couponsLoadPromise) return couponsLoadPromise;
+    couponsLoadPromise = loadAvailableCoupons()
+      .catch(function () {
+        return [];
+      })
+      .finally(function () {
+        couponsLoadPromise = null;
+      });
+    return couponsLoadPromise;
+  }
+
   function selectedSummaryBatchKey() {
     if (!summaryBatchFilter || summaryBatchFilter.disabled) return "all";
     const value = String(summaryBatchFilter.value || "").trim();
@@ -458,6 +472,9 @@
     if (addStudentCouponCode) addStudentCouponCode.value = "";
     setAddStudentDiscountVisibility();
     setAddStudentCouponOptions();
+    ensureCouponsLoaded().then(function () {
+      setAddStudentCouponOptions();
+    });
     loadAddStudentBatches(selectedAddStudentCourseSlug(), selectedBatchKey()).catch(function (error) {
       if (addStudentError) {
         addStudentError.textContent = error.message || "Could not load batches";
@@ -1585,29 +1602,35 @@
   });
 
   bootAppShell();
-  Promise.all([
-    loadAvailableCourses().catch(function () { return []; }),
-    loadAvailableCoupons().catch(function () { return []; }),
-  ])
+  Promise.resolve()
     .then(function () {
       const courseSlug = selectedCourseSlug();
       if (summaryCourseFilter && String(summaryCourseFilter.value || "").trim().toLowerCase() === "all") {
         summaryCourseFilter.value = courseSlug;
       }
-      return loadCourseBatches(courseSlug).then(function (batches) {
-        const preferredBatchKey = resolvePreferredBatchKey(batches, "");
-        renderBatchOptions({
-          availableBatches: batches,
-          batchKey: preferredBatchKey || "all",
-        });
-        return loadItems({
-          reconcile: false,
-          redirectOnAuthError: true,
-          courseSlug: courseSlug,
-          batchKey: preferredBatchKey || "all",
-          summaryCourseSlug: selectedSummaryCourseSlug(),
-          summaryBatchKey: preferredBatchKey || "all",
-        });
+      return loadItems({
+        reconcile: false,
+        redirectOnAuthError: true,
+        courseSlug: courseSlug,
+        batchKey: selectedBatchKey() || "all",
+        summaryCourseSlug: selectedSummaryCourseSlug(),
+        summaryBatchKey: selectedSummaryBatchKey() || "all",
+      }).then(function () {
+        // Hydrate secondary controls in the background after first paint.
+        return loadAvailableCourses()
+          .then(function () {
+            const selected = selectedCourseSlug();
+            return loadCourseBatches(selected).then(function (batches) {
+              const preferredBatchKey = resolvePreferredBatchKey(batches, selectedBatchKey());
+              renderBatchOptions({
+                availableBatches: batches,
+                batchKey: preferredBatchKey || "all",
+              });
+            });
+          })
+          .catch(function () {
+            return [];
+          });
       });
     })
     .catch(function (error) {

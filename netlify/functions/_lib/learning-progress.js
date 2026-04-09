@@ -7,6 +7,7 @@ const {
   VIDEO_ASSETS_TABLE,
   ensureLearningTables,
 } = require("./learning");
+const { canonicalizeCourseSlug } = require("./course-config");
 const { hasSchoolCourseAccess, getSchoolCourseAccessState, SCHOOL_ACCOUNTS_TABLE, SCHOOL_STUDENTS_TABLE } = require("./schools");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
@@ -1058,7 +1059,7 @@ async function saveLessonProgress(pool, input) {
 }
 
 async function listStudentsProgressByCourse(pool, input) {
-  const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
+  const courseSlug = canonicalizeCourseSlug(clean(input && input.course_slug, 120).toLowerCase());
   const search = clean(input && input.search, 180).toLowerCase();
   const enrollmentTypeInput = clean(input && input.enrollment_type, 40).toLowerCase();
   const enrollmentType = ["all", "individual", "school"].includes(enrollmentTypeInput) ? enrollmentTypeInput : "all";
@@ -1066,6 +1067,19 @@ async function listStudentsProgressByCourse(pool, input) {
   const batchKey = batchKeyInput || "all";
   const normalizedBatchKey = batchKey === "unspecified" ? "" : batchKey;
   if (!courseSlug) throw new Error("course_slug is required");
+  const legacyCourseSlugs = courseSlug === "prompt-to-profit-schools" ? ["prompt-to-profit-for-schools"] : [];
+  const courseSlugScope = [courseSlug].concat(legacyCourseSlugs);
+  const courseSlugWhereSql = courseSlugScope.length === 1
+    ? "= ?"
+    : `IN (${courseSlugScope.map(function () { return "?"; }).join(",")})`;
+  // School registrations were historically stored under prompt-to-profit.
+  // Include that slug when filtering the dedicated schools course view.
+  const schoolCourseSlugScope = courseSlug === "prompt-to-profit-schools"
+    ? [courseSlug, "prompt-to-profit"].concat(legacyCourseSlugs)
+    : courseSlugScope.slice();
+  const schoolCourseSlugWhereSql = schoolCourseSlugScope.length === 1
+    ? "= ?"
+    : `IN (${schoolCourseSlugScope.map(function () { return "?"; }).join(",")})`;
 
   const [courseRows] = await pool.query(
     `SELECT
@@ -1120,7 +1134,7 @@ async function listStudentsProgressByCourse(pool, input) {
            MIN(paid_at) AS first_paid_at,
            MAX(COALESCE(first_name, '')) COLLATE utf8mb4_general_ci AS full_name
          FROM course_orders
-         WHERE course_slug = ?
+         WHERE course_slug ${courseSlugWhereSql}
            AND status = 'paid'
          GROUP BY LOWER(email) COLLATE utf8mb4_general_ci, LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci, COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci
 
@@ -1135,7 +1149,7 @@ async function listStudentsProgressByCourse(pool, input) {
            MIN(reviewed_at) AS first_paid_at,
            MAX(COALESCE(first_name, '')) COLLATE utf8mb4_general_ci AS full_name
          FROM course_manual_payments
-         WHERE course_slug = ?
+         WHERE course_slug ${courseSlugWhereSql}
            AND status = 'approved'
          GROUP BY LOWER(email) COLLATE utf8mb4_general_ci, LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci, COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci
 
@@ -1151,7 +1165,7 @@ async function listStudentsProgressByCourse(pool, input) {
            MAX(COALESCE(ss.full_name, '')) COLLATE utf8mb4_general_ci AS full_name
          FROM ${SCHOOL_STUDENTS_TABLE} ss
          JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = ss.school_id
-         WHERE sc.course_slug = ?
+         WHERE sc.course_slug ${schoolCourseSlugWhereSql}
            AND sc.status = 'active'
            AND ss.status = 'active'
            AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())
@@ -1178,9 +1192,9 @@ async function listStudentsProgressByCourse(pool, input) {
        enrolled.batch_label, enrolled.school_name, enrolled.full_name, enrolled.first_paid_at
      ORDER BY COALESCE(MAX(COALESCE(p.last_watched_at, p.completed_at)), enrolled.first_paid_at) DESC, enrolled.email ASC`,
     [
-      courseSlug,
-      courseSlug,
-      courseSlug,
+      ...courseSlugScope,
+      ...courseSlugScope,
+      ...schoolCourseSlugScope,
       enrollmentType,
       enrollmentType,
       batchKey,
@@ -1315,27 +1329,27 @@ async function listStudentsProgressByCourse(pool, input) {
        SELECT LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci AS batch_key,
               COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci AS batch_label
        FROM course_orders
-       WHERE course_slug = ?
+       WHERE course_slug ${courseSlugWhereSql}
          AND status = 'paid'
        UNION
        SELECT LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci AS batch_key,
               COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci AS batch_label
        FROM course_manual_payments
-       WHERE course_slug = ?
+       WHERE course_slug ${courseSlugWhereSql}
          AND status = 'approved'
      ) b
      ORDER BY batch_label ASC, batch_key ASC`,
-    [courseSlug, courseSlug]
+    [...courseSlugScope, ...courseSlugScope]
   );
   const [schoolRows] = await pool.query(
     `SELECT COUNT(*) AS total
      FROM ${SCHOOL_STUDENTS_TABLE} ss
      JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = ss.school_id
-     WHERE sc.course_slug = ?
+     WHERE sc.course_slug ${schoolCourseSlugWhereSql}
        AND sc.status = 'active'
        AND ss.status = 'active'
        AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())`,
-    [courseSlug]
+    [...schoolCourseSlugScope]
   );
   const schoolCount = Number(schoolRows && schoolRows[0] && schoolRows[0].total || 0);
   const availableBatches = [{ key: "all", label: "All Batches" }];

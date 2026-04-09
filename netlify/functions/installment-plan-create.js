@@ -3,7 +3,7 @@ const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/student-auth");
 const { ensureInstallmentTables, findOpenPlan, createInstallmentPlan } = require("./_lib/installments");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
-const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables, recordCouponRedemption } = require("./_lib/coupons");
+const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
 const { getCoursePaymentLock } = require("./_lib/course-payment-lock");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 
@@ -115,16 +115,6 @@ exports.handler = async function (event) {
       couponCode: appliedCouponCode || null,
       couponId: couponId,
     });
-
-    if (couponId && discountMinor > 0 && created && created.plan_uuid) {
-      await recordCouponRedemption(pool, {
-        couponId,
-        orderUuid: `installment_${String(created.plan_uuid)}`,
-        email: session.account.email,
-        currency: "NGN",
-        discountMinor,
-      });
-    }
 
     return json(200, {
       ok: true,

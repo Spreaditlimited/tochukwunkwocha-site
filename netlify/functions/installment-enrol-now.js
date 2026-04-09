@@ -7,6 +7,7 @@ const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { resolveCourseBatch } = require("./_lib/batch-store");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
+const { recordCouponRedemption } = require("./_lib/coupons");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -73,6 +74,16 @@ exports.handler = async function (event) {
     );
 
     await markPlanEnrolled(pool, { planId: plan.id, orderUuid });
+
+    if (Number(plan.coupon_id || 0) > 0 && Number(plan.discount_minor || 0) > 0) {
+      await recordCouponRedemption(pool, {
+        couponId: Number(plan.coupon_id),
+        orderUuid,
+        email: session.account.email,
+        currency: plan.currency || "NGN",
+        discountMinor: Number(plan.discount_minor || 0),
+      });
+    }
 
     const batch = await resolveCourseBatch(pool, { courseSlug: plan.course_slug, batchKey: plan.batch_key });
     const synced = await syncBrevoSubscriber({

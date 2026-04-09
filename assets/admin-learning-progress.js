@@ -78,6 +78,26 @@
       .join("");
   }
 
+  function setCourseFilterOptions(items) {
+    if (!courseFilterEl) return;
+    var selected = clean(courseFilterEl.value || "", 120).toLowerCase();
+    var list = Array.isArray(items) ? items : [];
+    var options = list
+      .map(function (item) {
+        var slug = clean(item && item.slug, 120).toLowerCase();
+        var label = clean(item && item.label, 180) || slug;
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean);
+    if (!options.length) return;
+    courseFilterEl.innerHTML = options.join("");
+    if (selected) courseFilterEl.value = selected;
+    if (clean(courseFilterEl.value, 120).toLowerCase() !== selected && courseFilterEl.options.length) {
+      courseFilterEl.value = clean(courseFilterEl.options[0].value, 120).toLowerCase();
+    }
+  }
+
   async function api(url, options) {
     var opts = options || {};
     var response = await fetch(url, {
@@ -248,6 +268,12 @@
     setMessage("Loaded " + String((data.students || []).length) + " student record(s).", false);
   }
 
+  async function loadCourseOptions() {
+    var data = await api("/.netlify/functions/admin-course-slugs-list");
+    var items = Array.isArray(data.items) ? data.items : [];
+    setCourseFilterOptions(items);
+  }
+
   async function loadDetail(accountId, email) {
     var slug = clean(courseFilterEl && courseFilterEl.value || "prompt-to-profit").toLowerCase();
     var url =
@@ -387,8 +413,13 @@
   });
 
   hideDetailCard();
-
-  loadList().catch(function (error) {
-    setMessage(error.message || "Could not load progress list.", true);
-  });
+  loadCourseOptions()
+    .catch(function () {
+      return null;
+    })
+    .finally(function () {
+      loadList().catch(function (error) {
+        setMessage(error.message || "Could not load progress list.", true);
+      });
+    });
 })();

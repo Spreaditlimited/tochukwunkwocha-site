@@ -365,9 +365,8 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
   manualSql += " ORDER BY created_at DESC LIMIT ?";
   manualParams.push(safeLimit);
 
-  const [manualRows] = await pool.query(manualSql, manualParams);
-
-  let orderRows = [];
+  const manualPromise = pool.query(manualSql, manualParams);
+  let orderPromise = Promise.resolve([[]]);
   const includeApprovedOrders = desiredStatus === "all" || desiredStatus === STATUS_APPROVED || !desiredStatus;
   if (includeApprovedOrders) {
     let orderSql = `
@@ -401,9 +400,10 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
     }
     orderSql += " ORDER BY created_at DESC LIMIT ?";
     orderParams.push(safeLimit);
-    const [rows] = await pool.query(orderSql, orderParams);
-    orderRows = rows || [];
+    orderPromise = pool.query(orderSql, orderParams);
   }
+  const [[manualRows], [orderRowsRaw]] = await Promise.all([manualPromise, orderPromise]);
+  const orderRows = orderRowsRaw || [];
 
 
   const manualItems = (manualRows || []).map(function (row) {
@@ -480,10 +480,9 @@ async function getPaymentsQueueSummary(pool, opts) {
   const courseSlug = includeAllCourses ? "all" : normalizeCourseSlug(rawCourseSlug, DEFAULT_COURSE_SLUG);
   const desiredBatchKey = normalizeBatchKey((opts && opts.batchKey) || "");
   const scopedBatch = !includeAllCourses && desiredBatchKey && desiredBatchKey !== "all" ? desiredBatchKey : "";
-  const availableBatches = includeAllCourses ? [] : await listCourseBatches(pool, courseSlug);
-  const batchConfig = includeAllCourses || !scopedBatch
-    ? null
-    : await getCourseBatchByKey(pool, courseSlug, scopedBatch);
+  const batchesPromise = includeAllCourses ? Promise.resolve([]) : listCourseBatches(pool, courseSlug);
+  const batchConfigPromise =
+    includeAllCourses || !scopedBatch ? Promise.resolve(null) : getCourseBatchByKey(pool, courseSlug, scopedBatch);
 
   const manualCourseClause = includeAllCourses ? "" : " AND course_slug = ? ";
   const manualBatchClause = scopedBatch ? " AND batch_key = ? " : "";
@@ -494,7 +493,7 @@ async function getPaymentsQueueSummary(pool, opts) {
   const ordersCourseParams = includeAllCourses ? [] : [courseSlug];
   const ordersBatchParams = scopedBatch ? [scopedBatch] : [];
 
-  const [manualApprovedRows] = await pool.query(
+  const manualApprovedPromise = pool.query(
     `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_manual_payments
      WHERE 1=1
@@ -504,7 +503,7 @@ async function getPaymentsQueueSummary(pool, opts) {
      GROUP BY currency`,
     manualCourseParams.concat(manualBatchParams)
   );
-  const [manualPendingRows] = await pool.query(
+  const manualPendingPromise = pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
      WHERE 1=1
@@ -513,7 +512,7 @@ async function getPaymentsQueueSummary(pool, opts) {
        ${manualBatchClause}`,
     manualCourseParams.concat(manualBatchParams)
   );
-  const [manualAllRows] = await pool.query(
+  const manualAllPromise = pool.query(
     `SELECT COUNT(*) AS c
      FROM course_manual_payments
      WHERE 1=1
@@ -521,7 +520,7 @@ async function getPaymentsQueueSummary(pool, opts) {
        ${manualBatchClause}`,
     manualCourseParams.concat(manualBatchParams)
   );
-  const [paidOrderRows] = await pool.query(
+  const paidOrdersPromise = pool.query(
     `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
      FROM course_orders
      WHERE 1=1
@@ -532,6 +531,21 @@ async function getPaymentsQueueSummary(pool, opts) {
      GROUP BY currency, provider`,
     ordersCourseParams.concat(ordersBatchParams)
   );
+  const [
+    [availableBatches],
+    [batchConfig],
+    [manualApprovedRows],
+    [manualPendingRows],
+    [manualAllRows],
+    [paidOrderRows],
+  ] = await Promise.all([
+    batchesPromise.then(function (rows) { return [rows || []]; }),
+    batchConfigPromise.then(function (row) { return [row || null]; }),
+    manualApprovedPromise,
+    manualPendingPromise,
+    manualAllPromise,
+    paidOrdersPromise,
+  ]);
 
   const totalsByCurrency = {};
   const providerCounts = { manual: 0, paystack: 0, paypal: 0 };
