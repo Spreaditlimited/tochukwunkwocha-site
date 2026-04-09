@@ -1,5 +1,7 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
+let couponsTablesEnsured = false;
+let couponsTablesEnsurePromise = null;
 
 function normalizeCouponCode(value) {
   return String(value || "")
@@ -26,59 +28,74 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCouponsTables(pool) {
-  await applyRuntimeSettings(pool);
+  if (couponsTablesEnsured) return;
+  if (couponsTablesEnsurePromise) {
+    await couponsTablesEnsurePromise;
+    return;
+  }
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS course_coupons (
-      id BIGINT NOT NULL AUTO_INCREMENT,
-      code VARCHAR(40) NOT NULL,
-      description VARCHAR(240) NULL,
-      discount_type VARCHAR(16) NOT NULL,
-      percent_off DECIMAL(6,2) NULL,
-      fixed_ngn_minor INT NULL,
-      fixed_gbp_minor INT NULL,
-      course_slug VARCHAR(120) NULL,
-      starts_at DATETIME NULL,
-      ends_at DATETIME NULL,
-      max_uses INT NULL,
-      max_uses_per_email INT NULL,
-      is_active TINYINT(1) NOT NULL DEFAULT 1,
-      created_at DATETIME NOT NULL,
-      updated_at DATETIME NOT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uniq_coupon_code (code),
-      KEY idx_coupon_active_dates (is_active, starts_at, ends_at),
-      KEY idx_coupon_course_slug (course_slug)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  couponsTablesEnsurePromise = (async function () {
+    await applyRuntimeSettings(pool);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS coupon_redemptions (
-      id BIGINT NOT NULL AUTO_INCREMENT,
-      coupon_id BIGINT NOT NULL,
-      order_uuid VARCHAR(64) NOT NULL,
-      email VARCHAR(255) NOT NULL,
-      currency VARCHAR(8) NOT NULL,
-      discount_minor INT NOT NULL,
-      created_at DATETIME NOT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uniq_coupon_order (coupon_id, order_uuid),
-      KEY idx_coupon_redemptions_coupon (coupon_id, created_at),
-      KEY idx_coupon_redemptions_email (coupon_id, email),
-      CONSTRAINT fk_coupon_redemptions_coupon
-        FOREIGN KEY (coupon_id)
-        REFERENCES course_coupons(id)
-        ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS course_coupons (
+        id BIGINT NOT NULL AUTO_INCREMENT,
+        code VARCHAR(40) NOT NULL,
+        description VARCHAR(240) NULL,
+        discount_type VARCHAR(16) NOT NULL,
+        percent_off DECIMAL(6,2) NULL,
+        fixed_ngn_minor INT NULL,
+        fixed_gbp_minor INT NULL,
+        course_slug VARCHAR(120) NULL,
+        starts_at DATETIME NULL,
+        ends_at DATETIME NULL,
+        max_uses INT NULL,
+        max_uses_per_email INT NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_coupon_code (code),
+        KEY idx_coupon_active_dates (is_active, starts_at, ends_at),
+        KEY idx_coupon_course_slug (course_slug)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
 
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN description VARCHAR(240) NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN course_slug VARCHAR(120) NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN starts_at DATETIME NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN ends_at DATETIME NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN max_uses INT NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN max_uses_per_email INT NULL`);
-  await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN fixed_gbp_minor INT NULL`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS coupon_redemptions (
+        id BIGINT NOT NULL AUTO_INCREMENT,
+        coupon_id BIGINT NOT NULL,
+        order_uuid VARCHAR(64) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        currency VARCHAR(8) NOT NULL,
+        discount_minor INT NOT NULL,
+        created_at DATETIME NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_coupon_order (coupon_id, order_uuid),
+        KEY idx_coupon_redemptions_coupon (coupon_id, created_at),
+        KEY idx_coupon_redemptions_email (coupon_id, email),
+        CONSTRAINT fk_coupon_redemptions_coupon
+          FOREIGN KEY (coupon_id)
+          REFERENCES course_coupons(id)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN description VARCHAR(240) NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN course_slug VARCHAR(120) NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN starts_at DATETIME NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN ends_at DATETIME NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN max_uses INT NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN max_uses_per_email INT NULL`);
+    await safeAlter(pool, `ALTER TABLE course_coupons ADD COLUMN fixed_gbp_minor INT NULL`);
+    couponsTablesEnsured = true;
+  })();
+
+  try {
+    await couponsTablesEnsurePromise;
+  } finally {
+    couponsTablesEnsurePromise = null;
+  }
 }
 
 function resolveDiscountMinor({ coupon, currency, baseAmountMinor }) {

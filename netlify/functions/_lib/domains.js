@@ -1,6 +1,8 @@
 const crypto = require("crypto");
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
+let domainTablesEnsured = false;
+let domainTablesEnsurePromise = null;
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -72,6 +74,13 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureDomainTables(pool) {
+  if (domainTablesEnsured) return;
+  if (domainTablesEnsurePromise) {
+    await domainTablesEnsurePromise;
+    return;
+  }
+
+  domainTablesEnsurePromise = (async function () {
   await applyRuntimeSettings(pool);
 
   await pool.query(`
@@ -197,6 +206,14 @@ async function ensureDomainTables(pool) {
   await safeAlter(pool, `ALTER TABLE user_domains ADD COLUMN auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE domain_checkouts ADD COLUMN selected_services_json TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE domain_checkouts ADD COLUMN auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
+  domainTablesEnsured = true;
+  })();
+
+  try {
+    await domainTablesEnsurePromise;
+  } finally {
+    domainTablesEnsurePromise = null;
+  }
 
 }
 

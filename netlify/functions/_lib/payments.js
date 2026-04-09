@@ -14,6 +14,14 @@ function paystackSecret() {
   return required("PAYSTACK_SECRET_KEY");
 }
 
+function paystackKeyMode(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  if (raw.indexOf("sk_test_") === 0 || raw.indexOf("pk_test_") === 0) return "test";
+  if (raw.indexOf("sk_live_") === 0 || raw.indexOf("pk_live_") === 0) return "live";
+  return "";
+}
+
 function paystackPublicKey() {
   const candidates = [
     "PAYSTACK_PUBLIC_KEY",
@@ -31,12 +39,31 @@ function paystackPublicKey() {
   throw new Error(`Missing Paystack public key. Set one of: ${candidates.join(", ")}`);
 }
 
+function assertPaystackKeyModesCompatible() {
+  const secret = paystackSecret();
+  const secretMode = paystackKeyMode(secret);
+  let publicMode = "";
+  try {
+    publicMode = paystackKeyMode(paystackPublicKey());
+  } catch (_error) {
+    publicMode = "";
+  }
+
+  if (secretMode && publicMode && secretMode !== publicMode) {
+    throw new Error(
+      `Paystack key mode mismatch: secret is ${secretMode}, public is ${publicMode}. ` +
+      `Set both keys to the same mode (live/live or test/test).`
+    );
+  }
+}
+
 function verifyPaystackSignature(rawBody, signature) {
   const hash = crypto.createHmac("sha512", paystackSecret()).update(String(rawBody || "")).digest("hex");
   return hash === String(signature || "").trim();
 }
 
 async function paystackInitialize({ email, amountMinor, reference, metadata, callbackUrl }) {
+  assertPaystackKeyModesCompatible();
   const secret = paystackSecret();
   const safeCallbackUrl =
     String(callbackUrl || "").trim() || `${siteBaseUrl()}/.netlify/functions/paystack-return`;

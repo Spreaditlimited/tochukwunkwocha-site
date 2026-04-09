@@ -6,6 +6,8 @@ const VIDEO_ASSETS_TABLE = "tochukwu_learning_video_assets";
 const MODULES_TABLE = "tochukwu_learning_modules";
 const MODULE_BATCH_DRIPS_TABLE = "tochukwu_learning_module_batch_drips";
 const LESSONS_TABLE = "tochukwu_learning_lessons";
+let learningTablesEnsured = false;
+let learningTablesEnsurePromise = null;
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -136,6 +138,13 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureLearningTables(pool) {
+  if (learningTablesEnsured) return;
+  if (learningTablesEnsurePromise) {
+    await learningTablesEnsurePromise;
+    return;
+  }
+
+  learningTablesEnsurePromise = (async function () {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
       id BIGINT NOT NULL AUTO_INCREMENT,
@@ -312,6 +321,14 @@ async function ensureLearningTables(pool) {
   }
 
   await canonicalizeLegacyModuleCourseSlugs(pool);
+  learningTablesEnsured = true;
+  })();
+
+  try {
+    await learningTablesEnsurePromise;
+  } finally {
+    learningTablesEnsurePromise = null;
+  }
 }
 
 async function hasColumn(pool, tableName, columnName) {

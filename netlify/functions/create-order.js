@@ -4,7 +4,7 @@ const { getPool } = require("./_lib/db");
 const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
-const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
+const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const {
   DEFAULT_COURSE_SLUG,
@@ -77,7 +77,6 @@ exports.handler = async function (event) {
     }
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
-    await ensureCouponsTables(pool);
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
     const price = priceConfig({ provider, courseSlug, batch });
