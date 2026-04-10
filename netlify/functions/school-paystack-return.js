@@ -5,26 +5,29 @@ const {
   ensureSchoolTables,
   markSchoolOrderPaidBy,
   createSchoolAdminSession,
+  createSchoolAdminPasswordResetToken,
   setSchoolAdminCookieHeader,
 } = require("./_lib/schools");
 
 function buildSchoolWelcomeEmail(input) {
   const fullName = String((input && input.fullName) || "School Admin").trim();
   const email = String((input && input.email) || "").trim();
-  const tempPassword = String((input && input.tempPassword) || "").trim();
+  const resetLink = String((input && input.resetLink) || "").trim();
   const dashboardUrl = `${siteBaseUrl()}/schools/dashboard/`;
   const html = [
     `<p>Hello ${fullName},</p>`,
     `<p>Your school access to Prompt to Profit is now active.</p>`,
     `<p><strong>Admin Email:</strong> ${email}</p>`,
-    tempPassword ? `<p><strong>Temporary Password:</strong> <code>${tempPassword}</code></p>` : "",
+    resetLink
+      ? `<p>Set your password using this link: <a href="${resetLink}">${resetLink}</a></p>`
+      : "",
     `<p>Open your school dashboard: <a href="${dashboardUrl}">${dashboardUrl}</a></p>`,
   ].join("\n");
   const text = [
     `Hello ${fullName},`,
     "Your school access to Prompt to Profit is now active.",
     `Admin Email: ${email}`,
-    tempPassword ? `Temporary Password: ${tempPassword}` : "",
+    resetLink ? `Set your password: ${resetLink}` : "",
     `School dashboard: ${dashboardUrl}`,
   ].filter(Boolean).join("\n");
   return { html, text };
@@ -39,7 +42,7 @@ exports.handler = async function (event) {
   if (!reference) {
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/schools/register/?payment=failed` },
+      headers: { Location: `${siteBaseUrl()}/schools/login/?mode=register&payment=failed` },
       body: "",
     };
   }
@@ -51,7 +54,7 @@ exports.handler = async function (event) {
     if (String(tx && tx.status || "").toLowerCase() !== "success") {
       return {
         statusCode: 302,
-        headers: { Location: `${siteBaseUrl()}/schools/register/?payment=failed` },
+        headers: { Location: `${siteBaseUrl()}/schools/login/?mode=register&payment=failed` },
         body: "",
       };
     }
@@ -69,10 +72,14 @@ exports.handler = async function (event) {
     const setCookie = setSchoolAdminCookieHeader(event, token);
 
     try {
+      const reset = await createSchoolAdminPasswordResetToken(pool, result.adminEmail);
+      const resetLink = reset && reset.token
+        ? `${siteBaseUrl()}/schools/reset-password/?token=${encodeURIComponent(reset.token)}`
+        : "";
       const mail = buildSchoolWelcomeEmail({
         fullName: result.adminName,
         email: result.adminEmail,
-        tempPassword: result.tempPassword,
+        resetLink,
       });
       await sendEmail({
         to: result.adminEmail,
@@ -85,7 +92,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 302,
       headers: {
-        Location: `${siteBaseUrl()}/schools/dashboard/`,
+        Location: `${siteBaseUrl()}/schools/dashboard/?welcome=school_enrolled`,
         "Set-Cookie": setCookie,
       },
       body: "",
@@ -93,9 +100,8 @@ exports.handler = async function (event) {
   } catch (_error) {
     return {
       statusCode: 302,
-      headers: { Location: `${siteBaseUrl()}/schools/register/?payment=failed` },
+      headers: { Location: `${siteBaseUrl()}/schools/login/?mode=register&payment=failed` },
       body: "",
     };
   }
 };
-

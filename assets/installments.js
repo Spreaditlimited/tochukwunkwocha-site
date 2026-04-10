@@ -86,7 +86,10 @@
       if (showPlan) {
         dashboardMain.classList.remove("flex", "items-center", "justify-center");
       } else {
-        dashboardMain.classList.add("flex", "items-center", "justify-center");
+        dashboardMain.classList.remove("flex", "items-center", "justify-center");
+        try {
+          dashboardMain.scrollTop = 0;
+        } catch (_error) {}
       }
     }
   }

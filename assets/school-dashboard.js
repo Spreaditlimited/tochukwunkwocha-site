@@ -1,5 +1,10 @@
 (function () {
   var SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
+  var SCHOOL_WELCOME_KEY = "school_dashboard_welcome_notice_v1";
+  var SCHOOL_WELCOME_DURATION_MS = 5 * 60 * 1000;
+  var WELCOME_MESSAGE =
+    "Welcome to Prompt to Profit for Schools. Your school is now enrolled, and you can start onboarding students right away. The program is fully pre-recorded end-to-end, and your access is active for 12 months.";
+  var welcomeEl = document.getElementById("schoolWelcomeNotice");
   var metaEl = document.getElementById("schoolDashboardMeta");
   var metricSeatsEl = document.getElementById("metricSeats");
   var metricSeatsSubEl = document.getElementById("metricSeatsSub");
@@ -34,6 +39,59 @@
     var d = new Date(value);
     if (!Number.isFinite(d.getTime())) return "-";
     return d.toLocaleString();
+  }
+
+  function readWelcomeNotice() {
+    try {
+      var raw = window.localStorage.getItem(SCHOOL_WELCOME_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || Number(parsed.expiresAt || 0) < Date.now()) return null;
+      return parsed;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function clearWelcomeNotice() {
+    try {
+      window.localStorage.removeItem(SCHOOL_WELCOME_KEY);
+    } catch (_error) {}
+  }
+
+  function consumeWelcomeFromQuery() {
+    try {
+      var url = new URL(window.location.href);
+      var marker = clean(url.searchParams.get("welcome")).toLowerCase();
+      if (marker !== "school_enrolled") return;
+      window.localStorage.setItem(
+        SCHOOL_WELCOME_KEY,
+        JSON.stringify({
+          message: WELCOME_MESSAGE,
+          expiresAt: Date.now() + SCHOOL_WELCOME_DURATION_MS,
+        })
+      );
+      url.searchParams.delete("welcome");
+      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : "") + url.hash);
+    } catch (_error) {}
+  }
+
+  function renderWelcomeNotice() {
+    if (!welcomeEl) return;
+    var notice = readWelcomeNotice();
+    if (!notice) {
+      clearWelcomeNotice();
+      welcomeEl.classList.add("hidden");
+      welcomeEl.textContent = "";
+      return;
+    }
+    welcomeEl.textContent = clean(notice.message) || WELCOME_MESSAGE;
+    welcomeEl.classList.remove("hidden");
+    window.setTimeout(function () {
+      clearWelcomeNotice();
+      welcomeEl.classList.add("hidden");
+      welcomeEl.textContent = "";
+    }, Math.max(0, Number(notice.expiresAt || 0) - Date.now()));
   }
 
   function setUploadStatus(text, bad) {
@@ -289,6 +347,9 @@
         });
     });
   }
+
+  consumeWelcomeFromQuery();
+  renderWelcomeNotice();
 
   Promise.all([loadSummary(), loadStudents()]).catch(function (error) {
     if (metaEl) metaEl.textContent = error.message || "Could not load school dashboard.";

@@ -39,42 +39,103 @@
         },
       };
     </script>
+    <style>
+      [hidden] { display: none !important; }
+    </style>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .tw-input { @apply mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-brand-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 bg-white transition-shadow; }
+        .tw-label { @apply block text-sm font-semibold leading-6 text-gray-900; }
+        .tw-btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md; }
+      }
+    </style>
   </head>
-  <body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
-    <main class="w-full max-w-md">
-      <button
-        type="button"
-        data-auth-back
-        aria-label="Go back"
-        class="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-brand-700 transition-colors hover:bg-brand-100 hover:text-brand-800"
-      >
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-      <section class="w-full rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
-      <h1 class="text-2xl font-heading font-extrabold">School Admin Login</h1>
-      <p class="mt-2 text-sm text-gray-600">Sign in to manage students, seats, progress, and certificates.</p>
-      <form id="schoolLoginForm" class="mt-5 space-y-4">
-        <label class="block">
-          <span class="text-sm font-semibold text-gray-700">Email</span>
-          <input id="schoolLoginEmail" type="email" required class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm" />
-        </label>
-        <label class="block">
-          <span class="text-sm font-semibold text-gray-700">Password</span>
-          <input id="schoolLoginPassword" type="password" required class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm" />
-        </label>
-        <p id="schoolLoginStatus" class="text-sm text-gray-600"></p>
-        <button id="schoolLoginBtn" type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md">
-          Sign In
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen">
+    <main class="w-full p-4 sm:p-6 lg:p-8">
+      <div id="schoolGuestStack" class="w-full max-w-2xl mx-auto space-y-6">
+        <button
+          type="button"
+          data-auth-back
+          aria-label="Go back"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-brand-700 transition-colors hover:bg-brand-100 hover:text-brand-800"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
-        <div class="pt-1">
-          <a href="/schools/reset-password-request/" class="text-sm font-semibold text-brand-700 hover:text-brand-600">Forgot password?</a>
-        </div>
-      </form>
-      </section>
+
+        <section class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto">
+          <p class="text-xs font-bold uppercase tracking-wider text-brand-600">School Dashboard Area</p>
+          <h2 class="mt-1 text-2xl font-heading font-extrabold text-gray-900">School Admin Access</h2>
+          <p class="mt-2 text-sm text-gray-600">Manage students, seats, progress, and certificates, or register your school and continue to payment.</p>
+        </section>
+
+        <article class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto">
+          <div class="mb-8">
+            <h3 class="text-2xl font-heading font-bold text-gray-900">School Dashboard</h3>
+            <p class="mt-2 text-sm text-gray-500">Sign in to continue, or register your school.</p>
+          </div>
+
+          <div class="mb-6 inline-flex w-full rounded-xl bg-gray-100 p-1 ring-1 ring-gray-200" role="tablist">
+            <button type="button" id="schoolShowSignInBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-900 bg-white shadow-sm ring-1 ring-gray-200" aria-selected="true">Sign In</button>
+            <button type="button" id="schoolShowRegisterBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-600" aria-selected="false">Register</button>
+          </div>
+
+          <form id="schoolLoginForm" class="space-y-6" novalidate>
+            <div>
+              <label class="tw-label" for="schoolLoginEmail">Email Address</label>
+              <input id="schoolLoginEmail" type="email" required class="tw-input" />
+            </div>
+            <div>
+              <label class="tw-label" for="schoolLoginPassword">Password</label>
+              <input id="schoolLoginPassword" type="password" required class="tw-input" />
+            </div>
+            <button id="schoolLoginBtn" type="submit" class="tw-btn-primary w-full">Sign In</button>
+            <button type="button" onclick="window.location.href='/schools/reset-password-request/'" class="text-sm font-semibold text-brand-700 hover:text-brand-600">Forgot password?</button>
+            <p id="schoolLoginStatus" class="text-sm"></p>
+          </form>
+
+          <form id="schoolRegisterForm" class="space-y-6" novalidate hidden>
+            <p id="schoolsPricingIntro" class="text-sm text-gray-600">Bulk school access starts at 50 students. Price is N8,500 per student + VAT.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="tw-label" for="schoolName">School Name</label>
+                <input id="schoolName" type="text" required class="tw-input" />
+              </div>
+              <div>
+                <label class="tw-label" for="adminName">Admin Name</label>
+                <input id="adminName" type="text" required class="tw-input" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="tw-label" for="adminEmail">Admin Email</label>
+                <input id="adminEmail" type="email" required class="tw-input" />
+              </div>
+              <div>
+                <label class="tw-label" for="adminPhone">Admin Phone</label>
+                <input id="adminPhone" type="text" required class="tw-input" />
+              </div>
+            </div>
+            <div>
+              <label class="tw-label" for="seatCount">Number of Students (min 50)</label>
+              <input id="seatCount" type="number" min="50" step="1" value="50" required class="tw-input" />
+            </div>
+            <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-700 space-y-1">
+              <p><strong>Course:</strong> Prompt to Profit</p>
+              <p id="priceSubtotal">Subtotal: N0</p>
+              <p id="priceVat">VAT: N0</p>
+              <p id="priceTotal" class="font-bold text-gray-900">Total: N0</p>
+            </div>
+            <button id="schoolRegisterBtn" type="submit" class="tw-btn-primary w-full">Continue to Payment</button>
+            <p id="schoolRegisterStatus" class="text-sm"></p>
+          </form>
+        </article>
+      </div>
     </main>
     <script src="/assets/auth-back.js?v=20260405a" defer></script>
+    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
     <script src="/assets/school-login.js?v=20260404a" defer></script>
+    <script src="/assets/school-register.js?v=20260404a" defer></script>
   </body>
 </html>

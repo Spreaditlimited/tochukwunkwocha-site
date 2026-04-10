@@ -36,15 +36,12 @@ exports.handler = async function (event) {
         `<p>Hello ${clean(reset.fullName, 120) || "School Admin"},</p>`,
         "<p>Use the link below to reset your school dashboard password:</p>",
         `<p><a href="${link}">${link}</a></p>`,
-        "<p>This link expires in 1 hour.</p>",
       ].join("\n");
       const text = [
         `Hello ${clean(reset.fullName, 120) || "School Admin"},`,
         "",
         "Use the link below to reset your school dashboard password:",
         link,
-        "",
-        "This link expires in 1 hour.",
       ].join("\n");
       try {
         await sendEmail({

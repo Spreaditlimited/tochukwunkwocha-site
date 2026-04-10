@@ -424,7 +424,7 @@ async function createSchoolAdminPasswordResetToken(pool, emailInput) {
      SET reset_token_hash = ?, reset_token_expires_at = ?, reset_requested_at = ?, updated_at = ?
      WHERE id = ?
      LIMIT 1`,
-    [tokenHash, sqlDateFromNow(1000 * 60 * 60), nowSql(), nowSql(), Number(admin.id)]
+    [tokenHash, null, nowSql(), nowSql(), Number(admin.id)]
   );
 
   return {
@@ -452,8 +452,10 @@ async function consumeSchoolAdminPasswordResetToken(pool, input) {
   if (!rows || !rows.length) throw new Error("Invalid or expired reset token");
   const admin = rows[0];
   if (Number(admin.is_active || 0) !== 1) throw new Error("Admin account disabled");
-  const exp = new Date(admin.reset_token_expires_at).getTime();
-  if (!Number.isFinite(exp) || exp < Date.now()) throw new Error("Invalid or expired reset token");
+  if (admin.reset_token_expires_at) {
+    const exp = new Date(admin.reset_token_expires_at).getTime();
+    if (!Number.isFinite(exp) || exp < Date.now()) throw new Error("Invalid or expired reset token");
+  }
 
   await setSchoolAdminPassword(pool, { adminId: Number(admin.id), password });
   return {
