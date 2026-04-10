@@ -97,6 +97,10 @@ function firstTruthy(values) {
   return "";
 }
 
+function looksLikeOrderId(value) {
+  return /^[0-9]{2,}$/.test(clean(value, 120));
+}
+
 function nsPair() {
   const ns1 = firstTruthy([
     process.env.RESCLUB_NS1,
@@ -168,11 +172,43 @@ function sanitizeUsernameToken(value) {
   return clean(value, 60).toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function looksLikeId(value) {
+  const text = clean(value, 120);
+  return /^[0-9]{2,}$/.test(text);
+}
+
+function findAnyId(value, depth) {
+  if (depth > 6 || value === null || value === undefined) return "";
+  if (looksLikeId(value)) return clean(value, 120);
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findAnyId(item, depth + 1);
+      if (found) return found;
+    }
+    return "";
+  }
+  if (typeof value === "object") {
+    const preferredKeys = ["entityid", "contactid", "contact_id", "id", "customerid", "customer_id"];
+    for (const key of preferredKeys) {
+      const found = findAnyId(value[key], depth + 1);
+      if (found) return found;
+    }
+    for (const key of Object.keys(value)) {
+      const found = findAnyId(value[key], depth + 1);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
 function generatedUsername(profile) {
-  const emailPart = sanitizeUsernameToken((profile && profile.email) || "").slice(0, 20) || "buyer";
+  const emailRaw = clean((profile && profile.email) || "", 190).toLowerCase();
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
+  if (emailLooksValid) return emailRaw;
+  const emailPart = sanitizeUsernameToken(emailRaw).slice(0, 20) || "buyer";
   const suffix = Date.now().toString(36).slice(-8);
   const prefix = sanitizeUsernameToken((profile && profile.usernamePrefix) || "tncust").slice(0, 12) || "tncust";
-  return `${prefix}${emailPart}${suffix}`.slice(0, 28);
+  return `${prefix}${emailPart}${suffix}@example.com`.slice(0, 64);
 }
 
 function generatedPassword() {
@@ -183,30 +219,77 @@ function generatedPassword() {
 async function createRuntimeCustomer(profile) {
   const username = generatedUsername(profile);
   const passwd = generatedPassword();
-  const json = await callApi(
-    "/api/customers/signup.json",
-    {
-      username,
-      passwd,
-      name: profile.fullName,
-      company: profile.company,
-      email: profile.email,
-      "address-line-1": profile.address1,
-      city: profile.city,
-      state: profile.state,
-      country: profile.country,
-      zipcode: profile.postalCode,
-      "phone-cc": profile.phoneCc,
-      phone: profile.phone,
-      "lang-pref": "en",
-    },
-    "POST"
-  );
-  const customerId = firstTruthy([json && json.customerid, json && json.customer_id, json && json.entityid, json && json.id]);
-  if (!customerId) {
-    throw new Error("Could not create ResellerClub customer for buyer.");
+  try {
+    const json = await callApi(
+      "/api/customers/signup.json",
+      {
+        username,
+        passwd,
+        name: profile.fullName,
+        company: profile.company,
+        email: profile.email,
+        "address-line-1": profile.address1,
+        city: profile.city,
+        state: profile.state,
+        country: profile.country,
+        zipcode: profile.postalCode,
+        "phone-cc": profile.phoneCc,
+        phone: profile.phone,
+        "lang-pref": "en",
+      },
+      "POST"
+    );
+    const customerId = firstTruthy([json && json.customerid, json && json.customer_id, json && json.entityid, json && json.id]);
+    if (!customerId) {
+      throw new Error("Could not create ResellerClub customer for buyer.");
+    }
+    return customerId;
+  } catch (error) {
+    const message = clean(error && error.message, 1200);
+    if (!/already a customer/i.test(message)) throw error;
+    const existingId = await findRuntimeCustomerIdByUsername(username, profile && profile.email);
+    if (!existingId) throw error;
+    return existingId;
   }
-  return customerId;
+}
+
+async function findRuntimeCustomerIdByUsername(username, emailFallback) {
+  const candidates = [clean(username, 190), clean(emailFallback, 190).toLowerCase()].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      const details = await callApi("/api/customers/details.json", { username: candidate });
+      const detailsId = firstTruthy([
+        details && details.customerid,
+        details && details.customer_id,
+        details && details.entityid,
+        details && details.id,
+        details && details.customer && details.customer.customerid,
+      ]);
+      if (detailsId) return detailsId;
+    } catch (_error) {
+      // Try search endpoint fallback below.
+    }
+    try {
+      const search = await callApi("/api/customers/search.json", {
+        username: candidate,
+        "no-of-records": 10,
+        "page-no": 1,
+      });
+      const searchId = firstTruthy([
+        search && search.customerid,
+        search && search.customer_id,
+        search && search.entityid,
+        search && search.id,
+        search && search.customer && search.customer.customerid,
+        search &&
+          Array.isArray(search.customer) &&
+          search.customer[0] &&
+          (search.customer[0].customerid || search.customer[0].customer_id || search.customer[0].id),
+      ]);
+      if (searchId) return searchId;
+    } catch (_error) {}
+  }
+  return "";
 }
 
 async function createRuntimeContact(profile, customerId, contactType) {
@@ -228,18 +311,54 @@ async function createRuntimeContact(profile, customerId, contactType) {
     },
     "POST"
   );
-  const contactId = firstTruthy([json && json.entityid, json && json.contactid, json && json.contact_id, json && json.id]);
-  if (!contactId) throw new Error(`Could not create ResellerClub ${contactType || "contact"} profile.`);
-  return contactId;
+  const contactId = firstTruthy([
+    json && json.entityid,
+    json && json.contactid,
+    json && json.contact_id,
+    json && json.id,
+    findAnyId(json, 0),
+  ]);
+  if (contactId) return contactId;
+  const existingId = await findRuntimeContactId(customerId, profile && profile.email);
+  if (existingId) return existingId;
+  const apiError = errorFromJson(json);
+  if (apiError) {
+    throw new Error(`Could not create ResellerClub ${contactType || "contact"} profile. ${apiError}`);
+  }
+  throw new Error(`Could not create ResellerClub ${contactType || "contact"} profile.`);
+}
+
+async function findRuntimeContactId(customerId, email) {
+  const custId = clean(customerId, 120);
+  const addr = clean(email, 190).toLowerCase();
+  if (!custId) return "";
+  try {
+    const search = await callApi("/api/contacts/search.json", {
+      "customer-id": custId,
+      email: addr || undefined,
+      "no-of-records": 10,
+      "page-no": 1,
+    });
+    return firstTruthy([
+      search && search.entityid,
+      search && search.contactid,
+      search && search.contact_id,
+      search && search.id,
+      findAnyId(search, 0),
+    ]);
+  } catch (_error) {
+    return "";
+  }
 }
 
 async function resolveRegistrationIds(input) {
   const profile = registrantProfile(input || {});
   const customerId = await createRuntimeCustomer(profile);
-  const reg = await createRuntimeContact(profile, customerId, "Registrant");
-  const admin = await createRuntimeContact(profile, customerId, "Admin");
-  const tech = await createRuntimeContact(profile, customerId, "Technical");
-  const billing = await createRuntimeContact(profile, customerId, "Billing");
+  const contactId = await createRuntimeContact(profile, customerId, "Contact");
+  const reg = contactId;
+  const admin = contactId;
+  const tech = contactId;
+  const billing = contactId;
   return { customerId, reg, admin, tech, billing, mode: "runtime" };
 }
 
@@ -893,7 +1012,18 @@ async function callApi(pathname, params, method) {
     }
 
     if (proxyJson && typeof proxyJson === "object" && Object.prototype.hasOwnProperty.call(proxyJson, "data")) {
-      return proxyJson.data || {};
+      const data = proxyJson.data || {};
+      if (data && typeof data.status === "string" && data.status.toLowerCase().includes("error")) {
+        const providerMessage = errorFromJson(data) || "ResellerClub API returned an error";
+        console.error("[resellerclub] api_error_status", {
+          endpoint: pathname,
+          method: safeMethod,
+          providerMessage: providerMessage,
+          payload: data,
+        });
+        throw new Error(providerMessage);
+      }
+      return data;
     }
     return proxyJson || {};
   }
@@ -1008,6 +1138,7 @@ async function registerDomain(input) {
   console.info("[resellerclub] register_domain_start", {
     domainName,
     years,
+    apiBase: apiBaseUrl(),
   });
   const availability = await checkAvailability({ domainName });
   if (!availability.available) {
@@ -1031,6 +1162,13 @@ async function registerDomain(input) {
   const ids = await resolveRegistrationIds({
     fullName: input && input.fullName,
     email: input && input.email,
+    registrantAddress1: input && input.registrantAddress1,
+    registrantCity: input && input.registrantCity,
+    registrantState: input && input.registrantState,
+    registrantCountry: input && input.registrantCountry,
+    registrantPostalCode: input && input.registrantPostalCode,
+    registrantPhone: input && input.registrantPhone,
+    registrantPhoneCc: input && input.registrantPhoneCc,
   });
   console.info("[resellerclub] register_domain_ids", {
     domainName,
@@ -1056,7 +1194,26 @@ async function registerDomain(input) {
     "POST"
   );
 
-  const orderId = firstTruthy([json && json.entityid, json && json.orderid, json && json.actiontypedesc]);
+  const orderIdCandidate = firstTruthy([json && json.entityid, json && json.orderid]);
+  const orderId = looksLikeOrderId(orderIdCandidate) ? orderIdCandidate : "";
+  if (!orderId) {
+    const providerMessage = errorFromJson(json) || clean(JSON.stringify(json || {}), 500);
+    console.warn("[resellerclub] register_domain_missing_order_id", {
+      domainName,
+      years,
+      providerMessage,
+    });
+    return {
+      provider: "resellerclub",
+      domainName,
+      success: false,
+      orderId: "",
+      amountMinor: null,
+      currency: "USD",
+      reason: providerMessage || "Registration response did not include a valid order ID.",
+      raw: null,
+    };
+  }
   console.info("[resellerclub] register_domain_success", {
     domainName,
     years,
