@@ -2,6 +2,9 @@
   const listEl = document.getElementById("coursesList");
   const metaEl = document.getElementById("coursesMeta");
   const discoverEl = document.getElementById("discoverCoursesList");
+  const welcomeEl = document.getElementById("coursesWelcomeNotice");
+  const PURCHASE_WELCOME_KEY = "recent_course_purchase_notice_v1";
+  const PURCHASE_WELCOME_DURATION_MS = 60 * 1000;
   const COURSE_DURATION_DAYS = {
     "prompt-to-profit": 5,
   };
@@ -55,6 +58,93 @@
 
   function normalizeSlug(value) {
     return String(value || "").trim().toLowerCase();
+  }
+
+  function prettifySlug(slug) {
+    return String(slug || "")
+      .trim()
+      .split("-")
+      .filter(Boolean)
+      .map(function (part) {
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(" ");
+  }
+
+  function courseNameForSlug(slug) {
+    const normalized = normalizeSlug(slug);
+    const found = COURSE_CATALOG.find(function (item) {
+      return item.slug === normalized;
+    });
+    return (found && found.name) || prettifySlug(normalized) || "this course";
+  }
+
+  function readPurchaseWelcomeNotice() {
+    try {
+      const raw = window.localStorage.getItem(PURCHASE_WELCOME_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      const courseName = String(parsed.courseName || "").trim();
+      const expiresAt = Number(parsed.expiresAt || 0);
+      if (!courseName || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+      return {
+        courseName,
+        expiresAt,
+      };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function clearPurchaseWelcomeNotice() {
+    try {
+      window.localStorage.removeItem(PURCHASE_WELCOME_KEY);
+    } catch (_error) {
+      return;
+    }
+  }
+
+  function consumePurchaseWelcomeFromQuery() {
+    try {
+      const search = new URLSearchParams(window.location.search);
+      if (String(search.get("payment") || "").toLowerCase() !== "success") return;
+      const querySlug = search.get("course_slug") || search.get("course") || "";
+      const courseName = courseNameForSlug(querySlug);
+      const payload = {
+        courseName,
+        expiresAt: Date.now() + PURCHASE_WELCOME_DURATION_MS,
+      };
+      window.localStorage.setItem(PURCHASE_WELCOME_KEY, JSON.stringify(payload));
+      search.delete("payment");
+      search.delete("course_slug");
+      search.delete("course");
+      search.delete("order_uuid");
+      const url = new URL(window.location.href);
+      url.search = search.toString();
+      window.history.replaceState({}, "", url.pathname + (url.search ? "?" + url.search : "") + url.hash);
+    } catch (_error) {
+      return;
+    }
+  }
+
+  function renderPurchaseWelcomeNotice() {
+    if (!welcomeEl) return;
+    const notice = readPurchaseWelcomeNotice();
+    if (!notice) {
+      clearPurchaseWelcomeNotice();
+      welcomeEl.classList.add("hidden");
+      welcomeEl.textContent = "";
+      return;
+    }
+    welcomeEl.textContent = "Thank you for purchasing " + notice.courseName + ". We look forward to seeing you in class.";
+    welcomeEl.classList.remove("hidden");
+    const remainingMs = Math.max(0, notice.expiresAt - Date.now());
+    window.setTimeout(function () {
+      clearPurchaseWelcomeNotice();
+      welcomeEl.classList.add("hidden");
+      welcomeEl.textContent = "";
+    }, remainingMs);
   }
 
   function themeForSlug(slug) {
@@ -414,5 +504,7 @@
     });
   }
 
+  consumePurchaseWelcomeFromQuery();
+  renderPurchaseWelcomeNotice();
   load();
 })();

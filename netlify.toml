@@ -42,3 +42,6 @@
 
 [functions."domain-renewal-notify-cron"]
   schedule = "15 8 * * *"
+
+[functions."paystack-reconcile-cron"]
+  schedule = "*/10 * * * *"

@@ -5,7 +5,7 @@ const { requireStudentSession } = require("./_lib/user-auth");
 const { getCourseName } = require("./_lib/course-config");
 const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
-const STUDENT_CERTIFICATES_TABLE = "student_certificates";
+const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -56,25 +56,6 @@ function nowSqlDateTime() {
 
 function certificateNo() {
   return `TN-IND-${crypto.randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`;
-}
-
-async function ensureStudentCertificatesTable(pool) {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS ${STUDENT_CERTIFICATES_TABLE} (
-      id BIGINT NOT NULL AUTO_INCREMENT,
-      account_id BIGINT NOT NULL,
-      course_slug VARCHAR(120) NOT NULL,
-      certificate_no VARCHAR(120) NOT NULL,
-      status VARCHAR(40) NOT NULL DEFAULT 'issued',
-      issued_at DATETIME NOT NULL,
-      created_at DATETIME NOT NULL,
-      updated_at DATETIME NOT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uniq_student_cert_no (certificate_no),
-      UNIQUE KEY uniq_student_cert_account_course (account_id, course_slug),
-      KEY idx_student_cert_account (account_id, issued_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
 }
 
 async function loadCourseCompletionMap(pool, accountId, courseSlugs) {

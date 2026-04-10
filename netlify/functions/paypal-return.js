@@ -77,6 +77,7 @@ exports.handler = async function (event) {
       pool,
       provider: "paypal",
       providerOrderId: String(orderId),
+      requestContext: { headers: event.headers || {} },
     });
 
     let setCookie = "";
@@ -123,10 +124,15 @@ exports.handler = async function (event) {
       }
     }
 
+    const successCourseSlug = result && result.courseSlug ? result.courseSlug : "prompt-to-profit";
+    const successParams = new URLSearchParams({
+      payment: "success",
+      course_slug: String(successCourseSlug || "prompt-to-profit"),
+    });
     return {
       statusCode: 302,
       headers: {
-        Location: `${siteBaseUrl()}/dashboard/`,
+        Location: `${siteBaseUrl()}/dashboard/courses/?${successParams.toString()}`,
         ...(setCookie ? { "Set-Cookie": setCookie } : {}),
       },
       body: "",

@@ -5,6 +5,8 @@
 
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
+  const PURCHASE_WELCOME_KEY = "recent_course_purchase_notice_v1";
+  const PURCHASE_WELCOME_DURATION_MS = 60 * 1000;
   const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
   const COURSE_CONFIGS = {
     "prompt-to-profit": {
@@ -178,6 +180,20 @@
     );
 
     if (window.localStorage) window.localStorage.setItem(storageKey, "1");
+  }
+
+  function queuePurchaseWelcomeNotice(courseName) {
+    const safeName = String(courseName || "").trim();
+    if (!safeName) return;
+    try {
+      const payload = {
+        courseName: safeName,
+        expiresAt: Date.now() + PURCHASE_WELCOME_DURATION_MS,
+      };
+      window.localStorage.setItem(PURCHASE_WELCOME_KEY, JSON.stringify(payload));
+    } catch (_error) {
+      return;
+    }
   }
 
   if (getCookieConsent() === "granted") {
@@ -738,6 +754,7 @@
     window.location.pathname.indexOf("/courses/prompt-to-production") === 0;
   if (isEnrollmentCoursePage) {
     if (payment === "success" && paidOrderUuid) {
+      queuePurchaseWelcomeNotice(currentCourseConfig().name);
       loadActiveBatch()
         .catch(function () {
           return null;

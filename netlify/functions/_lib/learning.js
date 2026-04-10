@@ -1,5 +1,6 @@
 const { nowSql } = require("./db");
 const { listCourseConfigs } = require("./course-config");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 
 const COURSES_TABLE = "tochukwu_learning_courses";
 const VIDEO_ASSETS_TABLE = "tochukwu_learning_video_assets";
@@ -139,6 +140,10 @@ async function safeAlter(pool, sql) {
 
 async function ensureLearningTables(pool) {
   if (learningTablesEnsured) return;
+  if (!runtimeSchemaChangesAllowed()) {
+    learningTablesEnsured = true;
+    return;
+  }
   if (learningTablesEnsurePromise) {
     await learningTablesEnsurePromise;
     return;

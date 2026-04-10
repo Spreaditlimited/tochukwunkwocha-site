@@ -3,6 +3,7 @@ const { nowSql } = require("./db");
 const { listCourseBatches, getCourseBatchByKey, normalizeBatchKey, ensureCourseBatchesTable } = require("./batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName } = require("./course-config");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 let manualPaymentsEnsured = false;
 
 const STATUS_PENDING = "pending_verification";
@@ -15,6 +16,10 @@ function buildPaymentUuid() {
 
 async function ensureManualPaymentsTable(pool) {
   if (manualPaymentsEnsured) return;
+  if (!runtimeSchemaChangesAllowed()) {
+    manualPaymentsEnsured = true;
+    return;
+  }
   await ensureLearningTables(pool);
 
   await pool.query(`

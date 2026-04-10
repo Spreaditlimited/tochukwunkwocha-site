@@ -1,5 +1,6 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 let couponsTablesEnsured = false;
 let couponsTablesEnsurePromise = null;
 
@@ -29,6 +30,10 @@ async function safeAlter(pool, sql) {
 
 async function ensureCouponsTables(pool) {
   if (couponsTablesEnsured) return;
+  if (!runtimeSchemaChangesAllowed()) {
+    couponsTablesEnsured = true;
+    return;
+  }
   if (couponsTablesEnsurePromise) {
     await couponsTablesEnsurePromise;
     return;

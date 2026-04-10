@@ -1,5 +1,6 @@
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 let courseOrdersEnsured = false;
 
 async function safeAlter(pool, sql) {
@@ -11,11 +12,12 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseOrdersBatchColumns(pool) {
-  if (courseOrdersEnsured) {
-    await applyRuntimeSettings(pool);
+  await applyRuntimeSettings(pool);
+  if (courseOrdersEnsured) return;
+  if (!runtimeSchemaChangesAllowed()) {
+    courseOrdersEnsured = true;
     return;
   }
-  await applyRuntimeSettings(pool);
   await ensureLearningTables(pool);
 
   await safeAlter(pool, `ALTER TABLE course_orders ENGINE=InnoDB`);

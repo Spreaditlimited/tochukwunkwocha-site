@@ -8,7 +8,9 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
   const pool = getPool();
-  await applyRuntimeSettings(pool);
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   let body;
   try {
@@ -44,6 +46,10 @@ exports.handler = async function (event) {
   });
 
   if (!result.ok) {
+    console.warn("paypal_webhook_order_mark_failed", {
+      orderId: orderId || null,
+      error: result.error || "unknown_error",
+    });
     return json(404, { ok: false, error: result.error });
   }
 

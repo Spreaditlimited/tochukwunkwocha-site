@@ -8,7 +8,40 @@ const { ensureCourseOrdersBatchColumns } = require("./course-orders");
 const { recordCouponRedemption } = require("./coupons");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./course-config");
 
-async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider }) {
+function parseCookieValue(cookieHeader, key) {
+  const raw = String(cookieHeader || "");
+  if (!raw || !key) return "";
+  const parts = raw.split(";");
+  const wanted = String(key).trim();
+  for (const chunk of parts) {
+    const idx = chunk.indexOf("=");
+    if (idx < 0) continue;
+    const name = chunk.slice(0, idx).trim();
+    if (name !== wanted) continue;
+    return chunk.slice(idx + 1).trim();
+  }
+  return "";
+}
+
+function firstHeader(headers, names) {
+  const src = headers && typeof headers === "object" ? headers : {};
+  for (const name of names) {
+    if (!name) continue;
+    const direct = src[name];
+    if (direct) return String(direct);
+    const lower = src[String(name).toLowerCase()];
+    if (lower) return String(lower);
+  }
+  return "";
+}
+
+function getClientIp(headers) {
+  const forwarded = firstHeader(headers, ["x-forwarded-for", "client-ip", "x-nf-client-connection-ip"]);
+  if (!forwarded) return "";
+  return String(forwarded).split(",")[0].trim();
+}
+
+async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider, requestContext }) {
   await applyRuntimeSettings(pool);
 
   if (!orderUuid && !providerReference && !providerOrderId) {
@@ -76,6 +109,12 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
 
   if (!Number(order.meta_purchase_sent || 0)) {
     try {
+      const headers = requestContext && requestContext.headers ? requestContext.headers : {};
+      const cookieHeader = firstHeader(headers, ["cookie"]);
+      const fbp = parseCookieValue(cookieHeader, "_fbp");
+      const fbc = parseCookieValue(cookieHeader, "_fbc");
+      const clientUserAgent = firstHeader(headers, ["user-agent"]);
+      const clientIpAddress = getClientIp(headers);
       const sent = await sendMetaPurchase({
         eventId: `ptp_${order.order_uuid}`,
         email: order.email,
@@ -83,6 +122,10 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
         currency: order.currency || "NGN",
         contentName: order.course_slug || "Course",
         contentIds: [order.course_slug || "course"],
+        fbp,
+        fbc,
+        clientUserAgent,
+        clientIpAddress,
       });
       if (sent && sent.ok) {
         await pool.query(

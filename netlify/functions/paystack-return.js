@@ -93,6 +93,7 @@ exports.handler = async function (event) {
       providerReference: reference,
       providerOrderId: tx.id ? String(tx.id) : null,
       orderUuid,
+      requestContext: { headers: event.headers || {} },
     });
 
     let setCookie = "";
@@ -139,10 +140,15 @@ exports.handler = async function (event) {
       }
     }
 
+    const successCourseSlug = result && result.courseSlug ? result.courseSlug : txCourseSlug;
+    const successParams = new URLSearchParams({
+      payment: "success",
+      course_slug: String(successCourseSlug || "prompt-to-profit"),
+    });
     return {
       statusCode: 302,
       headers: {
-        Location: `${siteBaseUrl()}/dashboard/`,
+        Location: `${siteBaseUrl()}/dashboard/courses/?${successParams.toString()}`,
         ...(setCookie ? { "Set-Cookie": setCookie } : {}),
       },
       body: "",

@@ -1,6 +1,7 @@
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 const {
   DEFAULT_COURSE_SLUG,
   getCourseConfig,
@@ -96,11 +97,12 @@ async function safeAlter(pool, sql) {
 }
 
 async function ensureCourseBatchesTable(pool) {
-  if (courseBatchesEnsured) {
-    await applyRuntimeSettings(pool);
+  await applyRuntimeSettings(pool);
+  if (courseBatchesEnsured) return;
+  if (!runtimeSchemaChangesAllowed()) {
+    courseBatchesEnsured = true;
     return;
   }
-  await applyRuntimeSettings(pool);
   await ensureLearningTables(pool);
 
   await pool.query(`

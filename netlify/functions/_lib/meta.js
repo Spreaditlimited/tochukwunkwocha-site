@@ -36,6 +36,11 @@ async function sendMetaPurchase(input) {
   const contentName = clean(input && input.contentName) || "Course";
   const contentIds = Array.isArray(input && input.contentIds) ? input.contentIds : [];
   const eventTime = Number(input && input.eventTime) || Math.floor(Date.now() / 1000);
+  const fbp = clean(input && input.fbp);
+  const fbc = clean(input && input.fbc);
+  const clientIpAddress = clean(input && input.clientIpAddress);
+  const clientUserAgent = clean(input && input.clientUserAgent);
+  const externalId = clean(input && input.externalId) || email.toLowerCase();
 
   const payload = {
     data: [
@@ -46,6 +51,11 @@ async function sendMetaPurchase(input) {
         action_source: "website",
         user_data: {
           em: [sha256(email)],
+          external_id: externalId ? [sha256(externalId)] : undefined,
+          fbp: fbp || undefined,
+          fbc: fbc || undefined,
+          client_ip_address: clientIpAddress || undefined,
+          client_user_agent: clientUserAgent || undefined,
         },
         custom_data: {
           value: Number.isFinite(value) ? value : undefined,

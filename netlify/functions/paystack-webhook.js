@@ -9,7 +9,9 @@ exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
   const pool = getPool();
-  await applyRuntimeSettings(pool);
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   const signature = event.headers["x-paystack-signature"] || event.headers["X-Paystack-Signature"];
   const rawBody = event.isBase64Encoded
@@ -61,6 +63,12 @@ exports.handler = async function (event) {
   });
 
   if (!result.ok) {
+    console.warn("paystack_webhook_order_mark_failed", {
+      reference: reference || null,
+      orderUuid: orderUuid || null,
+      providerOrderId: data.id ? String(data.id) : null,
+      error: result.error || "unknown_error",
+    });
     return json(404, { ok: false, error: result.error });
   }
 

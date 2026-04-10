@@ -2,12 +2,17 @@ const crypto = require("crypto");
 const { nowSql } = require("./db");
 const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 
 let installmentTablesEnsured = false;
 
 async function ensureInstallmentTables(pool) {
   if (installmentTablesEnsured) return;
   await applyRuntimeSettings(pool);
+  if (!runtimeSchemaChangesAllowed()) {
+    installmentTablesEnsured = true;
+    return;
+  }
   await ensureLearningTables(pool);
   let shouldBackfillBaseAmount = false;
 

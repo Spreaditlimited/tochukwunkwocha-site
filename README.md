@@ -19,6 +19,18 @@ python3 -m http.server 8080
 ```
 Open `http://localhost:8080`.
 
+## Database Migrations
+Run schema migrations outside live traffic:
+
+```bash
+npm run db:migrate
+```
+
+Runtime DDL is disabled by default for key enrollment/payment paths.  
+Only enable runtime schema changes intentionally with:
+- `DB_ALLOW_RUNTIME_DDL=1` (or)
+- `DB_MIGRATION_MODE=1`
+
 ## Deploy
 1. Connect this folder to Netlify using Git or Netlify CLI deploy.
 2. Add custom domain in Netlify: `tochukwunkwocha.com`.
@@ -32,6 +44,7 @@ Current payment flow uses these functions:
 - `/.netlify/functions/paystack-return`
 - `/.netlify/functions/paypal-return`
 - `/.netlify/functions/order-summary`
+- `/.netlify/functions/paystack-reconcile-cron` (scheduled fallback reconciliation)
 
 Manual transfer flow uses:
 - `/.netlify/functions/manual-payment-config`
