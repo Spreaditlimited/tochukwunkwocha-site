@@ -45,3 +45,6 @@
 
 [functions."paystack-reconcile-cron"]
   schedule = "*/10 * * * *"
+
+[functions."domain-registration-cron"]
+  schedule = "*/10 * * * *"

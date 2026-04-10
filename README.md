@@ -188,6 +188,13 @@ ResellerClub registration defaults
 - Optional: `RESCLUB_INVOICE_OPTION` (default `KeepInvoice`)
 - Optional: `RESCLUB_DISCOUNT_AMOUNT` (default `0.0`)
 
+ResellerClub per-buyer ownership mode (recommended)
+- Domain registration now uses runtime buyer-specific customer/contact creation per order (no static ownership fallback).
+- Registrant details are collected from the domain checkout form (address, city, state, country, postal code, phone).
+- Optional envs:
+  - `RESCLUB_CONTACT_COMPANY` (fallback company name)
+  - `RESCLUB_CUSTOMER_USERNAME_PREFIX`
+
 ## Internal Manual Review Page
 Use this URL after deploy:
 - `https://tochukwunkwocha.com/internal/manual-payments/`

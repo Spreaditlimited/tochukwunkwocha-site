@@ -180,6 +180,52 @@
               <input id="domainCustomerEmail" type="email" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="you@example.com" required />
             </div>
             <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">Address</label>
+              <input id="domainRegistrantAddress1" type="text" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="Street address" required />
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">City</label>
+              <input id="domainRegistrantCity" type="text" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="City" required />
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">State / Province</label>
+              <input id="domainRegistrantState" type="text" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="State or province" required />
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">Country</label>
+              <div class="relative">
+                <select id="domainRegistrantCountry" class="block w-full rounded-xl border-0 py-4 pl-4 pr-10 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all appearance-none cursor-pointer" required>
+                  <option value="">Select country</option>
+                </select>
+                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-100">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">Postal Code</label>
+              <input id="domainRegistrantPostalCode" type="text" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="Postal code" required />
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">Phone</label>
+              <input id="domainRegistrantPhone" type="text" class="block w-full rounded-xl border-0 py-4 px-4 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" placeholder="8012345678" required />
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-sm font-bold text-brand-100 mb-2">Phone Country Code</label>
+              <div class="relative">
+                <select id="domainRegistrantPhoneCc" class="block w-full rounded-xl border-0 py-4 pl-4 pr-10 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all appearance-none cursor-pointer" required>
+                  <option value="">Select code</option>
+                </select>
+                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-100">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div class="md:col-span-1">
               <label class="block text-sm font-bold text-brand-100 mb-2">Registration Period</label>
               <div class="relative">
                 <select id="domainYears" class="block w-full rounded-xl border-0 py-4 pl-4 pr-10 bg-[#0a1224] text-white shadow-inner ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all appearance-none cursor-pointer">

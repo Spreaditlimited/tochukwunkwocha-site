@@ -157,6 +157,7 @@ async function ensureDomainTables(pool) {
       payment_paid_at DATETIME NULL,
       linked_account_id BIGINT NULL,
       order_uuid VARCHAR(72) NULL,
+      registrant_profile_json TEXT NULL,
       selected_services_json TEXT NULL,
       auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1,
       notes VARCHAR(500) NULL,
@@ -200,11 +201,13 @@ async function ensureDomainTables(pool) {
 
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN payment_provider VARCHAR(40) NOT NULL DEFAULT 'direct'`);
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN payment_status VARCHAR(40) NOT NULL DEFAULT 'paid'`);
+  await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN registrant_profile_json TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN selected_services_json TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE domain_orders ADD COLUMN auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE user_domains ADD COLUMN selected_services_json TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE user_domains ADD COLUMN auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE domain_checkouts ADD COLUMN selected_services_json TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE domain_checkouts ADD COLUMN registrant_profile_json TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE domain_checkouts ADD COLUMN auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1`);
   domainTablesEnsured = true;
   })();
@@ -381,6 +384,10 @@ async function createDomainOrder(pool, input) {
   const providerOrderId = clean(input && input.providerOrderId, 120);
   const selectedServices = normalizeSelectedServices(input && input.selectedServices);
   const selectedServicesJson = selectedServices.length ? JSON.stringify(selectedServices) : null;
+  const registrantProfile = input && input.registrantProfile && typeof input.registrantProfile === "object"
+    ? input.registrantProfile
+    : null;
+  const registrantProfileJson = registrantProfile ? JSON.stringify(registrantProfile) : null;
   const autoRenewEnabled = normalizeAutoRenew(input && input.autoRenewEnabled, true);
   const status = clean(input && input.status, 40) || "registration_in_progress";
   const paymentProvider = clean(input && input.paymentProvider, 40) || "direct";
@@ -394,8 +401,8 @@ async function createDomainOrder(pool, input) {
   await pool.query(
     `INSERT INTO domain_orders
       (order_uuid, account_id, email, domain_name, years, provider, status, payment_provider, payment_status,
-       purchase_currency, purchase_amount_minor, provider_order_id, selected_services_json, auto_renew_enabled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       purchase_currency, purchase_amount_minor, provider_order_id, registrant_profile_json, selected_services_json, auto_renew_enabled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       orderUuid,
       accountId,
@@ -409,6 +416,7 @@ async function createDomainOrder(pool, input) {
       purchaseCurrency || null,
       Number.isFinite(purchaseAmountMinor) ? Math.round(purchaseAmountMinor) : null,
       providerOrderId || null,
+      registrantProfileJson,
       selectedServicesJson,
       autoRenewEnabled,
       now,
@@ -568,7 +576,7 @@ async function listDomainOrders(pool, input) {
   const limit = Math.max(1, Math.min(Number((input && input.limit) || 30), 120));
   if (!Number.isFinite(accountId) || accountId <= 0) return [];
   const [rows] = await pool.query(
-    `SELECT order_uuid, domain_name, years, provider, status, payment_provider, payment_status,
+    `SELECT order_uuid, domain_name, years, provider, status, payment_provider, payment_status, registrant_profile_json,
             purchase_currency, purchase_amount_minor, selected_services_json, auto_renew_enabled,
             (
               SELECT dc.payment_currency
@@ -625,6 +633,10 @@ async function createDomainCheckout(pool, input) {
   const paymentAmountMinor = Number(input && input.paymentAmountMinor);
   const selectedServices = normalizeSelectedServices(data.selectedServices);
   const selectedServicesJson = JSON.stringify(selectedServices);
+  const registrantProfile = data.registrantProfile && typeof data.registrantProfile === "object"
+    ? data.registrantProfile
+    : null;
+  const registrantProfileJson = registrantProfile ? JSON.stringify(registrantProfile) : null;
   const autoRenewEnabled = normalizeAutoRenew(data.autoRenewEnabled, true);
   if (!fullName || !email || !domainName) throw new Error("Full name, email, and domain are required.");
 
@@ -633,8 +645,8 @@ async function createDomainCheckout(pool, input) {
   await pool.query(
     `INSERT INTO domain_checkouts
       (checkout_uuid, full_name, email, domain_name, years, provider, status, payment_provider, payment_reference,
-       payment_currency, payment_amount_minor, selected_services_json, auto_renew_enabled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'payment_pending', ?, ?, ?, ?, ?, ?, ?, ?)`,
+       payment_currency, payment_amount_minor, registrant_profile_json, selected_services_json, auto_renew_enabled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'payment_pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       checkoutUuid,
       fullName,
@@ -646,6 +658,7 @@ async function createDomainCheckout(pool, input) {
       paymentReference || null,
       paymentCurrency || null,
       Number.isFinite(paymentAmountMinor) ? Math.round(paymentAmountMinor) : null,
+      registrantProfileJson,
       selectedServicesJson,
       autoRenewEnabled,
       now,
@@ -659,9 +672,9 @@ async function findDomainCheckoutByReference(pool, paymentReference) {
   const reference = clean(paymentReference, 120);
   if (!reference) return null;
   const [rows] = await pool.query(
-    `SELECT id, checkout_uuid, full_name, email, domain_name, years, provider, status, payment_provider,
+      `SELECT id, checkout_uuid, full_name, email, domain_name, years, provider, status, payment_provider,
             payment_reference, payment_currency, payment_amount_minor, payment_paid_at, linked_account_id,
-            order_uuid, selected_services_json, auto_renew_enabled, notes, created_at, updated_at
+            order_uuid, registrant_profile_json, selected_services_json, auto_renew_enabled, notes, created_at, updated_at
      FROM domain_checkouts
      WHERE payment_reference = ?
      LIMIT 1`,

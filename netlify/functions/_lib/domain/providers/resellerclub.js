@@ -116,41 +116,131 @@ function nsPair() {
   return [ns1, ns2];
 }
 
-function contactIds() {
-  const customerId = requiredAny(["RESCLUB_CUSTOMER_ID", "RESELLERCLUB_CUSTOMER_ID"], "RESCLUB_CUSTOMER_ID / RESELLERCLUB_CUSTOMER_ID");
-  const reg = firstTruthy([
-    process.env.RESCLUB_REG_CONTACT_ID,
-    process.env.RESELLERCLUB_REG_CONTACT_ID,
-    process.env.RESCLUB_CONTACT_ID,
-    process.env.RESELLERCLUB_CONTACT_ID,
-  ]);
-  const admin = firstTruthy([
-    process.env.RESCLUB_ADMIN_CONTACT_ID,
-    process.env.RESELLERCLUB_ADMIN_CONTACT_ID,
-    process.env.RESCLUB_CONTACT_ID,
-    process.env.RESELLERCLUB_CONTACT_ID,
-    reg,
-  ]);
-  const tech = firstTruthy([
-    process.env.RESCLUB_TECH_CONTACT_ID,
-    process.env.RESELLERCLUB_TECH_CONTACT_ID,
-    process.env.RESCLUB_CONTACT_ID,
-    process.env.RESELLERCLUB_CONTACT_ID,
-    reg,
-  ]);
-  const billing = firstTruthy([
-    process.env.RESCLUB_BILLING_CONTACT_ID,
-    process.env.RESELLERCLUB_BILLING_CONTACT_ID,
-    process.env.RESCLUB_CONTACT_ID,
-    process.env.RESELLERCLUB_CONTACT_ID,
-    reg,
-  ]);
-  if (!reg || !admin || !tech || !billing) {
+function splitFullName(input) {
+  const full = clean(input, 180);
+  if (!full) return { firstName: "Domain", lastName: "Customer", fullName: "Domain Customer" };
+  const parts = full.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0], fullName: full };
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+    fullName: full,
+  };
+}
+
+function registrantProfile(input) {
+  const email = clean(input && input.email, 190).toLowerCase();
+  if (!email) throw new Error("Buyer email is required for ResellerClub registration.");
+  const name = splitFullName(input && input.fullName);
+  const address1 = clean(input && input.registrantAddress1, 240);
+  const city = clean(input && input.registrantCity, 120);
+  const state = clean(input && input.registrantState, 120);
+  const country = clean(input && input.registrantCountry, 120);
+  const postalCode = clean(input && input.registrantPostalCode, 40);
+  const phone = clean(input && input.registrantPhone, 50);
+  const phoneCc = clean(input && input.registrantPhoneCc, 10);
+  if (!address1 || !city || !state || !country || !postalCode || !phone || !phoneCc) {
     throw new Error(
-      "Missing contact ids. Set RESCLUB_CONTACT_ID or all of RESCLUB_REG_CONTACT_ID, RESCLUB_ADMIN_CONTACT_ID, RESCLUB_TECH_CONTACT_ID, RESCLUB_BILLING_CONTACT_ID."
+      "Registrant profile is incomplete. Address, city, state, country, postal code, phone, and phone country code are required."
     );
   }
-  return { customerId, reg, admin, tech, billing };
+  return {
+    fullName: name.fullName,
+    firstName: name.firstName,
+    lastName: name.lastName,
+    email,
+    company: clean(process.env.RESCLUB_CONTACT_COMPANY || process.env.RESELLERCLUB_CONTACT_COMPANY, 120) || name.fullName,
+    address1,
+    city,
+    state,
+    country,
+    postalCode,
+    phoneCc,
+    phone,
+    usernamePrefix: clean(
+      process.env.RESCLUB_CUSTOMER_USERNAME_PREFIX || process.env.RESELLERCLUB_CUSTOMER_USERNAME_PREFIX,
+      40
+    ) || "tncust",
+  };
+}
+
+function sanitizeUsernameToken(value) {
+  return clean(value, 60).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function generatedUsername(profile) {
+  const emailPart = sanitizeUsernameToken((profile && profile.email) || "").slice(0, 20) || "buyer";
+  const suffix = Date.now().toString(36).slice(-8);
+  const prefix = sanitizeUsernameToken((profile && profile.usernamePrefix) || "tncust").slice(0, 12) || "tncust";
+  return `${prefix}${emailPart}${suffix}`.slice(0, 28);
+}
+
+function generatedPassword() {
+  const raw = Math.random().toString(36).slice(2, 10);
+  return `${raw}Aa9!`;
+}
+
+async function createRuntimeCustomer(profile) {
+  const username = generatedUsername(profile);
+  const passwd = generatedPassword();
+  const json = await callApi(
+    "/api/customers/signup.json",
+    {
+      username,
+      passwd,
+      name: profile.fullName,
+      company: profile.company,
+      email: profile.email,
+      "address-line-1": profile.address1,
+      city: profile.city,
+      state: profile.state,
+      country: profile.country,
+      zipcode: profile.postalCode,
+      "phone-cc": profile.phoneCc,
+      phone: profile.phone,
+      "lang-pref": "en",
+    },
+    "POST"
+  );
+  const customerId = firstTruthy([json && json.customerid, json && json.customer_id, json && json.entityid, json && json.id]);
+  if (!customerId) {
+    throw new Error("Could not create ResellerClub customer for buyer.");
+  }
+  return customerId;
+}
+
+async function createRuntimeContact(profile, customerId, contactType) {
+  const json = await callApi(
+    "/api/contacts/add.json",
+    {
+      "customer-id": customerId,
+      type: contactType || "Contact",
+      name: profile.fullName,
+      company: profile.company,
+      email: profile.email,
+      "address-line-1": profile.address1,
+      city: profile.city,
+      state: profile.state,
+      country: profile.country,
+      zipcode: profile.postalCode,
+      "phone-cc": profile.phoneCc,
+      phone: profile.phone,
+    },
+    "POST"
+  );
+  const contactId = firstTruthy([json && json.entityid, json && json.contactid, json && json.contact_id, json && json.id]);
+  if (!contactId) throw new Error(`Could not create ResellerClub ${contactType || "contact"} profile.`);
+  return contactId;
+}
+
+async function resolveRegistrationIds(input) {
+  const profile = registrantProfile(input || {});
+  const customerId = await createRuntimeCustomer(profile);
+  const reg = await createRuntimeContact(profile, customerId, "Registrant");
+  const admin = await createRuntimeContact(profile, customerId, "Admin");
+  const tech = await createRuntimeContact(profile, customerId, "Technical");
+  const billing = await createRuntimeContact(profile, customerId, "Billing");
+  return { customerId, reg, admin, tech, billing, mode: "runtime" };
 }
 
 function errorFromJson(json) {
@@ -915,8 +1005,17 @@ async function checkAvailabilityMany(input) {
 async function registerDomain(input) {
   const domainName = normalizeDomain(input && input.domainName);
   const years = Math.max(1, Math.min(Number(input && input.years) || 1, 10));
+  console.info("[resellerclub] register_domain_start", {
+    domainName,
+    years,
+  });
   const availability = await checkAvailability({ domainName });
   if (!availability.available) {
+    console.warn("[resellerclub] register_domain_unavailable", {
+      domainName,
+      years,
+      reason: availability && availability.reason ? String(availability.reason) : "unavailable",
+    });
     return {
       provider: "resellerclub",
       domainName,
@@ -929,7 +1028,16 @@ async function registerDomain(input) {
     };
   }
 
-  const ids = contactIds();
+  const ids = await resolveRegistrationIds({
+    fullName: input && input.fullName,
+    email: input && input.email,
+  });
+  console.info("[resellerclub] register_domain_ids", {
+    domainName,
+    years,
+    mode: ids && ids.mode ? ids.mode : "unknown",
+    customerId: ids && ids.customerId ? String(ids.customerId) : "",
+  });
   const [ns1, ns2] = nsPair();
   const json = await callApi(
     "/api/domains/register.json",
@@ -949,6 +1057,11 @@ async function registerDomain(input) {
   );
 
   const orderId = firstTruthy([json && json.entityid, json && json.orderid, json && json.actiontypedesc]);
+  console.info("[resellerclub] register_domain_success", {
+    domainName,
+    years,
+    orderId: orderId || "",
+  });
   return {
     provider: "resellerclub",
     domainName,

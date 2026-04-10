@@ -9,6 +9,13 @@
   const selectedNameEl = document.getElementById("domainSelectedName");
   const customerNameInput = document.getElementById("domainCustomerName");
   const customerEmailInput = document.getElementById("domainCustomerEmail");
+  const registrantAddress1Input = document.getElementById("domainRegistrantAddress1");
+  const registrantCityInput = document.getElementById("domainRegistrantCity");
+  const registrantStateInput = document.getElementById("domainRegistrantState");
+  const registrantCountryInput = document.getElementById("domainRegistrantCountry");
+  const registrantPostalCodeInput = document.getElementById("domainRegistrantPostalCode");
+  const registrantPhoneInput = document.getElementById("domainRegistrantPhone");
+  const registrantPhoneCcInput = document.getElementById("domainRegistrantPhoneCc");
   const yearsInput = document.getElementById("domainYears");
   const autoRenewInput = document.getElementById("domainAutoRenew");
   const quoteCard = document.getElementById("domainQuoteCard");
@@ -18,6 +25,70 @@
   const registerBtn = document.getElementById("domainRegisterBtn");
   const customerStatusEl = document.getElementById("domainCustomerStatus");
   const unsupportedTlds = new Set(["ng", "com.ng"]);
+  const COUNTRY_PHONE_OPTIONS = [
+    { country: "NG", name: "Nigeria", phoneCc: "234" },
+    { country: "GH", name: "Ghana", phoneCc: "233" },
+    { country: "KE", name: "Kenya", phoneCc: "254" },
+    { country: "ZA", name: "South Africa", phoneCc: "27" },
+    { country: "EG", name: "Egypt", phoneCc: "20" },
+    { country: "MA", name: "Morocco", phoneCc: "212" },
+    { country: "ET", name: "Ethiopia", phoneCc: "251" },
+    { country: "UG", name: "Uganda", phoneCc: "256" },
+    { country: "TZ", name: "Tanzania", phoneCc: "255" },
+    { country: "RW", name: "Rwanda", phoneCc: "250" },
+    { country: "CM", name: "Cameroon", phoneCc: "237" },
+    { country: "SN", name: "Senegal", phoneCc: "221" },
+    { country: "CI", name: "Cote d'Ivoire", phoneCc: "225" },
+    { country: "US", name: "United States", phoneCc: "1" },
+    { country: "CA", name: "Canada", phoneCc: "1" },
+    { country: "GB", name: "United Kingdom", phoneCc: "44" },
+    { country: "IE", name: "Ireland", phoneCc: "353" },
+    { country: "DE", name: "Germany", phoneCc: "49" },
+    { country: "FR", name: "France", phoneCc: "33" },
+    { country: "NL", name: "Netherlands", phoneCc: "31" },
+    { country: "BE", name: "Belgium", phoneCc: "32" },
+    { country: "ES", name: "Spain", phoneCc: "34" },
+    { country: "IT", name: "Italy", phoneCc: "39" },
+    { country: "PT", name: "Portugal", phoneCc: "351" },
+    { country: "CH", name: "Switzerland", phoneCc: "41" },
+    { country: "SE", name: "Sweden", phoneCc: "46" },
+    { country: "NO", name: "Norway", phoneCc: "47" },
+    { country: "DK", name: "Denmark", phoneCc: "45" },
+    { country: "FI", name: "Finland", phoneCc: "358" },
+    { country: "PL", name: "Poland", phoneCc: "48" },
+    { country: "AT", name: "Austria", phoneCc: "43" },
+    { country: "CZ", name: "Czech Republic", phoneCc: "420" },
+    { country: "RO", name: "Romania", phoneCc: "40" },
+    { country: "GR", name: "Greece", phoneCc: "30" },
+    { country: "TR", name: "Turkey", phoneCc: "90" },
+    { country: "AE", name: "United Arab Emirates", phoneCc: "971" },
+    { country: "SA", name: "Saudi Arabia", phoneCc: "966" },
+    { country: "QA", name: "Qatar", phoneCc: "974" },
+    { country: "KW", name: "Kuwait", phoneCc: "965" },
+    { country: "OM", name: "Oman", phoneCc: "968" },
+    { country: "IN", name: "India", phoneCc: "91" },
+    { country: "PK", name: "Pakistan", phoneCc: "92" },
+    { country: "BD", name: "Bangladesh", phoneCc: "880" },
+    { country: "LK", name: "Sri Lanka", phoneCc: "94" },
+    { country: "NP", name: "Nepal", phoneCc: "977" },
+    { country: "CN", name: "China", phoneCc: "86" },
+    { country: "JP", name: "Japan", phoneCc: "81" },
+    { country: "KR", name: "South Korea", phoneCc: "82" },
+    { country: "SG", name: "Singapore", phoneCc: "65" },
+    { country: "MY", name: "Malaysia", phoneCc: "60" },
+    { country: "ID", name: "Indonesia", phoneCc: "62" },
+    { country: "TH", name: "Thailand", phoneCc: "66" },
+    { country: "PH", name: "Philippines", phoneCc: "63" },
+    { country: "VN", name: "Vietnam", phoneCc: "84" },
+    { country: "AU", name: "Australia", phoneCc: "61" },
+    { country: "NZ", name: "New Zealand", phoneCc: "64" },
+    { country: "BR", name: "Brazil", phoneCc: "55" },
+    { country: "MX", name: "Mexico", phoneCc: "52" },
+    { country: "AR", name: "Argentina", phoneCc: "54" },
+    { country: "CL", name: "Chile", phoneCc: "56" },
+    { country: "CO", name: "Colombia", phoneCc: "57" },
+    { country: "PE", name: "Peru", phoneCc: "51" },
+  ];
 
   let selectedDomain = "";
   let latestQuote = null;
@@ -78,6 +149,61 @@
     const email = String(value || "").trim().toLowerCase();
     const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     return ok ? email : "";
+  }
+
+  function populateCountryAndPhoneCodeOptions() {
+    if (!registrantCountryInput || !registrantPhoneCcInput) return;
+    const currentCountry = String(registrantCountryInput.value || "").trim().toUpperCase();
+
+    const countries = COUNTRY_PHONE_OPTIONS
+      .slice()
+      .sort(function (a, b) {
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+    registrantCountryInput.innerHTML = ['<option value="">Select country</option>']
+      .concat(
+        countries.map(function (item) {
+          return `<option value="${escapeHtml(item.country)}">${escapeHtml(item.name)} (${escapeHtml(item.country)})</option>`;
+        })
+      )
+      .join("");
+
+    const codeMap = new Map();
+    COUNTRY_PHONE_OPTIONS.forEach(function (item) {
+      const code = String(item.phoneCc || "").trim();
+      if (!code) return;
+      if (!codeMap.has(code)) codeMap.set(code, []);
+      codeMap.get(code).push(item.country);
+    });
+    const codes = Array.from(codeMap.keys()).sort(function (a, b) {
+      return Number(a) - Number(b);
+    });
+    registrantPhoneCcInput.innerHTML = ['<option value="">Select code</option>']
+      .concat(
+        codes.map(function (code) {
+          const countriesForCode = codeMap.get(code) || [];
+          return `<option value="${escapeHtml(code)}">+${escapeHtml(code)} (${escapeHtml(countriesForCode.join(", "))})</option>`;
+        })
+      )
+      .join("");
+
+    function syncPhoneCodeFromCountry() {
+      const country = String(registrantCountryInput.value || "").trim().toUpperCase();
+      if (!country) return;
+      const match = COUNTRY_PHONE_OPTIONS.find(function (item) {
+        return item.country === country;
+      });
+      if (!match || !match.phoneCc) return;
+      registrantPhoneCcInput.value = String(match.phoneCc);
+    }
+
+    registrantCountryInput.addEventListener("change", syncPhoneCodeFromCountry);
+
+    const hasCurrentCountry = COUNTRY_PHONE_OPTIONS.some(function (item) {
+      return item.country === currentCountry;
+    });
+    registrantCountryInput.value = hasCurrentCountry ? currentCountry : "NG";
+    syncPhoneCodeFromCountry();
   }
 
   function escapeHtml(value) {
@@ -407,6 +533,13 @@
 
       const fullName = String(customerNameInput ? customerNameInput.value : "").trim();
       const email = normalizeEmail(customerEmailInput ? customerEmailInput.value : "");
+      const registrantAddress1 = String(registrantAddress1Input ? registrantAddress1Input.value : "").trim();
+      const registrantCity = String(registrantCityInput ? registrantCityInput.value : "").trim();
+      const registrantState = String(registrantStateInput ? registrantStateInput.value : "").trim();
+      const registrantCountry = String(registrantCountryInput ? registrantCountryInput.value : "").trim();
+      const registrantPostalCode = String(registrantPostalCodeInput ? registrantPostalCodeInput.value : "").trim();
+      const registrantPhone = String(registrantPhoneInput ? registrantPhoneInput.value : "").trim();
+      const registrantPhoneCc = String(registrantPhoneCcInput ? registrantPhoneCcInput.value : "").trim();
       const years = Math.max(1, Math.min(Number(yearsInput ? yearsInput.value : 1) || 1, 10));
       const selectedServices = collectSelectedServices();
       const autoRenewEnabled = readAutoRenewEnabled();
@@ -417,6 +550,18 @@
       }
       if (!email) {
         setCustomerStatus("Enter a valid email address.", false);
+        return;
+      }
+      if (
+        !registrantAddress1 ||
+        !registrantCity ||
+        !registrantState ||
+        !registrantCountry ||
+        !registrantPostalCode ||
+        !registrantPhone ||
+        !registrantPhoneCc
+      ) {
+        setCustomerStatus("Address, city, state, country, postal code, phone, and phone country code are required.", false);
         return;
       }
 
@@ -441,6 +586,13 @@
             email,
             domainName: selectedDomain,
             years,
+            registrantAddress1,
+            registrantCity,
+            registrantState,
+            registrantCountry,
+            registrantPostalCode,
+            registrantPhone,
+            registrantPhoneCc,
             selectedServices,
             autoRenewEnabled,
           }),
@@ -495,4 +647,5 @@
   })();
 
   hydrateFromSession();
+  populateCountryAndPhoneCodeOptions();
 })();

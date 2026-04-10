@@ -23,6 +23,10 @@ function normalizeEmail(value) {
   return ok ? email : "";
 }
 
+function normalizeRegistrantField(value, max) {
+  return clean(value, max || 190);
+}
+
 function registrarLookupUnavailableError(error) {
   const message = String((error && error.message) || "").toLowerCase();
   if (!message) return false;
@@ -63,9 +67,31 @@ exports.handler = async function (event) {
   const years = Math.max(1, Math.min(Number(body.years) || 1, 10));
   const selectedServices = normalizeSelectedServices(body.selectedServices);
   const autoRenewEnabled = normalizeAutoRenew(body.autoRenewEnabled, true);
+  const registrantAddress1 = normalizeRegistrantField(body.registrantAddress1, 240);
+  const registrantCity = normalizeRegistrantField(body.registrantCity, 120);
+  const registrantState = normalizeRegistrantField(body.registrantState, 120);
+  const registrantCountry = normalizeRegistrantField(body.registrantCountry, 120);
+  const registrantPostalCode = normalizeRegistrantField(body.registrantPostalCode, 40);
+  const registrantPhone = normalizeRegistrantField(body.registrantPhone, 50);
+  const registrantPhoneCc = normalizeRegistrantField(body.registrantPhoneCc, 10);
   if (!fullName || !email || !domainName) {
     return json(400, { ok: false, error: "Full name, valid email, and domain are required." });
   }
+  if (!registrantAddress1 || !registrantCity || !registrantState || !registrantCountry || !registrantPostalCode || !registrantPhone || !registrantPhoneCc) {
+    return json(400, {
+      ok: false,
+      error: "Address, city, state, country, postal code, phone, and phone country code are required for domain ownership registration.",
+    });
+  }
+  const registrantProfile = {
+    address1: registrantAddress1,
+    city: registrantCity,
+    state: registrantState,
+    country: registrantCountry,
+    postalCode: registrantPostalCode,
+    phone: registrantPhone,
+    phoneCc: registrantPhoneCc,
+  };
 
   const pool = getPool();
   try {
@@ -150,6 +176,7 @@ exports.handler = async function (event) {
       paymentReference: reference,
       paymentCurrency: quote.currency,
       paymentAmountMinor: quote.totalAmountMinor,
+      registrantProfile,
       selectedServices,
       autoRenewEnabled,
     });
@@ -165,6 +192,13 @@ exports.handler = async function (event) {
         years,
         full_name: fullName,
         email,
+        registrant_address1: registrantAddress1,
+        registrant_city: registrantCity,
+        registrant_state: registrantState,
+        registrant_country: registrantCountry,
+        registrant_postal_code: registrantPostalCode,
+        registrant_phone: registrantPhone,
+        registrant_phone_cc: registrantPhoneCc,
         selected_services: selectedServices,
         auto_renew_enabled: autoRenewEnabled,
       },

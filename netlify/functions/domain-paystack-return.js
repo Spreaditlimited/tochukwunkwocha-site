@@ -2,16 +2,13 @@ const crypto = require("crypto");
 const { getPool } = require("./_lib/db");
 const { siteBaseUrl, paystackVerifyTransaction } = require("./_lib/payments");
 const { sendEmail } = require("./_lib/email");
-const { registerDomain, selectedDomainProviderName } = require("./_lib/domain-client");
+const { selectedDomainProviderName } = require("./_lib/domain-client");
 const {
   ensureDomainTables,
   findDomainCheckoutByReference,
   markDomainCheckoutPaid,
   finalizeDomainCheckout,
   createDomainOrder,
-  markDomainOrder,
-  upsertUserDomain,
-  addYearsSql,
 } = require("./_lib/domains");
 const {
   ensureStudentAuthTables,
@@ -37,6 +34,16 @@ function parseSelectedServicesJson(value) {
     return Array.isArray(parsed) ? parsed : [];
   } catch (_error) {
     return [];
+  }
+}
+
+function parseRegistrantProfileJson(value) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(String(value));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (_error) {
+    return null;
   }
 }
 
@@ -124,6 +131,7 @@ exports.handler = async function (event) {
     const domainName = String(checkout.domain_name || "").trim().toLowerCase();
     const provider = String(checkout.provider || selectedDomainProviderName()).trim().toLowerCase() || "namecheap";
     const selectedServices = parseSelectedServicesJson(checkout.selected_services_json);
+    const registrantProfile = parseRegistrantProfileJson(checkout.registrant_profile_json);
     const autoRenewEnabled = Number(checkout.auto_renew_enabled || 0) === 1;
 
     let account = await findStudentByEmail(pool, email);
@@ -180,70 +188,23 @@ exports.handler = async function (event) {
       purchaseCurrency: paidCurrency,
       purchaseAmountMinor: paidAmountMinor,
       providerOrderId: reference,
+      registrantProfile,
       selectedServices,
       autoRenewEnabled,
     });
 
-    const registration = await registerDomain({ domainName, years });
-    if (!registration.success) {
-      await markDomainOrder(pool, {
-        orderUuid,
-        status: "registration_failed",
-        provider: registration.provider || provider,
-        purchaseCurrency: paidCurrency,
-        purchaseAmountMinor: paidAmountMinor,
-        providerOrderId: registration.orderId || reference,
-        selectedServices,
-        autoRenewEnabled,
-        note: clean(registration.reason || "registration_failed", 500),
-        setRegisteredAt: false,
-      });
-      await finalizeDomainCheckout(pool, {
-        checkoutUuid: checkout.checkout_uuid,
-        linkedAccountId: Number(account.id),
-        orderUuid,
-        status: "registration_failed",
-        note: "Payment successful but domain registration failed.",
-      });
-      return redirect(`${siteBaseUrl()}/dashboard/domains/?domain=registration_failed`, setCookie);
-    }
-
-    const registeredAt = new Date().toISOString().slice(0, 19).replace("T", " ");
-    await markDomainOrder(pool, {
-      orderUuid,
-      status: "registered",
-      provider: registration.provider || provider,
-      purchaseCurrency: paidCurrency,
-      purchaseAmountMinor: paidAmountMinor,
-      providerOrderId: registration.orderId || reference,
-      selectedServices,
-      autoRenewEnabled,
-      setRegisteredAt: true,
-    });
-    await upsertUserDomain(pool, {
-      accountId: Number(account.id),
-      email,
-      domainName: registration.domainName || domainName,
-      provider: registration.provider || provider,
-      status: "registered",
-      years,
-      purchaseCurrency: paidCurrency,
-      purchaseAmountMinor: paidAmountMinor,
-      providerOrderId: registration.orderId || "",
-      selectedServices,
-      autoRenewEnabled,
-      registeredAt,
-      renewalDueAt: addYearsSql(registeredAt, years),
-    });
     await finalizeDomainCheckout(pool, {
       checkoutUuid: checkout.checkout_uuid,
       linkedAccountId: Number(account.id),
       orderUuid,
-      status: "registered",
-      note: "Payment confirmed and domain registered.",
+      status: "registration_in_progress",
+      note: "Payment confirmed. Domain registration is being processed.",
     });
 
-    return redirect(`${siteBaseUrl()}/dashboard/domains/?domain=registered`, setCookie);
+    return redirect(
+      `${siteBaseUrl()}/dashboard/domains/?domain=payment_confirmed&order=${encodeURIComponent(String(orderUuid || ""))}`,
+      setCookie
+    );
   } catch (_error) {
     return redirect(`${siteBaseUrl()}/services/domain-registration/?payment=failed`, "");
   }

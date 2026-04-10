@@ -23,7 +23,7 @@ function selectedDomainProviderName() {
 }
 
 function allowMockFallback() {
-  return String(process.env.LEADPAGE_DOMAIN_ALLOW_MOCK || "1").trim() !== "0";
+  return false;
 }
 
 function strictMode(input) {
@@ -218,12 +218,42 @@ async function registerDomain(input) {
 
   const domainName = normalizeDomain(input && input.domainName);
   if (!domainName) throw new Error("domainName is required");
+  const years = Number(input && input.years) || 1;
 
-  const result = await provider.registerDomain({
+  console.info("[domain-client] register_domain_attempt", {
+    providerConfigured: providerName,
+    providerSelected: actualProvider,
     domainName,
-    years: Number(input && input.years) || 1,
+    years,
   });
-  return { ...result, provider: actualProvider };
+
+  try {
+    const result = await provider.registerDomain({
+      domainName,
+      years,
+      fullName: clean(input && input.fullName, 180),
+      email: clean(input && input.email, 190).toLowerCase(),
+    });
+    console.info("[domain-client] register_domain_result", {
+      providerConfigured: providerName,
+      providerSelected: actualProvider,
+      domainName,
+      years,
+      success: !!(result && result.success),
+      reason: result && result.reason ? String(result.reason) : "",
+      orderId: result && result.orderId ? String(result.orderId) : "",
+    });
+    return { ...result, provider: actualProvider };
+  } catch (error) {
+    console.error("[domain-client] register_domain_error", {
+      providerConfigured: providerName,
+      providerSelected: actualProvider,
+      domainName,
+      years,
+      error: error && error.message ? String(error.message) : "unknown_error",
+    });
+    throw error;
+  }
 }
 
 async function getRegistrationPrice(input) {
