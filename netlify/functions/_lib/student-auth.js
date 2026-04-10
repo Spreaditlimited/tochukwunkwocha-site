@@ -286,9 +286,11 @@ async function setStudentPassword(pool, input) {
   );
 }
 
-async function createPasswordResetToken(pool, emailInput) {
+async function createPasswordResetToken(pool, emailInput, options) {
   const account = await findStudentByEmail(pool, emailInput);
   if (!account || !account.id) return null;
+  const cfg = options && typeof options === "object" ? options : {};
+  const neverExpires = cfg.neverExpires ? 1 : 0;
 
   const rawToken = randomToken();
   const tokenHash = shaToken(rawToken);
@@ -297,7 +299,7 @@ async function createPasswordResetToken(pool, emailInput) {
      SET reset_token_hash = ?, reset_token_expires_at = ?, reset_requested_at = ?, updated_at = ?
      WHERE id = ?
      LIMIT 1`,
-    [tokenHash, sqlDateFromNow(1000 * 60 * 60), nowSql(), nowSql(), Number(account.id)]
+    [tokenHash, neverExpires ? null : sqlDateFromNow(1000 * 60 * 60), nowSql(), nowSql(), Number(account.id)]
   );
 
   return {
@@ -324,9 +326,11 @@ async function consumePasswordResetToken(pool, input) {
   );
   if (!rows || !rows.length) throw new Error("Invalid or expired reset token");
   const account = rows[0];
-  const exp = new Date(account.reset_token_expires_at).getTime();
-  if (!Number.isFinite(exp) || exp < Date.now()) {
-    throw new Error("Invalid or expired reset token");
+  if (account.reset_token_expires_at) {
+    const exp = new Date(account.reset_token_expires_at).getTime();
+    if (!Number.isFinite(exp) || exp < Date.now()) {
+      throw new Error("Invalid or expired reset token");
+    }
   }
 
   await setStudentPassword(pool, { accountId: Number(account.id), password });

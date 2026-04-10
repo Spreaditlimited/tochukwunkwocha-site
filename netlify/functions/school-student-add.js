@@ -50,7 +50,7 @@ async function sendStudentInviteEmails(pool, session, invites) {
     const fullName = clean(invite.full_name, 180) || "Student";
     if (!email) continue;
     try {
-      const reset = await createPasswordResetToken(pool, email);
+      const reset = await createPasswordResetToken(pool, email, { neverExpires: true });
       const resetLink = reset && reset.token
         ? `${siteBaseUrl()}/dashboard/reset-password/?token=${encodeURIComponent(reset.token)}`
         : "";

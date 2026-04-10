@@ -29,7 +29,6 @@ function buildWelcomeEmail({ fullName, email, tempPassword, resetLink }) {
     `<p><strong>Email:</strong> ${safeEmail}<br/><strong>Temporary password:</strong> <code>${safePass}</code></p>`,
     `<p>Please reset your password using the link below (required before you can sign in):</p>`,
     `<p><a href="${safeLink}">${safeLink}</a></p>`,
-    `<p>This link expires in 1 hour.</p>`,
   ].join("\n");
   const text = [
     `Hello ${safeName},`,
@@ -40,8 +39,6 @@ function buildWelcomeEmail({ fullName, email, tempPassword, resetLink }) {
     "",
     "Please reset your password using the link below (required before you can sign in):",
     safeLink,
-    "",
-    "This link expires in 1 hour.",
   ].join("\n");
   return { html, text };
 }
@@ -93,7 +90,7 @@ exports.handler = async function (event) {
           password: tempPassword,
           mustResetPassword: true,
         });
-        const reset = await createPasswordResetToken(pool, result.email);
+        const reset = await createPasswordResetToken(pool, result.email, { neverExpires: true });
         if (reset && reset.token) {
           const link = `${siteBaseUrl()}/dashboard/reset-password/?token=${encodeURIComponent(reset.token)}`;
           const mail = buildWelcomeEmail({
