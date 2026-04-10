@@ -233,6 +233,13 @@ async function registerDomain(input) {
       years,
       fullName: clean(input && input.fullName, 180),
       email: clean(input && input.email, 190).toLowerCase(),
+      registrantAddress1: clean(input && input.registrantAddress1, 240),
+      registrantCity: clean(input && input.registrantCity, 120),
+      registrantState: clean(input && input.registrantState, 120),
+      registrantCountry: clean(input && input.registrantCountry, 120),
+      registrantPostalCode: clean(input && input.registrantPostalCode, 40),
+      registrantPhone: clean(input && input.registrantPhone, 50),
+      registrantPhoneCc: clean(input && input.registrantPhoneCc, 10),
     });
     console.info("[domain-client] register_domain_result", {
       providerConfigured: providerName,
