@@ -87,6 +87,64 @@
     return list.map(serviceLabel).join(", ");
   }
 
+  function normalizedApiErrorMessage(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return "Request failed";
+
+    function extract(value) {
+      if (!value) return "";
+      if (typeof value === "string") {
+        const text = String(value || "").trim();
+        if (!text) return "";
+        try {
+          const parsed = JSON.parse(text);
+          const nested = extract(parsed);
+          return nested || text;
+        } catch (_error) {
+          return text;
+        }
+      }
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const nested = extract(item);
+          if (nested) return nested;
+        }
+        return "";
+      }
+      if (typeof value === "object") {
+        const keys = ["message", "error", "description", "msg"];
+        for (const key of keys) {
+          const nested = extract(value[key]);
+          if (nested) return nested;
+        }
+        if (value.data) {
+          const nested = extract(value.data);
+          if (nested) return nested;
+        }
+      }
+      return "";
+    }
+
+    const parsed = extract(raw) || raw;
+    const lowered = parsed.toLowerCase();
+    if (lowered.includes("activate your free dns service")) {
+      return "DNS service for this domain is being activated. Please wait a minute and try again.";
+    }
+    if (lowered.includes("http 404 not found")) {
+      return "DNS records are temporarily unavailable. Please try again shortly.";
+    }
+    if (lowered.includes("method not allowed. use get")) {
+      return "DNS service is temporarily unavailable. Please try again shortly.";
+    }
+    if (lowered.includes("number of records per page cannot exceed 50")) {
+      return "DNS service is temporarily unavailable. Please try again shortly.";
+    }
+    if (lowered.includes("missing resellerclub_ns1") || lowered.includes("missing resclub_ns1")) {
+      return "Domain nameserver configuration is incomplete. Please contact support.";
+    }
+    return parsed;
+  }
+
   async function api(path, payload) {
     const res = await fetch(path, {
       method: "POST",
@@ -101,7 +159,7 @@
       return null;
     });
     if (!res.ok || !json || !json.ok) {
-      throw new Error((json && json.error) || "Request failed");
+      throw new Error(normalizedApiErrorMessage((json && json.error) || "Request failed"));
     }
     return json;
   }
@@ -120,7 +178,7 @@
       return null;
     });
     if (!res.ok || !json || !json.ok) {
-      throw new Error((json && json.error) || "Could not save preference");
+      throw new Error(normalizedApiErrorMessage((json && json.error) || "Could not save preference"));
     }
     return json;
   }

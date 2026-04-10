@@ -371,7 +371,16 @@ async function resolveRegistrationIds(input) {
 
 function errorFromJson(json) {
   if (!json) return "";
-  if (typeof json === "string") return clean(json, 400);
+  if (typeof json === "string") {
+    const raw = clean(json, 1200);
+    if (!raw) return "";
+    try {
+      const parsed = JSON.parse(raw);
+      const nested = errorFromJson(parsed);
+      if (nested) return nested;
+    } catch (_error) {}
+    return clean(raw, 400);
+  }
   if (Array.isArray(json)) {
     for (const item of json) {
       const e = errorFromJson(item);
@@ -383,6 +392,10 @@ function errorFromJson(json) {
   for (const key of keys) {
     const value = clean(json[key], 400);
     if (value) return value;
+  }
+  if (json && json.data) {
+    const nested = errorFromJson(json.data);
+    if (nested) return nested;
   }
   return "";
 }
@@ -957,6 +970,126 @@ function normalizeDnsRecords(payload) {
   return out;
 }
 
+function isHttp404Error(error) {
+  const message = clean(error && error.message, 1200).toLowerCase();
+  if (!message) return false;
+  return message.includes("404") || message.includes("not found") || message.includes("http 404");
+}
+
+function needsDnsActivation(error) {
+  const message = clean(error && error.message, 2000).toLowerCase();
+  if (!message) return false;
+  return (
+    message.includes("activate your free dns service") ||
+    message.includes("activate free dns service") ||
+    message.includes("activate dns service")
+  );
+}
+
+function dnsActivationRequiredError() {
+  const error = new Error("DNS_ACTIVATION_REQUIRED");
+  error.code = "DNS_ACTIVATION_REQUIRED";
+  return error;
+}
+
+function uniqueStrings(input) {
+  const list = Array.isArray(input) ? input : [];
+  const out = [];
+  const seen = new Set();
+  list.forEach((item) => {
+    const value = clean(item, 190).toLowerCase();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    out.push(value);
+  });
+  return out;
+}
+
+async function fetchDnsRecordsViaManageApi(domainName) {
+  const dnsTypes = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "CAA"];
+  const merged = [];
+  let lastError = null;
+  for (const type of dnsTypes) {
+    try {
+      const out = await callApi(
+        "/api/dns/manage/search-records.json",
+        {
+          "domain-name": domainName,
+          type,
+          "no-of-records": 50,
+          "page-no": 1,
+        },
+        "GET"
+      );
+      merged.push(out);
+    } catch (error) {
+      if (needsDnsActivation(error)) throw dnsActivationRequiredError();
+      lastError = error;
+    }
+  }
+  if (merged.length) {
+    return merged;
+  }
+  throw lastError || new Error("Could not load DNS records from registrar.");
+}
+
+function parseDomainOrderId(payload) {
+  return firstTruthy([
+    payload && payload.orderid,
+    payload && payload.order_id,
+    payload && payload.entityid,
+    payload && payload.id,
+    payload && payload.domain && payload.domain.orderid,
+    payload && payload.domain && payload.domain.order_id,
+  ]);
+}
+
+async function resolveDomainOrderId(domainName) {
+  try {
+    const details = await callApi(
+      "/api/domains/details-by-name.json",
+      {
+        "domain-name": domainName,
+        options: "OrderDetails",
+      },
+      "GET"
+    );
+    const orderId = parseDomainOrderId(details);
+    return looksLikeOrderId(orderId) ? orderId : "";
+  } catch (_error) {
+    return "";
+  }
+}
+
+async function activateDnsService(domainName) {
+  const orderId = await resolveDomainOrderId(domainName);
+  if (!looksLikeOrderId(orderId)) {
+    throw new Error("Could not resolve domain order ID required for DNS activation.");
+  }
+  const paramCandidates = [
+    { "order-id": orderId },
+    { "domain-name": domainName, "order-id": orderId },
+  ].filter(Boolean);
+  const endpointCandidates = [
+    "/api/dns/activate.json",
+    "/api/dns/activate.xml",
+  ];
+
+  let lastError = null;
+  for (const endpoint of endpointCandidates) {
+    for (const params of paramCandidates) {
+      try {
+        await callApi(endpoint, params, "POST");
+        return true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  }
+  if (lastError) throw lastError;
+  return false;
+}
+
 async function callApi(pathname, params, method) {
   const safeMethod = clean(method, 8).toUpperCase() || "GET";
   const base = apiBaseUrl();
@@ -1395,15 +1528,56 @@ async function getDnsZone(input) {
   const domainName = normalizeDomain(input && input.domainName);
   if (!domainName) throw new Error("Invalid domain name");
 
-  const nsJson = await callApi("/api/dns/retrieve-ns.json", {
-    "domain-name": domainName,
-  });
-  const recordJson = await callApi("/api/dns/retrieve-records.json", {
-    "domain-name": domainName,
-  });
-
-  const nameservers = normalizeNsList(nsJson);
-  const records = normalizeDnsRecords(recordJson);
+  let nsJson = null;
+  let recordJson = null;
+  let records = [];
+  let nameservers = [];
+  try {
+    nsJson = await callApi("/api/dns/retrieve-ns.json", {
+      "domain-name": domainName,
+    });
+    recordJson = await callApi("/api/dns/retrieve-records.json", {
+      "domain-name": domainName,
+    });
+    nameservers = normalizeNsList(nsJson);
+    records = normalizeDnsRecords(recordJson);
+  } catch (error) {
+    if (needsDnsActivation(error)) {
+      await activateDnsService(domainName);
+      nsJson = await callApi("/api/dns/retrieve-ns.json", {
+        "domain-name": domainName,
+      });
+      recordJson = await callApi("/api/dns/retrieve-records.json", {
+        "domain-name": domainName,
+      });
+      nameservers = normalizeNsList(nsJson);
+      records = normalizeDnsRecords(recordJson);
+      return {
+        provider: "resellerclub",
+        domainName,
+        nameservers,
+        records,
+      };
+    }
+    if (!isHttp404Error(error)) throw error;
+    let searchJson;
+    try {
+      searchJson = await fetchDnsRecordsViaManageApi(domainName);
+    } catch (fallbackError) {
+      if (fallbackError && fallbackError.code === "DNS_ACTIVATION_REQUIRED") {
+        await activateDnsService(domainName);
+        searchJson = await fetchDnsRecordsViaManageApi(domainName);
+      } else {
+        throw fallbackError;
+      }
+    }
+    records = normalizeDnsRecords(searchJson);
+    nameservers = uniqueStrings(
+      records
+        .filter((item) => clean(item && item.type, 20).toUpperCase() === "NS")
+        .map((item) => clean(item && item.value, 190))
+    );
+  }
   return {
     provider: "resellerclub",
     domainName,
