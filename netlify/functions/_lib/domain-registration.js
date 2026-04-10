@@ -243,15 +243,6 @@ async function processDomainRegistrationForOrder(pool, orderUuid) {
     years,
     currentStatus: String(order.status || ""),
     provider,
-    registrantFields: {
-      address1: !!clean(registrantProfile.address1, 240),
-      city: !!clean(registrantProfile.city, 120),
-      state: !!clean(registrantProfile.state, 120),
-      country: !!clean(registrantProfile.country, 120),
-      postalCode: !!clean(registrantProfile.postalCode, 40),
-      phone: !!clean(registrantProfile.phone, 50),
-      phoneCc: !!clean(registrantProfile.phoneCc, 10),
-    },
   });
 
   let registration;

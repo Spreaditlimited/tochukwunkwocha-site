@@ -29,6 +29,7 @@ const SETTINGS_DEFINITIONS = [
   { key: "INSTALLMENT_SURCHARGE_PERCENT", category: "Pricing", secret: false },
   { key: "SITE_VAT_PERCENT", category: "Pricing", secret: false },
   { key: "DOMAIN_VAT_PERCENT", category: "Pricing", secret: false },
+  { key: "DOMAIN_WORST_FX_NGN_PER_USD", category: "Pricing", secret: false },
   { key: "SCHOOLS_MIN_SEATS", category: "Pricing", secret: false },
   { key: "SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR", category: "Pricing", secret: false },
   { key: "SCHOOLS_VAT_PERCENT", category: "Pricing", secret: false },

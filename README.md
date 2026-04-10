@@ -91,6 +91,12 @@ Lightweight internal dashboard auth
 Optional pricing vars
 - `PROMPT_TO_PROFIT_PRICE_NGN_MINOR` (default `1075000` = N10,750)
 - `PROMPT_TO_PROFIT_PRICE_GBP` (default `24.00`)
+- `DOMAIN_WORST_FX_NGN_PER_USD` (optional profit floor guard; when set, domain checkout subtotal is raised to protect margin at this worst-case FX)
+- `DOMAIN_REGISTRAR_COST_USD_PER_YEAR` (default `17.99`; cost basis used with worst-case FX guard)
+- `DOMAIN_TARGET_MARGIN_PERCENT` (default `20`)
+- `DOMAIN_PAYSTACK_PERCENT` (default `1.5`)
+- `DOMAIN_PAYSTACK_FIXED_FEE_NGN` (default `100`)
+- `DOMAIN_PAYSTACK_FEE_VAT_PERCENT` (default `7.5`)
 
 Leadpage AI automation
 - `LEADPAGE_AUTOMATION_ENABLED` (`1` default; set `0` to disable pre-publish AI content generation)

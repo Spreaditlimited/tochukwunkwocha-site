@@ -76,10 +76,17 @@ function proxyToken() {
 
 function apiBaseUrl() {
   const explicit = firstEnv(["RESCLUB_API_BASE_URL", "RESELLERCLUB_API_BASE_URL"], 300);
-  if (explicit) return explicit.replace(/\/+$/, "");
-  return boolEnvAny(["RESCLUB_USE_TEST", "RESELLERCLUB_USE_TEST"], true)
-    ? "https://test.httpapi.com"
-    : "https://httpapi.com";
+  if (explicit) {
+    const normalized = explicit.replace(/\/+$/, "");
+    if (normalized.includes("test.httpapi.com")) {
+      throw new Error("ResellerClub test API is disabled. Use live API base URL.");
+    }
+    return normalized;
+  }
+  if (boolEnvAny(["RESCLUB_USE_TEST", "RESELLERCLUB_USE_TEST"], false)) {
+    throw new Error("ResellerClub test mode is disabled. Use live API.");
+  }
+  return "https://httpapi.com";
 }
 
 function authParams() {

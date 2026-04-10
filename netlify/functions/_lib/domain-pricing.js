@@ -43,6 +43,38 @@ function vatPercent() {
   return Math.min(raw, 100);
 }
 
+function pct(value, fallback) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw < 0) return Number(fallback) / 100;
+  return raw / 100;
+}
+
+function domainProfitFloorSubtotalMinor(years, vatPct) {
+  const worstFx = Number(
+    process.env.DOMAIN_WORST_FX_NGN_PER_USD ||
+      process.env.DOMAIN_PRICING_WORST_FX_NGN_PER_USD ||
+      0
+  );
+  if (!Number.isFinite(worstFx) || worstFx <= 0) return 0;
+  const usdCostPerYear = Number(process.env.DOMAIN_REGISTRAR_COST_USD_PER_YEAR || 17.99);
+  if (!Number.isFinite(usdCostPerYear) || usdCostPerYear <= 0) return 0;
+
+  const margin = pct(process.env.DOMAIN_TARGET_MARGIN_PERCENT, 20);
+  const paystackPct = pct(process.env.DOMAIN_PAYSTACK_PERCENT, 1.5);
+  const paystackFeeVat = pct(process.env.DOMAIN_PAYSTACK_FEE_VAT_PERCENT, 7.5);
+  const fixedFeeMinor = Math.max(0, Math.round((Number(process.env.DOMAIN_PAYSTACK_FIXED_FEE_NGN || 100) || 0) * 100));
+  const vatRate = Math.max(0, Number(vatPct || 0)) / 100;
+
+  const costMinor = Math.round(usdCostPerYear * years * worstFx * 100);
+  const denominator = 1 - paystackPct * (1 + vatRate) * (1 + paystackFeeVat);
+  if (!Number.isFinite(denominator) || denominator <= 0) return 0;
+
+  const numerator = (1 + margin) * costMinor + fixedFeeMinor * (1 + paystackFeeVat);
+  if (!Number.isFinite(numerator) || numerator <= 0) return 0;
+
+  return Math.max(0, Math.ceil(numerator / denominator));
+}
+
 function buildDomainCheckoutQuote(input) {
   const base = requireNgnPricing(input && input.basePricing);
   const years = yearsInt(input && input.years);
@@ -89,17 +121,24 @@ function buildDomainCheckoutQuote(input) {
     });
   }
 
-  const subtotalMinor = base.amountMinor + addOnsTotalMinor;
+  const rawSubtotalMinor = base.amountMinor + addOnsTotalMinor;
   const vatPct = vatPercent();
+  const floorSubtotalMinor = domainProfitFloorSubtotalMinor(years, vatPct);
+  const subtotalMinor = Math.max(rawSubtotalMinor, floorSubtotalMinor);
+  const adjustedBaseAmountMinor = Math.max(0, subtotalMinor - addOnsTotalMinor);
   const vatAmountMinor = Math.round((subtotalMinor * vatPct) / 100);
   const totalAmountMinor = subtotalMinor + vatAmountMinor;
 
   return {
     currency: base.currency,
     years,
-    baseAmountMinor: base.amountMinor,
+    baseAmountMinor: adjustedBaseAmountMinor,
+    rawBaseAmountMinor: base.amountMinor,
     addOns,
     addOnsTotalMinor,
+    rawSubtotalMinor,
+    floorSubtotalMinor,
+    pricingFloorApplied: floorSubtotalMinor > 0 && subtotalMinor > rawSubtotalMinor,
     subtotalMinor,
     vatPercent: vatPct,
     vatAmountMinor,
