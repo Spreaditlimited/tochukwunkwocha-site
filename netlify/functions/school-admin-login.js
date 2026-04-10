@@ -15,6 +15,37 @@ function parseBody(event) {
   }
 }
 
+async function repairMissingSchoolLink(pool, admin) {
+  const adminId = Number(admin && admin.id);
+  const schoolId = Number(admin && admin.school_id);
+  const email = String(admin && admin.email || "").trim().toLowerCase();
+  if (!Number.isFinite(adminId) || adminId <= 0) return;
+  if (Number.isFinite(schoolId) && schoolId > 0) return;
+  if (!email) return;
+
+  const [rows] = await pool.query(
+    `SELECT school_id
+     FROM school_orders
+     WHERE admin_email = ?
+       AND status = 'paid'
+       AND school_id IS NOT NULL
+     ORDER BY paid_at DESC, id DESC
+     LIMIT 1`,
+    [email]
+  );
+  const recoveredSchoolId = Number(rows && rows[0] && rows[0].school_id || 0);
+  if (!Number.isFinite(recoveredSchoolId) || recoveredSchoolId <= 0) return;
+
+  await pool.query(
+    `UPDATE school_admins
+     SET school_id = ?, is_active = 1, updated_at = NOW()
+     WHERE id = ?
+     LIMIT 1`,
+    [recoveredSchoolId, adminId]
+  );
+  admin.school_id = recoveredSchoolId;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
   const body = parseBody(event);
@@ -28,6 +59,7 @@ exports.handler = async function (event) {
     await ensureSchoolTables(pool);
     const admin = await verifySchoolAdminCredentials(pool, { email, password });
     if (!admin || !admin.id) return json(401, { ok: false, error: "Invalid credentials" });
+    await repairMissingSchoolLink(pool, admin);
     const token = await createSchoolAdminSession(pool, Number(admin.id));
     return {
       statusCode: 200,
@@ -42,4 +74,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not sign in." });
   }
 };
-

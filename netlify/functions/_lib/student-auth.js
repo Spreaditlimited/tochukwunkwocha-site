@@ -25,17 +25,33 @@ function isSecureRequest(event) {
   const proto = String(headers["x-forwarded-proto"] || headers["X-Forwarded-Proto"] || "").toLowerCase();
   if (proto) return proto === "https";
 
+  const forwardedSsl = String(headers["x-forwarded-ssl"] || headers["X-Forwarded-Ssl"] || "").toLowerCase();
+  if (forwardedSsl) return forwardedSsl === "on";
+
+  const rawUrl = String(event && event.rawUrl || "").toLowerCase();
+  if (rawUrl.startsWith("https://")) return true;
+  if (rawUrl.startsWith("http://")) return false;
+
   const host = String(headers.host || headers.Host || "").toLowerCase();
-  const isLocalHost = host.includes("localhost") || host.includes("127.0.0.1");
+  const isLocalHost = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("::1");
   if (isLocalHost) return false;
 
-  const siteBase = String(process.env.SITE_BASE_URL || process.env.URL || "").trim().toLowerCase();
-  return siteBase.startsWith("https://");
+  if (process.env.CONTEXT === "production" || process.env.NODE_ENV === "production") return true;
+  return false;
 }
 
 function readCookieHeader(event) {
   const headers = event && event.headers ? event.headers : {};
-  return headers.cookie || headers.Cookie || "";
+  const direct = headers.cookie || headers.Cookie;
+  if (direct) return String(direct);
+
+  const multi = event && event.multiValueHeaders ? event.multiValueHeaders : {};
+  const mvCookie = multi.cookie || multi.Cookie;
+  if (Array.isArray(mvCookie) && mvCookie.length) return mvCookie.join("; ");
+
+  const cookieList = Array.isArray(event && event.cookies) ? event.cookies : [];
+  if (cookieList.length) return cookieList.join("; ");
+  return "";
 }
 
 function parseCookieValue(cookieHeader, name) {

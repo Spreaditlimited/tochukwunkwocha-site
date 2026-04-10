@@ -7,10 +7,14 @@
   var navLock = false;
   var SIDEBAR_COLLAPSE_KEY = "tochukwu_school_sidebar_collapsed";
   var sidebars = Array.prototype.slice.call(document.querySelectorAll("aside"));
+  var primarySidebar = document.getElementById("schoolSidebar") || sidebars[0] || null;
+  var mobileMenuButton = document.getElementById("schoolMobileMenuButton");
+  var mobileMenuOverlay = document.getElementById("schoolMobileMenuOverlay");
   var railToggleButtons = [];
   var sidebarSignoutButtons = Array.prototype.slice.call(
     document.querySelectorAll("[data-school-signout]")
   );
+  var mobileMenuOpen = false;
 
   function normalizePath(pathname) {
     var path = String(pathname || "/").trim();
@@ -20,6 +24,26 @@
 
   function isDesktop() {
     return window.matchMedia("(min-width: 768px)").matches;
+  }
+
+  function setMobileMenuOpen(open) {
+    var shouldOpen = !!open && !isDesktop();
+    mobileMenuOpen = shouldOpen;
+
+    if (primarySidebar) {
+      primarySidebar.classList.toggle("translate-x-0", shouldOpen);
+      primarySidebar.classList.toggle("-translate-x-full", !shouldOpen);
+    }
+    if (mobileMenuOverlay) {
+      mobileMenuOverlay.classList.toggle("hidden", !shouldOpen);
+    }
+    if (mobileMenuButton) {
+      mobileMenuButton.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    }
+  }
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
   }
 
   function readCollapsedPref() {
@@ -228,17 +252,32 @@
     var target = document.querySelector(href);
     if (!target) return true;
     target.scrollIntoView({ behavior: "smooth", block: "start" });
-    var mobileMenuToggle = document.getElementById("mobile-menu-toggle");
-    if (mobileMenuToggle && mobileMenuToggle.checked) mobileMenuToggle.checked = false;
+    closeMobileMenu();
     return true;
   }
 
   ensureSidebarIcons();
   ensureSidebarLabelWrappers();
   ensureRailToggleButtons();
+  closeMobileMenu();
   applySidebarCollapsed(readCollapsedPref());
   window.addEventListener("resize", function () {
+    closeMobileMenu();
     applySidebarCollapsed(readCollapsedPref());
+  });
+  if (mobileMenuButton) {
+    mobileMenuButton.addEventListener("click", function () {
+      setMobileMenuOpen(!mobileMenuOpen);
+    });
+  }
+  if (mobileMenuOverlay) {
+    mobileMenuOverlay.addEventListener("click", function () {
+      closeMobileMenu();
+    });
+  }
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    closeMobileMenu();
   });
 
   menuLinks.forEach(function (link) {
@@ -258,10 +297,7 @@
         return;
       }
 
-      var mobileMenuToggle = document.getElementById("mobile-menu-toggle");
-      if (mobileMenuToggle && mobileMenuToggle.checked) {
-        mobileMenuToggle.checked = false;
-      }
+      closeMobileMenu();
     });
   });
 

@@ -114,8 +114,21 @@ function isSecureRequest(event) {
   const headers = event && event.headers ? event.headers : {};
   const proto = String(headers["x-forwarded-proto"] || headers["X-Forwarded-Proto"] || "").toLowerCase();
   if (proto) return proto === "https";
+
+  const forwardedSsl = String(headers["x-forwarded-ssl"] || headers["X-Forwarded-Ssl"] || "").toLowerCase();
+  if (forwardedSsl) return forwardedSsl === "on";
+
+  const rawUrl = String(event && event.rawUrl || "").toLowerCase();
+  if (rawUrl.startsWith("https://")) return true;
+  if (rawUrl.startsWith("http://")) return false;
+
   const host = String(headers.host || headers.Host || "").toLowerCase();
-  return host && host.indexOf("localhost") === -1 && host.indexOf("127.0.0.1") === -1;
+  if (host.indexOf("localhost") !== -1 || host.indexOf("127.0.0.1") !== -1 || host.indexOf("::1") !== -1) {
+    return false;
+  }
+
+  if (process.env.CONTEXT === "production" || process.env.NODE_ENV === "production") return true;
+  return false;
 }
 
 function parseCookieValue(cookieHeader, name) {
@@ -130,7 +143,16 @@ function parseCookieValue(cookieHeader, name) {
 
 function readCookieHeader(event) {
   const headers = event && event.headers ? event.headers : {};
-  return headers.cookie || headers.Cookie || "";
+  const direct = headers.cookie || headers.Cookie;
+  if (direct) return String(direct);
+
+  const multi = event && event.multiValueHeaders ? event.multiValueHeaders : {};
+  const mvCookie = multi.cookie || multi.Cookie;
+  if (Array.isArray(mvCookie) && mvCookie.length) return mvCookie.join("; ");
+
+  const cookieList = Array.isArray(event && event.cookies) ? event.cookies : [];
+  if (cookieList.length) return cookieList.join("; ");
+  return "";
 }
 
 function buildSetCookie(event, value, maxAge) {
@@ -507,29 +529,74 @@ async function requireSchoolAdminSession(pool, event) {
   if (!token) return { ok: false, statusCode: 401, error: "Not signed in" };
   const tokenHash = shaToken(token);
 
-  const [rows] = await pool.query(
-    `SELECT
-       s.id AS session_id,
-       s.expires_at,
-       a.id AS admin_id,
-       a.school_id,
-       a.full_name AS admin_name,
-       a.email AS admin_email,
-       a.is_active AS admin_is_active,
-       sc.school_name,
-       sc.course_slug,
-       sc.seats_purchased,
-       sc.status AS school_status,
-       sc.access_expires_at
-     FROM ${SCHOOL_ADMIN_SESSIONS_TABLE} s
-     JOIN ${SCHOOL_ADMINS_TABLE} a ON a.id = s.admin_id
-     JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = a.school_id
-     WHERE s.token_hash = ?
-     LIMIT 1`,
-    [tokenHash]
-  );
-  if (!rows || !rows.length) return { ok: false, statusCode: 401, error: "Session invalid" };
-  const row = rows[0];
+  async function loadSessionRow() {
+    const [rows] = await pool.query(
+      `SELECT
+         s.id AS session_id,
+         s.expires_at,
+         a.id AS admin_id,
+         a.school_id,
+         a.full_name AS admin_name,
+         a.email AS admin_email,
+         a.is_active AS admin_is_active,
+         sc.id AS school_account_id,
+         sc.school_name,
+         sc.course_slug,
+         sc.seats_purchased,
+         sc.status AS school_status,
+         sc.access_expires_at
+       FROM ${SCHOOL_ADMIN_SESSIONS_TABLE} s
+       JOIN ${SCHOOL_ADMINS_TABLE} a ON a.id = s.admin_id
+       LEFT JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = a.school_id
+       WHERE s.token_hash = ?
+       LIMIT 1`,
+      [tokenHash]
+    );
+    return rows && rows.length ? rows[0] : null;
+  }
+
+  async function recoverSchoolLink(adminId, adminEmail) {
+    const normalizedEmail = normalizeEmail(adminEmail);
+    const adminIdNum = Number(adminId);
+    if (!normalizedEmail) return false;
+    if (!Number.isFinite(adminIdNum) || adminIdNum <= 0) return false;
+
+    const [rows] = await pool.query(
+      `SELECT o.school_id
+       FROM ${SCHOOL_ORDERS_TABLE} o
+       JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = o.school_id
+       WHERE o.admin_email = ?
+         AND o.status = 'paid'
+         AND o.school_id IS NOT NULL
+       ORDER BY o.paid_at DESC, o.id DESC
+       LIMIT 1`,
+      [normalizedEmail]
+    );
+    const recoveredSchoolId = Number(rows && rows[0] && rows[0].school_id || 0);
+    if (!Number.isFinite(recoveredSchoolId) || recoveredSchoolId <= 0) return false;
+
+    await pool.query(
+      `UPDATE ${SCHOOL_ADMINS_TABLE}
+       SET school_id = ?, is_active = 1, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [recoveredSchoolId, nowSql(), adminIdNum]
+    );
+    return true;
+  }
+
+  let row = await loadSessionRow();
+  if (!row) return { ok: false, statusCode: 401, error: "Session invalid" };
+
+  if (!Number(row.school_account_id || 0)) {
+    const repaired = await recoverSchoolLink(row.admin_id, row.admin_email);
+    if (repaired) row = await loadSessionRow();
+  }
+
+  if (!row || !Number(row.school_account_id || 0)) {
+    return { ok: false, statusCode: 403, error: "School account not linked to this admin yet." };
+  }
+
   const exp = new Date(row.expires_at).getTime();
   if (!Number.isFinite(exp) || exp < Date.now()) return { ok: false, statusCode: 401, error: "Session expired" };
   if (Number(row.admin_is_active || 0) !== 1) return { ok: false, statusCode: 403, error: "Admin account disabled" };
@@ -702,6 +769,18 @@ async function markSchoolOrderPaidBy(pool, input) {
       email: order.admin_email,
       password: tempPassword,
     });
+  } else {
+    const existingSchoolId = Number(admin.school_id || 0);
+    if (!Number.isFinite(existingSchoolId) || existingSchoolId <= 0 || existingSchoolId !== Number(schoolId)) {
+      await pool.query(
+        `UPDATE ${SCHOOL_ADMINS_TABLE}
+         SET school_id = ?, is_active = 1, updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [Number(schoolId), nowSql(), Number(admin.id)]
+      );
+      admin.school_id = Number(schoolId);
+    }
   }
   if (!admin || !admin.id) throw new Error("Could not provision school admin");
 
