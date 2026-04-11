@@ -49,6 +49,14 @@ function configuredCourseSlugs() {
   return set;
 }
 
+function isListableCourseSlug(rawSlug) {
+  const slug = clean(rawSlug, 120).toLowerCase();
+  if (!slug) return false;
+  // Prevent day-level pseudo-courses from appearing in course catalogs.
+  if (/(^|-)day-(one|two|three|four|five|six|seven|eight|nine|ten|\d+)$/.test(slug)) return false;
+  return true;
+}
+
 function inferCanonicalCourseSlugFromModuleSlug(rawSlug) {
   const slug = clean(rawSlug, 120).toLowerCase();
   if (!slug) return "";
@@ -826,7 +834,6 @@ async function ensureModuleById(pool, moduleId) {
 }
 
 async function listLearningCourses(pool) {
-  const allowed = configuredCourseSlugs();
   const [rows] = await pool.query(
     `SELECT id,
             course_slug,
@@ -839,14 +846,31 @@ async function listLearningCourses(pool) {
      FROM ${COURSES_TABLE}
      ORDER BY course_slug ASC, id ASC`
   );
+  const configured = configuredCourseSlugs();
+  const batchSlugs = new Set();
+  try {
+    const [batchRows] = await pool.query(
+      `SELECT DISTINCT course_slug
+       FROM course_batches`
+    );
+    (Array.isArray(batchRows) ? batchRows : []).forEach(function (row) {
+      const slug = clean(row && row.course_slug, 120).toLowerCase();
+      if (slug) batchSlugs.add(slug);
+    });
+  } catch (_error) {
+    // course_batches may not exist yet for some contexts; fall back to configured slugs only.
+  }
+
   return (Array.isArray(rows) ? rows : []).filter(function (row) {
-    return allowed.has(clean(row && row.course_slug, 120).toLowerCase());
+    const slug = clean(row && row.course_slug, 120).toLowerCase();
+    if (!slug) return false;
+    if (!isListableCourseSlug(slug)) return false;
+    return configured.has(slug) || batchSlugs.has(slug);
   });
 }
 
 async function findLearningCourseBySlug(pool, courseSlug) {
   const slug = clean(courseSlug, 120).toLowerCase();
-  if (!configuredCourseSlugs().has(slug)) return null;
   if (!slug) return null;
   const [rows] = await pool.query(
     `SELECT id,
@@ -875,9 +899,7 @@ async function upsertLearningCourse(pool, input) {
   const releaseAt = toSqlDateTime(input && input.release_at);
 
   if (!slug) throw new Error("course_slug is required");
-  if (!configuredCourseSlugs().has(slug)) {
-    throw new Error("Unknown course_slug. Allowed: prompt-to-profit, prompt-to-production, prompt-to-profit-schools.");
-  }
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("course_slug must be kebab-case (letters, numbers, hyphens).");
   if (!title) throw new Error("course_title is required");
 
   if (Number.isFinite(id) && id > 0) {
@@ -1034,6 +1056,7 @@ module.exports = {
   findOrCreateModule,
   ensureModuleById,
   listLearningCourses,
+  isListableCourseSlug,
   findLearningCourseBySlug,
   upsertLearningCourse,
   upsertLesson,

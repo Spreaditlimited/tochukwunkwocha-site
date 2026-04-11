@@ -15,6 +15,11 @@
 
   let debounceTimer = null;
   let latestSummary = null;
+  const FALLBACK_COURSES = [
+    { slug: "prompt-to-profit", label: "Prompt to Profit" },
+    { slug: "prompt-to-production", label: "Prompt to Production" },
+    { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
+  ];
 
   function redirectToInternalSignIn() {
     const next = `${window.location.pathname}${window.location.search || ""}`;
@@ -43,6 +48,44 @@
 
   function selectedCourse() {
     return courseFilter ? String(courseFilter.value || "prompt-to-profit").trim() : "prompt-to-profit";
+  }
+
+  function setCourseOptions(items) {
+    if (!courseFilter) return;
+    const selected = selectedCourse();
+    const list = Array.isArray(items) && items.length ? items : FALLBACK_COURSES;
+    const options = list
+      .map(function (item) {
+        const slug = String(item && item.slug || "").trim();
+        const label = String(item && item.label || slug).trim();
+        if (!slug) return "";
+        return `<option value="${escapeHtml(slug)}">${escapeHtml(label || slug)}</option>`;
+      })
+      .filter(Boolean);
+    if (!options.length) return;
+    courseFilter.innerHTML = options.join("");
+    const hasSelected = list.some(function (item) {
+      return String(item && item.slug || "").trim() === selected;
+    });
+    courseFilter.value = hasSelected ? selected : String((list[0] && list[0].slug) || "prompt-to-profit");
+  }
+
+  async function loadCourseOptions() {
+    if (!courseFilter) return;
+    const res = await fetch("/.netlify/functions/admin-course-slugs-list", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (res.status === 401) {
+      redirectToInternalSignIn();
+      return;
+    }
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load course options");
+    }
+    setCourseOptions(Array.isArray(json.items) ? json.items : []);
   }
 
   function fmtDate(value) {
@@ -226,7 +269,15 @@
   }
 
   bootAppShell();
-  loadItems().catch(function (error) {
+  loadCourseOptions()
+    .catch(function () {
+      setCourseOptions(FALLBACK_COURSES);
+      return null;
+    })
+    .then(function () {
+      return loadItems();
+    })
+    .catch(function (error) {
     const text = String(error && error.message ? error.message : "");
     if (/not signed in|unauthorized|session/i.test(text)) {
       redirectToInternalSignIn();
@@ -234,5 +285,5 @@
     }
     showApp();
     setMessage(text || "Could not load installments.", "error");
-  });
+    });
 })();

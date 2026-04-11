@@ -29,13 +29,33 @@
 
   function detectCourseSlug() {
     const path = String(window.location.pathname || "").toLowerCase();
-    if (path.indexOf("/courses/prompt-to-production") === 0) return "prompt-to-production";
+    const match = path.match(/^\/courses\/([^/]+)/);
+    if (match && match[1]) return String(match[1]).trim().toLowerCase();
     return "prompt-to-profit";
+  }
+
+  function titleizeSlug(slug) {
+    return String(slug || "")
+      .split("-")
+      .filter(Boolean)
+      .map(function (part) {
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(" ");
   }
 
   function currentCourseConfig() {
     const slug = detectCourseSlug();
-    return COURSE_CONFIGS[slug] || COURSE_CONFIGS["prompt-to-profit"];
+    return (
+      COURSE_CONFIGS[slug] || {
+        slug: slug,
+        name: titleizeSlug(slug) || "Course",
+        landingPath: "/courses/" + encodeURIComponent(slug),
+        defaultBatchKey: "batch-1",
+        intro:
+          "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
+      }
+    );
   }
 
   let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;

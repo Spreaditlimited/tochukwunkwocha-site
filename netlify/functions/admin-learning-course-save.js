@@ -2,9 +2,17 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureLearningTables, upsertLearningCourse } = require("./_lib/learning");
+const { ensureCourseBatchesTable, listCourseBatches, createCourseBatch, activateCourseBatch } = require("./_lib/batch-store");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
+}
+
+function prefixFromSlug(slug) {
+  const pieces = String(slug || "").trim().toUpperCase().split("-").filter(Boolean);
+  if (!pieces.length) return "CRS";
+  const compact = pieces.map(function (part) { return part.charAt(0); }).join("").replace(/[^A-Z0-9]/g, "");
+  return (compact || "CRS").slice(0, 10);
 }
 
 exports.handler = async function (event) {
@@ -41,6 +49,39 @@ exports.handler = async function (event) {
       is_published: isPublished,
       release_at: releaseAt || null,
     });
+    await ensureCourseBatchesTable(pool);
+    const courseSlug = clean(course && course.course_slug, 120).toLowerCase();
+    const batches = await listCourseBatches(pool, courseSlug);
+    if (!Array.isArray(batches) || batches.length === 0) {
+      const created = await createCourseBatch(pool, {
+        courseSlug,
+        batchLabel: "Batch 1",
+        batchKey: "batch-1",
+        status: "open",
+        paystackReferencePrefix: prefixFromSlug(courseSlug),
+      });
+      if (created && created.batch_key) {
+        await activateCourseBatch(pool, {
+          courseSlug,
+          batchKey: created.batch_key,
+          batchStartAt: created.batch_start_at || null,
+        });
+      }
+    } else {
+      const hasActive = batches.some(function (row) {
+        return Number(row && row.is_active || 0) === 1;
+      });
+      if (!hasActive) {
+        const first = batches[0];
+        if (first && first.batch_key) {
+          await activateCourseBatch(pool, {
+            courseSlug,
+            batchKey: String(first.batch_key || ""),
+            batchStartAt: first.batch_start_at || null,
+          });
+        }
+      }
+    }
     return json(200, { ok: true, course: course || null });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not save course." });

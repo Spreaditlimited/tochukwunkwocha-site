@@ -684,6 +684,21 @@
     const payer = `${escapeHtml(item.first_name || "")}<br /><small>${escapeHtml(item.email || "")}</small>`;
     const amount = fmtMoney(item.amount_minor, item.currency);
 
+    const rowKey = escapeHtml(item.payment_uuid || item.email || "");
+    const resendBtn =
+      item && item.email
+        ? '<button type="button" class="btn-small" data-resend-onboarding="1" data-email="' +
+          escapeHtml(item.email || "") +
+          '" data-name="' +
+          escapeHtml(item.first_name || "") +
+          '" data-payment-uuid="' +
+          escapeHtml(item.payment_uuid || "") +
+          '">Resend Access Email</button>'
+        : "";
+    const resendStatus = item && item.email
+      ? '<span class="text-xs text-gray-500" data-resend-status="' + rowKey + '"></span>'
+      : "";
+
     return `
       <tr data-payment-uuid="${escapeHtml(item.payment_uuid)}">
         <td>${escapeHtml(fmtDate(item.created_at))}</td>
@@ -701,8 +716,8 @@
         <td>
           ${
             canReview
-              ? '<div class="action-buttons"><button type="button" class="btn-small btn-small-approve" data-action="approve">Approve</button><button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button></div>'
-              : `<small>${escapeHtml(item.reviewed_by || "reviewed")}</small>`
+              ? '<div class="action-buttons"><button type="button" class="btn-small btn-small-approve" data-action="approve">Approve</button><button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button>' + resendBtn + resendStatus + "</div>"
+              : '<div class="action-buttons"><small>' + escapeHtml(item.reviewed_by || "reviewed") + "</small>" + resendBtn + resendStatus + "</div>"
           }
         </td>
       </tr>
@@ -1009,6 +1024,30 @@
     }
 
     await loadItems({ reconcile: false, includeSummary: false });
+  }
+
+  async function handleResendOnboardingEmail(payload) {
+    var email = String(payload && payload.email || "").trim().toLowerCase();
+    var paymentUuid = String(payload && payload.paymentUuid || "").trim();
+    var fullName = String(payload && payload.fullName || "").trim();
+    if (!email && !paymentUuid) {
+      throw new Error("Missing student email.");
+    }
+    var res = await fetch("/.netlify/functions/admin-student-onboarding-resend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        email: email || null,
+        paymentUuid: paymentUuid || null,
+        fullName: fullName || null,
+      }),
+    });
+    var json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not resend onboarding email.");
+    }
+    return json;
   }
 
   if (logoutBtn) {
@@ -1542,6 +1581,56 @@
 
   if (rowsEl) {
     rowsEl.addEventListener("click", function (event) {
+      const resendBtn = event.target.closest("button[data-resend-onboarding]");
+      if (resendBtn) {
+        const paymentUuid = String(resendBtn.getAttribute("data-payment-uuid") || "").trim();
+        const email = String(resendBtn.getAttribute("data-email") || "").trim().toLowerCase();
+        const fullName = String(resendBtn.getAttribute("data-name") || "").trim();
+        const rowKey = paymentUuid || email;
+        const statusEl = rowsEl.querySelector('[data-resend-status="' + rowKey + '"]');
+        resendBtn.disabled = true;
+        const previousLabel = resendBtn.textContent;
+        resendBtn.textContent = "Sending...";
+        if (statusEl) {
+          statusEl.textContent = "Sending...";
+          statusEl.className = "text-xs text-gray-500";
+        }
+        handleResendOnboardingEmail({
+          paymentUuid: paymentUuid,
+          email: email,
+          fullName: fullName,
+        })
+          .then(function (result) {
+            var targetEmail = String((result && result.email) || email || "").trim().toLowerCase();
+            var created = !!(result && result.createdAccount);
+            if (created) {
+              setMessage("Access email sent to " + targetEmail + ". Account did not exist and was created.", "ok");
+              if (statusEl) {
+                statusEl.textContent = "Sent: account created";
+                statusEl.className = "text-xs text-emerald-700";
+              }
+              return;
+            }
+            setMessage("Access email sent to " + targetEmail + ". Account already existed.", "ok");
+            if (statusEl) {
+              statusEl.textContent = "Sent: account exists";
+              statusEl.className = "text-xs text-emerald-700";
+            }
+          })
+          .catch(function (error) {
+            setMessage(error.message || "Could not resend onboarding email.", "error");
+            if (statusEl) {
+              statusEl.textContent = "Failed to send";
+              statusEl.className = "text-xs text-red-600";
+            }
+          })
+          .finally(function () {
+            resendBtn.disabled = false;
+            resendBtn.textContent = previousLabel || "Resend Access Email";
+          });
+        return;
+      }
+
       const btn = event.target.closest("button[data-action]");
       if (!btn) return;
       const row = btn.closest("tr[data-payment-uuid]");

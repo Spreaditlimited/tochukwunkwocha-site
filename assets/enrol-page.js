@@ -39,6 +39,11 @@
       intro:
         "Secure your seat for the next quarterly cohort. Once payment is confirmed, you will be added to the onboarding list immediately.",
     },
+    "ai-for-everyday-business-owners": {
+      name: "AI for Everyday Business Owners",
+      intro:
+        "Secure your seat for the next intake. Once payment is confirmed, you will be added to the onboarding list immediately.",
+    },
   };
 
   function courseConfig() {

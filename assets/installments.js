@@ -38,9 +38,55 @@
   const PLAN_START_ENABLED = true;
   const PLAN_PAY_ENABLED = true;
   const PLAN_START_DISABLED_MSG = "Start plan is temporarily unavailable while Paystack approves our new business account.";
+  const FALLBACK_COURSES = [
+    { slug: "prompt-to-profit", label: "Prompt to Profit" },
+    { slug: "prompt-to-production", label: "Prompt to Production" },
+    { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
+  ];
+
+  function esc(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
   function selectedCourseSlug() {
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
+  }
+
+  function setCourseOptions(items, preferredSlug) {
+    if (!courseSelect) return;
+    const selected = String(preferredSlug || courseSelect.value || "").trim().toLowerCase();
+    const list = (Array.isArray(items) && items.length ? items : FALLBACK_COURSES)
+      .map(function (item) {
+        return {
+          slug: String(item && item.slug || "").trim().toLowerCase(),
+          label: String(item && item.label || item && item.slug || "").trim(),
+        };
+      })
+      .filter(function (item) { return !!item.slug; });
+    if (!list.length) return;
+    courseSelect.innerHTML = list
+      .map(function (item) {
+        return '<option value="' + esc(item.slug) + '">' + esc(item.label || item.slug) + "</option>";
+      })
+      .join("");
+    const hasSelected = list.some(function (item) { return item.slug === selected; });
+    courseSelect.value = hasSelected ? selected : list[0].slug;
+  }
+
+  async function loadCourseOptions(preferredSlug) {
+    if (!courseSelect) return;
+    const res = await fetch("/.netlify/functions/course-slugs-list", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not load courses");
+    setCourseOptions(Array.isArray(json.items) ? json.items : [], preferredSlug);
   }
 
   function setWalletState(isAuthenticated) {
@@ -694,12 +740,6 @@
 
   const qs = new URLSearchParams(window.location.search);
   const preselectedCourse = String(qs.get("course_slug") || "").trim().toLowerCase();
-  if (courseSelect && preselectedCourse) {
-    const valid = Array.from(courseSelect.options).some(function (opt) {
-      return String(opt.value || "").trim() === preselectedCourse;
-    });
-    if (valid) courseSelect.value = preselectedCourse;
-  }
   const payment = String(qs.get("payment") || "").trim().toLowerCase();
   if (payment === "success") setMsg(planMsg, "Installment payment successful.", "ok");
   if (payment === "failed") setMsg(planMsg, "Installment payment failed.", "error");
@@ -710,7 +750,14 @@
   }
 
   setWalletState(null);
-  loadDashboard()
+  loadCourseOptions(preselectedCourse)
+    .catch(function () {
+      setCourseOptions(FALLBACK_COURSES, preselectedCourse);
+      return null;
+    })
+    .then(function () {
+      return loadDashboard();
+    })
     .then(function () {
       return loadBatches().catch(function () {
         return null;

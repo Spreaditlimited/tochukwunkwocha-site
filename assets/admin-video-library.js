@@ -20,6 +20,7 @@
   var courseDescriptionInput = document.getElementById("courseDescriptionInput");
   var courseIsPublishedInput = document.getElementById("courseIsPublishedInput");
   var courseReleaseAtInput = document.getElementById("courseReleaseAtInput");
+  var createCourseBtn = document.getElementById("createCourseBtn");
   var saveCourseBtn = document.getElementById("saveCourseBtn");
 
   var moduleSelect = document.getElementById("moduleSelect");
@@ -206,6 +207,15 @@
       return Number(course.id) === Number(state.selectedCourseId);
     });
     return String(selected && selected.course_slug || "").trim().toLowerCase();
+  }
+
+  function slugifyCourse(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120);
   }
 
   function isModuleVisibleForSelectedCourse(mod) {
@@ -584,6 +594,25 @@
     });
   }
 
+  if (createCourseBtn) {
+    createCourseBtn.addEventListener("click", function () {
+      var slugInput = courseSlugInput ? String(courseSlugInput.value || "").trim().toLowerCase() : "";
+      var titleInput = courseTitleInput ? String(courseTitleInput.value || "").trim() : "";
+      if (slugInput || titleInput) {
+        state.selectedCourseId = 0;
+        if (courseSelect) courseSelect.value = "";
+        if (saveCourseBtn && !saveCourseBtn.disabled) saveCourseBtn.click();
+        return;
+      }
+      state.selectedCourseId = 0;
+      if (courseSelect) courseSelect.value = "";
+      hydrateCourseForm(null);
+      if (moduleCourseSlugInput) moduleCourseSlugInput.value = "";
+      if (courseSlugInput) courseSlugInput.focus();
+      setMessage("Enter a new course slug and title, then click Create New Course (or Save Course).", "");
+    });
+  }
+
   if (moduleSelect) {
     moduleSelect.addEventListener("change", function () {
       var nextId = Number(moduleSelect.value || 0);
@@ -917,14 +946,25 @@
 
   if (saveCourseBtn) {
     saveCourseBtn.addEventListener("click", async function () {
-      if (!(state.selectedCourseId > 0)) {
-        setMessage("Select a course first.", "error");
+      var isCreateMode = !(state.selectedCourseId > 0);
+      var slugInput = courseSlugInput ? String(courseSlugInput.value || "").trim().toLowerCase() : "";
+      var titleInput = courseTitleInput ? String(courseTitleInput.value || "").trim() : "";
+      if (!slugInput && titleInput && courseSlugInput) {
+        slugInput = slugifyCourse(titleInput);
+        courseSlugInput.value = slugInput;
+      }
+      if (!slugInput) {
+        setMessage("Course slug is required.", "error");
+        return;
+      }
+      if (!titleInput) {
+        setMessage("Course title is required.", "error");
         return;
       }
       var payload = {
-        id: state.selectedCourseId || null,
-        course_slug: courseSlugInput ? String(courseSlugInput.value || "").trim().toLowerCase() : "",
-        course_title: courseTitleInput ? String(courseTitleInput.value || "").trim() : "",
+        id: state.selectedCourseId > 0 ? state.selectedCourseId : null,
+        course_slug: slugInput,
+        course_title: titleInput,
         course_description: courseDescriptionInput ? String(courseDescriptionInput.value || "").trim() : "",
         is_published: courseIsPublishedInput ? Boolean(courseIsPublishedInput.checked) : false,
         release_at: courseReleaseAtInput ? String(courseReleaseAtInput.value || "").trim() : "",
@@ -939,8 +979,13 @@
         });
         if (!res || !res.course) throw new Error("Course save failed.");
         state.selectedCourseId = Number(res.course.id || 0);
-        setMessage("Course saved successfully.", "ok");
-        showToast("Course details saved.", "ok");
+        if (isCreateMode) {
+          setMessage("Course created successfully.", "ok");
+          showToast("Course created successfully.", "ok");
+        } else {
+          setMessage("Course saved successfully.", "ok");
+          showToast("Course details saved.", "ok");
+        }
         await loadLibrary(state.selectedModuleId);
         var selected = state.courses.find(function (course) { return Number(course.id) === state.selectedCourseId; });
         hydrateCourseForm(selected || null);

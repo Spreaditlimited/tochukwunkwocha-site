@@ -23,6 +23,14 @@ const COURSE_CONFIGS = {
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "PTPS",
   },
+  "ai-for-everyday-business-owners": {
+    slug: "ai-for-everyday-business-owners",
+    name: "AI for Everyday Business Owners",
+    landingPath: "/courses/ai-for-everyday-business-owners",
+    defaultBatchKey: "aiebo-batch-1",
+    defaultBatchLabel: "Batch 1",
+    defaultPrefix: "AIEBO",
+  },
 };
 
 const DEFAULT_COURSE_SLUG = "prompt-to-profit";
@@ -40,15 +48,34 @@ function canonicalizeCourseSlug(raw) {
 function normalizeCourseSlug(raw, fallback) {
   const slug = canonicalizeCourseSlug(raw);
   if (slug && COURSE_CONFIGS[slug]) return slug;
+  if (slug) return slug;
 
   const fallbackSlug = canonicalizeCourseSlug(fallback || DEFAULT_COURSE_SLUG) || DEFAULT_COURSE_SLUG;
   if (fallbackSlug && COURSE_CONFIGS[fallbackSlug]) return fallbackSlug;
+  if (fallbackSlug) return fallbackSlug;
   return DEFAULT_COURSE_SLUG;
 }
 
 function getCourseConfig(rawSlug) {
   const slug = normalizeCourseSlug(rawSlug);
-  return COURSE_CONFIGS[slug] || null;
+  const configured = COURSE_CONFIGS[slug];
+  if (configured) return configured;
+  if (!slug) return null;
+  const fallbackName = slug
+    .split("-")
+    .filter(Boolean)
+    .map(function (part) {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join(" ") || "Course";
+  return {
+    slug,
+    name: fallbackName,
+    landingPath: `/courses/${slug}`,
+    defaultBatchKey: "batch-1",
+    defaultBatchLabel: "Batch 1",
+    defaultPrefix: "CRS",
+  };
 }
 
 function listCourseConfigs() {

@@ -8,11 +8,11 @@
   const COURSE_DURATION_DAYS = {
     "prompt-to-profit": 5,
   };
-  const COURSE_CATALOG = [
+  const DEFAULT_COURSE_CATALOG = [
     {
       slug: "prompt-to-profit",
       name: "Prompt to Profit",
-      subtitle: "Build websites with AI and position for paid jobs.",
+      subtitle: "A 5-day beginner-friendly intensive to use AI properly and build practical websites and web tools.",
       href: "/courses/prompt-to-profit/",
       theme: {
         card: "bg-gradient-to-br from-[#eef4ff] via-[#f4f8ff] to-[#fdfdff] ring-[#c9dafd]",
@@ -23,7 +23,7 @@
     {
       slug: "prompt-to-production",
       name: "Prompt to Production",
-      subtitle: "Go from prompting to shipping full AI-powered products.",
+      subtitle: "A 4-week hybrid program to master VS Code and AI coding assistants to build, debug, and deploy real web applications.",
       href: "/courses/prompt-to-production/",
       theme: {
         card: "bg-gradient-to-br from-[#eafaf3] via-[#f2fdf7] to-[#fbfffd] ring-[#b9e5cf]",
@@ -31,7 +31,30 @@
         button: "bg-[#136145] text-white hover:bg-[#0f4f38]",
       },
     },
+    {
+      slug: "prompt-to-profit-schools",
+      name: "Prompt to Profit for Schools",
+      subtitle: "A structured school program helping secondary students use AI to build practical digital projects with confidence.",
+      href: "/courses/prompt-to-profit-schools/",
+      theme: {
+        card: "bg-gradient-to-br from-[#ecfeff] via-[#f0fdfa] to-[#f8fffe] ring-[#99f6e4]",
+        badge: "bg-[#ccfbf1] text-[#0f766e]",
+        button: "bg-[#0f766e] text-white hover:bg-[#0b5f59]",
+      },
+    },
+    {
+      slug: "ai-for-everyday-business-owners",
+      name: "AI for Everyday Business Owners",
+      subtitle: "Use ChatGPT to save time, write better, think clearly, and work faster across everyday business tasks.",
+      href: "/courses/ai-for-everyday-business-owners/",
+      theme: {
+        card: "bg-gradient-to-br from-[#fff7ed] via-[#fffbf5] to-[#ffffff] ring-[#fdba74]",
+        badge: "bg-[#ffedd5] text-[#9a3412]",
+        button: "bg-[#c2410c] text-white hover:bg-[#9a3412]",
+      },
+    },
   ];
+  let COURSE_CATALOG = DEFAULT_COURSE_CATALOG.slice();
 
   function escapeHtml(value) {
     return String(value || "")
@@ -159,6 +182,64 @@
         button: "bg-brand-600 text-white hover:bg-brand-500",
       }
     );
+  }
+
+  function genericSubtitle(name) {
+    return (String(name || "").trim() || "Course") + ". Practical learning program.";
+  }
+
+  function courseHref(slug) {
+    const s = normalizeSlug(slug);
+    return s ? `/courses/${encodeURIComponent(s)}/` : "/courses/";
+  }
+
+  function buildCatalogFromItems(items) {
+    const rows = Array.isArray(items) ? items : [];
+    const result = rows
+      .map(function (item) {
+        const slug = normalizeSlug(item && item.slug);
+        const name = String(item && item.label || "").trim() || prettifySlug(slug);
+        if (!slug) return null;
+        const existing = DEFAULT_COURSE_CATALOG.find(function (row) {
+          return normalizeSlug(row.slug) === slug;
+        });
+        if (existing) {
+          return {
+            slug: slug,
+            name: name || existing.name,
+            subtitle: existing.subtitle,
+            href: existing.href,
+            theme: existing.theme,
+          };
+        }
+        return {
+          slug: slug,
+          name: name || slug,
+          subtitle: genericSubtitle(name || slug),
+          href: courseHref(slug),
+          theme: {
+            card: "bg-gradient-to-br from-[#f6f7fb] via-[#fbfbfe] to-[#ffffff] ring-[#e5e7eb]",
+            badge: "bg-gray-200 text-gray-700",
+            button: "bg-brand-600 text-white hover:bg-brand-500",
+          },
+        };
+      })
+      .filter(Boolean);
+    return result.length ? result : DEFAULT_COURSE_CATALOG.slice();
+  }
+
+  async function loadCourseCatalog() {
+    const res = await fetch("/.netlify/functions/course-slugs-list", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load course catalog");
+    }
+    COURSE_CATALOG = buildCatalogFromItems(Array.isArray(json.items) ? json.items : []);
   }
 
   function renderDiscoverCourses(ownedSlugs) {
@@ -506,5 +587,12 @@
 
   consumePurchaseWelcomeFromQuery();
   renderPurchaseWelcomeNotice();
-  load();
+  loadCourseCatalog()
+    .catch(function () {
+      COURSE_CATALOG = DEFAULT_COURSE_CATALOG.slice();
+      return null;
+    })
+    .then(function () {
+      return load();
+    });
 })();
