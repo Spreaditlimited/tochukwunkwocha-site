@@ -173,7 +173,10 @@ exports.handler = async function (event) {
       return redirect(`${siteBaseUrl()}/services/domain-registration/?payment=failed`, "");
     }
 
-    const token = await createStudentSession(pool, account.id);
+    const token = await createStudentSession(pool, account.id, {
+      event,
+      enforceDeviceLimit: false,
+    });
     setCookie = setStudentCookieHeader(event, token);
 
     const orderUuid = await createDomainOrder(pool, {

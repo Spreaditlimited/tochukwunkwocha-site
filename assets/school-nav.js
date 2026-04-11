@@ -6,6 +6,7 @@
 
   var navLock = false;
   var SIDEBAR_COLLAPSE_KEY = "tochukwu_school_sidebar_collapsed";
+  var SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
   var sidebars = Array.prototype.slice.call(document.querySelectorAll("aside"));
   var primarySidebar = document.getElementById("schoolSidebar") || sidebars[0] || null;
   var mobileMenuButton = document.getElementById("schoolMobileMenuButton");
@@ -67,6 +68,9 @@
     }).catch(function () {
       return null;
     });
+    try {
+      sessionStorage.setItem(SIGNOUT_MARKER_KEY, "1");
+    } catch (_error) {}
     window.location.href = "/schools/login/";
   }
 

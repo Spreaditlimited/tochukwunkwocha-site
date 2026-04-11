@@ -181,7 +181,10 @@ exports.handler = async function (event) {
     }
     let sessionToken = "";
     if (account && account.id) {
-      sessionToken = await createStudentSession(pool, account.id);
+      sessionToken = await createStudentSession(pool, account.id, {
+        event,
+        enforceDeviceLimit: false,
+      });
     }
 
     const payload = {

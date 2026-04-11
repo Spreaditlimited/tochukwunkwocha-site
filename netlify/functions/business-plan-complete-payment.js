@@ -130,7 +130,10 @@ exports.handler = async function (event) {
     };
 
     if (accountCreated && account && account.id) {
-      const sessionToken = await createStudentSession(pool, account.id);
+      const sessionToken = await createStudentSession(pool, account.id, {
+        event,
+        enforceDeviceLimit: false,
+      });
       return {
         statusCode: 200,
         headers: {

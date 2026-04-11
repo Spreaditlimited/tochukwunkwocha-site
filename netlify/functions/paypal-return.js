@@ -116,7 +116,10 @@ exports.handler = async function (event) {
         }
       }
       if (account && account.id) {
-        const token = await createStudentSession(pool, account.id);
+        const token = await createStudentSession(pool, account.id, {
+          event,
+          enforceDeviceLimit: false,
+        });
         setCookie = setStudentCookieHeader(event, token);
       }
     }

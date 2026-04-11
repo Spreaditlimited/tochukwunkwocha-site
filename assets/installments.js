@@ -188,6 +188,17 @@
     if (type === "ok") el.classList.add("ok");
   }
 
+  function authHeaders() {
+    var headers = { "Content-Type": "application/json" };
+    try {
+      if (typeof window.twsStudentDeviceId === "function") {
+        var deviceId = String(window.twsStudentDeviceId() || "").trim();
+        if (deviceId) headers["X-Student-Device-Id"] = deviceId;
+      }
+    } catch (_error) {}
+    return headers;
+  }
+
   function enforcePlanStartAvailability() {
     if (PLAN_START_ENABLED) return;
     if (createPlanBtn) {
@@ -382,7 +393,7 @@
     try {
       await api("/.netlify/functions/user-auth-register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ fullName, email, password }),
       });
       setWalletState(true);
@@ -411,7 +422,7 @@
     try {
       await api("/.netlify/functions/user-auth-login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ email, password }),
       });
       setWalletState(true);

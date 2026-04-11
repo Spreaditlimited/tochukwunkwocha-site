@@ -5,6 +5,13 @@ const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 
 const COOKIE_NAME = "tws_student_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
+const DEFAULT_MAX_DEVICES_PER_ACCOUNT = 2;
+const DEVICE_ALERT_IP_SPREAD_THRESHOLD = 3;
+const STUDENT_SESSIONS_TABLE = "student_sessions";
+const STUDENT_DEVICES_TABLE = "student_account_devices";
+const STUDENT_SECURITY_ALERTS_TABLE = "student_security_alerts";
+const SCHOOL_STUDENTS_TABLE = "school_students";
+const SCHOOL_ACCOUNTS_TABLE = "school_accounts";
 
 async function safeAlter(pool, sql) {
   try {
@@ -18,6 +25,26 @@ function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   return ok ? email : "";
+}
+
+function clean(value, max) {
+  return String(value || "").trim().slice(0, max || 500);
+}
+
+function toInt(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return Number.isFinite(fallback) ? Math.trunc(fallback) : 0;
+  return Math.trunc(n);
+}
+
+function maxDevicesPerAccount() {
+  const raw = Number(
+    process.env.STUDENT_MAX_DEVICES_PER_ACCOUNT ||
+      process.env.SCHOOL_STUDENT_MAX_DEVICES_PER_ACCOUNT ||
+      DEFAULT_MAX_DEVICES_PER_ACCOUNT
+  );
+  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_MAX_DEVICES_PER_ACCOUNT;
+  return Math.max(1, Math.trunc(raw));
 }
 
 function isSecureRequest(event) {
@@ -62,6 +89,71 @@ function parseCookieValue(cookieHeader, name) {
     return decodeURIComponent(rest.join("=") || "");
   }
   return "";
+}
+
+function headerValue(event, name) {
+  const headers = event && event.headers ? event.headers : {};
+  return String(headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()] || "").trim();
+}
+
+function clientIp(event) {
+  const xff = headerValue(event, "x-forwarded-for");
+  if (xff) return clean(xff.split(",")[0], 90);
+  const cf = headerValue(event, "cf-connecting-ip");
+  if (cf) return clean(cf, 90);
+  const rip = headerValue(event, "x-real-ip");
+  if (rip) return clean(rip, 90);
+  return "";
+}
+
+function ipPrefix(ip) {
+  const value = clean(ip, 90);
+  if (!value) return "";
+  if (value.indexOf(":") !== -1) {
+    const parts = value.split(":").filter(Boolean);
+    return parts.slice(0, 4).join(":");
+  }
+  const parts = value.split(".");
+  if (parts.length >= 3) return `${parts[0]}.${parts[1]}.${parts[2]}`;
+  return value;
+}
+
+function shaValue(raw) {
+  return crypto.createHash("sha256").update(String(raw || "")).digest("hex");
+}
+
+function resolveStudentDeviceIdentity(event, options) {
+  const cfg = options && typeof options === "object" ? options : {};
+  const explicit = clean(cfg.deviceId || headerValue(event, "x-student-device-id"), 180).replace(/[^\w.\-:]/g, "");
+  const ua = clean(headerValue(event, "user-agent"), 255);
+  const ip = clientIp(event);
+  const fallbackSeed = `${ua}|${ipPrefix(ip)}`;
+  const base = explicit || fallbackSeed || `anon_${Date.now()}`;
+  return {
+    deviceIdHint: explicit || "",
+    deviceHash: shaValue(`dev:${base}`),
+    ipHash: ip ? shaValue(`ip:${ip}`) : "",
+    userAgent: ua,
+  };
+}
+
+function makeCodedError(message, code, statusCode) {
+  const error = new Error(String(message || "Request failed"));
+  error.code = clean(code, 64) || "request_failed";
+  if (statusCode) error.statusCode = Number(statusCode);
+  return error;
+}
+
+function isMissingTableError(error) {
+  const code = String(error && error.code || "").trim().toUpperCase();
+  const msg = String(error && error.message || "").toLowerCase();
+  return code === "ER_NO_SUCH_TABLE" || msg.indexOf("doesn't exist") !== -1 || msg.indexOf("does not exist") !== -1;
+}
+
+function isUnknownColumnError(error) {
+  const code = String(error && error.code || "").trim().toUpperCase();
+  const msg = String(error && error.message || "").toLowerCase();
+  return code === "ER_BAD_FIELD_ERROR" || msg.indexOf("unknown column") !== -1;
 }
 
 function buildSetCookie(event, value, maxAge) {
@@ -109,11 +201,15 @@ async function ensureStudentAuthTables(pool) {
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_requested_at DATETIME NULL`);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS student_sessions (
+    CREATE TABLE IF NOT EXISTS ${STUDENT_SESSIONS_TABLE} (
       id BIGINT NOT NULL AUTO_INCREMENT,
       session_uuid VARCHAR(64) NOT NULL,
       account_id BIGINT NOT NULL,
       token_hash VARCHAR(128) NOT NULL,
+      device_hash VARCHAR(128) NULL,
+      device_id_hint VARCHAR(190) NULL,
+      ip_hash VARCHAR(128) NULL,
+      user_agent VARCHAR(255) NULL,
       expires_at DATETIME NOT NULL,
       created_at DATETIME NOT NULL,
       last_seen_at DATETIME NULL,
@@ -121,7 +217,58 @@ async function ensureStudentAuthTables(pool) {
       UNIQUE KEY uniq_student_session_uuid (session_uuid),
       UNIQUE KEY uniq_student_session_token (token_hash),
       KEY idx_student_session_account (account_id),
-      KEY idx_student_session_expiry (expires_at)
+      KEY idx_student_session_expiry (expires_at),
+      KEY idx_student_session_device (device_hash)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await safeAlter(pool, `ALTER TABLE ${STUDENT_SESSIONS_TABLE} ADD COLUMN device_hash VARCHAR(128) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${STUDENT_SESSIONS_TABLE} ADD COLUMN device_id_hint VARCHAR(190) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${STUDENT_SESSIONS_TABLE} ADD COLUMN ip_hash VARCHAR(128) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${STUDENT_SESSIONS_TABLE} ADD COLUMN user_agent VARCHAR(255) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${STUDENT_SESSIONS_TABLE} ADD KEY idx_student_session_device (device_hash)`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${STUDENT_DEVICES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      account_id BIGINT NOT NULL,
+      device_hash VARCHAR(128) NOT NULL,
+      device_id_hint VARCHAR(190) NULL,
+      last_ip_hash VARCHAR(128) NULL,
+      last_user_agent VARCHAR(255) NULL,
+      first_seen_at DATETIME NOT NULL,
+      last_seen_at DATETIME NOT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_student_device_per_account (account_id, device_hash),
+      KEY idx_student_devices_account (account_id),
+      KEY idx_student_devices_seen (last_seen_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${STUDENT_SECURITY_ALERTS_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      alert_uuid VARCHAR(64) NOT NULL,
+      account_id BIGINT NOT NULL,
+      school_id BIGINT NULL,
+      alert_type VARCHAR(80) NOT NULL,
+      severity VARCHAR(30) NOT NULL DEFAULT 'medium',
+      alert_key VARCHAR(128) NULL,
+      title VARCHAR(255) NOT NULL,
+      details_json LONGTEXT NULL,
+      status VARCHAR(30) NOT NULL DEFAULT 'open',
+      occurrences INT NOT NULL DEFAULT 1,
+      created_at DATETIME NOT NULL,
+      last_seen_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_student_alert_uuid (alert_uuid),
+      KEY idx_student_alert_account (account_id, status, created_at),
+      KEY idx_student_alert_school (school_id, status, created_at),
+      KEY idx_student_alert_type (alert_type, status),
+      KEY idx_student_alert_seen (last_seen_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -201,31 +348,323 @@ function shaToken(token) {
   return crypto.createHash("sha256").update(String(token || "")).digest("hex");
 }
 
-async function createStudentSession(pool, accountId) {
+async function resolveSchoolContextForAccount(pool, accountId) {
+  const id = Number(accountId);
+  if (!Number.isFinite(id) || id <= 0) return { schoolId: null, schoolName: "" };
+  try {
+    const [rows] = await pool.query(
+      `SELECT sc.id AS school_id, sc.school_name
+       FROM ${SCHOOL_STUDENTS_TABLE} ss
+       JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = ss.school_id
+       WHERE ss.account_id = ?
+       ORDER BY ss.updated_at DESC, ss.id DESC
+       LIMIT 1`,
+      [id]
+    );
+    if (!Array.isArray(rows) || !rows.length) return { schoolId: null, schoolName: "" };
+    return {
+      schoolId: Number(rows[0].school_id || 0) || null,
+      schoolName: clean(rows[0].school_name, 220),
+    };
+  } catch (_error) {
+    return { schoolId: null, schoolName: "" };
+  }
+}
+
+async function createStudentSecurityAlert(pool, input) {
+  const accountId = Number(input && input.accountId);
+  if (!Number.isFinite(accountId) || accountId <= 0) return;
+
+  const now = nowSql();
+  const alertType = clean(input && input.alertType, 80) || "suspicious_activity";
+  const severity = clean(input && input.severity, 30) || "medium";
+  const alertKey = clean(input && input.alertKey, 128) || "";
+  const title = clean(input && input.title, 255) || "Suspicious activity detected";
+  const schoolId = Number(input && input.schoolId || 0) || null;
+  const detailsJson = JSON.stringify(input && input.details ? input.details : {});
+
+  try {
+    if (alertKey) {
+      const [existing] = await pool.query(
+        `SELECT id, occurrences
+         FROM ${STUDENT_SECURITY_ALERTS_TABLE}
+         WHERE account_id = ?
+           AND alert_type = ?
+           AND status = 'open'
+           AND alert_key = ?
+           AND created_at >= DATE_SUB(?, INTERVAL 24 HOUR)
+         ORDER BY id DESC
+         LIMIT 1`,
+        [accountId, alertType, alertKey, now]
+      );
+      if (Array.isArray(existing) && existing.length) {
+        await pool.query(
+          `UPDATE ${STUDENT_SECURITY_ALERTS_TABLE}
+           SET occurrences = ?, last_seen_at = ?, updated_at = ?, details_json = ?, title = ?, severity = ?, school_id = COALESCE(?, school_id)
+           WHERE id = ?
+           LIMIT 1`,
+          [toInt(existing[0].occurrences, 1) + 1, now, now, detailsJson, title, severity, schoolId, Number(existing[0].id)]
+        );
+        return;
+      }
+    }
+
+    await pool.query(
+      `INSERT INTO ${STUDENT_SECURITY_ALERTS_TABLE}
+        (alert_uuid, account_id, school_id, alert_type, severity, alert_key, title, details_json, status, occurrences, created_at, last_seen_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', 1, ?, ?, ?)`,
+      [
+        `ssa_${crypto.randomUUID().replace(/-/g, "")}`,
+        accountId,
+        schoolId,
+        alertType,
+        severity,
+        alertKey || null,
+        title,
+        detailsJson,
+        now,
+        now,
+        now,
+      ]
+    );
+  } catch (error) {
+    if (isMissingTableError(error) || isUnknownColumnError(error)) return;
+    throw error;
+  }
+}
+
+async function registerStudentDevice(pool, input) {
+  const accountId = Number(input && input.accountId);
+  const identity = input && input.identity ? input.identity : {};
+  const schoolId = Number(input && input.schoolId || 0) || null;
+  if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
+
+  const deviceHash = clean(identity.deviceHash, 128);
+  if (!deviceHash) throw new Error("Could not resolve device identity");
+  const now = nowSql();
+  let rows = [];
+  try {
+    const [foundRows] = await pool.query(
+      `SELECT id
+       FROM ${STUDENT_DEVICES_TABLE}
+       WHERE account_id = ?
+         AND device_hash = ?
+       LIMIT 1`,
+      [accountId, deviceHash]
+    );
+    rows = Array.isArray(foundRows) ? foundRows : [];
+  } catch (error) {
+    if (isMissingTableError(error) || isUnknownColumnError(error)) return;
+    throw error;
+  }
+  if (Array.isArray(rows) && rows.length) {
+    await pool.query(
+      `UPDATE ${STUDENT_DEVICES_TABLE}
+       SET device_id_hint = ?, last_ip_hash = ?, last_user_agent = ?, last_seen_at = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [
+        clean(identity.deviceIdHint, 190) || null,
+        clean(identity.ipHash, 128) || null,
+        clean(identity.userAgent, 255) || null,
+        now,
+        now,
+        Number(rows[0].id),
+      ]
+    );
+  } else {
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM ${STUDENT_DEVICES_TABLE}
+       WHERE account_id = ?`,
+      [accountId]
+    );
+    const currentCount = Number(countRows && countRows[0] && countRows[0].total || 0);
+    const limit = maxDevicesPerAccount();
+    if (currentCount >= limit) {
+      await createStudentSecurityAlert(pool, {
+        accountId,
+        schoolId,
+        alertType: "device_limit_blocked",
+        severity: "high",
+        alertKey: shaValue(`device_limit:${accountId}:${deviceHash}`),
+        title: "Login blocked: device limit reached",
+        details: {
+          limit,
+          currentCount,
+          attemptedDeviceHash: deviceHash,
+          userAgent: clean(identity.userAgent, 255),
+        },
+      });
+      throw makeCodedError(
+        `This account has reached the maximum allowed devices (${limit}). Contact support to reset trusted devices.`,
+        "DEVICE_LIMIT_EXCEEDED",
+        429
+      );
+    }
+
+    await pool.query(
+      `INSERT INTO ${STUDENT_DEVICES_TABLE}
+        (account_id, device_hash, device_id_hint, last_ip_hash, last_user_agent, first_seen_at, last_seen_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        accountId,
+        deviceHash,
+        clean(identity.deviceIdHint, 190) || null,
+        clean(identity.ipHash, 128) || null,
+        clean(identity.userAgent, 255) || null,
+        now,
+        now,
+        now,
+        now,
+      ]
+    );
+
+    if (currentCount > 0) {
+      await createStudentSecurityAlert(pool, {
+        accountId,
+        schoolId,
+        alertType: "new_device_login",
+        severity: "medium",
+        alertKey: shaValue(`new_device:${accountId}:${deviceHash}`),
+        title: "New device added to student account",
+        details: {
+          knownDevicesBefore: currentCount,
+          knownDevicesAfter: currentCount + 1,
+          userAgent: clean(identity.userAgent, 255),
+        },
+      });
+    }
+  }
+
+  const [spreadRows] = await pool.query(
+    `SELECT COUNT(DISTINCT last_ip_hash) AS ip_count
+     FROM ${STUDENT_DEVICES_TABLE}
+     WHERE account_id = ?
+       AND last_ip_hash IS NOT NULL
+       AND last_ip_hash <> ''`,
+    [accountId]
+  );
+  const ipCount = Number(spreadRows && spreadRows[0] && spreadRows[0].ip_count || 0);
+  if (ipCount >= DEVICE_ALERT_IP_SPREAD_THRESHOLD) {
+    await createStudentSecurityAlert(pool, {
+      accountId,
+      schoolId,
+      alertType: "high_ip_spread",
+      severity: "high",
+      alertKey: shaValue(`ip_spread:${accountId}:${ipCount}`),
+      title: "High IP/device spread detected",
+      details: {
+        uniqueIps: ipCount,
+        threshold: DEVICE_ALERT_IP_SPREAD_THRESHOLD,
+      },
+    });
+  }
+}
+
+async function createStudentSession(pool, accountId, options) {
+  const cfg = options && typeof options === "object" ? options : {};
+  const accountIdNum = Number(accountId);
+  const enforceDeviceLimit = cfg.enforceDeviceLimit !== false;
+  const identity = resolveStudentDeviceIdentity(cfg.event, cfg);
+  const schoolContext = await resolveSchoolContextForAccount(pool, accountIdNum);
+  if (enforceDeviceLimit) {
+    try {
+      await registerStudentDevice(pool, {
+        accountId: accountIdNum,
+        schoolId: schoolContext.schoolId,
+        identity,
+      });
+    } catch (error) {
+      if (!isMissingTableError(error) && !isUnknownColumnError(error)) throw error;
+    }
+  }
+
   const token = randomToken();
   const tokenHash = shaToken(token);
   const sessionUuid = `ss_${crypto.randomUUID().replace(/-/g, "")}`;
   const now = nowSql();
   const expires = new Date(Date.now() + SESSION_MAX_AGE * 1000).toISOString().slice(0, 19).replace("T", " ");
 
-  await pool.query(
-    `INSERT INTO student_sessions
-      (session_uuid, account_id, token_hash, expires_at, created_at, last_seen_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [sessionUuid, Number(accountId), tokenHash, expires, now, now]
-  );
+  let existingSessions = [];
+  try {
+    const [rowsWithDevice] = await pool.query(
+      `SELECT id, device_hash
+       FROM ${STUDENT_SESSIONS_TABLE}
+       WHERE account_id = ?`,
+      [accountIdNum]
+    );
+    existingSessions = Array.isArray(rowsWithDevice) ? rowsWithDevice : [];
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    const [rowsBasic] = await pool.query(
+      `SELECT id
+       FROM ${STUDENT_SESSIONS_TABLE}
+       WHERE account_id = ?`,
+      [accountIdNum]
+    );
+    existingSessions = Array.isArray(rowsBasic) ? rowsBasic : [];
+  }
+  if (Array.isArray(existingSessions) && existingSessions.length) {
+    await pool.query(`DELETE FROM ${STUDENT_SESSIONS_TABLE} WHERE account_id = ?`, [accountIdNum]);
+    const replacedDifferentDevice = existingSessions.some(function (row) {
+      return clean(row && row.device_hash, 128) && clean(row && row.device_hash, 128) !== clean(identity.deviceHash, 128);
+    });
+    if (replacedDifferentDevice) {
+      await createStudentSecurityAlert(pool, {
+        accountId: accountIdNum,
+        schoolId: schoolContext.schoolId,
+        alertType: "session_replaced_other_device",
+        severity: "medium",
+        alertKey: shaValue(`session_replace:${accountIdNum}:${identity.deviceHash}`),
+        title: "Active session replaced from another device",
+        details: {
+          previousSessions: existingSessions.length,
+          newDeviceHash: clean(identity.deviceHash, 128),
+        },
+      });
+    }
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO ${STUDENT_SESSIONS_TABLE}
+        (session_uuid, account_id, token_hash, device_hash, device_id_hint, ip_hash, user_agent, expires_at, created_at, last_seen_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        sessionUuid,
+        accountIdNum,
+        tokenHash,
+        clean(identity.deviceHash, 128) || null,
+        clean(identity.deviceIdHint, 190) || null,
+        clean(identity.ipHash, 128) || null,
+        clean(identity.userAgent, 255) || null,
+        expires,
+        now,
+        now,
+      ]
+    );
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    await pool.query(
+      `INSERT INTO ${STUDENT_SESSIONS_TABLE}
+        (session_uuid, account_id, token_hash, expires_at, created_at, last_seen_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [sessionUuid, accountIdNum, tokenHash, expires, now, now]
+    );
+  }
   await pool.query(
     `UPDATE student_accounts
      SET last_login_at = ?, updated_at = ?
      WHERE id = ?`,
-    [now, now, Number(accountId)]
+    [now, now, accountIdNum]
   );
   return token;
 }
 
 async function clearStudentSession(pool, token) {
   const tokenHash = shaToken(token);
-  await pool.query(`DELETE FROM student_sessions WHERE token_hash = ?`, [tokenHash]);
+  await pool.query(`DELETE FROM ${STUDENT_SESSIONS_TABLE} WHERE token_hash = ?`, [tokenHash]);
 }
 
 async function requireStudentSession(pool, event) {
@@ -242,7 +681,7 @@ async function requireStudentSession(pool, event) {
             a.email,
             a.must_reset_password,
             a.domains_auto_renew_enabled
-     FROM student_sessions s
+     FROM ${STUDENT_SESSIONS_TABLE} s
      JOIN student_accounts a ON a.id = s.account_id
      WHERE s.token_hash = ?
      LIMIT 1`,
@@ -255,7 +694,7 @@ async function requireStudentSession(pool, event) {
     await clearStudentSession(pool, token);
     return { ok: false, statusCode: 401, error: "Session expired" };
   }
-  await pool.query(`UPDATE student_sessions SET last_seen_at = ? WHERE id = ?`, [nowSql(), row.session_id]);
+  await pool.query(`UPDATE ${STUDENT_SESSIONS_TABLE} SET last_seen_at = ? WHERE id = ?`, [nowSql(), row.session_id]);
   return {
     ok: true,
     account: {
@@ -379,6 +818,7 @@ module.exports = {
   setStudentPassword,
   createPasswordResetToken,
   consumePasswordResetToken,
+  createStudentSecurityAlert,
   setStudentCookieHeader,
   clearStudentCookieHeader,
 };

@@ -683,6 +683,10 @@
     const canReview = status === "pending_verification" && source === "manual";
     const payer = `${escapeHtml(item.first_name || "")}<br /><small>${escapeHtml(item.email || "")}</small>`;
     const amount = fmtMoney(item.amount_minor, item.currency);
+    const capiSent = Number(item.meta_purchase_sent || 0) === 1;
+    const capiPill = capiSent
+      ? '<span class="status-pill status-approved">Sent</span>'
+      : '<span class="status-pill status-pending_verification">Not sent</span>';
 
     const rowKey = escapeHtml(item.payment_uuid || item.email || "");
     const resendBtn =
@@ -708,6 +712,7 @@
         <td><span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">${escapeHtml(providerLabel)}</span></td>
         <td>${escapeHtml(amount)}</td>
         <td><span class="status-pill status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></td>
+        <td>${capiPill}</td>
         <td>${
           item.proof_url
             ? `<a href="${escapeHtml(item.proof_url)}" target="_blank" rel="noopener noreferrer">View proof</a>`
@@ -993,7 +998,7 @@
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="9" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
+        : '<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
     }
 
     if (appCard) appCard.hidden = false;

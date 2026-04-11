@@ -26,7 +26,10 @@ exports.handler = async function (event) {
       password: body.password,
     });
     if (!account) throw new Error("Could not create user account");
-    const token = await createStudentSession(pool, account.id);
+    const token = await createStudentSession(pool, account.id, {
+      event,
+      enforceDeviceLimit: true,
+    });
 
     return {
       statusCode: 201,
@@ -44,6 +47,9 @@ exports.handler = async function (event) {
       }),
     };
   } catch (error) {
+    if (error && error.code === "DEVICE_LIMIT_EXCEEDED") {
+      return json(Number(error.statusCode || 429), { ok: false, code: error.code, error: error.message || "Device limit reached" });
+    }
     const msg = String(error && error.message ? error.message : "");
     const conflict = /duplicate|unique|email/i.test(msg);
     return json(conflict ? 409 : 500, {
@@ -52,4 +58,3 @@ exports.handler = async function (event) {
     });
   }
 };
-

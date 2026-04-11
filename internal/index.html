@@ -147,10 +147,6 @@
             Lead Capture Jobs
           </a>
 
-          <a href="/internal/business-plan-manager/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
-            <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            Business Plan Manager
-          </a>
           <a href="/internal/verifier/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group">
             <svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             Verifier Portal
@@ -202,6 +198,19 @@
               <p class="text-sm text-gray-500 mt-1">Select an operational queue below or from the menu to begin managing workflows.</p>
             </div>
 
+            <section class="mb-8 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Security Monitoring</p>
+                  <h4 class="mt-1 text-base sm:text-lg font-heading font-extrabold text-gray-900">Student Login Risk Alerts</h4>
+                </div>
+                <span id="studentSecurityAlertCount" class="inline-flex items-center justify-center rounded-full bg-brand-50 px-3 py-1 text-sm font-bold text-brand-700">...</span>
+              </div>
+              <div id="studentSecurityAlertRows" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <p class="text-sm text-gray-500">Loading security alerts...</p>
+              </div>
+            </section>
+
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               
               <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
@@ -243,18 +252,6 @@
                 </a>
               </article>
 
-              <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div class="h-10 w-10 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center ring-1 ring-cyan-100 mb-4">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <h4 class="text-base font-bold text-gray-900 mb-1">Business Plan Manager</h4>
-                  <p class="text-sm text-gray-500 mb-6">Control business plan price and verifier profile content.</p>
-                </div>
-                <a href="/internal/business-plan-manager/" class="text-sm font-semibold text-brand-600 hover:text-brand-500 inline-flex items-center">
-                  Open Manager &rarr;
-                </a>
-              </article>
 
               <article class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
                 <div>
@@ -332,5 +329,6 @@
     <script src="/assets/password-visibility.js?v=20260410a" defer></script>
     <script src="/assets/internal-auth.js" defer></script>
     <script src="/assets/internal-nav.js" defer></script>
+    <script src="/assets/admin-student-security-alerts.js?v=20260411a" defer></script>
   </body>
 </html>

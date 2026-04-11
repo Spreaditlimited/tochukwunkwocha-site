@@ -44,7 +44,16 @@
       var res = await fetch("/.netlify/functions/user-auth-password-reset-complete", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: (function () {
+          var headers = { "Content-Type": "application/json" };
+          try {
+            if (typeof window.twsStudentDeviceId === "function") {
+              var deviceId = String(window.twsStudentDeviceId() || "").trim();
+              if (deviceId) headers["X-Student-Device-Id"] = deviceId;
+            }
+          } catch (_error) {}
+          return headers;
+        })(),
         body: JSON.stringify({ token: token, password: password }),
       });
       var json = await res.json().catch(function () {

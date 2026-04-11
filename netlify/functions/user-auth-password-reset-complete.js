@@ -26,7 +26,10 @@ exports.handler = async function (event) {
   try {
     await ensureStudentAuthTables(pool);
     const account = await consumePasswordResetToken(pool, { token, password });
-    const sessionToken = await createStudentSession(pool, account.id);
+    const sessionToken = await createStudentSession(pool, account.id, {
+      event,
+      enforceDeviceLimit: true,
+    });
 
     return {
       statusCode: 200,
@@ -45,6 +48,9 @@ exports.handler = async function (event) {
       }),
     };
   } catch (error) {
+    if (error && error.code === "DEVICE_LIMIT_EXCEEDED") {
+      return json(Number(error.statusCode || 429), { ok: false, code: error.code, error: error.message || "Device limit reached" });
+    }
     return json(400, { ok: false, error: error.message || "Could not reset password" });
   }
 };

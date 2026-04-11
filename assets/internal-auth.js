@@ -5,6 +5,7 @@
   const loginBtn = document.getElementById("internalLoginBtn");
   const loginErr = document.getElementById("internalLoginError");
   const logoutBtn = document.getElementById("internalLogoutBtn");
+  const SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
 
   function setView(authed) {
     const isAuthed = !!authed;
@@ -16,6 +17,7 @@
     const qs = new URLSearchParams(window.location.search);
     const raw = String(qs.get("next") || "").trim();
     if (!raw.startsWith("/internal/")) return "";
+    if (/^\/internal\/business-plan-manager(?:\/|$|\?)/i.test(raw)) return "";
     return raw;
   }
 
@@ -50,6 +52,9 @@
     }).catch(function () {
       return null;
     });
+    try {
+      sessionStorage.setItem(SIGNOUT_MARKER_KEY, "1");
+    } catch (_error) {}
   }
 
   if (loginForm) {

@@ -342,6 +342,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
            status AS queue_status,
            flodesk_pre_synced AS flodesk_pre_synced,
            flodesk_main_synced AS flodesk_main_synced,
+           meta_purchase_sent AS meta_purchase_sent,
            reviewed_by AS reviewed_by,
            review_note AS review_note,
            reviewed_at AS reviewed_at,
@@ -387,6 +388,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
              provider AS provider,
              provider_reference AS transfer_reference,
              status AS order_status,
+             meta_purchase_sent AS meta_purchase_sent,
              created_at AS created_at,
              updated_at AS updated_at
       FROM course_orders
@@ -439,6 +441,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       source: "manual",
       provider_label: "Manual",
       can_review: row.queue_status === STATUS_PENDING,
+      meta_purchase_sent: Number(row.meta_purchase_sent || 0) === 1 ? 1 : 0,
     };
   });
 
@@ -467,6 +470,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       source: provider || "online",
       provider_label: providerLabel,
       can_review: false,
+      meta_purchase_sent: Number(row.meta_purchase_sent || 0) === 1 ? 1 : 0,
     };
   });
 
