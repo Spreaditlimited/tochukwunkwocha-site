@@ -9,7 +9,7 @@ const COURSE_CONFIGS = {
   },
   "prompt-to-production": {
     slug: "prompt-to-production",
-    name: "Prompt to Production",
+    name: "Prompt to Profit Advanced",
     landingPath: "/courses/prompt-to-production",
     defaultBatchKey: "ptprod-batch-1",
     defaultBatchLabel: "Batch 1",

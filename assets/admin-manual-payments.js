@@ -73,7 +73,7 @@
   };
   const FALLBACK_COURSES = [
     { slug: "prompt-to-profit", label: "Prompt To Profit" },
-    { slug: "prompt-to-production", label: "Prompt To Production" },
+    { slug: "prompt-to-production", label: "Prompt to Profit Advanced" },
     { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
   ];
   const COURSE_SLUG_ALIASES = {

@@ -154,7 +154,7 @@ async function ensureCourseBatchesTable(pool) {
       [slug, batchKey, batchLabel, prefix, amountMinor, paypalAmountMinor, now, now, now, slug, batchKey]
     );
 
-    // Backfill old auto-seeded Prompt to Production defaults created with legacy N10,750 fallback.
+    // Backfill old auto-seeded Prompt to Profit Advanced defaults created with legacy N10,750 fallback.
     if (slug === "prompt-to-production") {
       await pool.query(
         `UPDATE course_batches

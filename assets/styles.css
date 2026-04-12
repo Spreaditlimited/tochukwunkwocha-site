@@ -72,6 +72,25 @@ p {
   margin: 0;
 }
 
+.ptp-logo-inline {
+  display: inline-block;
+  width: auto;
+  height: 0.98em;
+  vertical-align: -0.12em;
+  margin: 0 0.16em;
+}
+
+.ptp-logo-inline--heading {
+  height: 1.2em;
+  vertical-align: -0.16em;
+}
+
+.ptp-logo-inline--button {
+  height: 1.04em;
+  vertical-align: -0.14em;
+  margin: 0 0.12em;
+}
+
 .section {
   width: var(--container);
   margin: 0 auto;

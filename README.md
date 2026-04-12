@@ -70,7 +70,7 @@ Core DB / payment / Flodesk
 - `PAYPAL_WEBHOOK_ID`
 - `FLODESK_API_KEY`
 - `FLODESK_ENROL_SEGMENT_ID` (main enrolment segment, default `69ad9a50568c36094377ea96`)
-- `FLODESK_ENROL_PROD_SEGMENT_ID` (Prompt to Production enrolment segment; falls back to `FLODESK_ENROL_SEGMENT_ID` if unset)
+- `FLODESK_ENROL_PROD_SEGMENT_ID` (Prompt to Profit Advanced enrolment segment; falls back to `FLODESK_ENROL_SEGMENT_ID` if unset)
 - `FLODESK_PRE_ENROL_SEGMENT_ID` (pre-enrolment segment, default `69ad60e952e4ac8ca746bb53`)
 
 Manual transfer bank details

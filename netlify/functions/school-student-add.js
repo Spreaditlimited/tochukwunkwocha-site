@@ -19,7 +19,7 @@ function clean(value, max) {
 function humanCourseName(slug) {
   const course = clean(slug, 120).toLowerCase();
   if (course === "prompt-to-profit") return "Prompt to Profit";
-  if (course === "prompt-to-production") return "Prompt to Production";
+  if (course === "prompt-to-production") return "Prompt to Profit Advanced";
   return course || "Course";
 }
 

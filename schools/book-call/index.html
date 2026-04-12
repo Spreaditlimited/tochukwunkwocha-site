@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book School Call | Tochukwu Tech and AI Academy</title>
+    <meta name="description" content="Schedule, reschedule, or cancel your school onboarding call." />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --brand: #1e293b;
+        --accent: #2563eb;
+        --accent-light: #eff6ff;
+        --focus-ring: rgba(37, 99, 235, 0.15);
+        --error: #ef4444;
+        --success: #10b981;
+      }
+      
+      * { box-sizing: border-box; }
+      
+      body { 
+        margin: 0; 
+        font-family: 'Inter', system-ui, sans-serif; 
+        background: var(--bg); 
+        color: var(--ink); 
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      .wrap { 
+        width: min(840px, 92vw); 
+        margin: 0 auto; 
+      }
+      
+      /* Hero Section */
+      .book-call-hero { 
+        padding: 64px 0 40px; 
+        text-align: center;
+      }
+      
+      .book-call-hero h1 { 
+        margin: 0; 
+        font-family: 'Manrope', 'Inter', sans-serif; 
+        font-size: clamp(2.2rem, 5vw, 3.2rem); 
+        color: var(--ink); 
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+      
+      .book-call-hero p { 
+        margin: 16px auto 0; 
+        color: var(--muted); 
+        line-height: 1.6; 
+        max-width: 54ch; 
+        font-size: 1.1rem;
+      }
+
+      /* Premium Card */
+      .card { 
+        background: var(--card); 
+        border: 1px solid rgba(226, 232, 240, 0.8); 
+        border-radius: 24px; 
+        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.02); 
+        padding: 40px; 
+        text-align: left;
+      }
+
+      .card h2 {
+        margin: 0 0 24px;
+        font-family: 'Manrope', 'Inter', sans-serif;
+        color: var(--ink);
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+      }
+
+      /* Form Grid & Layout */
+      .grid { 
+        display: grid; 
+        grid-template-columns: repeat(2, minmax(0, 1fr)); 
+        gap: 24px; 
+      }
+      .field { display: grid; gap: 8px; }
+      .section-gap { margin-top: 24px; }
+      
+      /* Premium Inputs */
+      label { 
+        font-size: 0.9rem; 
+        font-weight: 600; 
+        color: var(--ink); 
+      }
+      
+      input, select, textarea {
+        width: 100%; 
+        max-width: 100%;
+        border: 2px solid var(--line); 
+        border-radius: 12px; 
+        padding: 14px 16px; 
+        font-size: 1rem; 
+        color: var(--ink); 
+        background: #fdfdfe;
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+      
+      textarea { min-height: 100px; resize: vertical; }
+      
+      input:focus, textarea:focus { 
+        outline: none; 
+        border-color: var(--accent); 
+        background: #fff;
+        box-shadow: 0 0 0 4px var(--focus-ring); 
+      }
+
+      /* The Premium Picker UI */
+      .slot-box { 
+        margin-top: 32px; 
+        border: 2px solid var(--line); 
+        background: #fafbfc; 
+        border-radius: 16px; 
+        padding: 24px; 
+        transition: all 0.3s ease;
+        overflow: hidden;
+      }
+
+      .slot-box:focus-within {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+
+      .slot-box label {
+        font-size: 1.05rem;
+        color: var(--ink);
+      }
+
+      .slot-hint { 
+        margin: 4px 0 16px; 
+        color: var(--muted); 
+        font-size: 0.9rem; 
+      }
+
+      .slot-box .slot-date {
+        display: block;
+        width: min(100%, 220px);
+        max-width: 100%;
+        min-width: 0;
+        margin-inline: 0;
+        background: #fff;
+      }
+      .slot-date::-webkit-date-and-time-value {
+        text-align: left;
+      }
+      .slot-date::-webkit-calendar-picker-indicator {
+        opacity: 0.9;
+      }
+
+      .time-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+      }
+
+      .time-chip {
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: #1f2937;
+        padding: 10px 12px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .time-chip:hover,
+      .time-chip:focus-visible {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        outline: none;
+      }
+
+      .time-chip.active {
+        border-color: var(--accent);
+        background: #dbeafe;
+        color: #1e3a8a;
+      }
+
+      .slot-empty {
+        margin-top: 12px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      /* Buttons */
+      .actions { 
+        margin-top: 32px; 
+        display: flex; 
+        gap: 12px; 
+        flex-wrap: wrap; 
+      }
+      
+      .btn {
+        border: 0; 
+        border-radius: 12px; 
+        padding: 14px 24px; 
+        font-size: 1rem; 
+        font-weight: 600; 
+        cursor: pointer; 
+        text-decoration: none;
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+      
+      .btn-primary { 
+        background: var(--brand); 
+        color: #fff; 
+        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+      }
+      
+      .btn-primary:hover { 
+        background: #0f172a; 
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(30, 41, 59, 0.2);
+      }
+      
+      .btn-secondary { 
+        background: #fff; 
+        color: var(--brand); 
+        border: 2px solid var(--line); 
+      }
+      
+      .btn-secondary:hover {
+        border-color: var(--brand);
+        background: #f8fafc;
+      }
+
+      .btn-danger { 
+        background: #fff; 
+        color: var(--error);
+        border: 2px solid #fecaca;
+      }
+
+      .btn-danger:hover {
+        background: #fef2f2;
+        border-color: var(--error);
+      }
+
+      /* Status & Meeting Panels */
+      .status { 
+        margin-top: 16px; 
+        font-size: 0.95rem; 
+        color: var(--muted); 
+      }
+      .status.error { color: var(--error); font-weight: 500; }
+      .status.ok { color: var(--success); font-weight: 500; }
+      
+      .meeting-panel { 
+        margin-top: 24px; 
+        padding: 20px; 
+        border-radius: 16px; 
+        border: 1px solid #a7f3d0; 
+        background: #ecfdf5; 
+        color: #065f46;
+      }
+      
+      .meeting-panel p { 
+        margin: 0; 
+        font-size: 0.95rem; 
+        line-height: 1.6; 
+      }
+      
+      [hidden] { display: none !important; }
+      
+      @media (max-width: 760px) {
+        .grid { grid-template-columns: 1fr; gap: 16px; }
+        .card { padding: 24px; }
+        .book-call-hero { padding: 40px 20px 24px; }
+        .btn { width: 100%; }
+        .actions { gap: 10px; }
+        .time-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .slot-box .slot-date { font-size: 16px; }
+      }
+
+      @media (max-width: 420px) {
+        .card { padding: 18px 14px; border-radius: 18px; }
+        .slot-box { padding: 16px 12px; }
+        .slot-box .slot-date { width: min(100%, 220px); }
+        .time-grid { gap: 8px; }
+        .time-chip { padding: 10px 8px; font-size: 0.9rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="book-call-hero">
+        <div class="wrap">
+          <h1>Schedule a call</h1>
+          <p>Pick a slot, book instantly, and receive a Zoom link immediately. You can easily reschedule or cancel from your management link.</p>
+        </div>
+      </div>
+
+      <div class="wrap" style="padding-bottom: 80px;">
+        <section id="bookPanel" class="card">
+          <h2>Book a new call</h2>
+          <form id="bookForm" novalidate>
+            <input type="text" name="website" hidden tabindex="-1" autocomplete="off" />
+            <div class="grid">
+              <div class="field"><label for="fullName">Full Name</label><input id="fullName" name="fullName" placeholder="e.g. Mary Johnson" required /></div>
+              <div class="field"><label for="schoolName">School Name</label><input id="schoolName" name="schoolName" placeholder="e.g. Sunrise Secondary" required /></div>
+            </div>
+            <div class="grid section-gap">
+              <div class="field"><label for="workEmail">Work Email</label><input id="workEmail" name="workEmail" type="email" placeholder="name@school.edu" required /></div>
+              <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" placeholder="+234..." required /></div>
+            </div>
+            <div class="grid section-gap">
+              <div class="field"><label for="role">Role</label><input id="role" name="role" placeholder="Principal / ICT Coordinator" required /></div>
+              <div class="field"><label for="studentPopulation">Student Population</label><input id="studentPopulation" name="studentPopulation" placeholder="e.g. 420" required /></div>
+            </div>
+            
+            <div class="field slot-box">
+              <label for="slotDate">Choose date and time (Europe/London)</label>
+              <p class="slot-hint">Pick a date, then choose a time slot.</p>
+              <input id="slotDate" class="slot-date" type="date" />
+              <div id="slotTimeGrid" class="time-grid" aria-live="polite"></div>
+              <p id="slotTimeEmpty" class="slot-empty" hidden>No available times for this date.</p>
+              <input id="slotStartIso" name="slotStartIso" type="hidden" required />
+            </div>
+
+            <div class="actions">
+              <button type="submit" id="bookSubmitBtn" class="btn btn-primary">Book call</button>
+              <button type="button" id="refreshSlotsBtn" class="btn btn-secondary">Refresh slots</button>
+            </div>
+            <p id="bookStatus" class="status" role="status" aria-live="polite"></p>
+            <div id="bookMeetingPanel" class="meeting-panel" hidden></div>
+          </form>
+        </section>
+
+        <section id="managePanel" class="card" hidden>
+          <h2>Manage your booking</h2>
+          <p id="manageSummary" class="status" style="margin-top: 0; margin-bottom: 24px; color: var(--ink);"></p>
+
+          <div id="manageActions" hidden>
+            <div class="field slot-box" style="margin-top: 0;">
+              <label for="rescheduleDate">Choose a new date and time (Europe/London)</label>
+              <input id="rescheduleDate" class="slot-date" type="date" />
+              <div id="rescheduleTimeGrid" class="time-grid" aria-live="polite"></div>
+              <p id="rescheduleTimeEmpty" class="slot-empty" hidden>No available times for this date.</p>
+              <input id="rescheduleSlot" type="hidden" />
+            </div>
+            <div class="field section-gap">
+              <label for="manageNote">Note (optional)</label>
+              <textarea id="manageNote" placeholder="Add context for your reschedule or cancellation"></textarea>
+            </div>
+            <div class="actions">
+              <button type="button" id="rescheduleBtn" class="btn btn-primary">Reschedule</button>
+              <button type="button" id="cancelBtn" class="btn btn-danger">Cancel booking</button>
+            </div>
+            <p id="manageStatus" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <div id="manageClosed" class="meeting-panel" hidden>
+            <p>This booking is already cancelled and no longer has an active slot.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+        </div>
+        <div class="footer-tagline">Practical AI. Real world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js" defer></script>
+    <script src="/assets/school-call-booking.js" defer></script>
+  </body>
+</html>

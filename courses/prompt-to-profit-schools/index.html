@@ -1,66 +1,399 @@
 <!doctype html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prompt to Profit for Schools | Tochukwu Tech and AI Academy</title>
-    <meta name="description" content="Prompt to Profit for Schools." />
+    <title>School AI Readiness Scorecard | Prompt to Profit for Schools</title>
+    <meta name="description" content="Take the 3 minute School AI Readiness Scorecard and get your school's next best step for Prompt to Profit for Schools." />
     <link rel="canonical" href="https://tochukwunkwocha.com/courses/prompt-to-profit-schools/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tochukwu Tech and AI Academy" />
-    <meta property="og:title" content="Prompt to Profit for Schools | Tochukwu Tech and AI Academy" />
-    <meta property="og:description" content="Prompt to Profit for Schools." />
+    <meta property="og:title" content="School AI Readiness Scorecard | Prompt to Profit for Schools" />
+    <meta property="og:description" content="Find out whether your school can roll out Prompt to Profit for Schools in the next 30 days." />
     <meta property="og:url" content="https://tochukwunkwocha.com/courses/prompt-to-profit-schools/" />
     <meta property="og:image" content="https://tochukwunkwocha.com/assets/Proof/tochukwunkwocha-desktop.png" />
-    <meta property="og:image:alt" content="Tochukwu Tech and AI Academy website preview" />
+    <meta property="og:image:alt" content="Prompt to Profit for Schools scorecard preview" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Prompt to Profit for Schools | Tochukwu Tech and AI Academy" />
-    <meta name="twitter:description" content="Prompt to Profit for Schools." />
+    <meta name="twitter:title" content="School AI Readiness Scorecard | Prompt to Profit for Schools" />
+    <meta name="twitter:description" content="Take the 3 minute readiness scorecard built for school owners, principals, and ICT decision makers." />
     <meta name="twitter:image" content="https://tochukwunkwocha.com/assets/Proof/tochukwunkwocha-desktop.png" />
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              heading: ["Manrope", "sans-serif"],
-            },
-            colors: {
-              brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#c7d6f1",
-                500: "#22345f",
-                600: "#14213d",
-                900: "#0f1a33",
-                teal: "#3a7ca5",
-                amber: "#d9a441"
-              },
-            },
-            boxShadow: {
-              'premium': '0 20px 40px -15px rgba(20, 33, 61, 0.05), 0 0 20px 0 rgba(20, 33, 61, 0.02)',
-              'premium-hover': '0 30px 60px -15px rgba(20, 33, 61, 0.1), 0 0 30px 0 rgba(20, 33, 61, 0.04)',
-            }
-          },
-        },
-      };
-    </script>
+
     <style>
-      details > summary { list-style: none; }
-      details > summary::-webkit-details-marker { display: none; }
-      details[open] summary ~ * { animation: slideDown 0.3s ease-in-out; }
-      @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-      main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
-      .site-footer { margin-top: 0 !important; }
+      /* PREMIUM OVERHAUL STYLES */
+      :root {
+        --surface: #ffffff;
+        --surface-alt: #fcfcfd;
+        --surface-glass: rgba(255, 255, 255, 0.85);
+        --ink: #09090b;
+        --muted: #52525b;
+        --muted-light: #a1a1aa;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-glow: rgba(37, 99, 235, 0.2);
+        --line: #e4e4e7;
+        --brand-dark: #000000;
+        
+        --radius-sm: 8px;
+        --radius-md: 16px;
+        --radius-lg: 24px;
+        --radius-xl: 32px;
+        
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+        --shadow-md: 0 12px 32px -12px rgba(0,0,0,0.08);
+        --shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.12);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--surface);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Base Typography */
+      h1, h2, h3, h4 {
+        margin: 0;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        color: var(--brand-dark);
+      }
+      h1 { font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 800; }
+      h2 { font-size: clamp(2.25rem, 4vw, 3.5rem); font-weight: 700; }
+      h3 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 700; }
+      p { margin: 0; line-height: 1.7; font-size: 1.125rem; }
+
+      /* Layout Utilities */
+      .wrap { width: min(1280px, 90vw); margin: 0 auto; }
+      .wrap-sm { width: min(800px, 90vw); margin: 0 auto; }
+      .text-center { text-align: center; }
+      .mt-4 { margin-top: 1rem; }
+      .mt-8 { margin-top: 2rem; }
+      .mt-12 { margin-top: 3rem; }
+
+      /* Buttons */
+      .btn-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 40px; }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+      /* Sections */
+      .section { padding: 120px 0; position: relative; }
+      .section-alt { background: var(--surface-alt); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      
+      .lead-text { 
+        font-size: 1.25rem; 
+        color: var(--muted); 
+        max-width: 680px; 
+        margin: 24px auto 0; 
+        font-weight: 400;
+      }
+
+      /* High-End Hero Section */
+      .hero {
+        position: relative;
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+        padding: 160px 0 140px;
+        background: #000;
+        color: white;
+        text-align: center;
+        overflow: hidden;
+      }
+      .hero.course-hero {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      /* Subtle glowing mesh background */
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
+        pointer-events: none;
+      }
+      .hero .wrap {
+        position: relative;
+        z-index: 1;
+        width: min(1000px, 90vw);
+        margin: 0 auto;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center !important;
+      }
+      .hero .wrap > * {
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center !important;
+      }
+      .hero h1,
+      .hero p,
+      .hero .pill {
+        text-align: center !important;
+      }
+      .hero h1 {
+        color: white;
+        margin: 0 auto 24px;
+        background: linear-gradient(180deg, #FFFFFF 0%, #A1A1AA 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        max-width: 15ch;
+      }
+      .hero p { color: #A1A1AA; font-size: 1.35rem; max-width: 720px; font-weight: 400; }
+      .hero .cta-row {
+        justify-content: center !important;
+        align-items: center;
+        width: 100%;
+      }
+      .hero .cta-row .btn {
+        min-width: 250px;
+        height: 56px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hero .btn-outline {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .hero .btn-outline:hover,
+      .hero .btn-outline:focus-visible {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .hero-ptp-logo {
+        width: min(280px, 50vw);
+        height: auto;
+        display: block;
+        margin: 0 auto 24px;
+      }
+      .inline-ptp-logo {
+        display: inline-block;
+        vertical-align: middle;
+        height: 0.95em;
+        width: auto;
+        margin: 0 0.2em;
+      }
+      .inline-ptp-logo--heading {
+        height: 1.18em;
+        vertical-align: -0.14em;
+        margin: 0 0.18em;
+      }
+      
+      .pill {
+        display: inline-flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.05); color: #fff;
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 8px 20px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+        letter-spacing: 0.05em; margin: 0 auto 32px;
+        backdrop-filter: blur(10px);
+      }
+
+      /* Grids & Cards */
+      .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 64px; }
+      
+      .card-feature {
+        background: var(--surface); padding: 48px 40px; border-radius: var(--radius-lg); 
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow-sm); 
+        text-align: left;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+      }
+      .card-feature:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+      }
+      .card-feature h3 { margin-bottom: 16px; font-size: 1.5rem; }
+      .card-feature p { color: var(--muted); }
+
+      /* Testimonial - Editorial Style */
+      .testimonial-panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        padding: 64px;
+        box-shadow: var(--shadow-lg);
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+      }
+      .testimonial-panel::before {
+        content: '"';
+        position: absolute; top: 20px; left: 40px;
+        font-family: "Plus Jakarta Sans", serif;
+        font-size: 180px; color: var(--surface-alt);
+        line-height: 1; z-index: 0; opacity: 0.5;
+      }
+      .testimonial-content-wrapper { position: relative; z-index: 1; }
+      .testimonial-eyebrow {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.1em; color: var(--accent);
+      }
+      .testimonial-body { margin-top: 24px; color: var(--ink); font-size: 1.25rem; line-height: 1.8; font-weight: 400; }
+      .testimonial-links { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+      .testimonial-links .btn { font-size: 0.95rem; }
+      
+      .testimonial-footer { margin-top: 40px; display: flex; align-items: center; gap: 16px; }
+      .testimonial-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+      .testimonial-name { font-size: 1.1rem; font-weight: 700; color: var(--brand-dark); }
+      .testimonial-role { margin-top: 4px; color: var(--muted); font-size: 0.95rem; }
+
+      /* Trust Section */
+      .trust-grid { margin-top: 64px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: stretch; }
+      .trust-main { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 48px; box-shadow: var(--shadow-sm); }
+      .trust-main h3 { font-size: 2rem; }
+      .trust-list { margin: 32px 0 0; padding-left: 24px; color: var(--muted); line-height: 1.8; font-size: 1.125rem; }
+      .trust-list li { margin-bottom: 12px; }
+      .trust-list strong { color: var(--ink); font-weight: 600; }
+      
+      .trust-aside { display: grid; gap: 24px; }
+      .trust-stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: center; }
+      .trust-stat-value { font-family: "Plus Jakarta Sans", sans-serif; font-size: 3.5rem; font-weight: 800; letter-spacing: -0.04em; color: var(--brand-dark); line-height: 1; }
+      .trust-stat-label { margin-top: 12px; color: var(--muted); font-size: 1.1rem; }
+
+      /* Step Cards */
+      .step-number {
+        width: 48px; height: 48px; background: var(--surface-alt); color: var(--brand-dark);
+        border: 1px solid var(--line);
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 1.25rem; font-weight: 700; margin-bottom: 24px;
+      }
+
+      /* Instructor Bridge */
+      .instructor-card {
+        background: var(--brand-dark);
+        color: white;
+        border-radius: var(--radius-xl);
+        padding: 64px;
+        display: grid; grid-template-columns: 1fr 280px; gap: 48px;
+        align-items: center; box-shadow: var(--shadow-lg);
+      }
+      .instructor-card h2 { color: white; }
+      .instructor-copy p { margin-top: 24px; color: #A1A1AA; font-size: 1.15rem; }
+      .instructor-copy .btn-row { justify-content: flex-start; margin-top: 32px; }
+      .instructor-photo { width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-md); justify-self: end; }
+      .instructor-pill { background: rgba(255,255,255,0.1); border: none; color: #fff; margin-bottom: 16px; }
+
+      /* =======================================================================
+         SCORECARD UI - PREMIUM OVERRIDES
+         ======================================================================= */
+      body.scorecard-mode { background: #000; }
+      body.scorecard-mode .site-header, body.scorecard-mode .site-footer, body.scorecard-mode #landingShell { display: none !important; }
+      body.scorecard-mode #schoolReadinessApp { min-height: 100dvh; width: 100%; display: grid; }
+      body.scorecard-mode #scorecardShell { display: grid !important; width: 100%; }
+      body.scorecard-mode main { min-height: 100dvh; display: flex; }
+      #scorecardShell[hidden] { display: none; }
+
+      .score-shell {
+        width: 100%; min-height: 100dvh; padding: 40px 20px; display: grid; place-items: center;
+        background: radial-gradient(circle at top, #111827 0%, #000000 100%);
+      }
+      
+      .score-card { 
+        background: var(--surface); 
+        width: 100%; max-width: 800px; 
+        margin: 0 auto; 
+        padding: 64px; 
+        border-radius: var(--radius-xl); 
+        box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
+        border: 1px solid rgba(255,255,255,0.1); 
+      }
+      
+      .score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+      .score-header h4 { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+      
+      .progress-track { background: var(--surface-alt); height: 6px; border-radius: 3px; margin: 24px 0 40px; overflow: hidden; border: 1px solid var(--line); }
+      .progress-fill { background: var(--brand-dark); height: 100%; width: 0; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+      .question-counter { color: var(--muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+      #questionPrompt { font-size: 2rem; line-height: 1.3; }
+
+      .option-grid { display: grid; gap: 16px; margin-top: 40px; }
+      .score-option {
+        width: 100%; padding: 24px 32px; text-align: left; background: var(--surface);
+        border: 1px solid var(--line); border-radius: var(--radius-md); font-size: 1.15rem;
+        font-weight: 500; color: var(--ink); cursor: pointer; transition: all 0.2s;
+      }
+      .score-option:hover { border-color: var(--brand-dark); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+      .score-option.active { 
+        border-color: var(--brand-dark); background: var(--brand-dark); color: white;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+      }
+
+      .score-nav { margin-top: 48px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 32px; }
+      .score-nav .btn { min-width: 160px; }
+      
+      .score-nav-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+      .score-nav-equal .btn { width: 100%; }
+
+      /* Premium Forms */
+      .lead-form { margin-top: 40px; display: grid; gap: 24px; text-align: left; }
+      .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .field-label { display: block; margin-bottom: 10px; font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+      .field-input { 
+        width: 100%; padding: 16px 20px; 
+        background: var(--surface-alt);
+        border: 1px solid var(--line); border-radius: var(--radius-sm); 
+        font-size: 1.05rem; outline: none; transition: all 0.2s; 
+        font-family: inherit;
+      }
+      .field-input:focus { border-color: var(--brand-dark); background: var(--surface); box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
+
+      .result-box { 
+        background: var(--surface-alt); border: 1px solid var(--line); 
+        padding: 40px; border-radius: var(--radius-lg); margin-top: 40px; text-align: left; 
+      }
+      .result-points { margin: 16px 0 0; padding-left: 20px; line-height: 1.8; font-size: 1.1rem; }
+      .result-points li { margin-bottom: 8px; }
+      .result-meta { font-family: "Plus Jakarta Sans", sans-serif; color: var(--brand-dark); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; }
+
+      /* Responsive Overrides */
+      @media (max-width: 960px) {
+        .hero { padding: 120px 0 100px; }
+        .grid-3 { grid-template-columns: 1fr; gap: 24px; }
+        .trust-grid { grid-template-columns: 1fr; }
+        .instructor-card { grid-template-columns: 1fr; padding: 48px; text-align: center; }
+        .instructor-photo { justify-self: center; height: 280px; width: 280px; border-radius: 50%; }
+        .instructor-copy .btn-row { justify-content: center; }
+        .section { padding: 80px 0; }
+        .testimonial-panel { padding: 40px; }
+      }
+
+      @media (max-width: 768px) {
+        .score-card { padding: 40px 24px; border-radius: 24px; }
+        .field-grid-2 { grid-template-columns: 1fr; gap: 16px; }
+        .btn-row { flex-direction: column; width: 100%; }
+        .btn-row .btn { width: 100%; }
+        .score-nav-equal { grid-template-columns: 1fr; }
+        .score-nav { flex-direction: column; gap: 16px; }
+      }
+
+      @media (max-width: 520px) {
+        .hero h1 { font-size: 2.5rem; }
+        .hero-ptp-logo { width: min(220px, 62vw); margin-bottom: 18px; }
+        .score-shell { padding: 16px; }
+        .score-card { padding: 32px 20px; }
+        .score-option { padding: 16px 20px; font-size: 1rem; }
+        #questionPrompt { font-size: 1.5rem; }
+        .trust-stat-value { font-size: 2.5rem; }
+      }
     </style>
   </head>
-  <body class="bg-[#f8f6f1] text-gray-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-200 selection:text-brand-900">
+
+  <body>
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
@@ -70,6 +403,7 @@
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/services/domain-registration/">Domains</a>
           <div class="nav-dropdown">
             <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
@@ -82,302 +416,278 @@
       </div>
     </header>
 
-    <main class="flex-1 w-full">
-      
-      <section class="relative pt-20 pb-24 lg:pt-32 lg:pb-32 overflow-hidden">
-        <div class="absolute inset-0 z-0 pointer-events-none">
-          <div class="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-[radial-gradient(circle,rgba(223,231,247,0.8)_0%,rgba(248,246,241,0)_70%)] blur-3xl"></div>
-        </div>
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100/80 text-brand-600 text-sm font-bold tracking-wide uppercase mb-6 ring-1 ring-brand-200">
-            <span class="w-2 h-2 rounded-full bg-brand-teal"></span>
-            Prompt to Profit for Schools
-          </span>
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold text-brand-600 tracking-tight leading-[1.15] mb-6">
-            Help Your Students Build <span class="text-brand-teal">Real Digital Skills With AI</span>
-          </h1>
-          <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed font-medium">
-            Equip your secondary school students with the future of technology without the confusion of traditional coding classes. A guided, plug-and-play digital skills program where students use AI to build real, working websites.
-          </p>
-          <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <a href="/schools/login/?mode=register" class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-4 text-base font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md hover:shadow-lg transition-all">
-              Register Your School
-            </a>
-            <a href="/contact/" class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-4 text-base font-bold text-brand-600 bg-white border border-brand-200 hover:bg-brand-50 rounded-xl shadow-sm transition-all">
-              Book a Conversation
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-12 sm:py-16">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="bg-white rounded-3xl border border-brand-100 shadow-premium p-6 sm:p-10">
-            <div class="text-center mb-8">
-              <p class="text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-brand-teal mb-3">Parent Testimonial</p>
-              <h2 class="text-2xl sm:text-3xl font-heading font-extrabold text-brand-600">What Parents Are Seeing</h2>
+    <main>
+      <div id="schoolReadinessApp">
+        <div id="landingShell">
+          
+          <section class="hero course-hero">
+            <div class="wrap">
+              <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-ptp-logo" />
+              <h1>Is your school ready for practical AI?</h1>
+              <p>Find out in 3 minutes. Take the readiness scorecard to see if your school has what it takes to roll out real world AI learning in the next 30 days.</p>
+              <div class="cta-row">
+                <button type="button" data-start-scorecard class="btn btn-outline">Start the Scorecard</button>
+                <a href="#how-it-works" class="btn btn-outline">How it works</a>
+              </div>
             </div>
-            <article class="mx-auto max-w-4xl bg-[#f8f6f1] rounded-2xl border border-brand-100 p-6 sm:p-8">
-              <div class="flex items-center gap-4">
-                <img src="/assets/anuri.JPG" alt="Photo of Anuri Okongwu" class="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-sm" />
-                <div>
-                  <h3 class="text-lg font-heading font-bold text-brand-600 leading-tight">Anuri Okongwu</h3>
-                  <p class="text-sm text-gray-600">Parent</p>
+          </section>
+
+          <section class="section">
+            <div class="wrap-sm">
+              <div class="testimonial-panel">
+                <div class="testimonial-content-wrapper">
+                  <div class="testimonial-eyebrow">Parent Testimonial</div>
+                  <h2 style="margin-top: 12px; font-size: 2rem;">What parents are seeing</h2>
+                  <div class="testimonial-body">
+                    <p>
+                      “Your <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="inline-ptp-logo" /> class was truly excellent. Your teaching style is clear, practical, and very effective.
+                      I initially registered for my two sons who are in secondary school, but since they had exams that week, I attended the class so I could guide them afterward.
+                      Thanks to your training, they built their websites in just a few days without any prior knowledge of HTML and CSS, and they are already live.”
+                    </p>
+                    <div class="testimonial-links">
+                      <a href="https://awesomeinterior6776.netlify.app/" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Visit Student Site 1</a>
+                      <a href="https://faithfultech.netlify.app/" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Visit Student Site 2</a>
+                    </div>
+                    <p style="margin-top: 24px;">
+                      “I have also referred some parents using your Facebook link, and one of them has already paid for the next class.
+                      We have enrolled in the advanced class coming up in May.
+                      Honestly, I got great value for the money spent, which is why I am confident about continuing.
+                      We are all excited, especially their father, who strongly supports them attending the next class.
+                      Thank you so much, Tochukwu. Keep up the great work.”
+                    </p>
+                  </div>
+                  <div class="testimonial-footer">
+                    <img src="/assets/anuri.JPG" alt="Anuri Okongwu" class="testimonial-avatar" />
+                    <div>
+                      <div class="testimonial-name">Anuri Okongwu</div>
+                      <div class="testimonial-role">Parent</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <p class="mt-6 text-base sm:text-lg text-gray-700 italic leading-relaxed">
-                &ldquo;Your Prompt to Profit class was so good. Your teaching ability is topnotch. I actually registered the course for my 2 boys in secondary school but because they were writing an exam last week, I had to attend the class, so that I would be their instructor.
-                My two boys - one in JS1 and the other in SS1 have now built their own websites by following the steps in the course. Their dad was so happy that he enrolled them for the advanced course.
-                I have referred 2 parents with your Facebook link, one has already paid yesterday for the next class.
-                I actually got value for the money spent, reason why I am registering for the advance class.
-                Thanks so much.&rdquo;
-              </p>
-            </article>
-          </div>
+            </div>
+          </section>
+
+          <section class="section section-alt">
+            <div class="wrap">
+              <div class="text-center">
+                <h2>What <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="inline-ptp-logo inline-ptp-logo--heading" /> is all about</h2>
+                <p class="lead-text">This is a practical learning system where beginners use AI to build real websites step by step. For schools, that means students are not just exposed to AI theory. They learn by creating.</p>
+              </div>
+              <div class="trust-grid">
+                <article class="trust-main">
+                  <h3>Built for practical outcomes, not abstract tech talk</h3>
+                  <p class="mt-4" style="color: var(--muted); font-size: 1.125rem; line-height: 1.7;">The program combines guided lessons, simple implementation, and clear student output. Schools can launch without creating extra teaching pressure, and students can produce publishable work early.</p>
+                  <ul class="trust-list">
+                    <li><strong>Real learning model:</strong> students follow clear prompts and build real web pages.</li>
+                    <li><strong>Structured delivery:</strong> pre-recorded lessons make rollout simpler for school teams.</li>
+                    <li><strong>Beginner friendly:</strong> no prior coding background required before starting.</li>
+                    <li><strong>School-ready operations:</strong> onboarding and student access are handled through a simple dashboard.</li>
+                  </ul>
+                </article>
+                <aside class="trust-aside" aria-label="Program proof">
+                  <div class="trust-stat">
+                    <div id="trustTrainedValue" class="trust-stat-value">200+</div>
+                    <p id="trustTrainedLabel" class="trust-stat-label">Learners trained in the first 2 months after launch.</p>
+                  </div>
+                  <div class="trust-stat">
+                    <div id="trustReviewsValue" class="trust-stat-value">Multiple</div>
+                    <p id="trustReviewsLabel" class="trust-stat-label">Positive parent and student reviews across early cohorts.</p>
+                  </div>
+                  <div class="trust-stat">
+                    <div id="trustOutputValue" class="trust-stat-value">Real Sites</div>
+                    <p id="trustOutputLabel" class="trust-stat-label">Students are already publishing live websites after training.</p>
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </section>
+
+          <section class="section text-center">
+            <div class="wrap">
+              <h2>Stop guessing about AI implementation.</h2>
+              <p class="lead-text">You know your students need digital skills. But rolling out tech programs usually means scheduling headaches, overwhelmed teachers, and confusing software. <strong>We fixed that.</strong></p>
+              
+              <div class="grid-3">
+                <div class="card-feature">
+                  <h3>Zero Teacher Burnout</h3>
+                  <p>Lessons are pre recorded and fully guided. Your staff just manages access via a simple dashboard. No tech expertise required.</p>
+                </div>
+                <div class="card-feature">
+                  <h3>No Coding Needed</h3>
+                  <p>Students don't need a background in tech. They learn to copy, paste, and prompt AI to build real websites from scratch.</p>
+                </div>
+                <div class="card-feature">
+                  <h3>Instant Onboarding</h3>
+                  <p>Register your school, upload your student list, and launch. It's designed to be deployed in minutes, not terms.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="how-it-works" class="section section-alt text-center">
+            <div class="wrap">
+              <h2>Find your starting point in 3 steps</h2>
+              <p class="lead-text">This isn't a long, boring survey. We check only the core operational pieces needed for a successful rollout.</p>
+              
+              <div class="grid-3">
+                <div class="card-feature">
+                  <div class="step-number">1</div>
+                  <h3>Take the Scorecard</h3>
+                  <p>Answer 9 fast questions about your school's devices, leadership, and goals.</p>
+                </div>
+                <div class="card-feature">
+                  <div class="step-number">2</div>
+                  <h3>Get Your Score</h3>
+                  <p>Instantly see your readiness level. No waiting for an email or sales pitch.</p>
+                </div>
+                <div class="card-feature">
+                  <div class="step-number">3</div>
+                  <h3>Get a Game Plan</h3>
+                  <p>We'll give you a clear next step whether that is immediate onboarding or a readiness call.</p>
+                </div>
+              </div>
+              
+              <div class="btn-row mt-12">
+                <button type="button" data-start-scorecard class="btn btn-primary">Check Your Readiness Now</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="section text-center">
+            <div class="wrap-sm">
+              <h2>Ready to see where your school stands?</h2>
+              <p class="lead-text">Built for school owners, principals, and ICT decision makers who want practical results without the operational headache.</p>
+              <div class="btn-row mt-8">
+                <button type="button" data-start-scorecard class="btn btn-primary">Start the 3 Minute Scorecard</button>
+                <a href="/schools/book-call/" class="btn btn-outline">Book a call instead</a>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" style="padding-top: 0;">
+            <div class="wrap">
+              <article class="instructor-card">
+                <div class="instructor-copy">
+                  <span class="pill instructor-pill">Your Instructor</span>
+                  <h2 style="margin-top: 12px;">Meet Tochukwu Nkwocha</h2>
+                  <p>Tochukwu built <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="inline-ptp-logo" /> to make AI education practical and accessible for beginners, students, and schools. His approach focuses on helping learners build real outcomes fast, with clarity and structure.</p>
+                  <div class="btn-row">
+                    <a href="/#about" class="btn btn-primary">Learn more about Tochukwu</a>
+                  </div>
+                </div>
+                <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" class="instructor-photo" loading="lazy" />
+              </article>
+            </div>
+          </section>
+
         </div>
-      </section>
 
-      <section class="py-20 bg-white border-y border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-brand-600 mb-6">Why This Matters Now</h2>
-              <div class="space-y-6 text-lg text-gray-600 leading-relaxed">
-                <p>
-                  AI is reshaping how the world works. The students who learn early how to use these tools properly will have a massive advantage.
-                </p>
-                <p>
-                  But traditional tech education is often too theoretical, too difficult, or entirely disconnected from what teenagers can actually achieve today. 
-                </p>
-                <p>
-                  We take a different approach. We keep it simple, practical, and outcome-focused. Instead of just listening to lectures about technology, your students will use AI responsibly to create real digital projects.
-                </p>
-                <p class="font-semibold text-brand-600 text-xl pt-4 border-t border-gray-100">
-                  This kind of exposure builds confidence and what they learn stays with them.
-                </p>
+        <section id="scorecardShell" hidden class="score-shell">
+          <div class="wrap">
+            <div class="score-card">
+              <div class="score-header">
+                <h4 id="scorecardTopTitle">AI Readiness Scorecard</h4>
+                <button type="button" data-exit-scorecard class="btn btn-outline">Cancel & Exit</button>
               </div>
-            </div>
-            <div class="bg-brand-50 rounded-3xl p-8 sm:p-12 ring-1 ring-brand-100 relative overflow-hidden">
-              <div class="absolute top-0 right-0 p-8 opacity-10">
-                <svg class="w-32 h-32 text-brand-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              </div>
-              <h3 class="text-2xl font-heading font-bold text-brand-600 mb-6">What we removed to make it work:</h3>
-              <ul class="space-y-4">
-                <li class="flex items-center gap-3 text-gray-700 font-medium">
-                  <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white flex items-center justify-center text-red-500 font-bold shadow-sm">✕</span>
-                  No abstract tech theory
-                </li>
-                <li class="flex items-center gap-3 text-gray-700 font-medium">
-                  <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white flex items-center justify-center text-red-500 font-bold shadow-sm">✕</span>
-                  No complicated software setups
-                </li>
-                <li class="flex items-center gap-3 text-gray-700 font-medium">
-                  <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white flex items-center justify-center text-red-500 font-bold shadow-sm">✕</span>
-                  No coding confusion
-                </li>
-                <li class="flex items-center gap-3 text-gray-700 font-medium">
-                  <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white flex items-center justify-center text-red-500 font-bold shadow-sm">✕</span>
-                  No live scheduling stress
-                </li>
-              </ul>
+
+              <section id="screenIntro" class="text-center">
+                <h2>Let's check your readiness.</h2>
+                <p class="mt-4" style="color: var(--muted); font-size: 1.2rem;">Answer 9 quick questions to see if your school can successfully roll out the program in the next 30 days.</p>
+                <div class="btn-row">
+                  <button type="button" id="beginScorecardBtn" class="btn btn-primary">Begin Scorecard</button>
+                  <button type="button" id="resumeScorecardBtn" class="btn btn-outline" hidden>Resume Attempt</button>
+                </div>
+                <div class="mt-8">
+                  <button type="button" id="restartScorecardBtn" class="btn btn-outline" hidden>Start Over</button>
+                </div>
+              </section>
+
+              <section id="screenQuestion" hidden>
+                <p id="questionCounter" class="question-counter">Question 1 of 9</p>
+                <div class="progress-track" aria-hidden="true"><div id="questionProgressFill" class="progress-fill"></div></div>
+                <h3 id="questionPrompt"></h3>
+                <div id="questionOptions" class="option-grid"></div>
+                <div class="score-nav">
+                  <button type="button" id="questionBackBtn" class="btn btn-outline">Back</button>
+                  <button type="button" id="questionContinueBtn" class="btn btn-primary" disabled>Continue</button>
+                </div>
+                <div class="text-center mt-8">
+                  <button type="button" id="finishLaterBtn" class="btn btn-outline">Save & finish later</button>
+                </div>
+              </section>
+
+              <section id="screenLead" hidden class="text-center">
+                <h2>You're done! Let's get your results.</h2>
+                <p class="mt-4" style="color: var(--muted); font-size: 1.15rem;">Enter your details below to instantly view your score and recommended next steps.</p>
+                
+                <form id="scorecardLeadForm" class="lead-form" novalidate>
+                  <input type="text" name="website" autocomplete="off" tabindex="-1" style="display: none;" />
+                  <div class="field-grid-2">
+                    <div>
+                      <label for="leadFullName" class="field-label">Full Name</label>
+                      <input id="leadFullName" name="fullName" required class="field-input" placeholder="Mary Johnson" />
+                    </div>
+                    <div>
+                      <label for="leadSchoolName" class="field-label">School Name</label>
+                      <input id="leadSchoolName" name="schoolName" required class="field-input" placeholder="Sunrise Secondary" />
+                    </div>
+                  </div>
+                  <div class="field-grid-2">
+                    <div>
+                      <label for="leadWorkEmail" class="field-label">Work Email Address</label>
+                      <input id="leadWorkEmail" type="email" name="workEmail" required class="field-input" placeholder="name@school.edu" />
+                    </div>
+                    <div>
+                      <label for="leadPhone" class="field-label">Phone Number</label>
+                      <input id="leadPhone" name="phone" required class="field-input" placeholder="+234..." />
+                    </div>
+                  </div>
+                  <div class="field-grid-2">
+                    <div>
+                      <label for="leadRole" class="field-label">Your Role</label>
+                      <input id="leadRole" name="role" required class="field-input" placeholder="Principal / ICT Coordinator" />
+                    </div>
+                    <div>
+                      <label for="leadPopulation" class="field-label">Student Population</label>
+                      <input id="leadPopulation" name="studentPopulation" required class="field-input" placeholder="e.g. 420" />
+                    </div>
+                  </div>
+                  
+                  <div class="score-nav score-nav-equal mt-8">
+                    <button type="button" id="leadBackBtn" class="btn btn-outline">Back</button>
+                    <button type="submit" id="leadSubmitBtn" class="btn btn-primary"><span data-submit-label>Show My Results</span></button>
+                  </div>
+                  <p id="leadStatus" style="color: #ef4444; font-size: 0.95rem; text-align: center; margin-top: 16px;" role="status" aria-live="polite"></p>
+                </form>
+              </section>
+
+              <section id="screenResult" hidden class="text-center">
+                <p id="resultScore" class="result-meta">Your Score: 0/90</p>
+                <h2 id="resultHeadline" class="mt-4"></h2>
+                <p id="resultExplanation" class="mt-4" style="color: var(--muted); font-size: 1.15rem; max-width: 600px; margin-inline: auto;"></p>
+                
+                <div class="result-box">
+                  <p style="font-weight: 700; color: var(--brand-dark); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.2rem;">What this means for your school:</p>
+                  <ul id="resultPoints" class="result-points"></ul>
+                </div>
+                
+                <div class="btn-row mt-8">
+                  <a id="resultPrimaryCta" href="/contact/" class="btn btn-primary">Book Your Onboarding Call</a>
+                  <a id="resultSecondaryCta" href="/schools/login/?mode=register" class="btn btn-outline">Register Now</a>
+                </div>
+                
+                <div class="score-nav mt-12" style="justify-content: center; gap: 32px; border: none; padding: 0;">
+                  <button type="button" id="retakeScorecardBtn" class="btn btn-outline">Retake Scorecard</button>
+                  <button type="button" data-exit-scorecard class="btn btn-outline">Back to Homepage</button>
+                </div>
+                <p id="resultSubmitStatus" role="status" aria-live="polite" class="mt-4"></p>
+              </section>
+
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-brand-600 mb-4">What Your Students Will Learn & Build</h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-16">
-            By the end of the program, students don't just hold a certificate, they will have a working website to show for it.
-          </p>
-          
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-left">
-            <div class="bg-white rounded-2xl p-8 shadow-premium ring-1 ring-gray-100 hover:-translate-y-1 transition-transform">
-              <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-teal flex items-center justify-center mb-6">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              </div>
-              <h4 class="text-xl font-bold text-brand-600 mb-3">Use AI Responsibly</h4>
-              <p class="text-gray-600">Students learn to use AI as a powerful tool for creation and problem-solving, not just a shortcut.</p>
-            </div>
-            
-            <div class="bg-white rounded-2xl p-8 shadow-premium ring-1 ring-gray-100 hover:-translate-y-1 transition-transform">
-              <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-teal flex items-center justify-center mb-6">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-              </div>
-              <h4 class="text-xl font-bold text-brand-600 mb-3">Write Effective Prompts</h4>
-              <p class="text-gray-600">They master the skill of giving clear instructions to AI to generate accurate HTML and CSS code.</p>
-            </div>
-
-            <div class="bg-white rounded-2xl p-8 shadow-premium ring-1 ring-gray-100 hover:-translate-y-1 transition-transform">
-              <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-teal flex items-center justify-center mb-6">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
-              </div>
-              <h4 class="text-xl font-bold text-brand-600 mb-3">Structure Real Pages</h4>
-              <p class="text-gray-600">They learn how to piece together, style, and structure real web pages right on their laptops.</p>
-            </div>
-
-            <div class="bg-white rounded-2xl p-8 shadow-premium ring-1 ring-gray-100 hover:-translate-y-1 transition-transform">
-              <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-teal flex items-center justify-center mb-6">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-              </div>
-              <h4 class="text-xl font-bold text-brand-600 mb-3">Shift Their Mindset</h4>
-              <p class="text-gray-600">They transition from being passive consumers of technology to active, confident digital builders.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="pt-6 md:pt-16 pb-24 bg-brand-600 text-white relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMSkiLz48L3N2Zz4=')]"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="text-center mb-12">
-            <h2 class="text-3xl sm:text-4xl font-heading font-extrabold mb-4">Designed for Easy School Integration</h2>
-            <p class="text-brand-100 text-lg max-w-2xl mx-auto">We know schools don't need another administrative headache. We built this to be completely friction-free for your staff.</p>
-          </div>
-
-          <div class="grid md:grid-cols-2 gap-6 lg:gap-10">
-            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 ring-1 ring-white/20">
-              <h4 class="text-xl font-bold mb-3 text-brand-amber">Plug & Play Platform</h4>
-              <p class="text-brand-50 leading-relaxed">No need to build your own e-learning platform. You get a dedicated, ready-to-use school dashboard to manage your students.</p>
-            </div>
-            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 ring-1 ring-white/20">
-              <h4 class="text-xl font-bold mb-3 text-brand-amber">No Live Scheduling Stress</h4>
-              <p class="text-brand-50 leading-relaxed">The lessons are pre-recorded and student-led. It fits perfectly into ICT clubs, holiday programs, or standard tech periods.</p>
-            </div>
-            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 ring-1 ring-white/20">
-              <h4 class="text-xl font-bold mb-3 text-brand-amber">Zero Coding Experience Required</h4>
-              <p class="text-brand-50 leading-relaxed">Neither your students nor your supervising teachers need to know how to code to succeed in this program.</p>
-            </div>
-            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 ring-1 ring-white/20">
-              <h4 class="text-xl font-bold mb-3 text-brand-amber">Visible ROI for Parents</h4>
-              <p class="text-brand-50 leading-relaxed">Parents want forward-thinking schools. Students coming home with live, working websites proves your school delivers modern education.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-brand-600 mb-16">How It Works (In 4 Simple Steps)</h2>
-          
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-            <div class="hidden lg:block absolute top-12 left-1/8 right-1/8 h-0.5 bg-brand-100 z-0"></div>
-
-            <div class="relative z-10 text-center">
-              <div class="w-24 h-24 mx-auto bg-brand-50 rounded-full border-4 border-white shadow-md flex items-center justify-center text-2xl font-extrabold text-brand-600 mb-6">1</div>
-              <h4 class="text-xl font-bold text-gray-900 mb-3">Your school registers</h4>
-              <p class="text-gray-600">Sign up through our website as a school partner to get your dashboard.</p>
-            </div>
-            
-            <div class="relative z-10 text-center">
-              <div class="w-24 h-24 mx-auto bg-brand-50 rounded-full border-4 border-white shadow-md flex items-center justify-center text-2xl font-extrabold text-brand-600 mb-6">2</div>
-              <h4 class="text-xl font-bold text-gray-900 mb-3">Onboard your students</h4>
-              <p class="text-gray-600">Easily add your participating students securely through your portal.</p>
-            </div>
-
-            <div class="relative z-10 text-center">
-              <div class="w-24 h-24 mx-auto bg-brand-50 rounded-full border-4 border-white shadow-md flex items-center justify-center text-2xl font-extrabold text-brand-600 mb-6">3</div>
-              <h4 class="text-xl font-bold text-gray-900 mb-3">Students log in</h4>
-              <p class="text-gray-600">Students access the platform and follow the bite-sized video lessons.</p>
-            </div>
-
-            <div class="relative z-10 text-center">
-              <div class="w-24 h-24 mx-auto bg-brand-50 rounded-full border-4 border-white shadow-md flex items-center justify-center text-2xl font-extrabold text-brand-600 mb-6">4</div>
-              <h4 class="text-xl font-bold text-gray-900 mb-3">They build</h4>
-              <p class="text-gray-600">Following guided steps, students generate and publish their websites.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-24">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-12">
-            <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-brand-600">Frequently Asked Questions</h2>
-          </div>
-          
-          <div class="space-y-4">
-            <details class="group bg-white rounded-2xl ring-1 ring-gray-200 shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-              <summary class="flex items-center justify-between cursor-pointer p-6 font-bold text-lg text-brand-600">
-                Who is this program for?
-                <span class="transition group-open:rotate-180">
-                  <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-              </summary>
-              <div class="px-6 pb-6 text-gray-600">
-                It is designed specifically for secondary school students (roughly ages 11-18) who can use a laptop and follow basic instructions.
-              </div>
-            </details>
-
-            <details class="group bg-white rounded-2xl ring-1 ring-gray-200 shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-              <summary class="flex items-center justify-between cursor-pointer p-6 font-bold text-lg text-brand-600">
-                Do students need to know coding before starting?
-                <span class="transition group-open:rotate-180">
-                  <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-              </summary>
-              <div class="px-6 pb-6 text-gray-600">
-                No. The program is completely beginner-friendly and starts from zero.
-              </div>
-            </details>
-
-            <details class="group bg-white rounded-2xl ring-1 ring-gray-200 shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-              <summary class="flex items-center justify-between cursor-pointer p-6 font-bold text-lg text-brand-600">
-                Do our teachers need to teach the classes?
-                <span class="transition group-open:rotate-180">
-                  <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-              </summary>
-              <div class="px-6 pb-6 text-gray-600">
-                No. The curriculum is entirely pre-recorded and easy to follow. Teachers only need to supervise the classroom or computer lab.
-              </div>
-            </details>
-
-            <details class="group bg-white rounded-2xl ring-1 ring-gray-200 shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-              <summary class="flex items-center justify-between cursor-pointer p-6 font-bold text-lg text-brand-600">
-                Do students need laptops?
-                <span class="transition group-open:rotate-180">
-                  <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-              </summary>
-              <div class="px-6 pb-6 text-gray-600">
-                Yes. Students must have access to a computer and the internet to do the practical work.
-              </div>
-            </details>
-
-            <details class="group bg-white rounded-2xl ring-1 ring-gray-200 shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-              <summary class="flex items-center justify-between cursor-pointer p-6 font-bold text-lg text-brand-600">
-                Will students actually build websites?
-                <span class="transition group-open:rotate-180">
-                  <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                </span>
-              </summary>
-              <div class="px-6 pb-6 text-gray-600">
-                Yes. That is the entire point of the course. They will be guided step-by-step to build a simple, working website.
-              </div>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-24 bg-brand-100 border-t border-brand-200 text-center">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-brand-600 mb-6">Give Your Students a Head Start</h2>
-          <p class="text-lg text-gray-700 mb-10 leading-relaxed font-medium">
-            Students do not need to wait until university to build useful digital confidence. They can start now. Position your school as a leader in modern education by offering a practical, AI-powered digital skills program that actually works.
-          </p>
-          <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="/schools/login/?mode=register" class="inline-flex justify-center items-center px-8 py-4 text-base font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg transition-all">
-              Register Your School
-            </a>
-            <a href="/contact/" class="inline-flex justify-center items-center px-8 py-4 text-base font-bold text-brand-600 bg-white border border-brand-200 hover:bg-brand-50 rounded-xl shadow-sm transition-all">
-              Speak With Us
-            </a>
-          </div>
-        </div>
-      </section>
-
+        </section>
+      </div>
     </main>
 
     <footer class="site-footer">
@@ -385,7 +695,7 @@
         <div class="footer-logo">
           <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
         </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <div class="footer-tagline">Practical AI. Real world building.</div>
         <nav class="footer-links" aria-label="Footer links">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
@@ -398,5 +708,7 @@
     </footer>
 
     <script src="/assets/site.js" defer></script>
+    <script src="/assets/schools-landing-config.js" defer></script>
+    <script src="/assets/school-readiness-scorecard.js" defer></script>
   </body>
 </html>

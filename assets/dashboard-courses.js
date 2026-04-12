@@ -22,7 +22,7 @@
     },
     {
       slug: "prompt-to-production",
-      name: "Prompt to Production",
+      name: "Prompt to Profit Advanced",
       subtitle: "A 4-week hybrid program to master VS Code and AI coding assistants to build, debug, and deploy real web applications.",
       href: "/courses/prompt-to-production/",
       theme: {

@@ -35,7 +35,7 @@
         "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
     },
     "prompt-to-production": {
-      name: "Prompt to Production",
+      name: "Prompt to Profit Advanced",
       intro:
         "Secure your seat for the next quarterly cohort. Once payment is confirmed, you will be added to the onboarding list immediately.",
     },

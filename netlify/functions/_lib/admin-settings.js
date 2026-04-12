@@ -33,6 +33,12 @@ const SETTINGS_DEFINITIONS = [
   { key: "SCHOOLS_MIN_SEATS", category: "Pricing", secret: false },
   { key: "SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR", category: "Pricing", secret: false },
   { key: "SCHOOLS_VAT_PERCENT", category: "Pricing", secret: false },
+  { key: "SCHOOLS_TRUST_TRAINED_VALUE", category: "Schools Landing", secret: false },
+  { key: "SCHOOLS_TRUST_TRAINED_LABEL", category: "Schools Landing", secret: false },
+  { key: "SCHOOLS_TRUST_REVIEWS_VALUE", category: "Schools Landing", secret: false },
+  { key: "SCHOOLS_TRUST_REVIEWS_LABEL", category: "Schools Landing", secret: false },
+  { key: "SCHOOLS_TRUST_OUTPUT_VALUE", category: "Schools Landing", secret: false },
+  { key: "SCHOOLS_TRUST_OUTPUT_LABEL", category: "Schools Landing", secret: false },
   { key: "LEADPAGE_PRICE_NGN_MINOR", category: "Pricing", secret: false },
   { key: "BUSINESS_PLAN_PRICE_NGN_MINOR", category: "Pricing", secret: false },
 

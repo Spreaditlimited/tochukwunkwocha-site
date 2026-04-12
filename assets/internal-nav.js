@@ -30,6 +30,7 @@
     if (path === "/internal/video-library/") return { page: "Video Library", doc: "Video Library | Internal" };
     if (path === "/internal/learning-progress/") return { page: "Learning Progress", doc: "Learning Progress | Internal" };
     if (path === "/internal/schools/") return { page: "Schools", doc: "Schools | Internal" };
+    if (path === "/internal/school-calls/") return { page: "School Calls", doc: "School Calls | Internal" };
     if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
     if (path === "/internal/verifier/") return { page: "Business Plan Verification Queue", doc: "Business Plan Verifier | Internal" };
     return null;
@@ -167,6 +168,37 @@
     }
   }
 
+  function ensureSchoolCallsNavLink() {
+    var added = [];
+    var asides = Array.prototype.slice.call(document.querySelectorAll("aside"));
+    asides.forEach(function (aside) {
+      if (!aside) return;
+      var existing = aside.querySelector('a[href="/internal/school-calls/"]');
+      if (existing) return;
+
+      var schoolsLink = aside.querySelector('a[href="/internal/schools/"]');
+      var settingsLink = aside.querySelector('a[href="/internal/settings/"]');
+      var anchor = schoolsLink || settingsLink;
+      if (!anchor || !anchor.parentNode) return;
+
+      var a = document.createElement("a");
+      a.href = "/internal/school-calls/";
+      a.className = "flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group";
+      a.textContent = "School Calls";
+
+      if (schoolsLink && schoolsLink.parentNode) {
+        schoolsLink.parentNode.insertBefore(a, schoolsLink.nextSibling);
+      } else {
+        anchor.parentNode.insertBefore(a, anchor);
+      }
+      added.push(a);
+    });
+
+    if (added.length) {
+      menuLinks = menuLinks.concat(added);
+    }
+  }
+
   function ensureSidebarIcons() {
     var iconMap = {
       "/internal/":
@@ -187,6 +219,8 @@
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m3 3V4M4 20h16" /></svg>',
       "/internal/schools/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m2-10h6m-6 4h6" /></svg>',
+      "/internal/school-calls/":
+        '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" /></svg>',
       "/internal/settings/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.591 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.59c1.756.427 1.756 2.925 0 3.352a1.724 1.724 0 00-1.066 2.59c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.59 1.066c-.427 1.756-2.925 1.756-3.352 0a1.724 1.724 0 00-2.59-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.59c-1.756-.427-1.756-2.925 0-3.352a1.724 1.724 0 001.066-2.59c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.59-1.066z" /></svg>',
       "/internal/verifier/":
@@ -405,6 +439,7 @@
   ensureVideoLibraryNavLink();
   ensureLearningProgressNavLink();
   ensureSchoolsNavLink();
+  ensureSchoolCallsNavLink();
   sidebars = Array.prototype.slice.call(document.querySelectorAll("aside")).filter(function (aside) {
     return !!aside.querySelector('a[href^="/internal/"]');
   });
