@@ -121,6 +121,13 @@ const SETTINGS_DEFINITIONS = [
   { key: "NETLIFY_CREDIT_WARNING_REMAINING", category: "Netlify", secret: false },
 
   { key: "LEADPAGE_CLIENT_MONTHLY_PUBLISH_LIMIT", category: "Publish Limits", secret: false },
+
+  { key: "AFFILIATE_ENABLED", category: "Affiliates", secret: false },
+  { key: "AFFILIATE_LINK_BASE_URL", category: "Affiliates", secret: false },
+  { key: "AFFILIATE_DEFAULT_HOLD_DAYS", category: "Affiliates", secret: false },
+  { key: "AFFILIATE_MIN_PAYOUT_NGN_MINOR", category: "Affiliates", secret: false },
+  { key: "AFFILIATE_MIN_PAYOUT_USD_MINOR", category: "Affiliates", secret: false },
+  { key: "AFFILIATE_COUNTRY_CURRENCY_MAP_JSON", category: "Affiliates", secret: false },
 ];
 
 function clean(value, max) {

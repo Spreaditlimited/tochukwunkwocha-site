@@ -13,6 +13,36 @@
     "SCHOOLS_MIN_SEATS",
     "SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR",
   ];
+  const HIDDEN_CATEGORIES = new Set([
+    "Business Plan",
+    "Registrar (Namecheap)",
+    "Publish Limits",
+  ]);
+  const HIDDEN_KEYS = new Set([
+    "FLODESK_API_KEY",
+    "FLODESK_ENROL_SEGMENT_ID",
+    "FLODESK_ENROL_PROD_SEGMENT_ID",
+    "FLODESK_PRE_ENROL_SEGMENT_ID",
+    "AFFILIATE_SCHOOL_PAYMENT_COMMISSION_TYPE",
+    "AFFILIATE_SCHOOL_PAYMENT_COMMISSION_VALUE",
+    "AFFILIATE_SCHOOL_PAYMENT_COMMISSION_CURRENCY",
+    "AFFILIATE_SCHOOL_ONBOARDING_COMMISSION_TYPE",
+    "AFFILIATE_SCHOOL_ONBOARDING_COMMISSION_VALUE",
+    "AFFILIATE_SCHOOL_ONBOARDING_COMMISSION_CURRENCY",
+  ]);
+  const HIDDEN_KEY_PREFIXES = [
+    "LEADPAGE_",
+    "BREVO_LEADPAGE_",
+    "NETLIFY_",
+    "GEMINI_",
+    "GOOGLE_AI_",
+    "OPENAI_",
+    "AFFILIATE_SCHOOL_PAYMENT_",
+    "AFFILIATE_SCHOOL_ONBOARDING_",
+  ];
+  const LEADPAGE_VISIBLE_KEYS = new Set([
+    "LEADPAGE_DOMAIN_PROVIDER",
+  ]);
 
   let items = [];
   let auditItems = [];
@@ -52,6 +82,21 @@
     return '<span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600 ring-1 ring-gray-200">empty</span>';
   }
 
+  function shouldHideSetting(item) {
+    const category = String(item && item.category || "");
+    const key = String(item && item.key || "");
+    if (!key) return true;
+    if (HIDDEN_CATEGORIES.has(category)) return true;
+    if (HIDDEN_KEYS.has(key)) return true;
+    for (let i = 0; i < HIDDEN_KEY_PREFIXES.length; i += 1) {
+      const prefix = HIDDEN_KEY_PREFIXES[i];
+      if (key.indexOf(prefix) === 0 && !LEADPAGE_VISIBLE_KEYS.has(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function restartBadge(restartSensitive) {
     if (!restartSensitive) return "";
     return '<span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">restart-sensitive</span>';
@@ -61,6 +106,7 @@
     if (!groupsEl) return;
     const map = new Map();
     for (const item of items) {
+      if (shouldHideSetting(item)) continue;
       const cat = String(item.category || "Other");
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat).push(item);
@@ -74,9 +120,9 @@
             const inputType = item.secret ? "password" : "text";
             return `
               <div class="rounded-xl border border-gray-200 bg-white p-4">
-                <div class="mb-2 flex items-center justify-between gap-2">
-                  <label class="text-xs font-bold uppercase tracking-wider text-gray-500">${escapeHtml(key)}</label>
-                  <div class="flex items-center gap-1.5">
+                <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
+                  <label class="min-w-0 flex-1 break-all text-xs font-bold uppercase tracking-wider text-gray-500">${escapeHtml(key)}</label>
+                  <div class="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                     ${restartBadge(item.restartSensitive)}
                     ${sourceBadge(item.source)}
                   </div>

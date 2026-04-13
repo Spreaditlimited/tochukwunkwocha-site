@@ -7,6 +7,7 @@ const { resolveCourseBatch, normalizeBatchKey, ensureCourseBatchesTable } = requ
 const { ensureCourseOrdersBatchColumns } = require("./course-orders");
 const { recordCouponRedemption } = require("./coupons");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./course-config");
+const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./affiliates");
 
 function parseCookieValue(cookieHeader, key) {
   const raw = String(cookieHeader || "");
@@ -43,6 +44,7 @@ function getClientIp(headers) {
 
 async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrderId, provider, requestContext }) {
   await applyRuntimeSettings(pool);
+  await ensureAffiliateTables(pool);
 
   if (!orderUuid && !providerReference && !providerOrderId) {
     return { ok: false, error: "Missing order identifier" };
@@ -148,6 +150,12 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
       discountMinor: Number(order.discount_minor || 0),
     });
   }
+
+  await createAffiliateCommissionForPaidOrder(pool, {
+    orderUuid: order.order_uuid,
+  }).catch(function () {
+    return null;
+  });
 
   return {
     ok: true,

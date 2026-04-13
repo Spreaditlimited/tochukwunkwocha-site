@@ -27,6 +27,7 @@
   var appliedCoupon = null;
   var couponPricingByProvider = { paystack: null, paypal: null };
   var basePricingByProvider = { paystack: null, paypal: null };
+  var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
 
   var COURSE_CONFIGS = {
     "prompt-to-profit": {
@@ -54,6 +55,25 @@
     if (!errorEl) return;
     errorEl.textContent = String(text || "");
     errorEl.classList.toggle("hidden", !text);
+  }
+
+  function resolveAffiliateCode() {
+    var fromQuery = "";
+    try {
+      var search = new URLSearchParams(window.location.search || "");
+      fromQuery = String(search.get("ref") || search.get("affiliate") || "").trim().toUpperCase();
+    } catch (_error) {
+      fromQuery = "";
+    }
+    if (fromQuery) {
+      try { window.localStorage.setItem(AFFILIATE_REF_KEY, fromQuery); } catch (_error) {}
+      return fromQuery;
+    }
+    try {
+      return String(window.localStorage.getItem(AFFILIATE_REF_KEY) || "").trim().toUpperCase();
+    } catch (_error) {
+      return "";
+    }
   }
 
   function setSuccess(text) {
@@ -433,6 +453,7 @@
     var email = String(form.email.value || "").trim();
     var country = "";
     var provider = providerInput ? providerInput.value : "paystack";
+    var affiliateCode = resolveAffiliateCode();
     if (!firstName || !email) {
       setError("Please enter your full name and email address.");
       return;
@@ -457,6 +478,7 @@
             courseSlug: courseSlug,
             batchKey: activeCourseBatchKey,
             couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
+            affiliateCode: affiliateCode,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -482,6 +504,7 @@
           courseSlug: courseSlug,
           batchKey: activeCourseBatchKey,
           couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
+          affiliateCode: affiliateCode,
         }),
       });
       var json = await res.json().catch(function () { return null; });

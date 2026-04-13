@@ -58,3 +58,6 @@
 
 [functions."domain-registration-cron"]
   schedule = "*/10 * * * *"
+
+[functions."affiliate-commissions-mature-cron"]
+  schedule = "0 * * * *"

@@ -128,6 +128,28 @@ Leadpage build timing (payment-gated)
 - Build starts only after payment is confirmed and the client opens their dashboard.
 - Dashboard triggers build automatically and shows "We are building your landing page" status while pipeline runs.
 
+Affiliate system
+- `AFFILIATE_ENABLED` (`1` default; set `0` to disable affiliate tracking and commission creation)
+- `AFFILIATE_LINK_BASE_URL` (optional; defaults to `SITE_BASE_URL`)
+- `AFFILIATE_DEFAULT_HOLD_DAYS` (default `30`; days before pending commissions auto-mature to approved)
+- `AFFILIATE_MIN_PAYOUT_NGN_MINOR` (default `100000` = N1,000 minimum payout threshold per affiliate)
+- `AFFILIATE_MIN_PAYOUT_USD_MINOR` (default `2500` = $25 minimum payout threshold per affiliate)
+- `AFFILIATE_COUNTRY_CURRENCY_MAP_JSON` (optional country map with enable flags and payout provider, example:
+  `{"NG":{"countryCode":"NG","currency":"NGN","payoutProvider":"paystack","enabled":true},"US":{"countryCode":"US","currency":"USD","payoutProvider":"manual","enabled":false}}`)
+- School onboarding affiliate commission now uses Affiliate Course Rules (`/internal/affiliates/`) for the school course:
+  - `commission_type`
+  - `commission_value`
+  - `commission_currency`
+  - `hold_days`
+
+Affiliate functions
+- `/.netlify/functions/affiliate-dashboard` (student affiliate summary: link, earnings, referrals, payouts)
+- `/.netlify/functions/affiliate-payout-account-save` (student payout account setup)
+- `/.netlify/functions/admin-affiliate-course-rules-list` (admin course-level affiliate rules)
+- `/.netlify/functions/admin-affiliate-course-rules-save` (admin upsert affiliate course rule)
+- `/.netlify/functions/admin-affiliate-payout-batch-run` (admin manual payout execution; supports month-end mode)
+- `/.netlify/functions/affiliate-commissions-mature-cron` (scheduled auto-mature from pending to approved)
+
 Leadpage domain automation (registrar API)
 - `LEADPAGE_DOMAIN_AUTOMATION_ENABLED` (`0` default; set `1` to auto-run domain purchase step on first publish for `needs_domain` jobs)
 - `LEADPAGE_DOMAIN_PROVIDER` (`namecheap` default, or `resellerclub`, or `mock`)

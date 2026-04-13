@@ -4,6 +4,7 @@ const { paystackInitialize, siteBaseUrl } = require("./_lib/payments");
 const { ensureSchoolTables, createSchoolOrder } = require("./_lib/schools");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { ensureAffiliateTables, captureSchoolOrderReferral } = require("./_lib/affiliates");
 
 function parseBody(event) {
   try {
@@ -24,6 +25,7 @@ exports.handler = async function (event) {
       await applyRuntimeSettings(pool);
     } catch (_error) {}
     await ensureLearningTables(pool);
+    await ensureAffiliateTables(pool);
     const courseSlug = String(body.courseSlug || "prompt-to-profit").trim().toLowerCase() || "prompt-to-profit";
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!learningCourse) {
@@ -39,6 +41,16 @@ exports.handler = async function (event) {
       courseSlug,
       provider: "paystack",
     });
+
+    const affiliateCode = String(body.affiliateCode || body.affiliate_code || "").trim().toUpperCase().slice(0, 40);
+    if (affiliateCode) {
+      await captureSchoolOrderReferral(pool, {
+        orderUuid: order.orderUuid,
+        affiliateCode,
+      }).catch(function () {
+        return null;
+      });
+    }
 
     const reference = `SCH_${order.orderUuid.replace(/[^a-z0-9]/gi, "").slice(0, 26).toUpperCase()}`;
     const payment = await paystackInitialize({

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Affiliates | Internal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Manrope', 'sans-serif'] },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .premium-picker {
+        appearance: none;
+        width: 100%;
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        border-radius: 0.75rem;
+        padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+        background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
+        background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+      }
+      .premium-picker:hover {
+        border-color: #93c5fd;
+        background-color: #ffffff;
+      }
+      .premium-picker:focus {
+        outline: none;
+        border-color: #0f172a;
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+        background-color: #ffffff;
+      }
+      .premium-input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        border-radius: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      }
+      .premium-input:hover {
+        border-color: #93c5fd;
+        background-color: #ffffff;
+      }
+      .premium-input:focus {
+        outline: none;
+        border-color: #0f172a;
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+        background-color: #ffffff;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
+    <div class="flex h-full w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0"><span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span><span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span></div>
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+
+          <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" /></svg>
+            Dashboard Home
+          </a>
+
+          <a href="/internal/manual-payments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Enrollments
+          </a>
+
+          <a href="/internal/installments/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Installments
+          </a>
+
+          <a href="/internal/leadpage-jobs/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" /></svg>
+            Lead Capture Jobs
+          </a>
+
+          <a href="/internal/verifier/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Verifier Portal
+          </a>
+
+          <a href="/internal/domain-management/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16" /></svg>
+            Domain Management
+          </a>
+
+          <a href="/internal/affiliates/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m2-10h6m-6 4h6" /></svg>
+            Affiliates
+          </a>
+
+          <a href="/internal/settings/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">
+            <svg class="h-5 w-5 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-1.14 1.603-1.14 1.902 0a1 1 0 00.95.69h.703c1.2 0 1.699 1.533.757 2.239l-.565.423a1 1 0 00-.364 1.118l.216.675c.367 1.148-.936 2.1-1.902 1.39l-.57-.42a1 1 0 00-1.184 0l-.57.42c-.966.71-2.269-.242-1.902-1.39l.216-.675a1 1 0 00-.364-1.118l-.565-.423c-.942-.706-.443-2.239.757-2.239h.703a1 1 0 00.95-.69zM12 15v7m-4-4h8" /></svg>
+            Settings
+          </a>
+        </div>
+        <div class="p-4 border-t border-white/10 shrink-0"><button type="button" data-admin-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button></div>
+      </aside>
+
+      <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
+          <div class="flex items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></label>
+            <h2 class="text-xl font-heading font-extrabold text-gray-900 tracking-tight">Affiliate Operations</h2>
+          </div>
+          <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Sign out</button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6 sm:p-8">
+          <div class="max-w-7xl mx-auto space-y-6">
+            <p id="affiliateAdminMsg" class="hidden rounded-xl border px-4 py-3 text-sm font-semibold"></p>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5">
+              <div class="flex items-center justify-between"><h3 class="text-lg font-heading font-extrabold text-gray-900">Course Rules</h3></div>
+              <form id="affiliateRuleForm" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <select id="affRuleCourseSlug" class="premium-picker"></select>
+                <select id="affRuleEligible" class="premium-picker"><option value="1">Eligible</option><option value="0">Not Eligible</option></select>
+                <select id="affRuleType" class="premium-picker"><option value="percentage">Percentage (bps)</option><option value="fixed">Fixed (minor)</option></select>
+                <input id="affRuleValue" type="number" min="0" step="1" class="premium-input" placeholder="1000 = 10% if percentage" />
+                <input id="affRuleCurrency" class="premium-input" value="NGN" placeholder="NGN" />
+                <input id="affRuleMinOrder" type="number" min="0" step="1" class="premium-input" placeholder="Min order amount minor" />
+                <input id="affRuleHoldDays" type="number" min="0" step="1" class="premium-input" placeholder="Hold days" value="30" />
+                <button id="affRuleSaveBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Save Rule</button>
+              </form>
+              <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left border-b border-gray-200 text-gray-500">
+                      <th class="py-2 pr-3">Course</th><th class="py-2 pr-3">Eligible</th><th class="py-2 pr-3">Type</th><th class="py-2 pr-3">Value</th><th class="py-2 pr-3">Currency</th><th class="py-2 pr-3">Hold Days</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affRulesRows"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5">
+              <h3 class="text-lg font-heading font-extrabold text-gray-900">Run Payout Batch</h3>
+              <p class="text-sm text-gray-500 mt-1">Use month-end mode to pay only matured approved commissions for the selected period.</p>
+              <form id="affiliatePayoutRunForm" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <select id="affPayoutMode" class="premium-picker"><option value="month_end">Month End (Previous Month)</option><option value="custom">Custom Period</option></select>
+                <input id="affPayoutStart" class="premium-input" placeholder="YYYY-MM-DD" />
+                <input id="affPayoutEnd" class="premium-input" placeholder="YYYY-MM-DD" />
+                <input id="affPayoutScheduledFor" class="premium-input" placeholder="Scheduled Date (YYYY-MM-DD)" />
+                <input id="affPayoutCountry" class="premium-input" value="NG" />
+                <input id="affPayoutCurrency" class="premium-input" value="NGN" />
+                <input id="affPayoutProvider" class="premium-input" value="paystack" />
+                <button id="affPayoutRunBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Run Batch</button>
+              </form>
+              <pre id="affPayoutResult" class="mt-4 rounded-lg bg-gray-900 text-gray-100 p-3 text-xs overflow-auto hidden"></pre>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="/assets/internal-auth.js" defer></script>
+    <script src="/assets/admin-affiliates.js?v=20260413a" defer></script>
+  </body>
+</html>

@@ -8,6 +8,10 @@ const {
   createSchoolAdminPasswordResetToken,
   setSchoolAdminCookieHeader,
 } = require("./_lib/schools");
+const {
+  ensureAffiliateTables,
+  bindSchoolReferralAfterPayment,
+} = require("./_lib/affiliates");
 
 function buildSchoolWelcomeEmail(input) {
   const fullName = String((input && input.fullName) || "School Admin").trim();
@@ -50,6 +54,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureSchoolTables(pool);
+    await ensureAffiliateTables(pool);
     const tx = await paystackVerifyTransaction(reference);
     if (String(tx && tx.status || "").toLowerCase() !== "success") {
       return {
@@ -67,6 +72,13 @@ exports.handler = async function (event) {
       orderUuid: orderUuid || "",
     });
     if (!result.ok) throw new Error(result.error || "Could not mark school order paid");
+
+    await bindSchoolReferralAfterPayment(pool, {
+      schoolId: result.schoolId,
+      schoolOrderUuid: result.orderUuid,
+    }).catch(function () {
+      return null;
+    });
 
     const token = await createSchoolAdminSession(pool, Number(result.adminId));
     const setCookie = setSchoolAdminCookieHeader(event, token);

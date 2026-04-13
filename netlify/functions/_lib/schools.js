@@ -635,13 +635,28 @@ async function createSchoolOrder(pool, input) {
 
   const orderUuid = `sord_${crypto.randomUUID().replace(/-/g, "")}`;
   const now = nowSql();
+  let existingSchoolId = 0;
+  const [existingRows] = await pool.query(
+    `SELECT o.school_id
+     FROM ${SCHOOL_ORDERS_TABLE} o
+     JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = o.school_id
+     WHERE o.admin_email = ?
+       AND o.status = 'paid'
+       AND o.school_id IS NOT NULL
+       AND sc.status = 'active'
+     ORDER BY o.paid_at DESC, o.id DESC
+     LIMIT 1`,
+    [adminEmail]
+  );
+  existingSchoolId = Number(existingRows && existingRows[0] && existingRows[0].school_id || 0);
   await pool.query(
     `INSERT INTO ${SCHOOL_ORDERS_TABLE}
-      (order_uuid, school_name, admin_name, admin_email, admin_phone, course_slug, seats_requested, currency,
+      (order_uuid, school_id, school_name, admin_name, admin_email, admin_phone, course_slug, seats_requested, currency,
        price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, provider, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
     [
       orderUuid,
+      existingSchoolId > 0 ? existingSchoolId : null,
       schoolName,
       adminName,
       adminEmail,
@@ -757,6 +772,38 @@ async function markSchoolOrderPaidBy(pool, input) {
     schoolId = Number(schoolRows && schoolRows[0] && schoolRows[0].id || 0);
     if (!schoolId) throw new Error("Could not provision school account");
     await pool.query(`UPDATE ${SCHOOL_ORDERS_TABLE} SET school_id = ?, updated_at = ? WHERE id = ?`, [schoolId, nowSql(), Number(order.id)]);
+  } else {
+    const [schoolRows] = await pool.query(
+      `SELECT seats_purchased, subtotal_minor, vat_minor, total_minor
+       FROM ${SCHOOL_ACCOUNTS_TABLE}
+       WHERE id = ?
+       LIMIT 1`,
+      [schoolId]
+    );
+    if (Array.isArray(schoolRows) && schoolRows.length) {
+      await pool.query(
+        `UPDATE ${SCHOOL_ACCOUNTS_TABLE}
+         SET school_name = ?,
+             seats_purchased = ?,
+             subtotal_minor = ?,
+             vat_minor = ?,
+             total_minor = ?,
+             paid_at = ?,
+             updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [
+          clean(order.school_name, 220),
+          Number(schoolRows[0].seats_purchased || 0) + Number(order.seats_requested || 0),
+          Number(schoolRows[0].subtotal_minor || 0) + Number(order.subtotal_minor || 0),
+          Number(schoolRows[0].vat_minor || 0) + Number(order.vat_minor || 0),
+          Number(schoolRows[0].total_minor || 0) + Number(order.total_minor || 0),
+          now,
+          now,
+          schoolId,
+        ]
+      );
+    }
   }
 
   let admin = await findSchoolAdminByEmail(pool, order.admin_email);
@@ -874,6 +921,7 @@ async function addSchoolStudents(pool, input) {
     skipped: 0,
     errors: [],
     invites: [],
+    createdStudentIds: [],
   };
 
   for (let i = 0; i < rows.length; i += 1) {
@@ -927,6 +975,7 @@ async function addSchoolStudents(pool, input) {
       if (reactivated) results.reactivated += 1;
       results.updated += 1;
       results.invites.push({
+        school_student_id: Number(existingRows[0].id),
         full_name: fullName,
         email,
         account_id: Number(account && account.id || 0) || null,
@@ -936,14 +985,17 @@ async function addSchoolStudents(pool, input) {
       continue;
     }
 
-    await pool.query(
+    const [insertRes] = await pool.query(
       `INSERT INTO ${SCHOOL_STUDENTS_TABLE}
         (school_id, student_uuid, full_name, email, account_id, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
       [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, email, Number(account && account.id || 0) || null, now, now]
     );
+    const schoolStudentId = Number(insertRes && insertRes.insertId || 0);
     results.created += 1;
+    if (schoolStudentId > 0) results.createdStudentIds.push(schoolStudentId);
     results.invites.push({
+      school_student_id: schoolStudentId || null,
       full_name: fullName,
       email,
       account_id: Number(account && account.id || 0) || null,

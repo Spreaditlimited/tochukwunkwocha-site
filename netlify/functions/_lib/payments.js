@@ -14,12 +14,41 @@ function paystackSecret() {
   return required("PAYSTACK_SECRET_KEY");
 }
 
+function buildError(message, extra) {
+  const err = new Error(String(message || "Unknown error"));
+  if (extra && typeof extra === "object") {
+    Object.keys(extra).forEach((key) => {
+      err[key] = extra[key];
+    });
+  }
+  return err;
+}
+
 function paystackKeyMode(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "";
   if (raw.indexOf("sk_test_") === 0 || raw.indexOf("pk_test_") === 0) return "test";
   if (raw.indexOf("sk_live_") === 0 || raw.indexOf("pk_live_") === 0) return "live";
   return "";
+}
+
+function paystackSecretMode() {
+  return paystackKeyMode(paystackSecret()) || "unknown";
+}
+
+function normalizePaystackErrorReason(input, statusCode) {
+  const text = String(input || "").trim().toLowerCase();
+  const status = Number(statusCode || 0);
+  if (status === 401 || text.indexOf("unauthorized") !== -1 || text.indexOf("invalid key") !== -1) return "unauthorized";
+  if (status === 403 || text.indexOf("forbidden") !== -1) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 408 || text.indexOf("timed out") !== -1 || text.indexOf("timeout") !== -1) return "timeout";
+  if (status === 429 || text.indexOf("too many requests") !== -1 || text.indexOf("rate limit") !== -1) return "rate_limited";
+  if (status >= 500 || text.indexOf("internal server error") !== -1 || text.indexOf("service unavailable") !== -1) return "provider_unavailable";
+  if (status >= 400 && status < 500) return "bad_request";
+  if (text.indexOf("fetch failed") !== -1 || text.indexOf("network") !== -1 || text.indexOf("econn") !== -1) return "network_error";
+  if (text.indexOf("missing") !== -1) return "invalid_configuration";
+  return "unknown";
 }
 
 function paystackPublicKey() {
@@ -115,6 +144,204 @@ async function paystackVerifyTransaction(reference) {
   }
 
   return json.data;
+}
+
+async function paystackCreateTransferRecipient({ type, name, accountNumber, bankCode, currency }) {
+  const secret = paystackSecret();
+  const payload = {
+    type: String(type || "nuban").trim() || "nuban",
+    name: String(name || "").trim(),
+    account_number: String(accountNumber || "").trim(),
+    bank_code: String(bankCode || "").trim(),
+    currency: String(currency || "NGN").trim().toUpperCase(),
+  };
+  if (!payload.name || !payload.account_number || !payload.bank_code) {
+    throw new Error("Missing transfer recipient details");
+  }
+
+  const res = await fetch("https://api.paystack.co/transferrecipient", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.status || !json.data) {
+    throw new Error((json && json.message) || `Paystack transfer recipient failed (${res.status})`);
+  }
+  return {
+    recipientCode: json.data.recipient_code || null,
+    active: Boolean(json.data.active),
+    details: json.data.details || null,
+  };
+}
+
+async function paystackListBanks({ country, currency, useCursor, perPage, includeMeta } = {}) {
+  const secret = paystackSecret();
+  const normalizedCountry = String(country || "").trim().toUpperCase();
+  const normalizedCurrency = String(currency || "").trim().toUpperCase();
+  const countryName = normalizedCountry === "NG" ? "nigeria" : String(country || "").trim().toLowerCase();
+
+  const queries = [
+    { label: "country_name_currency_verify", country: countryName, currency: normalizedCurrency, enabledForVerification: true },
+    { label: "country_name_verify", country: countryName, enabledForVerification: true },
+    { label: "country_name", country: countryName },
+    { label: "country_code_currency_verify", country: normalizedCountry, currency: normalizedCurrency, enabledForVerification: true },
+    { label: "country_code_verify", country: normalizedCountry, enabledForVerification: true },
+    { label: "unfiltered" },
+  ];
+
+  let lastError = null;
+  const attempts = [];
+  let lastSuccessfulVariant = "";
+  for (const query of queries) {
+    const params = new URLSearchParams();
+    if (query.country) params.set("country", String(query.country));
+    if (query.currency) params.set("currency", String(query.currency));
+    if (query.enabledForVerification) params.set("enabled_for_verification", "true");
+    if (useCursor) params.set("use_cursor", "true");
+    if (perPage) params.set("perPage", String(Number(perPage) || 100));
+
+    const res = await fetch(`https://api.paystack.co/bank?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json || !json.status || !Array.isArray(json.data)) {
+      const message = (json && json.message) || `Paystack list banks failed (${res.status})`;
+      const reason = normalizePaystackErrorReason(message, res.status);
+      attempts.push({
+        variant: query.label,
+        ok: false,
+        statusCode: Number(res.status || 0),
+        errorReason: reason,
+      });
+      lastError = buildError(message, {
+        paystackReason: reason,
+        paystackStatusCode: Number(res.status || 0),
+        queryVariant: query.label,
+      });
+      continue;
+    }
+    const banks = json.data.map((item) => ({
+      name: String(item && item.name || "").trim(),
+      code: String(item && item.code || "").trim(),
+      active: Boolean(item && item.active),
+    })).filter((item) => item.code && item.name);
+    lastSuccessfulVariant = query.label;
+    attempts.push({
+      variant: query.label,
+      ok: true,
+      statusCode: Number(res.status || 200),
+      count: banks.length,
+    });
+    if (banks.length) {
+      if (includeMeta) {
+        return {
+          banks,
+          source: "paystack",
+          queryVariant: query.label,
+          attempts,
+          mode: paystackSecretMode(),
+        };
+      }
+      return banks;
+    }
+  }
+
+  if (includeMeta) {
+    return {
+      banks: [],
+      source: "paystack",
+      queryVariant: lastSuccessfulVariant || "none",
+      attempts,
+      mode: paystackSecretMode(),
+      errorReason: lastError ? String(lastError.paystackReason || "unknown") : "empty",
+    };
+  }
+  if (lastError) throw lastError;
+  return [];
+}
+
+async function paystackResolveBankAccount({ accountNumber, bankCode }) {
+  const secret = paystackSecret();
+  const acct = String(accountNumber || "").trim();
+  const code = String(bankCode || "").trim();
+  if (!acct || !code) {
+    throw buildError("Missing account resolve details", {
+      paystackReason: "invalid_input",
+      paystackStatusCode: 0,
+    });
+  }
+
+  const params = new URLSearchParams();
+  params.set("account_number", acct);
+  params.set("bank_code", code);
+
+  const res = await fetch(`https://api.paystack.co/bank/resolve?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.status || !json.data) {
+    const message = (json && json.message) || `Paystack resolve account failed (${res.status})`;
+    const reason = normalizePaystackErrorReason(message, res.status);
+    throw buildError(message, {
+      paystackReason: reason,
+      paystackStatusCode: Number(res.status || 0),
+      bankCode: code,
+    });
+  }
+  return {
+    accountName: String(json.data.account_name || "").trim(),
+    accountNumber: String(json.data.account_number || "").trim(),
+    bankId: Number(json.data.bank_id || 0),
+  };
+}
+
+async function paystackCreateTransfer({ source, amountMinor, recipient, reason, reference }) {
+  const secret = paystackSecret();
+  const payload = {
+    source: String(source || "balance").trim() || "balance",
+    amount: Number(amountMinor || 0),
+    recipient: String(recipient || "").trim(),
+    reason: String(reason || "").trim() || "Affiliate payout",
+    reference: String(reference || "").trim() || undefined,
+  };
+  if (!payload.recipient || !Number.isFinite(payload.amount) || payload.amount <= 0) {
+    throw new Error("Invalid transfer payload");
+  }
+
+  const res = await fetch("https://api.paystack.co/transfer", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.status || !json.data) {
+    throw new Error((json && json.message) || `Paystack transfer failed (${res.status})`);
+  }
+  return {
+    transferId: json.data.id || null,
+    transferCode: json.data.transfer_code || null,
+    reference: json.data.reference || payload.reference || null,
+    status: json.data.status || null,
+  };
 }
 
 function paypalBaseUrl() {
@@ -242,10 +469,16 @@ async function paypalVerifyWebhook({ body, headers }) {
 
 module.exports = {
   siteBaseUrl,
+  paystackSecretMode,
+  normalizePaystackErrorReason,
   paystackPublicKey,
   verifyPaystackSignature,
   paystackInitialize,
   paystackVerifyTransaction,
+  paystackListBanks,
+  paystackResolveBankAccount,
+  paystackCreateTransferRecipient,
+  paystackCreateTransfer,
   paypalCreateOrder,
   paypalCaptureOrder,
   paypalVerifyWebhook,

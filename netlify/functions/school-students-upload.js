@@ -3,6 +3,7 @@ const { json, badMethod } = require("./_lib/http");
 const { ensureSchoolTables, requireSchoolAdminSession, parseCsv, addSchoolStudents } = require("./_lib/schools");
 const { createPasswordResetToken } = require("./_lib/student-auth");
 const { sendEmail } = require("./_lib/email");
+const { ensureAffiliateTables, createAffiliateCommissionForSchoolStudentOnboard } = require("./_lib/affiliates");
 
 function parseBody(event) {
   try {
@@ -95,6 +96,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureSchoolTables(pool);
+    await ensureAffiliateTables(pool);
     const session = await requireSchoolAdminSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
@@ -119,11 +121,20 @@ exports.handler = async function (event) {
       courseSlug: session.admin.courseSlug,
       rows,
     });
+    const createdIds = Array.isArray(result && result.createdStudentIds) ? result.createdStudentIds : [];
+    for (let i = 0; i < createdIds.length; i += 1) {
+      await createAffiliateCommissionForSchoolStudentOnboard(pool, {
+        schoolStudentId: Number(createdIds[i]),
+      }).catch(function () {
+        return null;
+      });
+    }
     const invites = await sendStudentInviteEmails(pool, session, result && result.invites);
     result.invites_sent = Number(invites.sent || 0);
     result.invites_failed = Number(invites.failed || 0);
     result.invite_errors = Array.isArray(invites.errors) ? invites.errors : [];
     delete result.invites;
+    delete result.createdStudentIds;
     return json(200, { ok: true, result });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not upload students." });

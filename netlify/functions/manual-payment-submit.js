@@ -19,6 +19,10 @@ const {
   createPasswordResetToken,
   setStudentCookieHeader,
 } = require("./_lib/student-auth");
+const {
+  ensureAffiliateTables,
+  recordAffiliateAttribution,
+} = require("./_lib/affiliates");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -74,6 +78,7 @@ exports.handler = async function (event) {
   const proofUrl = String(body.proofUrl || "").trim();
   const proofPublicId = String(body.proofPublicId || "").trim().slice(0, 255);
   const currency = "NGN";
+  const affiliateCode = String(body.affiliateCode || body.affiliate_code || "").trim().toUpperCase().slice(0, 40);
 
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and valid email are required" });
@@ -92,6 +97,7 @@ exports.handler = async function (event) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
     }
     await ensureManualPaymentsTable(pool);
+    await ensureAffiliateTables(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
@@ -143,6 +149,21 @@ exports.handler = async function (event) {
       proofUrl,
       proofPublicId,
     });
+
+    if (affiliateCode) {
+      await recordAffiliateAttribution(pool, {
+        orderUuid: paymentUuid,
+        courseSlug,
+        affiliateCode,
+        buyerEmail: email,
+        buyerCountry: country || "Nigeria",
+        buyerCurrency: currency,
+        orderAmountMinor: pricing.finalAmountMinor,
+        requestHeaders: event && event.headers ? event.headers : {},
+      }).catch(function () {
+        return null;
+      });
+    }
 
     await ensureStudentAuthTables(pool);
     let account = await findStudentByEmail(pool, email);

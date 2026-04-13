@@ -6,6 +6,7 @@ const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { ensureAffiliateTables, recordAffiliateAttribution } = require("./_lib/affiliates");
 const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
@@ -28,6 +29,10 @@ function normalizeProvider(value) {
 
 function normalizeCountry(value) {
   return String(value || "").trim().slice(0, 120);
+}
+
+function normalizeAffiliateCode(value) {
+  return String(value || "").trim().slice(0, 40).toUpperCase();
 }
 
 function priceConfig({ provider, courseSlug, batch }) {
@@ -56,6 +61,13 @@ exports.handler = async function (event) {
   const provider = normalizeProvider(body.provider);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
   const couponCode = normalizeCouponCode(body.couponCode);
+  const affiliateCode = normalizeAffiliateCode(
+    body.affiliateCode ||
+      body.affiliate_code ||
+      body.ref ||
+      (event.queryStringParameters && event.queryStringParameters.ref) ||
+      (event.queryStringParameters && event.queryStringParameters.affiliate)
+  );
   const courseConfig = getCourseConfig(courseSlug);
   if (!firstName || !email) {
     return json(400, { ok: false, error: "Full Name and valid email are required" });
@@ -71,6 +83,7 @@ exports.handler = async function (event) {
 
   try {
     await ensureLearningTables(pool);
+    await ensureAffiliateTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!learningCourse) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
@@ -138,6 +151,21 @@ exports.handler = async function (event) {
         batch.batch_label,
       ]
     );
+
+    if (affiliateCode) {
+      await recordAffiliateAttribution(pool, {
+        orderUuid,
+        courseSlug,
+        affiliateCode,
+        buyerEmail: email,
+        buyerCountry: country,
+        buyerCurrency: pricing.currency,
+        orderAmountMinor: pricing.finalAmountMinor,
+        requestHeaders: event && event.headers ? event.headers : {},
+      }).catch(function () {
+        return null;
+      });
+    }
 
     if (provider === "paystack") {
       const prefix = String(batch.paystack_reference_prefix || "PTP").trim().toUpperCase();

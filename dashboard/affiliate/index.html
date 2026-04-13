@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Affiliate | User Dashboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      [hidden] { display: none !important; }
+      .affiliate-btn {
+        width: auto;
+        min-width: 8.5rem;
+      }
+      .premium-input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        border-radius: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      }
+      .premium-input:hover {
+        border-color: #93c5fd;
+        background-color: #ffffff;
+      }
+      .premium-input:focus {
+        outline: none;
+        border-color: #0f172a;
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+        background-color: #ffffff;
+      }
+      .premium-picker {
+        appearance: none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #1f2f57 50%),
+          linear-gradient(135deg, #1f2f57 50%, transparent 50%);
+        background-position:
+          calc(100% - 20px) calc(50% - 2px),
+          calc(100% - 14px) calc(50% - 2px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+        padding-right: 2.25rem;
+      }
+      .help-card {
+        background: linear-gradient(140deg, #ffffff 0%, #f8fbff 45%, #eef2fb 100%);
+      }
+      .help-summary::-webkit-details-marker { display: none; }
+      .help-summary { list-style: none; }
+      .payout-form-shell {
+        max-width: 52rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        background: linear-gradient(160deg, #ffffff 0%, #f8fbff 65%, #f3f6fc 100%);
+        padding: 1rem;
+      }
+      .field-label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #475569;
+      }
+      .bank-combobox {
+        position: relative;
+      }
+      .bank-combobox-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .bank-combobox-toggle .value {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .bank-combobox-panel {
+        position: absolute;
+        top: calc(100% + 0.45rem);
+        left: 0;
+        right: 0;
+        z-index: 30;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+        padding: 0.625rem;
+      }
+      .bank-combobox-list {
+        margin-top: 0.5rem;
+        max-height: 15rem;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.625rem;
+      }
+      .bank-combobox-option {
+        width: 100%;
+        border: 0;
+        background: #ffffff;
+        text-align: left;
+        padding: 0.55rem 0.7rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #0f172a;
+        cursor: pointer;
+      }
+      .bank-combobox-option:hover,
+      .bank-combobox-option[aria-selected="true"] {
+        background: #eef2fb;
+        color: #14213d;
+      }
+      .bank-combobox-empty {
+        padding: 0.75rem;
+        font-size: 0.84rem;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
+    <section class="flex h-full w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-brand-900/40 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div class="h-16 flex items-center px-6 border-b border-white/10">
+          <span class="flex items-center justify-center h-8 w-8 rounded bg-brand-600 text-white font-heading font-bold text-sm mr-3">TN</span>
+          <span class="font-heading font-bold text-lg">User Workspace</span>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+          <a href="/dashboard/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">Overview</a>
+          <a href="/dashboard/courses/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">My Courses</a>
+          <a href="/dashboard/domains/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">My Domains</a>
+          <a href="/dashboard/affiliate/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-600/40 text-white">Affiliate</a>
+          <a href="/dashboard/domains/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-brand-100 hover:bg-white/5">Register Domain</a>
+        </nav>
+        <div class="p-4 border-t border-white/10">
+          <button type="button" class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors" data-user-signout>Sign out</button>
+        </div>
+      </aside>
+      <div class="flex-1 min-w-0 flex flex-col">
+        <header class="user-dashboard-topbar h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
+          <div class="flex items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <h1 class="text-lg font-heading font-bold text-gray-900">Affiliate</h1>
+          </div>
+          <button type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" data-user-signout>Sign out</button>
+        </header>
+        <main class="user-dashboard-main flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <section class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 max-w-6xl">
+            <div class="mb-6">
+              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">User Dashboard</p>
+              <h2 class="text-2xl font-heading font-extrabold text-gray-900">Affiliate Center</h2>
+              <p id="affiliateMeta" class="mt-2 text-sm text-gray-600">Loading your affiliate profile...</p>
+            </div>
+
+            <div id="affiliateIneligibleNotice" class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hidden"></div>
+
+            <article class="help-card rounded-xl border border-brand-100 p-4 mb-6">
+              <details id="affiliateHelpDetails" class="group" open>
+                <summary class="help-summary cursor-pointer">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-base font-heading font-bold text-gray-900">How Affiliate Earnings Work</h3>
+                      <p class="text-sm text-gray-600">Rules, payout timing, and what gets blocked.</p>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-200">
+                      <span class="group-open:hidden">Show details</span>
+                      <span class="hidden group-open:inline">Hide details</span>
+                    </span>
+                  </div>
+                </summary>
+                <div class="mt-4 space-y-3 text-sm text-gray-700">
+                  <p id="affiliateHelpIntro">
+                    Share your affiliate link to refer students to eligible courses. You earn commission only on valid, paid referrals attributed to your link.
+                  </p>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Hold Period</p>
+                      <p id="affiliatePolicyHold" class="mt-1 text-sm font-semibold text-gray-900">-</p>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Minimum Payout</p>
+                      <p id="affiliatePolicyMinPayout" class="mt-1 text-sm font-semibold text-gray-900">-</p>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Payout Provider</p>
+                      <p id="affiliatePolicyProvider" class="mt-1 text-sm font-semibold text-gray-900">Paystack (where available)</p>
+                    </div>
+                  </div>
+                  <p id="affiliatePolicyHoldExplain" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900"></p>
+                  <p id="affiliateHelpWarning" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800"></p>
+                </div>
+              </details>
+            </article>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+              <article class="rounded-xl border border-gray-200 bg-gray-50 p-4"><p class="text-xs text-gray-500">Pending</p><p id="affPending" class="text-xl font-bold">₦0</p></article>
+              <article class="rounded-xl border border-gray-200 bg-gray-50 p-4"><p class="text-xs text-gray-500">Approved</p><p id="affApproved" class="text-xl font-bold">₦0</p></article>
+              <article class="rounded-xl border border-gray-200 bg-gray-50 p-4"><p class="text-xs text-gray-500">Paid</p><p id="affPaid" class="text-xl font-bold">₦0</p></article>
+              <article class="rounded-xl border border-gray-200 bg-gray-50 p-4"><p class="text-xs text-gray-500">Blocked/Reversed</p><p id="affBlocked" class="text-xl font-bold">₦0</p></article>
+            </div>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-4 mb-6">
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">My Affiliate Link</p>
+              <div class="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input id="affiliateLinkInput" class="premium-input" readonly />
+                <button id="affiliateCopyLinkBtn" class="affiliate-btn inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Copy Link</button>
+              </div>
+              <p id="affiliateCopyMsg" class="mt-2 text-xs text-gray-500"></p>
+            </article>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-4 mb-6">
+              <h3 class="text-base font-heading font-bold text-gray-900">Payout Account</h3>
+              <form id="affiliatePayoutForm" class="mt-3">
+                <div class="payout-form-shell grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label class="field-label" for="affCountryCode">Country</label>
+                    <input id="affCountryCode" value="Nigeria (NG)" class="premium-input" readonly />
+                  </div>
+                  <div>
+                    <label class="field-label" for="affCurrency">Currency</label>
+                    <input id="affCurrency" value="NGN" class="premium-input" readonly />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="field-label" for="affBankPickerToggle">Bank</label>
+                    <div id="affBankPicker" class="bank-combobox">
+                      <button id="affBankPickerToggle" type="button" class="premium-input bank-combobox-toggle" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="affBankPickerLabel" class="value">Select Bank (Nigeria)</span>
+                        <svg class="h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div id="affBankPickerPanel" class="bank-combobox-panel" hidden>
+                        <input id="affBankPickerSearch" class="premium-input" placeholder="Search bank (e.g. GTBank, Access, UBA)" autocomplete="off" />
+                        <div id="affBankPickerList" class="bank-combobox-list" role="listbox" aria-label="Bank list"></div>
+                      </div>
+                      <select id="affBankCode" class="hidden" aria-label="Bank Name" tabindex="-1">
+                        <option value="">Select Bank (Nigeria)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="field-label" for="affAccountNumber">Account Number</label>
+                    <input id="affAccountNumber" placeholder="10-digit NUBAN" class="premium-input" inputmode="numeric" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="affAccountName">Account Name</label>
+                    <input id="affAccountName" placeholder="Auto-resolved from Paystack" class="premium-input" readonly />
+                  </div>
+                  <div class="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-900">Security Verification</p>
+                    <p class="mt-1 text-sm text-amber-800">Changing an existing payout account requires a one-time code sent to your registered email.</p>
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                      <input id="affPayoutOtpCode" class="premium-input" placeholder="Enter 6-digit code from email" inputmode="numeric" maxlength="6" />
+                      <button id="affSendPayoutOtpBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-amber-100 px-3 py-2 text-sm font-bold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-200">Send Code</button>
+                    </div>
+                  </div>
+                  <div class="md:col-span-2">
+                    <button id="affiliatePayoutSaveBtn" type="submit" class="affiliate-btn inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Save Account</button>
+                  </div>
+                </div>
+              </form>
+              <p id="affiliatePayoutMsg" class="mt-2 text-sm"></p>
+            </article>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-4 mb-6">
+              <h3 class="text-base font-heading font-bold text-gray-900">Eligible Courses</h3>
+              <p class="mt-1 text-sm text-gray-600">Only courses listed here can generate affiliate commissions.</p>
+              <p id="affiliateSchoolTieNote" class="mt-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-800 hidden"></p>
+              <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-gray-500 border-b border-gray-200">
+                      <th class="py-2 pr-3">Course</th>
+                      <th class="py-2 pr-3">Commission</th>
+                      <th class="py-2 pr-3">Min Order</th>
+                      <th class="py-2 pr-3">Hold Days</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affiliateEligibleCoursesRows"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-4 mb-6">
+              <h3 class="text-base font-heading font-bold text-gray-900">Recent Referrals</h3>
+              <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-gray-500 border-b border-gray-200">
+                      <th class="py-2 pr-3">Date</th>
+                      <th class="py-2 pr-3">Course</th>
+                      <th class="py-2 pr-3">Buyer</th>
+                      <th class="py-2 pr-3">Amount</th>
+                      <th class="py-2 pr-3">Commission</th>
+                      <th class="py-2 pr-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affiliateReferralsRows"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 class="text-base font-heading font-bold text-gray-900">Payout History</h3>
+              <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-gray-500 border-b border-gray-200">
+                      <th class="py-2 pr-3">Batch</th>
+                      <th class="py-2 pr-3">Period</th>
+                      <th class="py-2 pr-3">Amount</th>
+                      <th class="py-2 pr-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affiliatePayoutRows"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </section>
+    <script src="/assets/user-dashboard-shell.js?v=20260405a" defer></script>
+    <script src="/assets/dashboard-affiliate.js?v=20260413i" defer></script>
+  </body>
+</html>

@@ -14,6 +14,7 @@ const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
 const { resolveCourseBatch } = require("./_lib/batch-store");
 const { recordCouponRedemption } = require("./_lib/coupons");
+const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./_lib/affiliates");
 
 function withTimeout(promise, timeoutMs) {
   const ms = Math.max(200, Number(timeoutMs) || 2000);
@@ -52,6 +53,7 @@ exports.handler = async function (event) {
 
   try {
     await ensureManualPaymentsTable(pool);
+    await ensureAffiliateTables(pool);
 
     const payment = await findManualPaymentByUuid(pool, paymentUuid);
     if (!payment) return json(404, { ok: false, error: "Manual payment not found" });
@@ -130,6 +132,12 @@ exports.handler = async function (event) {
           );
         } catch (_error) {}
       }
+
+      await createAffiliateCommissionForPaidOrder(pool, {
+        orderUuid: paymentUuid,
+      }).catch(function () {
+        return null;
+      });
     }
 
     return json(200, {

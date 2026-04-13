@@ -15,6 +15,7 @@
   var MIN_SEATS = 50;
   var PRICE_PER_STUDENT_MINOR = 850000;
   var VAT_PERCENT = 7.5;
+  var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
 
   function clean(value) {
     return String(value || "").trim();
@@ -33,6 +34,25 @@
     if (!statusEl) return;
     statusEl.textContent = clean(text);
     statusEl.className = "text-sm " + (bad ? "text-red-600" : "text-slate-600");
+  }
+
+  function resolveAffiliateCode() {
+    var fromQuery = "";
+    try {
+      var search = new URLSearchParams(window.location.search || "");
+      fromQuery = clean(search.get("ref") || search.get("affiliate")).toUpperCase();
+    } catch (_error) {
+      fromQuery = "";
+    }
+    if (fromQuery) {
+      try { window.localStorage.setItem(AFFILIATE_REF_KEY, fromQuery); } catch (_error) {}
+      return fromQuery;
+    }
+    try {
+      return clean(window.localStorage.getItem(AFFILIATE_REF_KEY)).toUpperCase();
+    } catch (_error) {
+      return "";
+    }
   }
 
   function pricingForSeats(seatsInput) {
@@ -114,6 +134,7 @@
       adminPhone: clean(adminPhoneEl && adminPhoneEl.value),
       seatCount: seatCount,
       courseSlug: "prompt-to-profit",
+      affiliateCode: resolveAffiliateCode(),
     };
     if (!payload.schoolName || !payload.adminName || !payload.adminEmail || !payload.adminPhone) {
       setStatus("All fields are required.", true);
