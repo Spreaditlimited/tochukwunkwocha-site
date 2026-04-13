@@ -124,9 +124,43 @@
     <style>
       main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
       .site-footer { margin-top: 0 !important; }
-      .hero-ptp-inline {
-        height: 1.02em;
-        vertical-align: -0.1em;
+      .production-hero {
+        padding-top: 64px;
+      }
+      .hero-label-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 18px;
+      }
+      .hero-label-logo {
+        width: min(220px, 58vw);
+        height: auto;
+      }
+      .hero-label-advanced {
+        font-family: "Manrope", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #93c5fd;
+      }
+      @media (max-width: 640px) {
+        .hero-label-lockup {
+          margin: 0 auto 16px;
+        }
+        .hero-label-logo {
+          width: min(200px, 56vw);
+        }
+        .hero-label-advanced {
+          font-size: 0.82rem;
+          letter-spacing: 0.1em;
+        }
+      }
+      @media (min-width: 1024px) {
+        .production-hero {
+          padding-top: 96px;
+        }
       }
       .faq-ptp-logo {
         height: 1.28em;
@@ -161,7 +195,7 @@
 
     <main class="flex-1 w-full">
       
-      <section class="relative overflow-hidden bg-brand-900 pt-16 pb-20 lg:pt-24 lg:pb-32 reveal border-b border-brand-800">
+      <section class="production-hero relative overflow-hidden bg-brand-900 pb-20 lg:pb-32 reveal border-b border-brand-800">
         <div class="absolute inset-0 bg-[url('/assets/grid.svg')] bg-center opacity-10"></div>
         <div class="absolute -right-40 -top-40 w-96 h-96 bg-blue-500 rounded-full blur-[120px] opacity-20"></div>
         
@@ -169,12 +203,12 @@
           <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
             
             <div class="lg:col-span-7 text-center sm:text-left">
-              <p class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-blue-400 mb-4">
-                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
-                Advanced AI Course
-              </p>
+              <div class="hero-label-lockup">
+                <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-label-logo" />
+                <span class="hero-label-advanced">Advanced</span>
+              </div>
               <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[4rem] leading-[1.1]">
-                <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--heading hero-ptp-inline" /> Advanced. Build real apps with VS Code & AI.
+                Build real apps with VS Code & AI
               </h1>
               <p class="mt-6 text-lg leading-relaxed text-gray-300 max-w-2xl mx-auto sm:mx-0">
                 Move beyond simple static websites. Learn how to use professional tools—VS Code and AI coding assistants—to build, debug, and deploy fully functional web applications. No computer science degree required.
@@ -218,7 +252,7 @@
             <p class="tw-section-label">The Evolution</p>
             <h2 class="tw-h2 mb-6">Stop just generating text. Start compiling software.</h2>
             <p class="text-lg leading-relaxed text-gray-600 mb-6">
-              <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline" /> gave you the foundation. Now, it's time to step into the actual environment where real software is built: <strong>The Code Editor</strong>.
+              Prompt to Profit gave you the foundation. Now, it's time to step into the actual environment where real software is built: <strong>The Code Editor</strong>.
             </p>
             <p class="text-lg leading-relaxed text-gray-600 mb-8">
               You don't need to memorize programming languages. You just need to know how to navigate VS Code, how to direct an AI coding assistant to write the logic for you, and how to fix errors when they inevitably happen.
@@ -412,8 +446,8 @@
           </div>
           <div class="faq-wrap">
             <article class="faq-item">
-              <button class="faq-question" type="button">Do I need to take <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline faq-ptp-logo" /> first?</button>
-              <div class="faq-answer"><p>If you have never used AI to build a simple webpage, we highly recommend taking <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline faq-ptp-logo" /> first. This advanced course assumes you are ready to learn complex tools like VS Code and work with data.</p></div>
+              <button class="faq-question" type="button">Do I need to take Prompt to Profit first?</button>
+              <div class="faq-answer"><p>If you have never used AI to build a simple webpage, we highly recommend taking Prompt to Profit first. This advanced course assumes you are ready to learn complex tools like VS Code and work with data.</p></div>
             </article>
             <article class="faq-item">
               <button class="faq-question" type="button">Will this teach me how to code manually?</button>
@@ -432,7 +466,7 @@
           <h2 class="text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-5xl mb-6">Ready to build real software?</h2>
           <p class="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">Stop waiting for a technical co-founder. Learn to use the editor and AI tools to build your ideas yourself.</p>
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a class="tw-btn-primary px-8 bg-blue-600 hover:bg-blue-500 text-lg" href="/enrol-prompt-to-production/">Enrol in <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--button" /> Advanced</a>
+            <a class="tw-btn-primary px-8 bg-blue-600 hover:bg-blue-500 text-lg" href="/enrol-prompt-to-production/">Enrol in Prompt to Profit Advanced</a>
             <a class="tw-btn-outline px-8 text-lg" href="/dashboard/?course_slug=prompt-to-production">Start Installment Plan</a>
           </div>
         </div>
