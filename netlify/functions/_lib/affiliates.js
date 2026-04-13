@@ -82,6 +82,13 @@ function normalizeCourse(value) {
   return clean(value, 120).toLowerCase();
 }
 
+function firstNameFromFullName(value) {
+  const full = clean(value, 180);
+  if (!full) return "";
+  const first = full.split(/\s+/).filter(Boolean)[0] || "";
+  return clean(first, 80);
+}
+
 function toInt(value, fallback) {
   const n = Number(value);
   if (!Number.isFinite(n)) return Number.isFinite(fallback) ? Math.trunc(fallback) : 0;
@@ -1587,8 +1594,12 @@ async function sendAffiliatePayoutChangeOtp(pool, input) {
   );
 
   const subject = "Verify payout account change";
+  const greetingName =
+    firstNameFromFullName(input && input.accountFullName) ||
+    firstNameFromFullName(input && input.accountName) ||
+    "Affiliate";
   const html = [
-    `<p>Hi ${clean(profile && profile.affiliate_code, 40) || "Affiliate"},</p>`,
+    `<p>Hi ${greetingName},</p>`,
     `<p>Use this code to verify your payout account change:</p>`,
     `<p style="font-size:24px;font-weight:700;letter-spacing:2px;">${code}</p>`,
     `<p>This code expires in 10 minutes.</p>`,

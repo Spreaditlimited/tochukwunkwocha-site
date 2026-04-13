@@ -28,9 +28,10 @@ exports.handler = async function (event) {
 
     let rows = [];
     try {
-      const [withSchool] = await pool.query(
+         const [withSchool] = await pool.query(
         `SELECT
            a.id,
+           a.account_id,
            a.alert_type,
            a.severity,
            a.title,
@@ -57,6 +58,7 @@ exports.handler = async function (event) {
       const [withoutSchool] = await pool.query(
         `SELECT
            a.id,
+           a.account_id,
            a.alert_type,
            a.severity,
            a.title,
@@ -82,6 +84,7 @@ exports.handler = async function (event) {
       alerts: rows.map(function (row) {
         return {
           id: Number(row.id),
+          accountId: Number(row.account_id || 0) || null,
           alertType: clean(row.alert_type, 80),
           severity: clean(row.severity, 30),
           title: clean(row.title, 255),

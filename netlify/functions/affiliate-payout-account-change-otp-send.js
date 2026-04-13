@@ -28,6 +28,7 @@ exports.handler = async function (event) {
     const result = await sendAffiliatePayoutChangeOtp(pool, {
       accountId: session.account.id,
       accountEmail: session.account.email,
+      accountFullName: session.account.fullName,
       countryCode: "NG",
       currency: "NGN",
       payoutProvider: "paystack",
