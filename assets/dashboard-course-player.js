@@ -19,6 +19,7 @@
   var lessonA11yStatusBadgeEl = document.getElementById("lessonA11yStatusBadge");
   var lessonCaptionsBadgeEl = document.getElementById("lessonCaptionsBadge");
   var toggleTranscriptBtn = document.getElementById("toggleTranscriptBtn");
+  var requestTranscriptBtn = document.getElementById("requestTranscriptBtn");
   var toggleAudioDescriptionBtn = document.getElementById("toggleAudioDescriptionBtn");
   var toggleSignLanguageBtn = document.getElementById("toggleSignLanguageBtn");
   var signLanguageLink = document.getElementById("signLanguageLink");
@@ -68,6 +69,10 @@
     initialLessonId: 0,
     lastErroredLessonId: 0,
     transcriptSourceText: "",
+    transcriptLoadedLessonId: 0,
+    transcriptFetchInFlight: false,
+    transcriptAccessAllowed: false,
+    transcriptAccessStatus: "none",
     audioDescriptionSourceText: "",
     signLanguageSourceUrl: "",
   };
@@ -250,6 +255,46 @@
     if (toggleTranscriptBtn) toggleTranscriptBtn.textContent = "Open transcript";
   }
 
+  async function fetchTranscriptForLesson(lessonId) {
+    var id = Number(lessonId || 0);
+    if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid lesson id.");
+    if (state.transcriptFetchInFlight) return;
+    state.transcriptFetchInFlight = true;
+    try {
+      var payload = await api("/.netlify/functions/user-learning-transcript", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ lesson_id: id }),
+      });
+      var text = clean(payload && payload.transcript_text || "");
+      state.transcriptSourceText = text;
+      state.transcriptLoadedLessonId = id;
+      renderTranscriptText(transcriptSearchInput ? transcriptSearchInput.value || "" : "");
+      return text;
+    } finally {
+      state.transcriptFetchInFlight = false;
+    }
+  }
+
+  async function requestTranscriptAccessForLesson(lessonId) {
+    var id = Number(lessonId || 0);
+    if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid lesson id.");
+    var payload = await api("/.netlify/functions/user-learning-transcript-request", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ lesson_id: id }),
+    });
+    state.transcriptAccessAllowed = false;
+    state.transcriptAccessStatus = clean(payload && payload.transcript_access && payload.transcript_access.status || "pending").toLowerCase() || "pending";
+    return payload;
+  }
+
   function closeAudioDescriptionPanel() {
     if (audioDescriptionPanelEl) audioDescriptionPanelEl.hidden = true;
     if (toggleAudioDescriptionBtn) toggleAudioDescriptionBtn.textContent = "Open audio description";
@@ -363,6 +408,8 @@
       : {};
     var captionsUrl = clean(a11y.captions_vtt_url || "");
     var transcriptText = clean(a11y.transcript_text || "");
+    var transcriptAvailable = !!(a11y.transcript_available || transcriptText);
+    var transcriptAllowed = !!state.transcriptAccessAllowed;
     var audioDescriptionText = clean(a11y.audio_description_text || "");
     var signLanguageUrl = clean(a11y.sign_language_video_url || "");
     var statusRaw = clean(a11y.status || "draft").toLowerCase();
@@ -373,12 +420,13 @@
       return clean(item, 40);
     }).filter(Boolean);
 
-    state.transcriptSourceText = transcriptText;
+    state.transcriptSourceText = "";
+    state.transcriptLoadedLessonId = 0;
     state.audioDescriptionSourceText = audioDescriptionText;
     state.signLanguageSourceUrl = signLanguageUrl;
 
     if (lessonA11yToolsEl) {
-      lessonA11yToolsEl.hidden = !(captionsUrl || transcriptText || audioDescriptionText || signLanguageUrl || statusLabel);
+      lessonA11yToolsEl.hidden = !(captionsUrl || transcriptAvailable || audioDescriptionText || signLanguageUrl || statusLabel);
     }
     if (lessonA11yStatusBadgeEl) {
       lessonA11yStatusBadgeEl.textContent = "Accessibility: " + statusLabel;
@@ -391,8 +439,14 @@
       lessonCaptionsBadgeEl.hidden = !captionsUrl;
     }
     if (toggleTranscriptBtn) {
-      toggleTranscriptBtn.hidden = !transcriptText;
+      toggleTranscriptBtn.hidden = !(transcriptAvailable && transcriptAllowed);
+      toggleTranscriptBtn.disabled = !transcriptAllowed;
       toggleTranscriptBtn.textContent = transcriptPanelEl && !transcriptPanelEl.hidden ? "Close transcript" : "Open transcript";
+    }
+    if (requestTranscriptBtn) {
+      requestTranscriptBtn.hidden = !(transcriptAvailable && !transcriptAllowed);
+      requestTranscriptBtn.disabled = state.transcriptAccessStatus === "pending";
+      requestTranscriptBtn.textContent = state.transcriptAccessStatus === "pending" ? "Transcript request pending" : "Request transcript access";
     }
     if (toggleAudioDescriptionBtn) {
       toggleAudioDescriptionBtn.hidden = !audioDescriptionText;
@@ -413,9 +467,17 @@
       audioDescriptionTextEl.textContent = audioDescriptionText || "Audio description is not available for this lesson yet.";
     }
     if (transcriptSearchInput) transcriptSearchInput.value = "";
-    renderTranscriptText("");
+    if (transcriptTextEl) {
+      if (!transcriptAvailable) {
+        transcriptTextEl.textContent = "Transcript is not available for this lesson yet.";
+      } else if (!transcriptAllowed) {
+        transcriptTextEl.textContent = "Transcript access requires approved accessibility accommodation.";
+      } else {
+        transcriptTextEl.textContent = "Open transcript to load secure text.";
+      }
+    }
     if (transcriptPanelEl) {
-      transcriptPanelEl.hidden = !transcriptText;
+      transcriptPanelEl.hidden = true;
     }
     if (toggleTranscriptBtn) {
       toggleTranscriptBtn.textContent = transcriptPanelEl && !transcriptPanelEl.hidden ? "Close transcript" : "Open transcript";
@@ -1055,6 +1117,11 @@
     startWatermarkTicker();
     var payloadError = validateCoursePayloadShape(course);
     if (payloadError) throw new Error(payloadError);
+    var transcriptAccess = course && course.transcript_access && typeof course.transcript_access === "object"
+      ? course.transcript_access
+      : {};
+    state.transcriptAccessAllowed = !!transcriptAccess.allowed;
+    state.transcriptAccessStatus = clean(transcriptAccess.status || "none").toLowerCase() || "none";
 
     var orderedModules = sortModulesAndLessons(course.modules);
     state.modules = dedupeModules(orderedModules);
@@ -1243,11 +1310,62 @@
     toggleTranscriptBtn.addEventListener("click", function () {
       if (!transcriptPanelEl) return;
       var willOpen = !!transcriptPanelEl.hidden;
-      transcriptPanelEl.hidden = !willOpen;
-      toggleTranscriptBtn.textContent = willOpen ? "Close transcript" : "Open transcript";
-      if (willOpen && transcriptSearchInput && typeof transcriptSearchInput.focus === "function") {
-        transcriptSearchInput.focus();
+      if (!willOpen) {
+        transcriptPanelEl.hidden = true;
+        toggleTranscriptBtn.textContent = "Open transcript";
+        return;
       }
+
+      var lessonId = Number(state.activeLessonId || 0);
+      if (!state.transcriptAccessAllowed || !lessonId) {
+        setStatus("Transcript access requires approval.", false);
+        return;
+      }
+
+      toggleTranscriptBtn.disabled = true;
+      toggleTranscriptBtn.textContent = "Loading transcript...";
+      fetchTranscriptForLesson(lessonId)
+        .then(function () {
+          transcriptPanelEl.hidden = false;
+          toggleTranscriptBtn.textContent = "Close transcript";
+          if (transcriptSearchInput && typeof transcriptSearchInput.focus === "function") {
+            transcriptSearchInput.focus();
+          }
+        })
+        .catch(function (error) {
+          transcriptPanelEl.hidden = false;
+          if (transcriptTextEl) {
+            transcriptTextEl.textContent = clean(error && error.message) || "Could not load transcript.";
+          }
+          toggleTranscriptBtn.textContent = "Open transcript";
+          setStatus(clean(error && error.message) || "Could not load transcript.", true);
+        })
+        .finally(function () {
+          toggleTranscriptBtn.disabled = false;
+        });
+    });
+  }
+
+  if (requestTranscriptBtn) {
+    requestTranscriptBtn.addEventListener("click", function () {
+      var lessonId = Number(state.activeLessonId || 0);
+      if (!lessonId || requestTranscriptBtn.disabled) return;
+      requestTranscriptBtn.disabled = true;
+      requestTranscriptBtn.textContent = "Submitting...";
+      requestTranscriptAccessForLesson(lessonId)
+        .then(function () {
+          requestTranscriptBtn.textContent = "Transcript request pending";
+          requestTranscriptBtn.disabled = true;
+          if (transcriptTextEl) {
+            transcriptTextEl.textContent = "Transcript request submitted. Access will appear here after approval.";
+          }
+          setStatus("Transcript access request submitted for review.", false);
+        })
+        .catch(function (error) {
+          requestTranscriptBtn.disabled = false;
+          requestTranscriptBtn.textContent = "Request transcript access";
+          setStatus(clean(error && error.message) || "Could not submit transcript access request.", true);
+        });
     });
   }
 

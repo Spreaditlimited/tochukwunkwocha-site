@@ -16,7 +16,10 @@
   const activeBatchText = document.getElementById("adminActiveBatchText");
   const refreshBtn = document.getElementById("adminRefreshBtn");
   const accessCheckEmailInput = document.getElementById("adminAccessCheckEmail");
+  const transcriptCourseSelect = document.getElementById("adminTranscriptCourse");
   const accessCheckBtn = document.getElementById("adminAccessCheckBtn");
+  const transcriptRequestCountEl = document.getElementById("adminTranscriptRequestCount");
+  const transcriptRequestRowsEl = document.getElementById("adminTranscriptRequestRows");
   const logoutBtn = document.getElementById("adminLogoutBtn");
   const rowsEl = document.getElementById("adminRows");
   const messageEl = document.getElementById("adminMessage");
@@ -137,6 +140,11 @@
     return String((found && found.label) || slug || "Course").trim();
   }
 
+  function selectedTranscriptCourseSlug() {
+    const value = canonicalCourseSlug((transcriptCourseSelect && transcriptCourseSelect.value) || "");
+    return value || "prompt-to-profit";
+  }
+
   function hasAddStudentDiscount() {
     return String((addStudentHasDiscount && addStudentHasDiscount.value) || "no").trim().toLowerCase() === "yes";
   }
@@ -204,6 +212,24 @@
       .join("");
     if (list.some(function (item) { return item.slug === current; })) {
       addStudentCourse.value = current;
+    }
+  }
+
+  function setTranscriptCourseOptions(items) {
+    if (!transcriptCourseSelect) return;
+    const current = selectedTranscriptCourseSlug();
+    const list = Array.isArray(items) && items.length ? items : FALLBACK_COURSES;
+    transcriptCourseSelect.innerHTML = list
+      .map(function (item) {
+        const slug = canonicalCourseSlug(item.slug);
+        const label = String(item.label || slug || "Course").trim();
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean)
+      .join("");
+    if (list.some(function (item) { return canonicalCourseSlug(item.slug) === current; })) {
+      transcriptCourseSelect.value = current;
     }
   }
 
@@ -345,6 +371,7 @@
     setCourseFilterOptions(availableCourses);
     setSummaryCourseFilterOptions(availableCourses);
     setAddStudentCourseOptions(availableCourses);
+    setTranscriptCourseOptions(availableCourses);
     syncAddStudentCourseDisplay();
     return availableCourses;
   }
@@ -729,6 +756,59 @@
     `;
   }
 
+  function transcriptRequestRowMarkup(item) {
+    const requestedAt = item && item.requested_at ? fmtDate(item.requested_at) : "-";
+    const fullName = escapeHtml(item && item.full_name || "Student");
+    const email = escapeHtml(item && item.email || "");
+    const course = escapeHtml(item && item.course_slug || "");
+    const reason = escapeHtml(item && item.request_reason || "No reason submitted.");
+    return [
+      '<tr data-transcript-request-id="' + escapeHtml(item && item.id || "") + '">',
+      '<td class="px-3 py-2 text-sm text-gray-700">' + requestedAt + "</td>",
+      '<td class="px-3 py-2 text-sm text-gray-900"><div class="font-semibold">' + fullName + '</div><div class="text-xs text-gray-500">' + email + "</div></td>",
+      '<td class="px-3 py-2 text-sm text-gray-700">' + course + "</td>",
+      '<td class="px-3 py-2 text-sm text-gray-700 max-w-[28rem]">' + reason + "</td>",
+      '<td class="px-3 py-2 text-right"><div class="inline-flex items-center gap-2">' +
+        '<button type="button" class="btn-small btn-small-approve" data-transcript-action="approve" data-email="' + email + '" data-course-slug="' + course + '">Approve</button>' +
+        '<button type="button" class="btn-small btn-small-danger" data-transcript-action="decline" data-email="' + email + '" data-course-slug="' + course + '">Decline</button>' +
+      "</div></td>",
+      "</tr>",
+    ].join("");
+  }
+
+  function renderTranscriptRequests(items) {
+    const list = Array.isArray(items) ? items : [];
+    if (transcriptRequestCountEl) {
+      transcriptRequestCountEl.textContent = String(list.length) + " pending";
+    }
+    if (!transcriptRequestRowsEl) return;
+    if (!list.length) {
+      transcriptRequestRowsEl.innerHTML = '<tr><td colspan="5" class="px-3 py-5 text-sm text-gray-500">No pending transcript requests.</td></tr>';
+      return;
+    }
+    transcriptRequestRowsEl.innerHTML = list.map(transcriptRequestRowMarkup).join("");
+  }
+
+  async function loadTranscriptRequests() {
+    const courseSlug = selectedTranscriptCourseSlug();
+    const res = await fetch(
+      "/.netlify/functions/admin-learning-transcript-requests-list?status=pending&course_slug=" +
+        encodeURIComponent(courseSlug || "all") +
+        "&limit=200",
+      { method: "GET", headers: { Accept: "application/json" }, credentials: "include" }
+    );
+    if (res.status === 401) {
+      throw new Error("Your admin session expired. Refresh this page and sign in again.");
+    }
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load transcript requests");
+    }
+    renderTranscriptRequests(Array.isArray(json.items) ? json.items : []);
+  }
+
   function renderBatchOptions(summary) {
     if (!batchFilter || !summary) return;
     const current = selectedBatchKey() || String(summary.batchKey || "");
@@ -1000,6 +1080,10 @@
         ? items.map(rowMarkup).join("")
         : '<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
     }
+    await loadTranscriptRequests().catch(function (error) {
+      renderTranscriptRequests([]);
+      setMessage(error.message || "Could not load transcript requests", "error");
+    });
 
     if (appCard) appCard.hidden = false;
     setAuthMode(false);
@@ -1123,14 +1207,16 @@
       }
       const access = json.audit.access || {};
       if (access.allowed) {
+        const transcriptStatus = String((json && json.transcript_access && json.transcript_access.status) || "none");
         setMessage(
-          "Access ALLOWED for " + email + " (" + String(access.reason || "allowed") + ").",
+          "Access ALLOWED for " + email + " (" + String(access.reason || "allowed") + "). Transcript access: " + transcriptStatus + ".",
           "ok"
         );
       } else {
         const details = access.next_start_at
           ? " Starts at: " + String(access.next_start_at) + "."
           : "";
+        const transcriptStatusBlocked = String((json && json.transcript_access && json.transcript_access.status) || "none");
         setMessage(
           "Access BLOCKED for " +
             email +
@@ -1138,7 +1224,10 @@
             String(access.reason || "blocked") +
             "). " +
             String(access.message || "Not eligible.") +
-            details,
+            details +
+            " Transcript access: " +
+            transcriptStatusBlocked +
+            ".",
           "error"
         );
       }
@@ -1147,6 +1236,47 @@
     } finally {
       accessCheckBtn.disabled = false;
       accessCheckBtn.textContent = prev || "Check Course Access";
+    }
+  }
+
+  async function setTranscriptAccess(status, overrides) {
+    const next = String(status || "").trim().toLowerCase();
+    if (next !== "approved" && next !== "revoked") return;
+    const opts = overrides && typeof overrides === "object" ? overrides : {};
+    const email = String((opts.email || (accessCheckEmailInput && accessCheckEmailInput.value) || "")).trim().toLowerCase();
+    const courseSlug = canonicalCourseSlug(opts.course_slug || selectedTranscriptCourseSlug()) || selectedTranscriptCourseSlug();
+    if (!email) {
+      setMessage("Enter an email to update transcript access.", "error");
+      return;
+    }
+
+    setMessage((next === "approved" ? "Approving" : "Revoking") + " transcript access...", "ok");
+    try {
+      const res = await fetch("/.netlify/functions/admin-learning-transcript-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: email,
+          course_slug: courseSlug,
+          status: next,
+        }),
+      });
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok) {
+        throw new Error((json && json.error) || "Could not update transcript access");
+      }
+      setMessage(
+        "Transcript access updated: " + email + " (" + courseSlug + ") -> " + String(json.transcript_access && json.transcript_access.status || next) + ".",
+        "ok"
+      );
+      await loadTranscriptRequests().catch(function () {
+        return null;
+      });
+    } catch (error) {
+      setMessage(error.message || "Could not update transcript access", "error");
     }
   }
 
@@ -1164,6 +1294,38 @@
       event.preventDefault();
       runAccessCheck().catch(function (error) {
         setMessage(error.message || "Could not check course access", "error");
+      });
+    });
+  }
+
+  if (transcriptCourseSelect) {
+    transcriptCourseSelect.addEventListener("change", function () {
+      loadTranscriptRequests().catch(function (error) {
+        renderTranscriptRequests([]);
+        setMessage(error.message || "Could not load transcript requests", "error");
+      });
+    });
+  }
+
+  if (transcriptRequestRowsEl) {
+    transcriptRequestRowsEl.addEventListener("click", function (event) {
+      const target = event && event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      const btn = target.closest("[data-transcript-action]");
+      if (!btn) return;
+      const action = String(btn.getAttribute("data-transcript-action") || "").toLowerCase();
+      const email = String(btn.getAttribute("data-email") || "").trim().toLowerCase();
+      const courseSlug = canonicalCourseSlug(btn.getAttribute("data-course-slug") || "");
+      if (!email || !courseSlug) {
+        setMessage("Missing transcript request context.", "error");
+        return;
+      }
+      if (accessCheckEmailInput) accessCheckEmailInput.value = email;
+      if (transcriptCourseSelect) transcriptCourseSelect.value = courseSlug;
+
+      const targetStatus = action === "approve" ? "approved" : "revoked";
+      setTranscriptAccess(targetStatus, { email: email, course_slug: courseSlug }).catch(function (error) {
+        setMessage(error.message || "Could not update transcript request", "error");
       });
     });
   }

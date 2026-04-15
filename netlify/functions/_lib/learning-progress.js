@@ -10,6 +10,7 @@ const {
 } = require("./learning");
 const { canonicalizeCourseSlug } = require("./course-config");
 const { hasSchoolCourseAccess, getSchoolCourseAccessState, SCHOOL_ACCOUNTS_TABLE, SCHOOL_STUDENTS_TABLE } = require("./schools");
+const { canViewTranscript, ensureTranscriptAccessTables } = require("./transcript-access");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 
@@ -794,7 +795,9 @@ function buildCanonicalCourseStructure(courseSlug, rows) {
   };
 }
 
-function toCoursePayload(courseSlug, modules, progressByLessonId) {
+function toCoursePayload(courseSlug, modules, progressByLessonId, options) {
+  const opts = options && typeof options === "object" ? options : {};
+  const transcriptAllowed = !!opts.transcript_allowed;
   const outModules = [];
   let totalLessons = 0;
   let completedLessons = 0;
@@ -816,6 +819,7 @@ function toCoursePayload(courseSlug, modules, progressByLessonId) {
 
       const rawCaptionsVttUrl = clean(lessonRow.captions_vtt_url, 1200) || null;
       const rawTranscriptText = clean(lessonRow.transcript_text, 120000) || "";
+      const transcriptAvailable = !!rawTranscriptText;
       const rawAudioDescriptionText = clean(lessonRow.audio_description_text, 120000) || "";
       const rawSignLanguageVideoUrl = clean(lessonRow.sign_language_video_url, 1200) || null;
       const rawStatus = clean(lessonRow.accessibility_status, 32).toLowerCase() || "draft";
@@ -834,7 +838,8 @@ function toCoursePayload(courseSlug, modules, progressByLessonId) {
         accessibility: {
           captions_vtt_url: rawCaptionsVttUrl,
           captions_languages: parseCaptionsLanguages(lessonRow.captions_languages_json),
-          transcript_text: rawTranscriptText,
+          transcript_available: transcriptAvailable,
+          transcript_text: transcriptAllowed ? rawTranscriptText : "",
           audio_description_text: rawAudioDescriptionText,
           sign_language_video_url: rawSignLanguageVideoUrl,
           status: effectiveStatus,
@@ -892,6 +897,8 @@ async function listCourseForLearner(pool, input) {
   if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account_id");
   if (!accountEmail) throw new Error("Invalid account_email");
   if (!courseSlug) throw new Error("course_slug is required");
+
+  await ensureTranscriptAccessTables(pool);
 
   const accessState = await getCourseAccessState(pool, {
     account_id: accountId,
@@ -1073,7 +1080,22 @@ async function listCourseForLearner(pool, input) {
     delete moduleRow._lessonKeySet;
     return moduleRow;
   });
-  const payload = toCoursePayload(courseSlug, modules, progressByLessonId);
+  const transcriptAccess = await canViewTranscript(pool, {
+    account_id: accountId,
+    course_slug: courseSlug,
+  }).catch(function () {
+    return { allowed: false, status: "none", reason: "not_approved" };
+  });
+
+  const payload = toCoursePayload(courseSlug, modules, progressByLessonId, {
+    transcript_allowed: false,
+  });
+  payload.transcript_access = {
+    allowed: !!(transcriptAccess && transcriptAccess.allowed),
+    status: clean(transcriptAccess && transcriptAccess.status, 32) || "none",
+    reason: clean(transcriptAccess && transcriptAccess.reason, 64) || "not_approved",
+    policy: "approved_access_required",
+  };
 
   return {
     ok: true,
