@@ -9,6 +9,7 @@ const {
   ensureModuleById,
   findLearningCourseBySlug,
   MODULES_TABLE,
+  COURSE_MODULES_TABLE,
   MODULE_BATCH_DRIPS_TABLE,
 } = require("./_lib/learning");
 
@@ -136,6 +137,49 @@ async function fetchModuleDripSchedules(pool, moduleId) {
   return Array.isArray(rows) ? rows : [];
 }
 
+async function hasCourseModuleMappingsTable(pool) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [COURSE_MODULES_TABLE]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function upsertCourseModuleMapping(pool, input) {
+  const moduleId = Number(input && input.module_id || 0);
+  const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
+  if (!(moduleId > 0) || !courseSlug) return;
+  await pool.query(
+    `INSERT INTO ${COURSE_MODULES_TABLE}
+      (course_slug, module_id, sort_order, is_active, drip_enabled, drip_at, drip_batch_key, drip_offset_seconds, drip_notified_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
+     ON DUPLICATE KEY UPDATE
+      sort_order = VALUES(sort_order),
+      is_active = VALUES(is_active),
+      drip_enabled = VALUES(drip_enabled),
+      drip_at = VALUES(drip_at),
+      drip_batch_key = VALUES(drip_batch_key),
+      drip_offset_seconds = VALUES(drip_offset_seconds),
+      updated_at = VALUES(updated_at)`,
+    [
+      courseSlug,
+      moduleId,
+      Number.isFinite(Number(input && input.sort_order)) ? Number(input.sort_order) : 0,
+      Number(input && input.is_active || 0) === 0 ? 0 : 1,
+      Number(input && input.drip_enabled || 0) === 1 ? 1 : 0,
+      input && input.drip_at ? input.drip_at : null,
+      clean(input && input.drip_batch_key, 64) || null,
+      Number.isFinite(Number(input && input.drip_offset_seconds)) ? Number(input.drip_offset_seconds) : null,
+      nowSql(),
+      nowSql(),
+    ]
+  );
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -152,6 +196,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
 
     const id = Number(body.id || 0);
     const courseSlug = clean(body.course_slug, 120).toLowerCase();
@@ -218,6 +263,18 @@ exports.handler = async function (event) {
         ]
       );
       targetModuleId = id;
+      if (hasCourseModuleMappings) {
+        await upsertCourseModuleMapping(pool, {
+          module_id: id,
+          course_slug: courseSlug,
+          sort_order: sortOrder,
+          is_active: isActive,
+          drip_enabled: dripEnabled,
+          drip_at: dripEnabled && primary ? primary.drip_at : null,
+          drip_batch_key: dripEnabled && primary ? primary.batch_key : null,
+          drip_offset_seconds: dripEnabled ? dripOffsetSeconds : null,
+        });
+      }
 
       if (applyToTitleGroup) {
         const [groupRows] = await pool.query(
@@ -258,6 +315,18 @@ exports.handler = async function (event) {
           ]
         );
         await replaceModuleDripSchedules(pool, targetModuleId, dripEnabled ? schedules : []);
+        if (hasCourseModuleMappings) {
+          await upsertCourseModuleMapping(pool, {
+            module_id: targetModuleId,
+            course_slug: courseSlug,
+            sort_order: sortOrder,
+            is_active: isActive,
+            drip_enabled: dripEnabled,
+            drip_at: dripEnabled && primary ? primary.drip_at : null,
+            drip_batch_key: dripEnabled && primary ? primary.batch_key : null,
+            drip_offset_seconds: dripEnabled ? dripOffsetSeconds : null,
+          });
+        }
       }
     }
 

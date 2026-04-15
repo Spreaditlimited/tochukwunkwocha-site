@@ -333,6 +333,12 @@
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Order</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Video Asset</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Notes</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Captions URL</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Caption Languages (JSON)</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Transcript</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Audio Description</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Sign Language URL</th>
+                              <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">A11y Status</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Active</th>
                               <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                             </tr>
@@ -343,6 +349,7 @@
                       <div class="mt-4 flex items-center justify-end">
                         <button id="saveLessonsBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Save Lesson Mapping</button>
                       </div>
+                      <p id="lessonAccessibilitySummary" class="mt-3 text-xs text-amber-700"></p>
                     </div>
                   </div>
                 </div>
@@ -350,7 +357,7 @@
 
               <section class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-6">
                 <h4 class="text-sm font-heading font-bold uppercase tracking-wider text-gray-700">Bulk CSV Import</h4>
-                <p class="mt-1 text-xs text-gray-500 break-words" style="overflow-wrap:anywhere;word-break:break-word;">Headers: course_slug,module_title,module_description,lesson_title,lesson_order,video_uid,filename,hls_url,dash_url</p>
+                <p class="mt-1 text-xs text-gray-500 break-words" style="overflow-wrap:anywhere;word-break:break-word;">Headers: course_slug,module_title,module_description,lesson_title,lesson_order,video_uid,filename,hls_url,dash_url,captions_vtt_url,captions_languages_json,transcript_text,audio_description_text,sign_language_video_url,accessibility_status</p>
                 <textarea id="csvImportInput" rows="8" placeholder="Paste CSV here..." class="hide-scrollbar mt-3 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800"></textarea>
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                   <button id="previewImportBtn" type="button" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Preview Import</button>
@@ -382,7 +389,7 @@
       </div>
     </div>
 
-    <script src="/assets/admin-video-library.js?v=20260405d" defer></script>
+    <script src="/assets/admin-video-library.js?v=20260415c" defer></script>
     <script src="/assets/internal-nav.js?v=20260404e" defer></script>
   </body>
 </html>

@@ -6,6 +6,7 @@ const {
   clean,
   slugify,
   MODULES_TABLE,
+  COURSE_MODULES_TABLE,
 } = require("./_lib/learning");
 
 const UNASSIGNED_COURSE_SLUG = "__unassigned_modules__";
@@ -35,6 +36,18 @@ async function nextUniqueModuleSlug(conn, courseSlug, preferredSlug, moduleId) {
   return `${base.slice(0, 136)}-${Date.now()}`;
 }
 
+async function hasCourseModuleMappingsTable(pool) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [COURSE_MODULES_TABLE]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -57,6 +70,7 @@ exports.handler = async function (event) {
   const conn = await pool.getConnection();
   try {
     await ensureLearningTables(pool);
+    const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
 
     const [rows] = await conn.query(
       `SELECT id, course_slug, module_slug, module_title
@@ -67,6 +81,32 @@ exports.handler = async function (event) {
     );
     const moduleRow = Array.isArray(rows) && rows.length ? rows[0] : null;
     if (!moduleRow) return json(404, { ok: false, error: "Module not found." });
+
+    if (hasCourseModuleMappings) {
+      const [mappingRows] = await conn.query(
+        `SELECT id
+         FROM ${COURSE_MODULES_TABLE}
+         WHERE course_slug = ?
+           AND module_id = ?
+         LIMIT 1`,
+        [selectedCourseSlug, moduleId]
+      );
+      if (!Array.isArray(mappingRows) || !mappingRows.length) {
+        return json(409, { ok: false, error: "Module is no longer mapped to the selected course." });
+      }
+      await conn.query(
+        `DELETE FROM ${COURSE_MODULES_TABLE}
+         WHERE course_slug = ?
+           AND module_id = ?
+         LIMIT 1`,
+        [selectedCourseSlug, moduleId]
+      );
+      return json(200, {
+        ok: true,
+        module_id: moduleId,
+        removed_from_course: selectedCourseSlug,
+      });
+    }
 
     const currentCourseSlug = clean(moduleRow.course_slug, 120).toLowerCase();
     if (currentCourseSlug !== selectedCourseSlug) {

@@ -6,6 +6,7 @@
   const loginErr = document.getElementById("internalLoginError");
   const logoutBtn = document.getElementById("internalLogoutBtn");
   const SIGNOUT_MARKER_KEY = "tn_auth_just_signed_out";
+  var authResolved = false;
 
   function setView(authed) {
     const isAuthed = !!authed;
@@ -30,13 +31,50 @@
     return res.ok;
   }
 
-  async function login(password) {
-    const res = await fetch("/.netlify/functions/admin-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ password }),
+  function withTimeout(promise, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error("Session check timed out"));
+      }, Math.max(300, Number(timeoutMs || 2500)));
+      promise.then(function (value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }).catch(function (error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      });
     });
+  }
+
+  async function login(password) {
+    var controller = new AbortController();
+    var timer = setTimeout(function () {
+      controller.abort();
+    }, 15000);
+    var res;
+    try {
+      res = await fetch("/.netlify/functions/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("Sign in timed out. Please try again.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
     const json = await res.json().catch(function () {
       return null;
     });
@@ -84,7 +122,7 @@
       } finally {
         if (loginBtn) {
           loginBtn.disabled = false;
-          loginBtn.textContent = "Sign in";
+          loginBtn.textContent = "Authenticate";
         }
       }
     });
@@ -97,8 +135,14 @@
     });
   }
 
-  checkSession()
+  // Avoid blank page while auth probe is in-flight.
+  setView(false);
+
+  var sessionProbe = checkSession();
+
+  sessionProbe
     .then(function (authed) {
+      authResolved = true;
       if (authed) {
         setView(true);
       } else {
@@ -106,6 +150,20 @@
       }
     })
     .catch(function () {
+      authResolved = true;
+      setView(false);
+    });
+
+  // If the auth endpoint is slow/unavailable, keep UI usable.
+  withTimeout(sessionProbe, 2500)
+    .then(function (authed) {
+      if (authResolved) return;
+      authResolved = true;
+      setView(!!authed);
+    })
+    .catch(function () {
+      if (authResolved) return;
+      authResolved = true;
       setView(false);
     });
 })();

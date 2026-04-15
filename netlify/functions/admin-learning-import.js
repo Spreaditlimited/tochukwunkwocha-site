@@ -95,6 +95,17 @@ exports.handler = async function (event) {
     const hlsUrl = clean(pick(row, ["hls_url", "hls", "manifest_hls"]), 1000);
     const dashUrl = clean(pick(row, ["dash_url", "dash", "manifest_dash"]), 1000);
     const moduleDescription = clean(pick(row, ["module_description", "module_desc", "description"]), 4000);
+    const captionsVttUrl = clean(pick(row, ["captions_vtt_url", "captions_url", "captions"]), 1200);
+    const captionsLanguagesJson = clean(pick(row, ["captions_languages_json", "captions_languages", "caption_languages"]), 4000);
+    const transcriptText = clean(pick(row, ["transcript_text", "transcript"]), 120000);
+    const audioDescriptionText = clean(pick(row, ["audio_description_text", "audio_description"]), 120000);
+    const signLanguageVideoUrl = clean(pick(row, ["sign_language_video_url", "sign_language_url"]), 1200);
+    const accessibilityStatusRaw = clean(pick(row, ["accessibility_status"]), 32).toLowerCase();
+    const accessibilityStatus = (
+      accessibilityStatusRaw === "ready" ||
+      accessibilityStatusRaw === "in_progress" ||
+      accessibilityStatusRaw === "blocked"
+    ) ? accessibilityStatusRaw : "draft";
     return {
       row_number: index + 2,
       course_slug: courseSlug,
@@ -106,6 +117,12 @@ exports.handler = async function (event) {
       filename,
       hls_url: hlsUrl,
       dash_url: dashUrl,
+      captions_vtt_url: captionsVttUrl,
+      captions_languages_json: captionsLanguagesJson,
+      transcript_text: transcriptText,
+      audio_description_text: audioDescriptionText,
+      sign_language_video_url: signLanguageVideoUrl,
+      accessibility_status: accessibilityStatus,
     };
   });
 
@@ -208,24 +225,30 @@ exports.handler = async function (event) {
       if (Array.isArray(existing) && existing.length) {
         await conn.query(
           `UPDATE ${LESSONS_TABLE}
-           SET lesson_order = ?, video_asset_id = ?, is_active = 1, updated_at = NOW()
+           SET lesson_order = ?, video_asset_id = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = 1, updated_at = NOW()
            WHERE id = ?
            LIMIT 1`,
-          [row.lesson_order, videoAssetId, existing[0].id]
+          [row.lesson_order, videoAssetId, row.captions_vtt_url || null, row.captions_languages_json || null, row.transcript_text || null, row.audio_description_text || null, row.sign_language_video_url || null, row.accessibility_status || "draft", existing[0].id]
         );
       } else {
         const lessonSlugBase = clean(row.lesson_title, 160).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `lesson-${row.lesson_order}`;
         await conn.query(
           `INSERT INTO ${LESSONS_TABLE}
-            (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())
+            (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, captions_vtt_url, captions_languages_json, transcript_text, audio_description_text, sign_language_video_url, accessibility_status, is_active, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
            ON DUPLICATE KEY UPDATE
              lesson_title = VALUES(lesson_title),
              lesson_order = VALUES(lesson_order),
              video_asset_id = VALUES(video_asset_id),
+             captions_vtt_url = VALUES(captions_vtt_url),
+             captions_languages_json = VALUES(captions_languages_json),
+             transcript_text = VALUES(transcript_text),
+             audio_description_text = VALUES(audio_description_text),
+             sign_language_video_url = VALUES(sign_language_video_url),
+             accessibility_status = VALUES(accessibility_status),
              is_active = 1,
              updated_at = NOW()`,
-          [module.id, lessonSlugBase, row.lesson_title, row.lesson_order, videoAssetId]
+          [module.id, lessonSlugBase, row.lesson_title, row.lesson_order, videoAssetId, row.captions_vtt_url || null, row.captions_languages_json || null, row.transcript_text || null, row.audio_description_text || null, row.sign_language_video_url || null, row.accessibility_status || "draft"]
         );
       }
       lessonWrites += 1;

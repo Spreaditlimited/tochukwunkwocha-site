@@ -8,9 +8,22 @@ const {
   ensureModuleById,
   findLearningCourseBySlug,
   MODULES_TABLE,
+  COURSE_MODULES_TABLE,
   MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
 } = require("./_lib/learning");
+
+async function hasCourseModuleMappingsTable(pool) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [COURSE_MODULES_TABLE]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
 
 async function moduleSlugExists(conn, courseSlug, moduleSlug) {
   const [rows] = await conn.query(
@@ -51,6 +64,7 @@ exports.handler = async function (event) {
 
   const sourceModuleId = Number(body && body.source_module_id || 0);
   const targetCourseSlug = clean(body && body.target_course_slug, 120).toLowerCase();
+  const forceDuplicate = body && body.force_duplicate === true;
   if (!(sourceModuleId > 0)) return json(400, { ok: false, error: "source_module_id is required" });
   if (!targetCourseSlug) return json(400, { ok: false, error: "target_course_slug is required" });
 
@@ -58,11 +72,78 @@ exports.handler = async function (event) {
   const conn = await pool.getConnection();
   try {
     await ensureLearningTables(pool);
+    const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
     const sourceModule = await ensureModuleById(pool, sourceModuleId);
     if (!sourceModule) return json(404, { ok: false, error: "Source module not found." });
 
     const targetCourse = await findLearningCourseBySlug(pool, targetCourseSlug);
     if (!targetCourse) return json(400, { ok: false, error: "Target course does not exist." });
+
+    if (hasCourseModuleMappings && !forceDuplicate) {
+      const [mappingRows] = await pool.query(
+        `SELECT id
+         FROM ${COURSE_MODULES_TABLE}
+         WHERE course_slug = ?
+           AND module_id = ?
+         LIMIT 1`,
+        [targetCourseSlug, sourceModuleId]
+      );
+      if (Array.isArray(mappingRows) && mappingRows.length) {
+        return json(409, { ok: false, error: "This module is already linked to the selected course." });
+      }
+
+      const now = nowSql();
+      await pool.query(
+        `INSERT INTO ${COURSE_MODULES_TABLE}
+          (course_slug, module_id, sort_order, is_active, drip_enabled, drip_at, drip_batch_key, drip_offset_seconds, drip_notified_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          targetCourseSlug,
+          sourceModuleId,
+          Number.isFinite(Number(sourceModule.sort_order)) ? Number(sourceModule.sort_order) : 0,
+          Number(sourceModule.is_active || 0) === 0 ? 0 : 1,
+          Number(sourceModule.drip_enabled || 0) === 1 ? 1 : 0,
+          sourceModule.drip_at || null,
+          clean(sourceModule.drip_batch_key, 64) || null,
+          Number.isFinite(Number(sourceModule.drip_offset_seconds)) ? Number(sourceModule.drip_offset_seconds) : null,
+          sourceModule.drip_notified_at || null,
+          now,
+          now,
+        ]
+      );
+
+      const [linkedRows] = await pool.query(
+        `SELECT
+           m.id,
+           cm.course_slug,
+           m.module_slug,
+           m.module_title,
+           m.module_description,
+           cm.sort_order,
+           cm.is_active,
+           cm.drip_enabled,
+           DATE_FORMAT(cm.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+           cm.drip_batch_key,
+           cm.drip_offset_seconds,
+           DATE_FORMAT(cm.drip_notified_at, '%Y-%m-%d %H:%i:%s') AS drip_notified_at,
+           m.created_at,
+           m.updated_at
+         FROM ${COURSE_MODULES_TABLE} cm
+         JOIN ${MODULES_TABLE} m ON m.id = cm.module_id
+         WHERE cm.course_slug = ?
+           AND cm.module_id = ?
+         LIMIT 1`,
+        [targetCourseSlug, sourceModuleId]
+      );
+
+      return json(200, {
+        ok: true,
+        module: linkedRows && linkedRows[0] ? linkedRows[0] : null,
+        copied_lessons: 0,
+        copied_drip_schedules: 0,
+        linked_existing_module: true,
+      });
+    }
 
     const [existingRows] = await pool.query(
       `SELECT id
@@ -77,7 +158,7 @@ exports.handler = async function (event) {
     }
 
     const [sourceLessonRows] = await pool.query(
-      `SELECT lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active
+      `SELECT lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, captions_vtt_url, captions_languages_json, transcript_text, audio_description_text, sign_language_video_url, accessibility_status, is_active
        FROM ${LESSONS_TABLE}
        WHERE module_id = ?
        ORDER BY lesson_order ASC, id ASC`,
@@ -126,8 +207,8 @@ exports.handler = async function (event) {
       // eslint-disable-next-line no-await-in-loop
       await conn.query(
         `INSERT INTO ${LESSONS_TABLE}
-          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, captions_vtt_url, captions_languages_json, transcript_text, audio_description_text, sign_language_video_url, accessibility_status, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           newModuleId,
           clean(lesson.lesson_slug, 160) || slugify(clean(lesson.lesson_title, 220), "lesson"),
@@ -135,6 +216,16 @@ exports.handler = async function (event) {
           Number.isFinite(Number(lesson.lesson_order)) ? Number(lesson.lesson_order) : 0,
           Number(lesson.video_asset_id || 0) > 0 ? Number(lesson.video_asset_id) : null,
           clean(lesson.lesson_notes, 4000) || null,
+          clean(lesson.captions_vtt_url, 1200) || null,
+          clean(lesson.captions_languages_json, 4000) || null,
+          clean(lesson.transcript_text, 120000) || null,
+          clean(lesson.audio_description_text, 120000) || null,
+          clean(lesson.sign_language_video_url, 1200) || null,
+          (function () {
+            const raw = clean(lesson.accessibility_status, 32).toLowerCase();
+            if (raw === "ready" || raw === "in_progress" || raw === "blocked") return raw;
+            return "draft";
+          })(),
           Number(lesson.is_active || 0) === 0 ? 0 : 1,
           now,
           now,

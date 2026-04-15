@@ -3,6 +3,30 @@
   var navLinks = Array.from(document.querySelectorAll('a[href^="/dashboard/"]'));
   const signoutButtons = Array.from(document.querySelectorAll("[data-user-signout]"));
 
+  function injectHiddenScrollbarStyles() {
+    if (!document || !document.head) return;
+    if (document.getElementById("tochukwu-user-scrollbar-style")) return;
+
+    var style = document.createElement("style");
+    style.id = "tochukwu-user-scrollbar-style";
+    style.textContent = [
+      ".tochukwu-hide-scrollbars, .tochukwu-hide-scrollbars * {",
+      "  scrollbar-width: none !important;",
+      "  -ms-overflow-style: none !important;",
+      "}",
+      ".tochukwu-hide-scrollbars *::-webkit-scrollbar, .tochukwu-hide-scrollbars::-webkit-scrollbar {",
+      "  width: 0 !important;",
+      "  height: 0 !important;",
+      "  display: none !important;",
+      "}",
+    ].join("\n");
+
+    document.head.appendChild(style);
+    document.body.classList.add("tochukwu-hide-scrollbars");
+  }
+
+  injectHiddenScrollbarStyles();
+
   function normalizePath(pathname) {
     var path = String(pathname || "/").trim();
     if (!path) return "/";
@@ -16,6 +40,14 @@
       return "";
     }
   }
+
+  navLinks.forEach(function (link) {
+    var label = String(link && link.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+    if (label === "register domain") {
+      link.remove();
+    }
+  });
+  navLinks = Array.from(document.querySelectorAll('a[href^="/dashboard/"]'));
 
   var currentPath = normalizePath(window.location.pathname);
 

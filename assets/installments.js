@@ -260,7 +260,22 @@
 
   async function api(url, options) {
     const request = Object.assign({ credentials: "include" }, options || {});
-    const res = await fetch(url, request);
+    const controller = new AbortController();
+    const timer = setTimeout(function () {
+      controller.abort();
+    }, 20000);
+    let res;
+    try {
+      request.signal = controller.signal;
+      res = await fetch(url, request);
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("Request timed out. Please try again.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
     const json = await res.json().catch(function () {
       return null;
     });

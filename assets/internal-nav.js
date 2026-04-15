@@ -1,4 +1,15 @@
 (function () {
+  var INTERNAL_NAV_ORDER = [
+    { path: "/internal/", label: "Dashboard" },
+    { path: "/internal/manual-payments/", label: "Enrollments" },
+    { path: "/internal/installments/", label: "Installments" },
+    { path: "/internal/domain-management/", label: "Domain Management" },
+    { path: "/internal/video-library/", label: "Video Library" },
+    { path: "/internal/learning-progress/", label: "Learning Progress" },
+    { path: "/internal/schools/", label: "Schools" },
+    { path: "/internal/school-calls/", label: "School Calls" },
+    { path: "/internal/settings/", label: "Settings" },
+  ];
   var menuLinks = Array.prototype.slice.call(
     document.querySelectorAll('aside a[href^="/internal/"]')
   );
@@ -81,6 +92,27 @@
 
   var currentPath = normalizePath(window.location.pathname);
   var hiddenInternalPaths = ["/internal/leadpage-jobs/", "/internal/business-plan-manager/", "/internal/verifier/"];
+
+  function injectHiddenScrollbarStyles() {
+    if (!document || !document.head) return;
+    if (document.getElementById("tochukwu-internal-scrollbar-style")) return;
+
+    var style = document.createElement("style");
+    style.id = "tochukwu-internal-scrollbar-style";
+    style.textContent = [
+      ".tochukwu-hide-scrollbars, .tochukwu-hide-scrollbars * {",
+      "  scrollbar-width: none !important;",
+      "  -ms-overflow-style: none !important;",
+      "}",
+      ".tochukwu-hide-scrollbars *::-webkit-scrollbar, .tochukwu-hide-scrollbars::-webkit-scrollbar {",
+      "  width: 0 !important;",
+      "  height: 0 !important;",
+      "  display: none !important;",
+      "}",
+    ].join("\n");
+    document.head.appendChild(style);
+    document.body.classList.add("tochukwu-hide-scrollbars");
+  }
 
   function ensureVideoLibraryNavLink() {
     var added = [];
@@ -197,6 +229,47 @@
     if (added.length) {
       menuLinks = menuLinks.concat(added);
     }
+  }
+
+  function canonicalizeInternalNav() {
+    sidebars.forEach(function (aside) {
+      if (!aside) return;
+      var navLinksInAside = Array.prototype.slice.call(aside.querySelectorAll('a[href^="/internal/"]'));
+      if (!navLinksInAside.length) return;
+
+      var navContainer = navLinksInAside[0].parentNode;
+      if (!navContainer) return;
+
+      var linkClassName = navLinksInAside[0].className || "flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors group";
+      var existingByPath = {};
+
+      navLinksInAside.forEach(function (link) {
+        var path = getPathFromHref(link.getAttribute("href"));
+        if (!path) return;
+        existingByPath[path] = link;
+      });
+
+      navLinksInAside.forEach(function (link) {
+        if (link && link.parentNode === navContainer) {
+          navContainer.removeChild(link);
+        }
+      });
+
+      INTERNAL_NAV_ORDER.forEach(function (item) {
+        var link = existingByPath[item.path];
+        if (!link) {
+          link = document.createElement("a");
+          link.href = item.path;
+          link.className = linkClassName;
+          link.textContent = item.label;
+        } else if (!String(link.textContent || "").trim()) {
+          link.textContent = item.label;
+        }
+        navContainer.appendChild(link);
+      });
+    });
+
+    menuLinks = Array.prototype.slice.call(document.querySelectorAll('aside a[href^="/internal/"]'));
   }
 
   function ensureSidebarIcons() {
@@ -435,6 +508,7 @@
   }
 
   syncPageTitle();
+  injectHiddenScrollbarStyles();
   redirectHiddenCurrentPath();
   ensureVideoLibraryNavLink();
   ensureLearningProgressNavLink();
@@ -443,6 +517,7 @@
   sidebars = Array.prototype.slice.call(document.querySelectorAll("aside")).filter(function (aside) {
     return !!aside.querySelector('a[href^="/internal/"]');
   });
+  canonicalizeInternalNav();
   hideInternalEntries();
   ensureSidebarIcons();
   ensureSidebarLabelWrappers();

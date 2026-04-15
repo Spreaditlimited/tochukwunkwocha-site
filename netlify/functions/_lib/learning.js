@@ -5,6 +5,7 @@ const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 const COURSES_TABLE = "tochukwu_learning_courses";
 const VIDEO_ASSETS_TABLE = "tochukwu_learning_video_assets";
 const MODULES_TABLE = "tochukwu_learning_modules";
+const COURSE_MODULES_TABLE = "tochukwu_learning_course_modules";
 const MODULE_BATCH_DRIPS_TABLE = "tochukwu_learning_module_batch_drips";
 const LESSONS_TABLE = "tochukwu_learning_lessons";
 let learningTablesEnsured = false;
@@ -268,6 +269,42 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${MODULES_TABLE} MODIFY COLUMN module_slug VARCHAR(160) NOT NULL DEFAULT ''`);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${COURSE_MODULES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      course_slug VARCHAR(120) NOT NULL,
+      module_id BIGINT NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      drip_enabled TINYINT(1) NOT NULL DEFAULT 0,
+      drip_at DATETIME NULL,
+      drip_batch_key VARCHAR(64) NULL,
+      drip_offset_seconds INT NULL,
+      drip_notified_at DATETIME NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_tochukwu_learning_course_module (course_slug, module_id),
+      KEY idx_tochukwu_learning_course_module_order (course_slug, sort_order, id),
+      KEY idx_tochukwu_learning_course_module_module (module_id),
+      CONSTRAINT fk_tochukwu_learning_course_module_module FOREIGN KEY (module_id) REFERENCES ${MODULES_TABLE}(id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN course_slug VARCHAR(120) NOT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN module_id BIGINT NOT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN sort_order INT NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN drip_enabled TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN drip_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN drip_batch_key VARCHAR(64) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN drip_offset_seconds INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN drip_notified_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD UNIQUE KEY uniq_tochukwu_learning_course_module (course_slug, module_id)`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD KEY idx_tochukwu_learning_course_module_order (course_slug, sort_order, id)`);
+  await safeAlter(pool, `ALTER TABLE ${COURSE_MODULES_TABLE} ADD KEY idx_tochukwu_learning_course_module_module (module_id)`);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS ${MODULE_BATCH_DRIPS_TABLE} (
       id BIGINT NOT NULL AUTO_INCREMENT,
       module_id BIGINT NOT NULL,
@@ -309,6 +346,12 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN lesson_order INT NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN video_asset_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN lesson_notes TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN captions_vtt_url TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN captions_languages_json TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN transcript_text LONGTEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN audio_description_text LONGTEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN sign_language_video_url TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN accessibility_status VARCHAR(32) NOT NULL DEFAULT 'draft'`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${LESSONS_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
@@ -334,6 +377,33 @@ async function ensureLearningTables(pool) {
   }
 
   await canonicalizeLegacyModuleCourseSlugs(pool);
+  await pool.query(
+    `INSERT INTO ${COURSE_MODULES_TABLE}
+      (course_slug, module_id, sort_order, is_active, drip_enabled, drip_at, drip_batch_key, drip_offset_seconds, drip_notified_at, created_at, updated_at)
+     SELECT
+      m.course_slug,
+      m.id AS module_id,
+      m.sort_order,
+      m.is_active,
+      m.drip_enabled,
+      m.drip_at,
+      m.drip_batch_key,
+      m.drip_offset_seconds,
+      m.drip_notified_at,
+      COALESCE(m.created_at, NOW()),
+      COALESCE(m.updated_at, NOW())
+     FROM ${MODULES_TABLE} m
+     WHERE COALESCE(TRIM(m.course_slug), '') <> ''
+     ON DUPLICATE KEY UPDATE
+      sort_order = VALUES(sort_order),
+      is_active = VALUES(is_active),
+      drip_enabled = VALUES(drip_enabled),
+      drip_at = VALUES(drip_at),
+      drip_batch_key = VALUES(drip_batch_key),
+      drip_offset_seconds = VALUES(drip_offset_seconds),
+      drip_notified_at = VALUES(drip_notified_at),
+      updated_at = VALUES(updated_at)`
+  );
   learningTablesEnsured = true;
   })();
 
@@ -726,6 +796,31 @@ async function upsertVideoAsset(pool, input) {
   return rows && rows[0] ? rows[0] : null;
 }
 
+async function ensureCourseModuleMapping(pool, moduleRow) {
+  const moduleId = Number(moduleRow && moduleRow.id || 0);
+  const courseSlug = clean(moduleRow && moduleRow.course_slug, 120).toLowerCase();
+  if (!(moduleId > 0) || !courseSlug) return;
+  const mappingReady = await hasTable(pool, COURSE_MODULES_TABLE).catch(function () { return false; });
+  if (!mappingReady) return;
+  await pool.query(
+    `INSERT INTO ${COURSE_MODULES_TABLE}
+      (course_slug, module_id, sort_order, is_active, drip_enabled, drip_at, drip_batch_key, drip_offset_seconds, drip_notified_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, NULL, NULL, NULL, NULL, ?, ?)
+     ON DUPLICATE KEY UPDATE
+      sort_order = VALUES(sort_order),
+      is_active = VALUES(is_active),
+      updated_at = VALUES(updated_at)`,
+    [
+      courseSlug,
+      moduleId,
+      Number.isFinite(Number(moduleRow && moduleRow.sort_order)) ? Number(moduleRow.sort_order) : 0,
+      Number(moduleRow && moduleRow.is_active || 0) === 0 ? 0 : 1,
+      nowSql(),
+      nowSql(),
+    ]
+  );
+}
+
 async function findOrCreateModule(pool, input) {
   const now = nowSql();
   const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
@@ -764,7 +859,9 @@ async function findOrCreateModule(pool, input) {
        LIMIT 1`,
       [Number(existing.id)]
     );
-    return rows && rows[0] ? rows[0] : null;
+    const out = rows && rows[0] ? rows[0] : null;
+    await ensureCourseModuleMapping(pool, out);
+    return out;
   }
 
   let moduleSlug = preferredSlug;
@@ -819,7 +916,9 @@ async function findOrCreateModule(pool, input) {
      LIMIT 1`,
     [courseSlug, moduleSlug]
   );
-  return rows && rows[0] ? rows[0] : null;
+  const out = rows && rows[0] ? rows[0] : null;
+  await ensureCourseModuleMapping(pool, out);
+  return out;
 }
 
 async function ensureModuleById(pool, moduleId) {
@@ -953,6 +1052,17 @@ async function upsertLesson(pool, input) {
   const videoAssetId = Number(input && input.video_asset_id || 0);
   const safeVideoAssetId = Number.isFinite(videoAssetId) && videoAssetId > 0 ? videoAssetId : null;
   const lessonNotes = clean(input && input.lesson_notes, 4000) || null;
+  const captionsVttUrl = clean(input && input.captions_vtt_url, 1200) || null;
+  const captionsLanguagesJson = clean(input && input.captions_languages_json, 4000) || null;
+  const transcriptText = clean(input && input.transcript_text, 120000) || null;
+  const audioDescriptionText = clean(input && input.audio_description_text, 120000) || null;
+  const signLanguageVideoUrl = clean(input && input.sign_language_video_url, 1200) || null;
+  const accessibilityStatusRaw = clean(input && input.accessibility_status, 32).toLowerCase();
+  const accessibilityStatus = (
+    accessibilityStatusRaw === "ready" ||
+    accessibilityStatusRaw === "in_progress" ||
+    accessibilityStatusRaw === "blocked"
+  ) ? accessibilityStatusRaw : "draft";
   const isActive = Number(input && input.is_active === false ? 0 : 1);
   const titleNorm = lessonTitle.toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -969,13 +1079,13 @@ async function upsertLesson(pool, input) {
     const keepSlug = clean(existing.lesson_slug, 160) || slugify(input && input.lesson_slug ? input.lesson_slug : lessonTitle, "lesson");
     await pool.query(
       `UPDATE ${LESSONS_TABLE}
-       SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+       SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = ?, updated_at = ?
        WHERE id = ?
        LIMIT 1`,
-      [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, Number(existing.id)]
+      [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, Number(existing.id)]
     );
     const [rows] = await pool.query(
-      `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.is_active, l.created_at, l.updated_at,
+      `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.captions_vtt_url, l.captions_languages_json, l.transcript_text, l.audio_description_text, l.sign_language_video_url, l.accessibility_status, l.is_active, l.created_at, l.updated_at,
               a.video_uid, a.filename, a.hls_url, a.dash_url
        FROM ${LESSONS_TABLE} l
        LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
@@ -995,9 +1105,9 @@ async function upsertLesson(pool, input) {
     try {
       await pool.query(
         `INSERT INTO ${LESSONS_TABLE}
-          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [moduleId, lessonSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, now]
+          (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, captions_vtt_url, captions_languages_json, transcript_text, audio_description_text, sign_language_video_url, accessibility_status, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [moduleId, lessonSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, now]
       );
       done = true;
     } catch (error) {
@@ -1025,13 +1135,13 @@ async function upsertLesson(pool, input) {
 
   await pool.query(
     `UPDATE ${LESSONS_TABLE}
-     SET lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+     SET lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = ?, updated_at = ?
      WHERE module_id = ? AND lesson_slug = ?`,
-    [lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, moduleId, lessonSlug]
+    [lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, moduleId, lessonSlug]
   );
 
   const [rows] = await pool.query(
-    `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.is_active, l.created_at, l.updated_at,
+    `SELECT l.id, l.module_id, l.lesson_slug, l.lesson_title, l.lesson_order, l.video_asset_id, l.lesson_notes, l.captions_vtt_url, l.captions_languages_json, l.transcript_text, l.audio_description_text, l.sign_language_video_url, l.accessibility_status, l.is_active, l.created_at, l.updated_at,
             a.video_uid, a.filename, a.hls_url, a.dash_url
      FROM ${LESSONS_TABLE} l
      LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
@@ -1046,6 +1156,7 @@ module.exports = {
   COURSES_TABLE,
   VIDEO_ASSETS_TABLE,
   MODULES_TABLE,
+  COURSE_MODULES_TABLE,
   MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
   clean,

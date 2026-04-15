@@ -40,6 +40,7 @@
   var lessonsRows = document.getElementById("lessonsRows");
   var addLessonRowBtn = document.getElementById("addLessonRowBtn");
   var saveLessonsBtn = document.getElementById("saveLessonsBtn");
+  var lessonAccessibilitySummary = document.getElementById("lessonAccessibilitySummary");
 
   var csvImportInput = document.getElementById("csvImportInput");
   var previewImportBtn = document.getElementById("previewImportBtn");
@@ -51,7 +52,9 @@
     modules: [],
     assets: [],
     courseBatches: [],
+    accessibilityMetricsAvailable: false,
     moduleDripSchedulesByModule: new Map(),
+    a11yGenerationByModule: new Map(),
     lessons: [],
     selectedModuleId: 0,
     selectedCourseId: 0,
@@ -369,6 +372,13 @@
     moduleRows.innerHTML = modules.map(function (mod) {
       var isActive = Number(mod.is_active || 0) !== 0;
       var isDrip = Number(mod.drip_enabled || 0) === 1;
+      var activeLessonCount = Number(mod.active_lesson_count || 0);
+      var missingCaptionsCount = Number(mod.missing_captions_count || 0);
+      var missingTranscriptCount = Number(mod.missing_transcript_count || 0);
+      var metricsAvailable = !!state.accessibilityMetricsAvailable;
+      var isA11yReady = metricsAvailable && activeLessonCount > 0 && missingCaptionsCount === 0 && missingTranscriptCount === 0;
+      var a11yGeneration = state.a11yGenerationByModule.get(Number(mod.id || 0)) || null;
+      var isA11yGenerating = !!(a11yGeneration && a11yGeneration.running);
       var courseOptions = state.courses.map(function (course) {
         var slug = String(course.course_slug || "");
         var title = String(course.course_title || "").trim();
@@ -376,19 +386,53 @@
         return '<option value="' + escapeHtml(slug) + '"' + selected + ">" + escapeHtml(title || slug) + "</option>";
       }).join("");
       var activeBadge = isActive
-        ? '<span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">published</span>'
-        : '<span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">unpublished</span>';
+        ? '<span class="inline-flex whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs leading-none font-semibold text-emerald-700 ring-1 ring-emerald-200">published</span>'
+        : '<span class="inline-flex whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs leading-none font-semibold text-gray-700 ring-1 ring-gray-200">unpublished</span>';
       var dripBadge = isDrip
-        ? '<span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">drip</span>'
+        ? '<span class="inline-flex whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs leading-none font-semibold text-amber-700 ring-1 ring-amber-200">drip</span>'
         : "";
+      var a11yBadge = !metricsAvailable
+        ? '<span class="inline-flex whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs leading-none font-semibold text-gray-700 ring-1 ring-gray-200">a11y unknown</span>'
+        : (isA11yReady
+          ? '<span class="inline-flex whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs leading-none font-semibold text-blue-700 ring-1 ring-blue-200">a11y ready</span>'
+          : (activeLessonCount > 0
+            ? '<span class="inline-flex whitespace-nowrap rounded-full bg-orange-50 px-2.5 py-1 text-xs leading-none font-semibold text-orange-700 ring-1 ring-orange-200">a11y pending</span>'
+            : '<span class="inline-flex whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs leading-none font-semibold text-gray-700 ring-1 ring-gray-200">no active lessons</span>'));
+      var statusHint = !metricsAvailable
+        ? "Accessibility columns are not available yet in this environment."
+        : (isA11yReady
+        ? "All active lessons have captions and transcript."
+        : (activeLessonCount > 0
+          ? (String(missingCaptionsCount) + " missing captions, " + String(missingTranscriptCount) + " missing transcript.")
+          : "No active lessons to assess."));
+      if (isA11yGenerating) {
+        var progressTotal = Number(a11yGeneration.total || 0);
+        var progressDone = Number(a11yGeneration.processed || 0);
+        statusHint = "Generating accessibility drafts: processed " + String(progressDone) + (progressTotal > 0 ? " of " + String(progressTotal) : "") + ".";
+      }
       var toggleLabel = isActive ? "Unpublish" : "Publish";
+      var generateBtnLabel = "Generate A11y";
+      if (isA11yGenerating) {
+        var btnDone = Number(a11yGeneration.processed || 0);
+        var btnTotal = Number(a11yGeneration.total || 0);
+        generateBtnLabel = btnTotal > 0
+          ? ("Generating " + String(Math.min(btnDone, btnTotal)) + "/" + String(btnTotal))
+          : ("Generating " + String(btnDone));
+      }
+      var generateBtnClass = "inline-flex h-9 w-full sm:w-auto sm:flex-none items-center justify-center whitespace-nowrap rounded-lg border px-3 py-2 text-xs leading-none font-semibold";
+      if (isA11yGenerating) {
+        generateBtnClass += " border-blue-200 bg-blue-100 text-blue-700 opacity-80 cursor-not-allowed";
+      } else {
+        generateBtnClass += " border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100";
+      }
       return [
         "<tr>",
         '<td class="px-3 py-2 text-sm font-semibold text-gray-900">' + escapeHtml(mod.module_title || "-") + "</td>",
         '<td class="px-3 py-2 text-sm text-gray-700">' + escapeHtml(mod.lesson_count || 0) + "</td>",
-        '<td class="px-3 py-2"><div class="flex items-center gap-2">' + activeBadge + dripBadge + "</div></td>",
-        '<td class="px-3 py-2"><div class="flex items-center gap-2">' +
-          '<select data-course-target-for="' + escapeHtml(mod.id) + '" class="premium-picker !mt-0 !w-[14.5rem] !max-w-[14.5rem] !min-w-[14.5rem] bg-white !py-1.5 !pl-2.5 !pr-8 !text-xs !font-semibold">' + courseOptions + "</select>" +
+        '<td class="px-3 py-2"><div class="flex items-center gap-2">' + activeBadge + dripBadge + a11yBadge + '</div><p class="mt-1 text-[11px] text-gray-500">' + escapeHtml(statusHint) + "</p></td>",
+        '<td class="px-3 py-2"><div class="flex flex-wrap items-center gap-2">' +
+          '<select data-course-target-for="' + escapeHtml(mod.id) + '" class="premium-picker !mt-0 !w-full sm:!w-[14.5rem] !max-w-full sm:!max-w-[14.5rem] !min-w-0 sm:!min-w-[14.5rem] bg-white !py-1.5 !pl-2.5 !pr-8 !text-xs !font-semibold">' + courseOptions + "</select>" +
+          '<button type="button" data-autofill-a11y-module="' + escapeHtml(mod.id) + '" class="' + generateBtnClass + '"' + (isA11yGenerating ? " disabled" : "") + ">" + escapeHtml(generateBtnLabel) + "</button>" +
           '<button type="button" data-remap-module="' + escapeHtml(mod.id) + '" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Move</button>' +
           '<button type="button" data-select-module="' + escapeHtml(mod.id) + '" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Open</button>' +
           '<button type="button" data-toggle-module="' + escapeHtml(mod.id) + '" class="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100">' + toggleLabel + "</button>" +
@@ -403,7 +447,10 @@
     if (!lessonsRows) return;
     var rows = state.lessons || [];
     if (!rows.length) {
-      lessonsRows.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No lessons yet. Add rows and save.</td></tr>';
+      lessonsRows.innerHTML = '<tr><td colspan="13" class="px-4 py-6 text-center text-sm text-gray-500">No lessons yet. Add rows and save.</td></tr>';
+      if (lessonAccessibilitySummary) {
+        lessonAccessibilitySummary.textContent = "";
+      }
       return;
     }
 
@@ -422,11 +469,40 @@
         '<td class="px-3 py-2"><input data-field="lesson_order" type="number" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_order || idx + 1) + '" /></td>',
         '<td class="px-3 py-2"><select data-field="video_asset_id" class="premium-picker min-w-[18rem] bg-white">' + assetOptions.join("") + "</select></td>",
         '<td class="px-3 py-2 md:min-w-[18rem]"><textarea data-field="lesson_notes" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Optional notes visible to students">' + escapeHtml(row.lesson_notes || "") + "</textarea></td>",
+        '<td class="px-3 py-2 md:min-w-[18rem]"><input data-field="captions_vtt_url" type="url" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="https://.../captions.vtt" value="' + escapeHtml(row.captions_vtt_url || "") + '" /></td>',
+        '<td class="px-3 py-2 md:min-w-[14rem]"><input data-field="captions_languages_json" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="[\"en\",\"fr\"]" value="' + escapeHtml(row.captions_languages_json || "") + '" /></td>',
+        '<td class="px-3 py-2 md:min-w-[22rem]"><textarea data-field="transcript_text" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Lesson transcript text">' + escapeHtml(row.transcript_text || "") + "</textarea></td>",
+        '<td class="px-3 py-2 md:min-w-[20rem]"><textarea data-field="audio_description_text" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Audio description or visual cues">' + escapeHtml(row.audio_description_text || "") + "</textarea></td>",
+        '<td class="px-3 py-2 md:min-w-[18rem]"><input data-field="sign_language_video_url" type="url" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="https://.../sign-language" value="' + escapeHtml(row.sign_language_video_url || "") + '" /></td>',
+        '<td class="px-3 py-2"><select data-field="accessibility_status" class="premium-picker min-w-[10rem] bg-white">' +
+          '<option value="draft"' + (String(row.accessibility_status || "").toLowerCase() === "draft" ? " selected" : "") + ">Draft</option>" +
+          '<option value="in_progress"' + (String(row.accessibility_status || "").toLowerCase() === "in_progress" ? " selected" : "") + ">In Progress</option>" +
+          '<option value="ready"' + (String(row.accessibility_status || "").toLowerCase() === "ready" ? " selected" : "") + ">Ready</option>" +
+          '<option value="blocked"' + (String(row.accessibility_status || "").toLowerCase() === "blocked" ? " selected" : "") + ">Blocked</option>" +
+        "</select></td>",
         '<td class="px-3 py-2"><label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600"><input data-field="is_active" type="checkbox" ' + (Number(row.is_active) === 0 ? "" : "checked") + ' class="h-4 w-4 rounded border-gray-300 text-brand-600" />Active</label></td>',
         '<td class="px-3 py-2"><button type="button" data-remove-row class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Remove</button></td>',
         "</tr>",
       ].join("");
     }).join("");
+
+    if (lessonAccessibilitySummary) {
+      var missingTranscript = rows.filter(function (row) {
+        return !String(row && row.transcript_text || "").trim();
+      }).length;
+      var missingCaptions = rows.filter(function (row) {
+        return !String(row && row.captions_vtt_url || "").trim();
+      }).length;
+      if (!missingTranscript && !missingCaptions) {
+        lessonAccessibilitySummary.classList.remove("text-amber-700");
+        lessonAccessibilitySummary.classList.add("text-emerald-700");
+        lessonAccessibilitySummary.textContent = "Accessibility check: all current lesson rows include captions URL and transcript.";
+      } else {
+        lessonAccessibilitySummary.classList.remove("text-emerald-700");
+        lessonAccessibilitySummary.classList.add("text-amber-700");
+        lessonAccessibilitySummary.textContent = "Accessibility warning (non-blocking): " + missingCaptions + " lesson(s) missing captions URL, " + missingTranscript + " lesson(s) missing transcript.";
+      }
+    }
   }
 
   function hydrateModuleForm(mod) {
@@ -468,6 +544,7 @@
     state.modules = Array.isArray(payload.modules) ? payload.modules : [];
     state.assets = Array.isArray(payload.assets) ? payload.assets : [];
     state.courseBatches = Array.isArray(payload.course_batches) ? payload.course_batches : [];
+    state.accessibilityMetricsAvailable = payload && payload.accessibility_metrics_available === true;
     state.moduleDripSchedulesByModule = new Map();
     (Array.isArray(payload.module_drip_schedules) ? payload.module_drip_schedules : []).forEach(function (row) {
       var moduleId = Number(row && row.module_id || 0);
@@ -534,6 +611,12 @@
       var orderInput = tr.querySelector('input[data-field="lesson_order"]');
       var assetInput = tr.querySelector('select[data-field="video_asset_id"]');
       var notesInput = tr.querySelector('textarea[data-field="lesson_notes"]');
+      var captionsVttInput = tr.querySelector('input[data-field="captions_vtt_url"]');
+      var captionsLanguagesInput = tr.querySelector('input[data-field="captions_languages_json"]');
+      var transcriptInput = tr.querySelector('textarea[data-field="transcript_text"]');
+      var audioDescriptionInput = tr.querySelector('textarea[data-field="audio_description_text"]');
+      var signLanguageInput = tr.querySelector('input[data-field="sign_language_video_url"]');
+      var accessibilityStatusInput = tr.querySelector('select[data-field="accessibility_status"]');
       var activeInput = tr.querySelector('input[data-field="is_active"]');
       return {
         id: lessonId > 0 ? lessonId : null,
@@ -541,6 +624,12 @@
         lesson_order: Number(orderInput && orderInput.value || 1),
         video_asset_id: Number(assetInput && assetInput.value || 0) || null,
         lesson_notes: String(notesInput && notesInput.value || "").trim(),
+        captions_vtt_url: String(captionsVttInput && captionsVttInput.value || "").trim(),
+        captions_languages_json: String(captionsLanguagesInput && captionsLanguagesInput.value || "").trim(),
+        transcript_text: String(transcriptInput && transcriptInput.value || "").trim(),
+        audio_description_text: String(audioDescriptionInput && audioDescriptionInput.value || "").trim(),
+        sign_language_video_url: String(signLanguageInput && signLanguageInput.value || "").trim(),
+        accessibility_status: String(accessibilityStatusInput && accessibilityStatusInput.value || "draft").trim().toLowerCase(),
         is_active: Boolean(activeInput && activeInput.checked),
       };
     });
@@ -554,6 +643,12 @@
       lesson_order: nextOrder,
       video_asset_id: null,
       lesson_notes: "",
+      captions_vtt_url: "",
+      captions_languages_json: "",
+      transcript_text: "",
+      audio_description_text: "",
+      sign_language_video_url: "",
+      accessibility_status: "draft",
       is_active: 1,
     }, initial || {}));
     renderLessonRows();
@@ -649,8 +744,13 @@
         });
         if (!res || !res.module) throw new Error("Could not copy module.");
         state.selectedModuleId = Number(res.module.id || 0);
-        setMessage("Module copied successfully.", "ok");
-        showToast("Module copied to selected course.", "ok");
+        if (res && res.linked_existing_module === true) {
+          setMessage("Module linked to selected course (shared module, no duplicate created).", "ok");
+          showToast("Module linked to selected course.", "ok");
+        } else {
+          setMessage("Module copied successfully.", "ok");
+          showToast("Module copied to selected course.", "ok");
+        }
         await loadLibrary(state.selectedModuleId);
       } catch (error) {
         setMessage(error.message || "Could not copy module to selected course.", "error");
@@ -680,6 +780,134 @@
       var toggleBtn = target.closest("[data-toggle-module]");
       var remapBtn = target.closest("[data-remap-module]");
       var deleteBtn = target.closest("[data-delete-module]");
+      var autofillA11yBtn = target.closest("[data-autofill-a11y-module]");
+      if (autofillA11yBtn) {
+        var autofillModuleId = Number(autofillA11yBtn.getAttribute("data-autofill-a11y-module") || 0);
+        if (!(autofillModuleId > 0)) return;
+        var existingA11yRun = state.a11yGenerationByModule.get(autofillModuleId);
+        if (existingA11yRun && existingA11yRun.running) return;
+        var autofillModule = state.modules.find(function (m) { return Number(m.id) === autofillModuleId; });
+        var autofillModuleTitle = String(autofillModule && autofillModule.module_title || "this module");
+        requestActionConfirm({
+          title: "Generate Accessibility Drafts",
+          message: "Generate captions/transcript drafts for \"" + autofillModuleTitle + "\"?",
+        })
+          .then(function (confirmed) {
+            if (!confirmed) return null;
+            state.a11yGenerationByModule.set(autofillModuleId, { running: true, processed: 0, total: 0 });
+            renderModuleRows();
+            setMessage("Generating accessibility drafts for selected module...", "");
+            var totals = { scanned: 0, updated: 0, skipped: 0, blocked: 0 };
+            var reasonTotals = {};
+            var offset = 0;
+            var rounds = 0;
+            var maxRounds = 60;
+
+            function runNextBatch() {
+              rounds += 1;
+              return api("/.netlify/functions/admin-learning-accessibility-autofill", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  module_id: autofillModuleId,
+                  dry_run: false,
+                  limit: 3,
+                  offset: offset,
+                  include_audio_description: false,
+                }),
+              }).then(function (res) {
+                var summary = (res && res.summary) ? res.summary : {};
+                totals.scanned += Number(summary.scanned || 0);
+                totals.updated += Number(summary.updated || 0);
+                totals.skipped += Number(summary.skipped || 0);
+                totals.blocked += Number(summary.blocked || 0);
+                var reasonCounts = summary && summary.reason_counts && typeof summary.reason_counts === "object"
+                  ? summary.reason_counts
+                  : {};
+                Object.keys(reasonCounts).forEach(function (key) {
+                  var safeKey = String(key || "").trim();
+                  if (!safeKey) return;
+                  reasonTotals[safeKey] = Number(reasonTotals[safeKey] || 0) + Number(reasonCounts[safeKey] || 0);
+                });
+
+                var totalMatching = Number(res && res.total_matching || 0);
+                var nextOffset = Number(res && res.next_offset || 0);
+                var hasMore = res && res.has_more === true;
+                var processedNow = Number(summary.scanned || 0);
+                var processedTotal = offset + processedNow;
+                state.a11yGenerationByModule.set(autofillModuleId, {
+                  running: true,
+                  processed: processedTotal,
+                  total: totalMatching,
+                });
+                renderModuleRows();
+                if (hasMore && nextOffset > offset && rounds < maxRounds) {
+                  offset = nextOffset;
+                  var progressed = totalMatching > 0 ? Math.min(offset, totalMatching) : offset;
+                  setMessage(
+                    "Generating accessibility drafts for \"" +
+                      autofillModuleTitle +
+                      "\"... processed " +
+                      String(progressed) +
+                      (totalMatching > 0 ? " of " + String(totalMatching) : "") +
+                      ".",
+                    ""
+                  );
+                  return runNextBatch();
+                }
+                return { done: true, rounds: rounds, total_matching: totalMatching };
+              });
+            }
+
+            return runNextBatch()
+              .then(function (res) {
+                state.a11yGenerationByModule.delete(autofillModuleId);
+                return loadLibrary(state.selectedModuleId).then(function () {
+                  var refreshedModule = (state.modules || []).find(function (m) { return Number(m.id) === autofillModuleId; });
+                  var activeLessonCount = Number(refreshedModule && refreshedModule.active_lesson_count || 0);
+                  var missingCaptionsCount = Number(refreshedModule && refreshedModule.missing_captions_count || 0);
+                  var missingTranscriptCount = Number(refreshedModule && refreshedModule.missing_transcript_count || 0);
+                  var metricsAvailable = !!state.accessibilityMetricsAvailable;
+                  if (metricsAvailable && activeLessonCount > 0 && missingCaptionsCount === 0 && missingTranscriptCount === 0) {
+                    setMessage(
+                      "Accessibility generation completed for \"" + autofillModuleTitle + "\". Module is now a11y ready.",
+                      "ok"
+                    );
+                    showToast("Module is now a11y ready.", "ok");
+                    return;
+                  }
+                  setMessage(
+                    "Accessibility generation completed for \"" + autofillModuleTitle + "\". Still pending: " +
+                      String(missingCaptionsCount) +
+                      " lesson(s) missing captions and " +
+                      String(missingTranscriptCount) +
+                      " missing transcript. Reasons: " +
+                      "caption generation started=" + String(reasonTotals.caption_generation_started || 0) +
+                      ", no caption source=" + String(reasonTotals.no_caption_source || 0) +
+                      ", transcript pending=" + String(reasonTotals.transcript_pending || 0) + ".",
+                    ""
+                  );
+                  showToast(
+                    "Generation finished. Remaining gaps keep this module pending A11y.",
+                    "error"
+                  );
+                });
+              })
+              .catch(function (error) {
+                state.a11yGenerationByModule.delete(autofillModuleId);
+                renderModuleRows();
+                setMessage(error.message || "Could not generate accessibility drafts for module.", "error");
+                showToast(error.message || "Could not generate accessibility drafts.", "error");
+              })
+              .finally(function () {
+                renderModuleRows();
+              });
+          })
+          .catch(function (error) {
+            setMessage(error.message || "Could not process accessibility generation.", "error");
+          });
+        return;
+      }
       if (remapBtn) {
         var remapId = Number(remapBtn.getAttribute("data-remap-module") || 0);
         if (!(remapId > 0)) return;
@@ -780,6 +1008,14 @@
       var mod = state.modules.find(function (m) { return Number(m.id) === toggleId; });
       if (!mod) return;
       var nextActive = Number(mod.is_active || 0) === 0;
+      var activeLessonCount = Number(mod.active_lesson_count || 0);
+      var missingCaptionsCount = Number(mod.missing_captions_count || 0);
+      var missingTranscriptCount = Number(mod.missing_transcript_count || 0);
+      var publishWarning = nextActive && (
+        activeLessonCount <= 0 ||
+        missingCaptionsCount > 0 ||
+        missingTranscriptCount > 0
+      );
 
       toggleBtn.disabled = true;
       setMessage(nextActive ? "Publishing module..." : "Unpublishing module...", "");
@@ -803,8 +1039,19 @@
         }),
       })
         .then(function () {
-          setMessage(nextActive ? "Module published." : "Module unpublished.", "ok");
-          showToast(nextActive ? "Module published successfully." : "Module unpublished successfully.", "ok");
+          if (publishWarning) {
+            setMessage(
+              "Module published with accessibility warning (non-blocking): " +
+                (activeLessonCount <= 0
+                  ? "no active lessons to assess."
+                  : (String(missingCaptionsCount) + " active lesson(s) missing captions and " + String(missingTranscriptCount) + " active lesson(s) missing transcript.")),
+              ""
+            );
+            showToast("Module published with accessibility warning.", "ok");
+          } else {
+            setMessage(nextActive ? "Module published." : "Module unpublished.", "ok");
+            showToast(nextActive ? "Module published successfully." : "Module unpublished successfully.", "ok");
+          }
           return loadLibrary(state.selectedModuleId);
         })
         .catch(function (error) {
@@ -1017,8 +1264,26 @@
             lessons: lessons,
           }),
         });
-        setMessage("Lessons saved successfully.", "ok");
-        showToast("Lesson order and mapping saved.", "ok");
+        var missingCaptions = lessons.filter(function (row) {
+          return Boolean(row && row.is_active) && !String(row && row.captions_vtt_url || "").trim();
+        }).length;
+        var missingTranscript = lessons.filter(function (row) {
+          return Boolean(row && row.is_active) && !String(row && row.transcript_text || "").trim();
+        }).length;
+        if (missingCaptions || missingTranscript) {
+          setMessage(
+            "Lessons saved. Accessibility warning (non-blocking): " +
+              String(missingCaptions) +
+              " active lesson(s) missing captions and " +
+              String(missingTranscript) +
+              " active lesson(s) missing transcript.",
+            ""
+          );
+          showToast("Lessons saved with accessibility warning.", "ok");
+        } else {
+          setMessage("Lessons saved successfully.", "ok");
+          showToast("Lesson order and mapping saved.", "ok");
+        }
         await loadLibrary(state.selectedModuleId);
       } catch (error) {
         setMessage(error.message || "Could not save lessons.", "error");

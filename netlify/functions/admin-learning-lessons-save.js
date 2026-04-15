@@ -50,6 +50,17 @@ exports.handler = async function (event) {
       const videoAssetId = Number(row.video_asset_id || 0);
       const safeVideoAssetId = Number.isFinite(videoAssetId) && videoAssetId > 0 ? videoAssetId : null;
       const lessonNotes = clean(row.lesson_notes, 4000) || null;
+      const captionsVttUrl = clean(row.captions_vtt_url, 1200) || null;
+      const captionsLanguagesJson = clean(row.captions_languages_json, 4000) || null;
+      const transcriptText = clean(row.transcript_text, 120000) || null;
+      const audioDescriptionText = clean(row.audio_description_text, 120000) || null;
+      const signLanguageVideoUrl = clean(row.sign_language_video_url, 1200) || null;
+      const accessibilityStatusRaw = clean(row.accessibility_status, 32).toLowerCase();
+      const accessibilityStatus = (
+        accessibilityStatusRaw === "ready" ||
+        accessibilityStatusRaw === "in_progress" ||
+        accessibilityStatusRaw === "blocked"
+      ) ? accessibilityStatusRaw : "draft";
       const isActive = row.is_active === false || Number(row.is_active) === 0 ? 0 : 1;
       const now = nowSql();
       const lessonTitleNorm = lessonTitle.toLowerCase().replace(/\s+/g, " ").trim();
@@ -73,10 +84,10 @@ exports.handler = async function (event) {
           : slugify(clean(row.lesson_slug, 160) || lessonTitle, "lesson");
         await conn.query(
           `UPDATE ${LESSONS_TABLE}
-           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = ?, updated_at = ?
            WHERE id = ? AND module_id = ?
            LIMIT 1`,
-          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, targetLessonId, moduleId]
+          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, targetLessonId, moduleId]
         );
         keepIds.push(targetLessonId);
         continue;
@@ -87,10 +98,10 @@ exports.handler = async function (event) {
         const keepSlug = String(existingTitleRow.lesson_slug || slugify(clean(row.lesson_slug, 160) || lessonTitle, "lesson"));
         await conn.query(
           `UPDATE ${LESSONS_TABLE}
-           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+           SET lesson_slug = ?, lesson_title = ?, lesson_order = ?, video_asset_id = ?, lesson_notes = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = ?, updated_at = ?
            WHERE id = ? AND module_id = ?
            LIMIT 1`,
-          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, targetLessonId, moduleId]
+          [keepSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, targetLessonId, moduleId]
         );
         keepIds.push(targetLessonId);
         continue;
@@ -103,9 +114,9 @@ exports.handler = async function (event) {
         try {
           const [ins] = await conn.query(
             `INSERT INTO ${LESSONS_TABLE}
-              (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [moduleId, nextSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, now]
+              (module_id, lesson_slug, lesson_title, lesson_order, video_asset_id, lesson_notes, captions_vtt_url, captions_languages_json, transcript_text, audio_description_text, sign_language_video_url, accessibility_status, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [moduleId, nextSlug, lessonTitle, lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, now]
           );
           createdId = Number(ins && ins.insertId ? ins.insertId : 0);
           break;
@@ -125,10 +136,10 @@ exports.handler = async function (event) {
             if (createdId > 0) {
               await conn.query(
                 `UPDATE ${LESSONS_TABLE}
-                 SET lesson_order = ?, video_asset_id = ?, lesson_notes = ?, is_active = ?, updated_at = ?
+                 SET lesson_order = ?, video_asset_id = ?, lesson_notes = ?, captions_vtt_url = ?, captions_languages_json = ?, transcript_text = ?, audio_description_text = ?, sign_language_video_url = ?, accessibility_status = ?, is_active = ?, updated_at = ?
                  WHERE id = ? AND module_id = ?
                  LIMIT 1`,
-                [lessonOrder, safeVideoAssetId, lessonNotes, isActive, now, createdId, moduleId]
+                [lessonOrder, safeVideoAssetId, lessonNotes, captionsVttUrl, captionsLanguagesJson, transcriptText, audioDescriptionText, signLanguageVideoUrl, accessibilityStatus, isActive, now, createdId, moduleId]
               );
               break;
             }
@@ -164,6 +175,12 @@ exports.handler = async function (event) {
          l.lesson_order,
          l.video_asset_id,
          l.lesson_notes,
+         l.captions_vtt_url,
+         l.captions_languages_json,
+         l.transcript_text,
+         l.audio_description_text,
+         l.sign_language_video_url,
+         l.accessibility_status,
          l.is_active,
          l.created_at,
          l.updated_at,

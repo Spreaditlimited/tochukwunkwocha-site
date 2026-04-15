@@ -1818,6 +1818,18 @@ body.modal-open {
 }
 
 @media (max-width: 760px) {
+  body:not(.user-dashboard-page) .site-header + main {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+  }
+
+  body.public-page--prompt-to-production .site-header + main {
+    background: linear-gradient(#0a101e 0 28px, transparent 28px);
+  }
+
+  body.public-page--prompt-to-profit-schools .site-header + main {
+    background: linear-gradient(#000000 0 28px, transparent 28px);
+  }
+
   .user-dashboard-page {
     height: auto !important;
     min-height: 100dvh;

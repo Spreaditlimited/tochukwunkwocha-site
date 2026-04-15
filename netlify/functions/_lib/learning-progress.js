@@ -2,6 +2,7 @@ const { nowSql } = require("./db");
 const {
   COURSES_TABLE,
   MODULES_TABLE,
+  COURSE_MODULES_TABLE,
   MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
   VIDEO_ASSETS_TABLE,
@@ -35,7 +36,9 @@ function parseSqlDateMs(value) {
 }
 
 const moduleColumnCache = new Map();
+const lessonColumnCache = new Map();
 let moduleBatchDripsTableExists = null;
+let courseModuleMappingsTableExists = null;
 
 async function hasModuleColumn(pool, columnName) {
   const key = clean(columnName, 80).toLowerCase();
@@ -55,6 +58,24 @@ async function hasModuleColumn(pool, columnName) {
   return exists;
 }
 
+async function hasLessonColumn(pool, columnName) {
+  const key = clean(columnName, 80).toLowerCase();
+  if (!key) return false;
+  if (lessonColumnCache.has(key)) return lessonColumnCache.get(key);
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [LESSONS_TABLE, key]
+  );
+  const exists = Array.isArray(rows) && rows.length > 0;
+  lessonColumnCache.set(key, exists);
+  return exists;
+}
+
 async function hasModuleBatchDripsTable(pool) {
   if (typeof moduleBatchDripsTableExists === "boolean") return moduleBatchDripsTableExists;
   const [rows] = await pool.query(
@@ -67,6 +88,20 @@ async function hasModuleBatchDripsTable(pool) {
   );
   moduleBatchDripsTableExists = Array.isArray(rows) && rows.length > 0;
   return moduleBatchDripsTableExists;
+}
+
+async function hasCourseModuleMappingsTable(pool) {
+  if (typeof courseModuleMappingsTableExists === "boolean") return courseModuleMappingsTableExists;
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+     LIMIT 1`,
+    [COURSE_MODULES_TABLE]
+  );
+  courseModuleMappingsTableExists = Array.isArray(rows) && rows.length > 0;
+  return courseModuleMappingsTableExists;
 }
 
 async function loadModuleBatchDripMap(pool, moduleIds) {
@@ -630,6 +665,21 @@ function normalizeDate(value) {
   return d.toISOString();
 }
 
+function parseCaptionsLanguages(value) {
+  const raw = clean(value, 4000);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(function (item) { return clean(item, 40); })
+      .filter(Boolean)
+      .slice(0, 20);
+  } catch (_error) {
+    return [];
+  }
+}
+
 function pickLatestIso(a, b) {
   if (!a) return b || null;
   if (!b) return a || null;
@@ -764,12 +814,31 @@ function toCoursePayload(courseSlug, modules, progressByLessonId) {
         lastActivityAt = latest;
       }
 
+      const rawCaptionsVttUrl = clean(lessonRow.captions_vtt_url, 1200) || null;
+      const rawTranscriptText = clean(lessonRow.transcript_text, 120000) || "";
+      const rawAudioDescriptionText = clean(lessonRow.audio_description_text, 120000) || "";
+      const rawSignLanguageVideoUrl = clean(lessonRow.sign_language_video_url, 1200) || null;
+      const rawStatus = clean(lessonRow.accessibility_status, 32).toLowerCase() || "draft";
+      const effectiveStatus = (rawCaptionsVttUrl && rawTranscriptText)
+        ? "ready"
+        : (rawStatus === "ready" || rawStatus === "in_progress" || rawStatus === "blocked"
+          ? rawStatus
+          : (rawCaptionsVttUrl || rawTranscriptText || rawAudioDescriptionText || rawSignLanguageVideoUrl ? "in_progress" : "draft"));
+
       return {
         id: Number(lessonRow.lesson_id),
         slug: clean(lessonRow.lesson_slug, 160),
         title: clean(lessonRow.lesson_title, 220),
         notes: clean(lessonRow.lesson_notes, 4000) || "",
         order: Number(lessonRow.lesson_order || 0),
+        accessibility: {
+          captions_vtt_url: rawCaptionsVttUrl,
+          captions_languages: parseCaptionsLanguages(lessonRow.captions_languages_json),
+          transcript_text: rawTranscriptText,
+          audio_description_text: rawAudioDescriptionText,
+          sign_language_video_url: rawSignLanguageVideoUrl,
+          status: effectiveStatus,
+        },
         video: {
           has_video: !!clean(lessonRow.video_uid, 140),
           filename: clean(lessonRow.filename, 320) || null,
@@ -834,43 +903,102 @@ async function listCourseForLearner(pool, input) {
   }
   const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
   const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
+  const hasCaptionsVtt = await hasLessonColumn(pool, "captions_vtt_url").catch(function () { return false; });
+  const hasCaptionsLanguages = await hasLessonColumn(pool, "captions_languages_json").catch(function () { return false; });
+  const hasTranscriptText = await hasLessonColumn(pool, "transcript_text").catch(function () { return false; });
+  const hasAudioDescriptionText = await hasLessonColumn(pool, "audio_description_text").catch(function () { return false; });
+  const hasSignLanguageVideoUrl = await hasLessonColumn(pool, "sign_language_video_url").catch(function () { return false; });
+  const hasAccessibilityStatus = await hasLessonColumn(pool, "accessibility_status").catch(function () { return false; });
+  const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
+  const captionsVttSelect = hasCaptionsVtt ? "l.captions_vtt_url" : "NULL AS captions_vtt_url";
+  const captionsLanguagesSelect = hasCaptionsLanguages ? "l.captions_languages_json" : "NULL AS captions_languages_json";
+  const transcriptTextSelect = hasTranscriptText ? "l.transcript_text" : "NULL AS transcript_text";
+  const audioDescriptionTextSelect = hasAudioDescriptionText ? "l.audio_description_text" : "NULL AS audio_description_text";
+  const signLanguageVideoUrlSelect = hasSignLanguageVideoUrl ? "l.sign_language_video_url" : "NULL AS sign_language_video_url";
+  const accessibilityStatusSelect = hasAccessibilityStatus ? "l.accessibility_status" : "'draft' AS accessibility_status";
 
-  const [rows] = await pool.query(
-    `SELECT
-       m.id AS module_id,
-       m.module_slug,
-       m.module_title,
-       m.module_description,
-       m.sort_order,
-       m.drip_enabled,
-       DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
-       ${dripBatchKeySelect},
-       l.id AS lesson_id,
-       l.lesson_slug,
-       l.lesson_title,
-       l.lesson_notes,
-       l.lesson_order,
-       l.video_asset_id,
-       a.video_uid,
-       a.hls_url,
-       a.dash_url,
-       a.filename,
-       a.duration_seconds
-     FROM ${MODULES_TABLE} m
-     JOIN ${COURSES_TABLE} c
-       ON c.course_slug = m.course_slug
-     LEFT JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
-     LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
-     WHERE m.course_slug = ?
-       AND c.is_published = 1
-       AND (
-         c.release_at IS NULL
-         OR c.release_at <= NOW()
-       )
-       AND m.is_active = 1
-     ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`,
-    [courseSlug]
-  );
+  const courseScopedSql = hasCourseModuleMappings
+    ? `SELECT
+         m.id AS module_id,
+         m.module_slug,
+         m.module_title,
+         m.module_description,
+         cm.sort_order,
+         cm.drip_enabled,
+         DATE_FORMAT(cm.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+         cm.drip_batch_key AS drip_batch_key,
+         cm.drip_offset_seconds AS drip_offset_seconds,
+         l.id AS lesson_id,
+         l.lesson_slug,
+         l.lesson_title,
+         l.lesson_notes,
+         ${captionsVttSelect},
+         ${captionsLanguagesSelect},
+         ${transcriptTextSelect},
+         ${audioDescriptionTextSelect},
+         ${signLanguageVideoUrlSelect},
+         ${accessibilityStatusSelect},
+         l.lesson_order,
+         l.video_asset_id,
+         a.video_uid,
+         a.hls_url,
+         a.dash_url,
+         a.filename,
+         a.duration_seconds
+       FROM ${COURSE_MODULES_TABLE} cm
+       JOIN ${MODULES_TABLE} m ON m.id = cm.module_id
+       JOIN ${COURSES_TABLE} c ON c.course_slug = cm.course_slug
+       LEFT JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
+       LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
+       WHERE cm.course_slug = ?
+         AND c.is_published = 1
+         AND (
+           c.release_at IS NULL
+           OR c.release_at <= NOW()
+         )
+         AND cm.is_active = 1
+       ORDER BY cm.sort_order ASC, cm.id ASC, l.lesson_order ASC, l.id ASC`
+    : `SELECT
+         m.id AS module_id,
+         m.module_slug,
+         m.module_title,
+         m.module_description,
+         m.sort_order,
+         m.drip_enabled,
+         DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+         ${dripBatchKeySelect},
+         l.id AS lesson_id,
+         l.lesson_slug,
+         l.lesson_title,
+         l.lesson_notes,
+         ${captionsVttSelect},
+         ${captionsLanguagesSelect},
+         ${transcriptTextSelect},
+         ${audioDescriptionTextSelect},
+         ${signLanguageVideoUrlSelect},
+         ${accessibilityStatusSelect},
+         l.lesson_order,
+         l.video_asset_id,
+         a.video_uid,
+         a.hls_url,
+         a.dash_url,
+         a.filename,
+         a.duration_seconds
+       FROM ${MODULES_TABLE} m
+       JOIN ${COURSES_TABLE} c
+         ON c.course_slug = m.course_slug
+       LEFT JOIN ${LESSONS_TABLE} l ON l.module_id = m.id AND l.is_active = 1
+       LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
+       WHERE m.course_slug = ?
+         AND c.is_published = 1
+         AND (
+           c.release_at IS NULL
+           OR c.release_at <= NOW()
+         )
+         AND m.is_active = 1
+       ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`;
+
+  const [rows] = await pool.query(courseScopedSql, [courseSlug]);
 
   const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
   const moduleIdsForSchedule = Array.from(new Set((Array.isArray(rows) ? rows : []).map(function (row) {

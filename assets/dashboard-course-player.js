@@ -15,6 +15,23 @@
   var lessonTitleEl = document.getElementById("lessonTitle");
   var lessonMetaEl = document.getElementById("lessonMeta");
   var lessonNotesEl = document.getElementById("lessonNotes");
+  var lessonA11yToolsEl = document.getElementById("lessonAccessibilityTools");
+  var lessonA11yStatusBadgeEl = document.getElementById("lessonA11yStatusBadge");
+  var lessonCaptionsBadgeEl = document.getElementById("lessonCaptionsBadge");
+  var toggleTranscriptBtn = document.getElementById("toggleTranscriptBtn");
+  var toggleAudioDescriptionBtn = document.getElementById("toggleAudioDescriptionBtn");
+  var toggleSignLanguageBtn = document.getElementById("toggleSignLanguageBtn");
+  var signLanguageLink = document.getElementById("signLanguageLink");
+  var transcriptPanelEl = document.getElementById("lessonTranscriptPanel");
+  var transcriptTextEl = document.getElementById("lessonTranscriptText");
+  var transcriptSearchInput = document.getElementById("transcriptSearchInput");
+  var audioDescriptionPanelEl = document.getElementById("lessonAudioDescriptionPanel");
+  var audioDescriptionTextEl = document.getElementById("lessonAudioDescriptionText");
+  var signLanguagePanelEl = document.getElementById("lessonSignLanguagePanel");
+  var signLanguagePanelLink = document.getElementById("signLanguagePanelLink");
+  var signLanguageFrameEl = document.getElementById("lessonSignLanguageFrame");
+  var signLanguageVideoEl = document.getElementById("lessonSignLanguageVideo");
+  var lessonLiveRegionEl = document.getElementById("lessonLiveRegion");
   var markBtn = document.getElementById("markCompleteBtn");
   var progressBarEl = document.getElementById("playerProgressBar");
   var progressTextEl = document.getElementById("playerProgressText");
@@ -50,6 +67,9 @@
     playerApi: null,
     initialLessonId: 0,
     lastErroredLessonId: 0,
+    transcriptSourceText: "",
+    audioDescriptionSourceText: "",
+    signLanguageSourceUrl: "",
   };
 
   var WATCH_HEARTBEAT_SECONDS = 15;
@@ -205,6 +225,212 @@
     if (emptyHintEl) emptyHintEl.textContent = clean(data.hint || "If this is unexpected, refresh this page or return to My Courses.");
     if (emptyChipEl) emptyChipEl.textContent = clean(data.chip || (variant === "error" ? "Action needed" : "Course update"));
     emptyEl.hidden = false;
+  }
+
+  function safeArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function triggerCaptureShield() {
+    if (!paneEl) return;
+    var existing = paneEl.querySelector('[data-capture-shield="true"]');
+    if (existing) return;
+    var shield = document.createElement("div");
+    shield.setAttribute("data-capture-shield", "true");
+    shield.className = "fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-6 text-center text-white";
+    shield.innerHTML = '<div class="max-w-xl rounded-2xl border border-white/25 bg-black/55 px-6 py-5"><p class="text-sm font-semibold uppercase tracking-wider text-white/70">Protected Content</p><p class="mt-2 text-lg font-bold">Screen capture is disabled on this page.</p><p class="mt-2 text-sm text-white/80">If you need notes, use the in-app tools only.</p></div>';
+    document.body.appendChild(shield);
+    setTimeout(function () {
+      if (shield && shield.parentNode) shield.parentNode.removeChild(shield);
+    }, 1800);
+  }
+
+  function closeTranscriptPanel() {
+    if (transcriptPanelEl) transcriptPanelEl.hidden = true;
+    if (toggleTranscriptBtn) toggleTranscriptBtn.textContent = "Open transcript";
+  }
+
+  function closeAudioDescriptionPanel() {
+    if (audioDescriptionPanelEl) audioDescriptionPanelEl.hidden = true;
+    if (toggleAudioDescriptionBtn) toggleAudioDescriptionBtn.textContent = "Open audio description";
+  }
+
+  function closeSignLanguagePanel() {
+    if (signLanguagePanelEl) signLanguagePanelEl.hidden = true;
+    if (toggleSignLanguageBtn) toggleSignLanguageBtn.textContent = "Open sign language";
+  }
+
+  function isLikelyCloudflareUid(value) {
+    var raw = clean(value);
+    return /^[a-z0-9]{20,40}$/i.test(raw);
+  }
+
+  function normalizeSignLanguageSource(rawUrl) {
+    var raw = clean(rawUrl);
+    if (!raw) return "";
+    if (isLikelyCloudflareUid(raw)) {
+      return "https://iframe.videodelivery.net/" + encodeURIComponent(raw);
+    }
+    return raw;
+  }
+
+  function signLanguagePresentation(url) {
+    var source = normalizeSignLanguageSource(url);
+    if (!source) return { src: "", type: "none" };
+    var lowered = source.toLowerCase();
+    if (lowered.indexOf("youtube.com/watch?v=") !== -1) {
+      var m = source.match(/[?&]v=([^&#]+)/);
+      if (m && m[1]) {
+        return { src: "https://www.youtube.com/embed/" + encodeURIComponent(m[1]), type: "iframe" };
+      }
+    }
+    if (lowered.indexOf("youtu.be/") !== -1) {
+      var y = source.split("youtu.be/")[1] || "";
+      var yid = y.split(/[?&#]/)[0];
+      if (yid) return { src: "https://www.youtube.com/embed/" + encodeURIComponent(yid), type: "iframe" };
+    }
+    if (lowered.indexOf("vimeo.com/") !== -1 && lowered.indexOf("player.vimeo.com/video/") === -1) {
+      var vm = source.match(/vimeo\.com\/(\d+)/i);
+      if (vm && vm[1]) return { src: "https://player.vimeo.com/video/" + encodeURIComponent(vm[1]), type: "iframe" };
+    }
+    if (
+      lowered.indexOf("iframe.videodelivery.net/") !== -1 ||
+      lowered.indexOf("youtube.com/embed/") !== -1 ||
+      lowered.indexOf("player.vimeo.com/video/") !== -1
+    ) {
+      return { src: source, type: "iframe" };
+    }
+    if (
+      /\.mp4(?:$|\?)/i.test(source) ||
+      /\.webm(?:$|\?)/i.test(source) ||
+      /\.ogg(?:$|\?)/i.test(source) ||
+      /\.m3u8(?:$|\?)/i.test(source)
+    ) {
+      return { src: source, type: "video" };
+    }
+    return { src: source, type: "iframe" };
+  }
+
+  function renderSignLanguageMedia(url) {
+    var media = signLanguagePresentation(url);
+    if (signLanguageFrameEl) {
+      signLanguageFrameEl.hidden = true;
+      signLanguageFrameEl.removeAttribute("src");
+    }
+    if (signLanguageVideoEl) {
+      signLanguageVideoEl.hidden = true;
+      signLanguageVideoEl.removeAttribute("src");
+      try { signLanguageVideoEl.load(); } catch (_error) {}
+    }
+    if (!media.src) return;
+    if (media.type === "video") {
+      if (signLanguageVideoEl) {
+        signLanguageVideoEl.src = media.src;
+        signLanguageVideoEl.hidden = false;
+      }
+      return;
+    }
+    if (signLanguageFrameEl) {
+      signLanguageFrameEl.src = media.src;
+      signLanguageFrameEl.hidden = false;
+    }
+  }
+
+  function renderTranscriptText(query) {
+    if (!transcriptTextEl) return;
+    var source = clean(state.transcriptSourceText || "");
+    if (!source) {
+      transcriptTextEl.textContent = "Transcript is not available for this lesson yet.";
+      return;
+    }
+    var term = clean(query || "").toLowerCase();
+    if (!term) {
+      transcriptTextEl.textContent = source;
+      return;
+    }
+    var lines = source.split(/\r?\n/);
+    var filtered = lines.filter(function (line) {
+      return String(line || "").toLowerCase().indexOf(term) !== -1;
+    });
+    transcriptTextEl.textContent = filtered.length
+      ? filtered.join("\n")
+      : 'No transcript lines match "' + clean(query || "") + '".';
+  }
+
+  function renderLessonAccessibility(lesson) {
+    var a11y = lesson && lesson.accessibility && typeof lesson.accessibility === "object"
+      ? lesson.accessibility
+      : {};
+    var captionsUrl = clean(a11y.captions_vtt_url || "");
+    var transcriptText = clean(a11y.transcript_text || "");
+    var audioDescriptionText = clean(a11y.audio_description_text || "");
+    var signLanguageUrl = clean(a11y.sign_language_video_url || "");
+    var statusRaw = clean(a11y.status || "draft").toLowerCase();
+    var statusLabel = statusRaw === "ready"
+      ? "Ready"
+      : (statusRaw === "in_progress" ? "In Progress" : (statusRaw === "blocked" ? "Blocked" : "Draft"));
+    var captionsLanguages = safeArray(a11y.captions_languages).map(function (item) {
+      return clean(item, 40);
+    }).filter(Boolean);
+
+    state.transcriptSourceText = transcriptText;
+    state.audioDescriptionSourceText = audioDescriptionText;
+    state.signLanguageSourceUrl = signLanguageUrl;
+
+    if (lessonA11yToolsEl) {
+      lessonA11yToolsEl.hidden = !(captionsUrl || transcriptText || audioDescriptionText || signLanguageUrl || statusLabel);
+    }
+    if (lessonA11yStatusBadgeEl) {
+      lessonA11yStatusBadgeEl.textContent = "Accessibility: " + statusLabel;
+    }
+    if (lessonCaptionsBadgeEl) {
+      var captionsLabel = captionsUrl
+        ? ("Captions available" + (captionsLanguages.length ? " (" + captionsLanguages.join(", ") + ")" : ""))
+        : "";
+      lessonCaptionsBadgeEl.textContent = captionsLabel || "Captions available";
+      lessonCaptionsBadgeEl.hidden = !captionsUrl;
+    }
+    if (toggleTranscriptBtn) {
+      toggleTranscriptBtn.hidden = !transcriptText;
+      toggleTranscriptBtn.textContent = transcriptPanelEl && !transcriptPanelEl.hidden ? "Close transcript" : "Open transcript";
+    }
+    if (toggleAudioDescriptionBtn) {
+      toggleAudioDescriptionBtn.hidden = !audioDescriptionText;
+      toggleAudioDescriptionBtn.textContent = audioDescriptionPanelEl && !audioDescriptionPanelEl.hidden ? "Close audio description" : "Open audio description";
+    }
+    if (toggleSignLanguageBtn) {
+      toggleSignLanguageBtn.hidden = true;
+      toggleSignLanguageBtn.disabled = true;
+      toggleSignLanguageBtn.textContent = "Sign language unavailable";
+    }
+    if (signLanguageLink) {
+      signLanguageLink.hidden = true;
+    }
+    if (signLanguagePanelLink) {
+      signLanguagePanelLink.hidden = true;
+    }
+    if (audioDescriptionTextEl) {
+      audioDescriptionTextEl.textContent = audioDescriptionText || "Audio description is not available for this lesson yet.";
+    }
+    if (transcriptSearchInput) transcriptSearchInput.value = "";
+    renderTranscriptText("");
+    if (transcriptPanelEl) {
+      transcriptPanelEl.hidden = !transcriptText;
+    }
+    if (toggleTranscriptBtn) {
+      toggleTranscriptBtn.textContent = transcriptPanelEl && !transcriptPanelEl.hidden ? "Close transcript" : "Open transcript";
+    }
+    closeAudioDescriptionPanel();
+    closeSignLanguagePanel();
+    if (signLanguagePanelEl) signLanguagePanelEl.hidden = true;
+    renderSignLanguageMedia(signLanguageUrl);
+  }
+
+  function announceLesson(lesson) {
+    if (!lessonLiveRegionEl) return;
+    var title = clean(lesson && lesson.title || "Lesson");
+    var note = clean(lesson && lesson.notes || "");
+    lessonLiveRegionEl.textContent = "Now viewing " + title + (note ? ". Lesson notes available." : ".");
   }
 
   function setPlayerSkeleton(visible) {
@@ -771,6 +997,15 @@
       lessonNotesEl.textContent = notes ? "Notes: " + notes : "";
       lessonNotesEl.hidden = !notes;
     }
+    renderLessonAccessibility(lesson);
+    announceLesson(lesson);
+    if (lessonTitleEl && typeof lessonTitleEl.focus === "function") {
+      try {
+        lessonTitleEl.focus({ preventScroll: true });
+      } catch (_error) {
+        lessonTitleEl.focus();
+      }
+    }
 
     if (markBtn) {
       markBtn.disabled = !!(lesson.progress && lesson.progress.is_completed);
@@ -1003,6 +1238,99 @@
       openLesson(lessonId);
     });
   }
+
+  if (toggleTranscriptBtn) {
+    toggleTranscriptBtn.addEventListener("click", function () {
+      if (!transcriptPanelEl) return;
+      var willOpen = !!transcriptPanelEl.hidden;
+      transcriptPanelEl.hidden = !willOpen;
+      toggleTranscriptBtn.textContent = willOpen ? "Close transcript" : "Open transcript";
+      if (willOpen && transcriptSearchInput && typeof transcriptSearchInput.focus === "function") {
+        transcriptSearchInput.focus();
+      }
+    });
+  }
+
+  if (toggleAudioDescriptionBtn) {
+    toggleAudioDescriptionBtn.addEventListener("click", function () {
+      if (!audioDescriptionPanelEl) return;
+      var willOpen = !!audioDescriptionPanelEl.hidden;
+      audioDescriptionPanelEl.hidden = !willOpen;
+      toggleAudioDescriptionBtn.textContent = willOpen ? "Close audio description" : "Open audio description";
+    });
+  }
+
+  if (toggleSignLanguageBtn) {
+    toggleSignLanguageBtn.addEventListener("click", function () {
+      if (toggleSignLanguageBtn.disabled) return;
+      if (!signLanguagePanelEl) return;
+      var willOpen = !!signLanguagePanelEl.hidden;
+      signLanguagePanelEl.hidden = !willOpen;
+      toggleSignLanguageBtn.textContent = willOpen ? "Close sign language" : "Open sign language";
+      if (willOpen) renderSignLanguageMedia(state.signLanguageSourceUrl || "");
+    });
+  }
+
+  if (transcriptSearchInput) {
+    transcriptSearchInput.addEventListener("input", function () {
+      renderTranscriptText(transcriptSearchInput.value || "");
+    });
+  }
+
+  if (transcriptPanelEl) {
+    transcriptPanelEl.addEventListener("copy", function (event) {
+      event.preventDefault();
+      setStatus("Transcript copying is disabled.", false);
+    });
+    transcriptPanelEl.addEventListener("cut", function (event) {
+      event.preventDefault();
+      setStatus("Transcript copying is disabled.", false);
+    });
+    transcriptPanelEl.addEventListener("contextmenu", function (event) {
+      event.preventDefault();
+    });
+  }
+
+  document.addEventListener("contextmenu", function (event) {
+    var target = event && event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("#playerPane")) {
+      event.preventDefault();
+    }
+  });
+
+  document.addEventListener("dragstart", function (event) {
+    var target = event && event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("#playerPane")) {
+      event.preventDefault();
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (!event) return;
+    var key = String(event.key || "").toLowerCase();
+    var hasModifier = !!(event.ctrlKey || event.metaKey);
+    if (key === "printscreen" || key === "snapshot") {
+      event.preventDefault();
+      triggerCaptureShield();
+      return;
+    }
+    if (hasModifier && (key === "s" || key === "p")) {
+      var active = document.activeElement;
+      if (active instanceof Element && active.closest("#playerPane")) {
+        event.preventDefault();
+        triggerCaptureShield();
+      }
+    }
+    if (hasModifier && key === "c") {
+      var activeEl = document.activeElement;
+      if (activeEl instanceof Element && activeEl.closest("#lessonTranscriptPanel")) {
+        event.preventDefault();
+        setStatus("Transcript copying is disabled.", false);
+      }
+    }
+  });
 
   window.addEventListener("beforeunload", function () {
     clearEmbedFallbackTimer();
