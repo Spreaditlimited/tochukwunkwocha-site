@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireStudentSession } = require("./_lib/user-auth");
 const { listCourseForLearner } = require("./_lib/learning-progress");
+const { ensureLearningSupportTables, getCourseLearningFeatures } = require("./_lib/learning-support");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -25,6 +26,12 @@ exports.handler = async function (event) {
     });
 
     if (!payload.ok) return json(403, { ok: false, error: payload.error || "Access denied" });
+    await ensureLearningSupportTables(pool, { bootstrap: true }).catch(function () {
+      return null;
+    });
+    const features = await getCourseLearningFeatures(pool, courseSlug).catch(function () {
+      return null;
+    });
 
     return json(200, {
       ok: true,
@@ -34,6 +41,7 @@ exports.handler = async function (event) {
         email: session.account.email,
       },
       course: payload.course,
+      features: features || null,
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load course lessons." });

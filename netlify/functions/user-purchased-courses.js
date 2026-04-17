@@ -6,6 +6,7 @@ const { getCourseName } = require("./_lib/course-config");
 const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
+const { ensureLearningAccessOverridesTable } = require("./_lib/learning-access-overrides");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -337,6 +338,25 @@ exports.handler = async function (event) {
        GROUP BY course_slug, batch_key, batch_label`,
       [email]
     );
+    await ensureLearningAccessOverridesTable(pool).catch(function () {
+      return null;
+    });
+    let overrideRows = [];
+    try {
+      const [rows] = await pool.query(
+        `SELECT course_slug,
+                DATE_FORMAT(MAX(updated_at), '%Y-%m-%d %H:%i:%s') AS paid_at
+         FROM tochukwu_learning_access_overrides
+         WHERE LOWER(email) COLLATE utf8mb4_general_ci = ?
+           AND status = 'active'
+           AND (expires_at IS NULL OR expires_at > NOW())
+         GROUP BY course_slug`,
+        [email]
+      );
+      overrideRows = Array.isArray(rows) ? rows : [];
+    } catch (_error) {
+      overrideRows = [];
+    }
 
     const map = new Map();
     function statusRank(status) {
@@ -392,6 +412,19 @@ exports.handler = async function (event) {
     });
     (manualPendingRows || []).forEach(function (row) {
       upsert(row, "manual_payment", "pending_verification", row.submitted_at || null);
+    });
+    (overrideRows || []).forEach(function (row) {
+      upsert(
+        {
+          course_slug: row.course_slug,
+          batch_key: "admin-override",
+          batch_label: "Admin Early Access",
+          paid_at: row.paid_at || null,
+        },
+        "admin_override",
+        "paid",
+        null
+      );
     });
 
     const [schoolRows] = await pool.query(

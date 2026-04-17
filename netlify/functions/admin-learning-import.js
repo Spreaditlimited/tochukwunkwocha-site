@@ -11,6 +11,7 @@ const {
   upsertVideoAsset,
   findOrCreateModule,
   listLearningCourses,
+  extractCloudflareStreamUid,
 } = require("./_lib/learning");
 
 function parseCsvLine(line) {
@@ -90,7 +91,8 @@ exports.handler = async function (event) {
     const moduleTitle = clean(pick(row, ["module_title", "module", "module-name"]), 220);
     const lessonTitle = clean(pick(row, ["lesson_title", "lesson", "lesson-name", "title"]), 220);
     const lessonOrder = toInt(pick(row, ["lesson_order", "order", "lesson_no", "lesson_number"]) || index + 1, index + 1);
-    const videoUid = clean(pick(row, ["video_uid", "video_id", "uid"]), 120);
+    const videoUidRaw = pick(row, ["video_uid", "video_id", "uid"]);
+    const videoUid = extractCloudflareStreamUid(videoUidRaw) || clean(videoUidRaw, 120);
     const filename = clean(pick(row, ["filename", "file_name", "name"]), 320);
     const hlsUrl = clean(pick(row, ["hls_url", "hls", "manifest_hls"]), 1000);
     const dashUrl = clean(pick(row, ["dash_url", "dash", "manifest_dash"]), 1000);
@@ -191,15 +193,10 @@ exports.handler = async function (event) {
 
       let videoAssetId = null;
       if (row.video_uid || row.hls_url || row.dash_url || row.filename) {
-        let uid = row.video_uid;
-        if (!uid && row.hls_url) {
-          const parts = row.hls_url.split("/");
-          uid = clean(parts[3], 120);
-        }
-        if (!uid && row.dash_url) {
-          const parts = row.dash_url.split("/");
-          uid = clean(parts[3], 120);
-        }
+        let uid = extractCloudflareStreamUid(row.video_uid)
+          || extractCloudflareStreamUid(row.hls_url)
+          || extractCloudflareStreamUid(row.dash_url)
+          || clean(row.video_uid, 120);
         if (uid) {
           const saved = await upsertVideoAsset(conn, {
             provider: "cloudflare_stream",

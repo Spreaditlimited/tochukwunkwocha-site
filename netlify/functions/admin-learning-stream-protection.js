@@ -6,7 +6,9 @@ const crypto = require("crypto");
 const {
   ensureLearningTables,
   VIDEO_ASSETS_TABLE,
+  LESSONS_TABLE,
   clean,
+  extractCloudflareStreamUid,
 } = require("./_lib/learning");
 const {
   ensureAdminSettingsTable,
@@ -362,10 +364,33 @@ async function ensureSigningKey(pool, config, adminEmail, input) {
 function classifyFailure(message) {
   const text = String(message || "").toLowerCase();
   if (!text) return "unknown";
+  if (text.indexOf("invalid_uid") !== -1 || text.indexOf("invalid uid") !== -1) return "invalid_uid";
   if (text.indexOf("not found") !== -1 || text.indexOf("resource not found") !== -1) return "not_found";
   if (text.indexOf("permission") !== -1 || text.indexOf("forbidden") !== -1 || text.indexOf("unauthorized") !== -1 || text.indexOf("authentication") !== -1) return "permission";
   if (text.indexOf("invalid") !== -1 || text.indexOf("malformed") !== -1) return "invalid_request";
   return "other";
+}
+
+async function listCloudflareUids(config) {
+  const set = new Set();
+  let page = 1;
+  let totalPages = 1;
+  while (page <= totalPages && page <= 200) {
+    const payload = await cfRequest(
+      `/accounts/${encodeURIComponent(config.accountId)}/stream?per_page=100&page=${page}`,
+      config,
+      { method: "GET" }
+    );
+    const rows = Array.isArray(payload && payload.result) ? payload.result : [];
+    rows.forEach(function (row) {
+      const uid = extractCloudflareStreamUid(row && row.uid);
+      if (uid) set.add(uid);
+    });
+    const info = payload && payload.result_info ? payload.result_info : {};
+    totalPages = Number(info.total_pages || totalPages || 1) || 1;
+    page += 1;
+  }
+  return set;
 }
 
 async function runWithConcurrency(items, concurrency, worker) {
@@ -405,28 +430,113 @@ exports.handler = async function (event) {
       forceRotate: body.force_rotate_signing_key === true || Number(body.force_rotate_signing_key) === 1,
     });
 
-    const [videoRows] = await pool.query(
-      `SELECT DISTINCT video_uid
-       FROM ${VIDEO_ASSETS_TABLE}
-       WHERE COALESCE(TRIM(video_uid), '') <> ''
-       ORDER BY video_uid ASC`
+    let [videoRows] = await pool.query(
+      `SELECT DISTINCT
+         a.id AS asset_id,
+         a.video_uid,
+         a.hls_url,
+         a.dash_url
+       FROM ${VIDEO_ASSETS_TABLE} a
+       JOIN ${LESSONS_TABLE} l ON l.video_asset_id = a.id
+       WHERE l.is_active = 1`
     );
-    const uids = (Array.isArray(videoRows) ? videoRows : [])
-      .map(function (row) { return clean(row.video_uid, 120); })
-      .filter(Boolean);
+    if (!Array.isArray(videoRows) || !videoRows.length) {
+      const [fallbackRows] = await pool.query(
+        `SELECT id AS asset_id, video_uid, hls_url, dash_url
+         FROM ${VIDEO_ASSETS_TABLE}
+         WHERE COALESCE(TRIM(video_uid), '') <> ''
+         ORDER BY video_uid ASC`
+      );
+      videoRows = Array.isArray(fallbackRows) ? fallbackRows : [];
+    }
+
+    const failures = [];
+    const uidToAssetIds = new Map();
+    let invalidUidRows = 0;
+    let canonicalizedAssets = 0;
+    let remappedLessons = 0;
+    for (const row of videoRows) {
+      const assetId = Number(row && row.asset_id || 0);
+      if (!(assetId > 0)) continue;
+      const rawUid = clean(row && row.video_uid, 320);
+      const canonicalUid = extractCloudflareStreamUid(rawUid)
+        || extractCloudflareStreamUid(row && row.hls_url)
+        || extractCloudflareStreamUid(row && row.dash_url);
+
+      if (!canonicalUid) {
+        invalidUidRows += 1;
+        if (failures.length < 25) {
+          failures.push({
+            video_uid: rawUid || `asset:${assetId}`,
+            reason: "invalid_uid",
+            error: "Invalid UID format in asset record; could not derive a Cloudflare Stream UID.",
+          });
+        }
+        continue;
+      }
+
+      if (canonicalUid !== String(rawUid || "").toLowerCase()) {
+        const [existingCanonicalRows] = await pool.query(
+          `SELECT id
+           FROM ${VIDEO_ASSETS_TABLE}
+           WHERE video_uid = ?
+           LIMIT 1`,
+          [canonicalUid]
+        );
+        if (Array.isArray(existingCanonicalRows) && existingCanonicalRows.length) {
+          const canonicalAssetId = Number(existingCanonicalRows[0].id || 0);
+          if (canonicalAssetId > 0 && canonicalAssetId !== assetId) {
+            const [remap] = await pool.query(
+              `UPDATE ${LESSONS_TABLE}
+               SET video_asset_id = ?, updated_at = NOW()
+               WHERE video_asset_id = ?`,
+              [canonicalAssetId, assetId]
+            );
+            remappedLessons += Number(remap && remap.affectedRows || 0);
+          }
+        } else {
+          await pool.query(
+            `UPDATE ${VIDEO_ASSETS_TABLE}
+             SET video_uid = ?, updated_at = NOW()
+             WHERE id = ?
+             LIMIT 1`,
+            [canonicalUid, assetId]
+          );
+          canonicalizedAssets += 1;
+        }
+      }
+
+      if (!uidToAssetIds.has(canonicalUid)) uidToAssetIds.set(canonicalUid, []);
+      uidToAssetIds.get(canonicalUid).push(assetId);
+    }
+
+    const uids = Array.from(uidToAssetIds.keys()).sort();
+    const cloudflareUidSet = await listCloudflareUids(config);
 
     let protectedCount = 0;
-    let failedCount = 0;
-    const failures = [];
+    let failedCount = invalidUidRows;
     const failureReasonCounts = {
       not_found: 0,
       permission: 0,
+      invalid_uid: invalidUidRows,
       invalid_request: 0,
       other: 0,
       unknown: 0,
     };
 
     await runWithConcurrency(uids, 6, async function (uid) {
+      if (!cloudflareUidSet.has(uid)) {
+        failedCount += 1;
+        failureReasonCounts.not_found += 1;
+        if (failures.length < 25) {
+          failures.push({
+            video_uid: uid,
+            reason: "not_found",
+            error: "UID not found in this Cloudflare account. Asset likely stale or from a different account.",
+          });
+        }
+        return;
+      }
       try {
         await cfRequest(
           `/accounts/${encodeURIComponent(config.accountId)}/stream/${encodeURIComponent(uid)}`,
@@ -460,7 +570,11 @@ exports.handler = async function (event) {
     return json(200, {
       ok: true,
       signing,
-      total_videos: uids.length,
+      total_videos: uids.length + invalidUidRows,
+      total_uids_scanned: uids.length,
+      invalid_uid_rows: invalidUidRows,
+      canonicalized_assets: canonicalizedAssets,
+      remapped_lessons: remappedLessons,
       protected_videos: protectedCount,
       failed_videos: failedCount,
       failure_reason_counts: failureReasonCounts,

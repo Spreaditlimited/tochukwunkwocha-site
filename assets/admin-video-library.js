@@ -56,6 +56,8 @@
     moduleDripSchedulesByModule: new Map(),
     a11yGenerationByModule: new Map(),
     lessons: [],
+    lessonAssetSearchByKey: new Map(),
+    lessonRowKeySeq: 0,
     selectedModuleId: 0,
     selectedCourseId: 0,
   };
@@ -191,6 +193,64 @@
   function assetLabel(asset) {
     var name = String(asset.filename || "").trim() || ("Video " + asset.video_uid);
     return name + " (" + asset.video_uid + ")";
+  }
+
+  function normalizeSearchText(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function ensureLessonRowKey(row) {
+    if (!row || typeof row !== "object") return "";
+    var existing = String(row._row_key || "").trim();
+    if (existing) return existing;
+    state.lessonRowKeySeq += 1;
+    var nextKey = "lr_" + String(state.lessonRowKeySeq);
+    row._row_key = nextKey;
+    return nextKey;
+  }
+
+  function ensureLessonRowKeys(rows) {
+    if (!Array.isArray(rows)) return;
+    rows.forEach(function (row) {
+      ensureLessonRowKey(row);
+    });
+  }
+
+  function pruneLessonAssetSearchMap(rows) {
+    var keep = new Set();
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      var key = ensureLessonRowKey(row);
+      if (key) keep.add(key);
+    });
+    Array.from(state.lessonAssetSearchByKey.keys()).forEach(function (key) {
+      if (!keep.has(key)) state.lessonAssetSearchByKey.delete(key);
+    });
+  }
+
+  function assetSearchHaystack(asset) {
+    var filename = String(asset && asset.filename || "").trim();
+    var uid = String(asset && asset.video_uid || "").trim();
+    return normalizeSearchText(filename + " " + uid);
+  }
+
+  function buildAssetOptions(selectedAssetId, query) {
+    var q = normalizeSearchText(query);
+    var prompt = q ? ('Filter: "' + q + '"') : "Select asset";
+    var options = ['<option value="">' + escapeHtml(prompt) + "</option>"];
+    (state.assets || []).forEach(function (asset) {
+      var id = Number(asset && asset.id || 0);
+      if (!(id > 0)) return;
+      var label = assetLabel(asset);
+      var haystack = assetSearchHaystack(asset);
+      var isSelected = Number(selectedAssetId || 0) === id;
+      if (q && haystack.indexOf(q) === -1 && !isSelected) return;
+      var selected = isSelected ? ' selected' : "";
+      options.push('<option value="' + escapeHtml(id) + '"' + selected + ">" + escapeHtml(label) + "</option>");
+    });
+    if (options.length === 1) {
+      options.push('<option value="" disabled>No matching assets</option>');
+    }
+    return options;
   }
 
   function moduleLabel(mod) {
@@ -446,6 +506,7 @@
   function renderLessonRows() {
     if (!lessonsRows) return;
     var rows = state.lessons || [];
+    pruneLessonAssetSearchMap(rows);
     if (!rows.length) {
       lessonsRows.innerHTML = '<tr><td colspan="13" class="px-4 py-6 text-center text-sm text-gray-500">No lessons yet. Add rows and save.</td></tr>';
       if (lessonAccessibilitySummary) {
@@ -455,19 +516,19 @@
     }
 
     lessonsRows.innerHTML = rows.map(function (row, idx) {
+      var rowKey = ensureLessonRowKey(row);
+      var assetSearchQuery = state.lessonAssetSearchByKey.get(rowKey) || "";
       var selectedAssetId = Number(row.video_asset_id || 0);
-      var assetOptions = ['<option value="">Select asset</option>'];
-      state.assets.forEach(function (asset) {
-        var selected = selectedAssetId === Number(asset.id) ? ' selected' : "";
-        assetOptions.push('<option value="' + escapeHtml(asset.id) + '"' + selected + ">" + escapeHtml(assetLabel(asset)) + "</option>");
-      });
+      var assetOptions = buildAssetOptions(selectedAssetId, assetSearchQuery);
 
       return [
-        '<tr draggable="true" data-row-index="' + idx + '" data-lesson-id="' + escapeHtml(row.id || "") + '" class="cursor-move">',
+        '<tr draggable="true" data-row-index="' + idx + '" data-row-key="' + escapeHtml(rowKey) + '" data-lesson-id="' + escapeHtml(row.id || "") + '" class="cursor-move">',
         '<td class="px-3 py-2"><span class="inline-flex rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-500">::</span></td>',
         '<td class="px-3 py-2 md:min-w-[22rem]"><input data-field="lesson_title" type="text" class="w-full md:min-w-[20rem] rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_title || "") + '" /></td>',
         '<td class="px-3 py-2"><input data-field="lesson_order" type="number" class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm" value="' + escapeHtml(row.lesson_order || idx + 1) + '" /></td>',
-        '<td class="px-3 py-2"><select data-field="video_asset_id" class="premium-picker min-w-[18rem] bg-white">' + assetOptions.join("") + "</select></td>",
+        '<td class="px-3 py-2 min-w-[18rem]">' +
+          '<select data-field="video_asset_id" class="premium-picker !mt-0 min-w-[18rem] bg-white" title="Type to filter by filename or UID. Press Escape to clear filter.">' + assetOptions.join("") + "</select>" +
+        "</td>",
         '<td class="px-3 py-2 md:min-w-[18rem]"><textarea data-field="lesson_notes" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Optional notes visible to students">' + escapeHtml(row.lesson_notes || "") + "</textarea></td>",
         '<td class="px-3 py-2 md:min-w-[18rem]"><input data-field="captions_vtt_url" type="url" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="https://.../captions.vtt" value="' + escapeHtml(row.captions_vtt_url || "") + '" /></td>',
         '<td class="px-3 py-2 md:min-w-[14rem]"><input data-field="captions_languages_json" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="[\"en\",\"fr\"]" value="' + escapeHtml(row.captions_languages_json || "") + '" /></td>',
@@ -556,6 +617,8 @@
       });
     });
     state.lessons = Array.isArray(payload.lessons) ? payload.lessons : [];
+    ensureLessonRowKeys(state.lessons);
+    pruneLessonAssetSearchMap(state.lessons);
     state.selectedModuleId = moduleParam > 0 ? moduleParam : 0;
 
     renderCourseSelect();
@@ -637,7 +700,7 @@
 
   function addLessonRow(initial) {
     var nextOrder = state.lessons.length + 1;
-    state.lessons.push(Object.assign({
+    var row = Object.assign({
       id: null,
       lesson_title: "",
       lesson_order: nextOrder,
@@ -650,7 +713,9 @@
       sign_language_video_url: "",
       accessibility_status: "draft",
       is_active: 1,
-    }, initial || {}));
+    }, initial || {});
+    ensureLessonRowKey(row);
+    state.lessons.push(row);
     renderLessonRows();
   }
 
@@ -1070,16 +1135,66 @@
   }
 
   if (lessonsRows) {
+    lessonsRows.addEventListener("keydown", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var assetSelect = target.closest('select[data-field="video_asset_id"]');
+      if (!assetSelect) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      var tr = assetSelect.closest("tr[data-row-index]");
+      if (!tr) return;
+      var rowKey = String(tr.getAttribute("data-row-key") || "").trim();
+      if (!rowKey) return;
+
+      var currentQuery = String(state.lessonAssetSearchByKey.get(rowKey) || "");
+      var nextQuery = currentQuery;
+      if (event.key === "Escape") {
+        nextQuery = "";
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        nextQuery = currentQuery.slice(0, -1);
+      } else if (event.key.length === 1) {
+        nextQuery = currentQuery + event.key;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      state.lessonAssetSearchByKey.set(rowKey, nextQuery);
+      var selectedAssetId = Number(assetSelect.value || 0);
+      assetSelect.innerHTML = buildAssetOptions(selectedAssetId, nextQuery).join("");
+    });
+
     lessonsRows.addEventListener("click", function (event) {
       var target = event.target;
       if (!(target instanceof Element)) return;
+
       if (!target.matches("[data-remove-row]")) return;
       var tr = target.closest("tr[data-row-index]");
       if (!tr) return;
       var idx = Number(tr.getAttribute("data-row-index") || -1);
       if (!Number.isFinite(idx) || idx < 0) return;
+      var removed = state.lessons[idx];
+      var removedKey = String(removed && removed._row_key || "").trim();
+      if (removedKey) state.lessonAssetSearchByKey.delete(removedKey);
       state.lessons.splice(idx, 1);
       renderLessonRows();
+    });
+
+    lessonsRows.addEventListener("change", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var assetSelect = target.closest('select[data-field="video_asset_id"]');
+      if (!assetSelect) return;
+      var tr = assetSelect.closest("tr[data-row-index]");
+      if (!tr) return;
+      var idx = Number(tr.getAttribute("data-row-index") || -1);
+      if (Number.isFinite(idx) && idx >= 0 && idx < state.lessons.length) {
+        state.lessons[idx].video_asset_id = Number(assetSelect.value || 0) || null;
+      }
+      var rowKey = String(tr.getAttribute("data-row-key") || "").trim();
+      var query = rowKey ? String(state.lessonAssetSearchByKey.get(rowKey) || "") : "";
+      assetSelect.innerHTML = buildAssetOptions(Number(assetSelect.value || 0), query).join("");
     });
 
     lessonsRows.addEventListener("dragstart", function (event) {

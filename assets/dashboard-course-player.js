@@ -41,6 +41,46 @@
   var prevLessonBtn = document.getElementById("prevLessonBtn");
   var nextLessonBtn = document.getElementById("nextLessonBtn");
   var skeletonEl = document.getElementById("playerSkeleton");
+  var assignmentCardEl = document.getElementById("lessonAssignmentsCard");
+  var assignmentStatusChipEl = document.getElementById("assignmentStatusChip");
+  var assignmentTypeSelectEl = document.getElementById("assignmentTypeSelect");
+  var assignmentLessonContextEl = document.getElementById("assignmentLessonContext");
+  var assignmentTextInputEl = document.getElementById("assignmentTextInput");
+  var assignmentLinkInputEl = document.getElementById("assignmentLinkInput");
+  var assignmentScreenshotWrapEl = document.getElementById("assignmentScreenshotWrap");
+  var assignmentScreenshotInputEl = document.getElementById("assignmentScreenshotInput");
+  var assignmentScreenshotPreviewEl = document.getElementById("assignmentScreenshotPreview");
+  var assignmentSubmitBtnEl = document.getElementById("assignmentSubmitBtn");
+  var assignmentRefreshBtnEl = document.getElementById("assignmentRefreshBtn");
+  var assignmentMessageEl = document.getElementById("assignmentMessage");
+  var assignmentRowsEl = document.getElementById("assignmentRows");
+  var communityCardEl = document.getElementById("lessonCommunityCard");
+  var communityStatusChipEl = document.getElementById("communityStatusChip");
+  var communityTypeSelectEl = document.getElementById("communityTypeSelect");
+  var communityLessonContextEl = document.getElementById("communityLessonContext");
+  var communityTitleInputEl = document.getElementById("communityTitleInput");
+  var communityBodyInputEl = document.getElementById("communityBodyInput");
+  var communityPostBtnEl = document.getElementById("communityPostBtn");
+  var communityRefreshBtnEl = document.getElementById("communityRefreshBtn");
+  var communityMessageEl = document.getElementById("communityMessage");
+  var communitySearchInputEl = document.getElementById("communitySearchInput");
+  var communityThreadListEl = document.getElementById("communityThreadList");
+  var confirmModalEl = document.getElementById("playerConfirmModal");
+  var confirmModalBackdropEl = document.getElementById("playerConfirmModalBackdrop");
+  var confirmModalCloseEl = document.getElementById("playerConfirmModalClose");
+  var confirmModalCancelEl = document.getElementById("playerConfirmModalCancel");
+  var confirmModalConfirmEl = document.getElementById("playerConfirmModalConfirm");
+  var confirmModalTitleEl = document.getElementById("playerConfirmModalTitle");
+  var confirmModalBodyEl = document.getElementById("playerConfirmModalBody");
+  var editModalEl = document.getElementById("playerEditModal");
+  var editModalBackdropEl = document.getElementById("playerEditModalBackdrop");
+  var editModalCloseEl = document.getElementById("playerEditModalClose");
+  var editModalCancelEl = document.getElementById("playerEditModalCancel");
+  var editModalSaveEl = document.getElementById("playerEditModalSave");
+  var editModalTitleEl = document.getElementById("playerEditModalTitle");
+  var editModalTitleWrapEl = document.getElementById("playerEditModalTitleWrap");
+  var editModalTitleInputEl = document.getElementById("playerEditModalTitleInput");
+  var editModalBodyInputEl = document.getElementById("playerEditModalBodyInput");
 
   var state = {
     courseSlug: "",
@@ -75,6 +115,14 @@
     transcriptAccessStatus: "none",
     audioDescriptionSourceText: "",
     signLanguageSourceUrl: "",
+    features: null,
+    assignmentItems: [],
+    assignmentScreenshotUploads: [],
+    communityThreads: [],
+    communityRepliesByThread: new Map(),
+    communitySearchTerm: "",
+    confirmResolver: null,
+    editResolver: null,
   };
 
   var WATCH_HEARTBEAT_SECONDS = 15;
@@ -1060,6 +1108,8 @@
       lessonNotesEl.hidden = !notes;
     }
     renderLessonAccessibility(lesson);
+    applyAssignmentContextForLesson(lesson);
+    applyCommunityContextForLesson(lesson);
     announceLesson(lesson);
     if (lessonTitleEl && typeof lessonTitleEl.focus === "function") {
       try {
@@ -1108,12 +1158,539 @@
     return data;
   }
 
+  function setAssignmentMessage(text, bad) {
+    if (!assignmentMessageEl) return;
+    assignmentMessageEl.textContent = clean(text);
+    assignmentMessageEl.className = "text-xs " + (bad ? "text-red-600" : "text-gray-500");
+  }
+
+  function assignmentEnabled() {
+    return !!(state.features && state.features.assignments_enabled);
+  }
+
+  function communityEnabled() {
+    return !!(state.features && state.features.course_community_enabled);
+  }
+
+  function tutorQuestionsEnabled() {
+    return !!(state.features && state.features.tutor_questions_enabled);
+  }
+
+  function renderAssignmentRows() {
+    if (!assignmentRowsEl) return;
+    var items = Array.isArray(state.assignmentItems) ? state.assignmentItems : [];
+    if (!items.length) {
+      assignmentRowsEl.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs text-gray-500">No submissions yet.</td></tr>';
+      return;
+    }
+    assignmentRowsEl.innerHTML = items.map(function (item) {
+      return [
+        "<tr>",
+        '<td class="px-3 py-2 text-xs text-gray-600">' + escapeHtml(fmtDate(item.created_at)) + "</td>",
+        '<td class="px-3 py-2 text-xs text-gray-700">' + escapeHtml(clean(item.submission_kind, 24)) + "</td>",
+        '<td class="px-3 py-2 text-xs"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-gray-700">' + escapeHtml(clean(item.status, 32) || "submitted") + "</span></td>",
+        '<td class="px-3 py-2 text-xs text-gray-600">' + escapeHtml(clean(item.admin_feedback, 300) || "-") + "</td>",
+        "</tr>",
+      ].join("");
+    }).join("");
+  }
+
+  function renderAssignmentScreenshotPreview() {
+    if (!assignmentScreenshotPreviewEl) return;
+    var items = Array.isArray(state.assignmentScreenshotUploads) ? state.assignmentScreenshotUploads : [];
+    if (!items.length) {
+      assignmentScreenshotPreviewEl.innerHTML = "";
+      return;
+    }
+    assignmentScreenshotPreviewEl.innerHTML = items.map(function (item) {
+      var url = clean(item && item.url, 1500);
+      return [
+        '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-gray-200 p-1">',
+        '<img src="' + escapeHtml(url) + '" alt="Screenshot" class="h-20 w-full rounded-md object-cover bg-gray-100" />',
+        "</a>",
+      ].join("");
+    }).join("");
+  }
+
+  function setCommunityMessage(text, bad) {
+    if (!communityMessageEl) return;
+    communityMessageEl.textContent = clean(text);
+    communityMessageEl.className = "text-xs " + (bad ? "text-red-600" : "text-gray-500");
+  }
+
+  function closeConfirmModal(result) {
+    if (!confirmModalEl) return;
+    confirmModalEl.classList.add("hidden");
+    confirmModalEl.setAttribute("aria-hidden", "true");
+    var resolver = state.confirmResolver;
+    state.confirmResolver = null;
+    if (typeof resolver === "function") resolver(!!result);
+  }
+
+  function openConfirmModal(config) {
+    if (!confirmModalEl) return Promise.resolve(false);
+    var data = config && typeof config === "object" ? config : {};
+    if (confirmModalTitleEl) confirmModalTitleEl.textContent = clean(data.title || "Confirm action");
+    if (confirmModalBodyEl) confirmModalBodyEl.textContent = clean(data.body || "This action cannot be undone.");
+    if (confirmModalConfirmEl) {
+      confirmModalConfirmEl.textContent = clean(data.confirmLabel || "Confirm");
+      confirmModalConfirmEl.className = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white " + (data && data.danger ? "bg-red-600 hover:bg-red-500" : "bg-brand-600 hover:bg-brand-500");
+    }
+    confirmModalEl.classList.remove("hidden");
+    confirmModalEl.setAttribute("aria-hidden", "false");
+    return new Promise(function (resolve) {
+      state.confirmResolver = resolve;
+    });
+  }
+
+  function closeEditModal(result) {
+    if (!editModalEl) return;
+    editModalEl.classList.add("hidden");
+    editModalEl.setAttribute("aria-hidden", "true");
+    var resolver = state.editResolver;
+    state.editResolver = null;
+    if (typeof resolver === "function") {
+      if (!result) resolver(null);
+      else {
+        resolver({
+          title: clean(editModalTitleInputEl && editModalTitleInputEl.value),
+          body: clean(editModalBodyInputEl && editModalBodyInputEl.value),
+        });
+      }
+    }
+  }
+
+  function openEditModal(config) {
+    if (!editModalEl) return Promise.resolve(null);
+    var data = config && typeof config === "object" ? config : {};
+    var needsTitle = !!data.needsTitle;
+    if (editModalTitleEl) editModalTitleEl.textContent = clean(data.modalTitle || "Edit");
+    if (editModalTitleWrapEl) editModalTitleWrapEl.classList.toggle("hidden", !needsTitle);
+    if (editModalTitleInputEl) editModalTitleInputEl.value = clean(data.title || "");
+    if (editModalBodyInputEl) editModalBodyInputEl.value = clean(data.body || "");
+    if (editModalSaveEl) editModalSaveEl.textContent = clean(data.saveLabel || "Save Changes");
+    editModalEl.classList.remove("hidden");
+    editModalEl.setAttribute("aria-hidden", "false");
+    setTimeout(function () {
+      if (needsTitle && editModalTitleInputEl && typeof editModalTitleInputEl.focus === "function") editModalTitleInputEl.focus();
+      else if (editModalBodyInputEl && typeof editModalBodyInputEl.focus === "function") editModalBodyInputEl.focus();
+    }, 0);
+    return new Promise(function (resolve) {
+      state.editResolver = resolve;
+    });
+  }
+
+  function applyCommunityContextForLesson(lesson) {
+    if (!communityLessonContextEl) return;
+    var text = lesson && lesson.title ? lesson.title : "General course thread";
+    communityLessonContextEl.value = text;
+  }
+
+  function syncCommunityTypeOptions() {
+    if (!communityTypeSelectEl) return;
+    var allowTutor = tutorQuestionsEnabled();
+    var tutorOption = communityTypeSelectEl.querySelector('option[value="tutor"]');
+    if (tutorOption) {
+      tutorOption.hidden = !allowTutor;
+      tutorOption.disabled = !allowTutor;
+      tutorOption.style.display = allowTutor ? "" : "none";
+    }
+    if (!allowTutor && clean(communityTypeSelectEl.value).toLowerCase() === "tutor") {
+      communityTypeSelectEl.value = "peer";
+    }
+  }
+
+  function sameEmail(a, b) {
+    return clean(a).toLowerCase() === clean(b).toLowerCase();
+  }
+
+  function isOwnedByCurrentAccount(item) {
+    var accountId = Number(state.account && state.account.id || 0);
+    var ownerId = Number(item && item.account_id || 0);
+    if (accountId > 0 && ownerId > 0) return accountId === ownerId;
+    return sameEmail(state.account && state.account.email, item && (item.author_email || item.student_email));
+  }
+
+  function filteredCommunityThreads() {
+    var items = Array.isArray(state.communityThreads) ? state.communityThreads : [];
+    var q = clean(state.communitySearchTerm, 220).toLowerCase();
+    if (!q) return items;
+    return items.filter(function (row) {
+      var hay = [row && row.title, row && row.body, row && row.author_name, row && row.author_email, row && row.question_type].join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+
+  function renderCommunityThreads() {
+    if (!communityThreadListEl) return;
+    var items = filteredCommunityThreads();
+    if (!items.length) {
+      communityThreadListEl.innerHTML = '<div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-4 text-xs text-gray-500">No threads yet. Ask the first question for this course.</div>';
+      return;
+    }
+    communityThreadListEl.innerHTML = items.map(function (item) {
+      var id = Number(item && item.id || 0);
+      var type = clean(item && item.question_type, 24).toLowerCase() || "peer";
+      var owned = isOwnedByCurrentAccount(item);
+      var typeChip = type === "tutor"
+        ? '<span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Tutor Question</span>'
+        : '<span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800">Peer Question</span>';
+      var replies = state.communityRepliesByThread && state.communityRepliesByThread.get(id)
+        ? state.communityRepliesByThread.get(id)
+        : [];
+      var replyItems = (Array.isArray(replies) ? replies : []).map(function (reply, idx) {
+        var replyId = Number(reply && reply.id || 0);
+        var replyOwned = isOwnedByCurrentAccount(reply);
+        var tint = ["bg-blue-50 border-blue-100", "bg-emerald-50 border-emerald-100", "bg-amber-50 border-amber-100", "bg-slate-50 border-slate-200"][idx % 4];
+        return [
+          '<div class="rounded-lg border ' + tint + ' px-3 py-2">',
+          '<p class="text-xs font-semibold text-gray-800">' + escapeHtml(clean(reply.author_name) || clean(reply.author_email) || "Student") + '</p>',
+          '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + escapeHtml(clean(reply.body, 20000)) + "</p>",
+          '<div class="mt-1 flex flex-wrap items-center justify-between gap-2">',
+          '<p class="text-[11px] text-gray-500">' + escapeHtml(fmtDate(reply.created_at)) + "</p>",
+          (replyOwned
+            ? '<div class="flex items-center gap-1"><button type="button" data-community-reply-edit="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Edit</button><button type="button" data-community-reply-delete="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</button></div>'
+            : ""),
+          "</div>",
+          "</div>",
+        ].join("");
+      }).join("");
+      return [
+        '<article class="rounded-lg border border-gray-200 bg-white p-3">',
+        '<div class="flex flex-wrap items-center justify-between gap-2">',
+        typeChip,
+        '<span class="text-[11px] text-gray-500">' + escapeHtml(fmtDate(item.created_at)) + "</span>",
+        "</div>",
+        '<h4 class="mt-2 text-sm font-semibold text-gray-900">' + escapeHtml(clean(item.title, 220)) + "</h4>",
+        '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + escapeHtml(clean(item.body, 20000)) + "</p>",
+        '<p class="mt-2 text-[11px] text-gray-500">Posted by ' + escapeHtml(clean(item.author_name) || clean(item.author_email) || "Student") + " • " + escapeHtml(String(Number(item.replies_count || 0))) + " repl" + (Number(item.replies_count || 0) === 1 ? "y" : "ies") + "</p>",
+        '<div class="mt-2 flex flex-wrap items-center gap-2">',
+        '<button type="button" data-community-load-replies="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">View Replies</button>',
+        (owned
+          ? '<button type="button" data-community-thread-edit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Edit Post</button><button type="button" data-community-thread-delete="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Delete Post</button>'
+          : ""),
+        "</div>",
+        '<div class="mt-2 space-y-2" data-community-replies-wrap="' + String(id) + '">' + (replyItems || "") + "</div>",
+        '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
+        '<textarea rows="2" data-community-reply-input="' + String(id) + '" placeholder="Write a reply..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-900 focus:border-brand-500 focus:ring-brand-500"></textarea>',
+        '<button type="button" data-community-reply-submit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Reply</button>',
+        "</div>",
+        "</article>",
+      ].join("");
+    }).join("");
+  }
+
+  function syncAssignmentUIForType() {
+    var kind = clean(assignmentTypeSelectEl && assignmentTypeSelectEl.value, 24).toLowerCase() || "text";
+    if (assignmentTextInputEl) {
+      assignmentTextInputEl.classList.toggle("hidden", kind !== "text");
+    }
+    if (assignmentLinkInputEl) {
+      assignmentLinkInputEl.classList.toggle("hidden", kind !== "link");
+    }
+    if (assignmentScreenshotWrapEl) {
+      assignmentScreenshotWrapEl.classList.toggle("hidden", kind !== "screenshots");
+    }
+  }
+
+  async function fetchAssignmentUploadSignature() {
+    var payload = await api("/.netlify/functions/user-learning-assignment-upload-signature", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+      }),
+    });
+    return payload;
+  }
+
+  async function uploadAssignmentImage(file) {
+    var uploadConfig = await fetchAssignmentUploadSignature();
+    var fd = new FormData();
+    fd.append("file", file);
+    fd.append("api_key", uploadConfig.apiKey);
+    fd.append("timestamp", String(uploadConfig.timestamp));
+    fd.append("folder", uploadConfig.folder);
+    fd.append("signature", uploadConfig.signature);
+    var endpoint = "https://api.cloudinary.com/v1_1/" + encodeURIComponent(uploadConfig.cloudName) + "/auto/upload";
+    var res = await fetch(endpoint, { method: "POST", body: fd });
+    var json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.secure_url) {
+      throw new Error((json && json.error && json.error.message) || "Could not upload screenshot");
+    }
+    return {
+      url: clean(json.secure_url, 1500),
+      public_id: clean(json.public_id, 240),
+    };
+  }
+
+  async function loadAssignments() {
+    if (!assignmentEnabled()) {
+      state.assignmentItems = [];
+      renderAssignmentRows();
+      return;
+    }
+    var payload = await api("/.netlify/functions/user-learning-assignments-list?course_slug=" + encodeURIComponent(state.courseSlug));
+    state.assignmentItems = Array.isArray(payload.items) ? payload.items : [];
+    renderAssignmentRows();
+  }
+
+  async function loadCommunityThreads() {
+    if (!communityEnabled()) {
+      state.communityThreads = [];
+      state.communityRepliesByThread = new Map();
+      renderCommunityThreads();
+      return;
+    }
+    var payload = await api("/.netlify/functions/user-learning-community-threads-list?course_slug=" + encodeURIComponent(state.courseSlug));
+    state.communityThreads = Array.isArray(payload.items) ? payload.items : [];
+    renderCommunityThreads();
+  }
+
+  async function loadCommunityReplies(threadId) {
+    var id = Number(threadId || 0);
+    if (!(id > 0)) return;
+    if (!communityEnabled()) return;
+    var payload = await api(
+      "/.netlify/functions/user-learning-community-replies-list?course_slug=" +
+      encodeURIComponent(state.courseSlug) +
+      "&thread_id=" + encodeURIComponent(String(id))
+    );
+    var items = Array.isArray(payload.items) ? payload.items : [];
+    state.communityRepliesByThread.set(id, items);
+    renderCommunityThreads();
+  }
+
+  function resetCommunityComposer() {
+    if (communityTitleInputEl) communityTitleInputEl.value = "";
+    if (communityBodyInputEl) communityBodyInputEl.value = "";
+    if (communityTypeSelectEl && clean(communityTypeSelectEl.value).toLowerCase() !== "peer" && !tutorQuestionsEnabled()) {
+      communityTypeSelectEl.value = "peer";
+    }
+  }
+
+  async function submitCommunityThread() {
+    if (!communityEnabled()) throw new Error("Course community is disabled for this course.");
+    var lessonId = Number(state.activeLessonId || 0);
+    var selectedType = clean(communityTypeSelectEl && communityTypeSelectEl.value).toLowerCase() || "peer";
+    if (!tutorQuestionsEnabled() && selectedType === "tutor") selectedType = "peer";
+    var body = {
+      course_slug: state.courseSlug,
+      question_type: selectedType,
+      lesson_id: Number.isFinite(lessonId) && lessonId > 0 ? lessonId : null,
+      title: clean(communityTitleInputEl && communityTitleInputEl.value),
+      body: clean(communityBodyInputEl && communityBodyInputEl.value),
+    };
+    var payload = await api("/.netlify/functions/user-learning-community-thread-create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (payload && payload.item) {
+      state.communityThreads = [payload.item].concat(state.communityThreads || []);
+    }
+    resetCommunityComposer();
+    renderCommunityThreads();
+  }
+
+  async function submitCommunityReply(threadId, text) {
+    var id = Number(threadId || 0);
+    if (!(id > 0)) throw new Error("Invalid thread selected.");
+    if (!communityEnabled()) throw new Error("Course community is disabled for this course.");
+    var payload = await api("/.netlify/functions/user-learning-community-reply-create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+        thread_id: id,
+        body: clean(text),
+      }),
+    });
+    var item = payload && payload.item ? payload.item : null;
+    if (!item) return;
+
+    var replies = state.communityRepliesByThread.get(id);
+    if (!Array.isArray(replies)) replies = [];
+    replies = replies.concat([item]);
+    state.communityRepliesByThread.set(id, replies);
+    state.communityThreads = (state.communityThreads || []).map(function (thread) {
+      if (Number(thread && thread.id || 0) !== id) return thread;
+      var count = Number(thread && thread.replies_count || 0) + 1;
+      return Object.assign({}, thread, {
+        replies_count: count,
+        last_activity_at: item.created_at || thread.last_activity_at,
+      });
+    });
+    renderCommunityThreads();
+  }
+
+  async function updateCommunityThread(threadId, title, text) {
+    var id = Number(threadId || 0);
+    if (!(id > 0)) throw new Error("Invalid thread selected.");
+    var payload = await api("/.netlify/functions/user-learning-community-thread-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+        thread_id: id,
+        title: clean(title),
+        body: clean(text),
+      }),
+    });
+    var item = payload && payload.item ? payload.item : null;
+    if (!item) return;
+    state.communityThreads = (state.communityThreads || []).map(function (row) {
+      return Number(row && row.id || 0) === id ? item : row;
+    });
+    renderCommunityThreads();
+  }
+
+  async function deleteCommunityThread(threadId) {
+    var id = Number(threadId || 0);
+    if (!(id > 0)) throw new Error("Invalid thread selected.");
+    await api("/.netlify/functions/user-learning-community-thread-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+        thread_id: id,
+      }),
+    });
+    state.communityRepliesByThread.delete(id);
+    state.communityThreads = (state.communityThreads || []).filter(function (row) {
+      return Number(row && row.id || 0) !== id;
+    });
+    renderCommunityThreads();
+  }
+
+  async function updateCommunityReply(replyId, text) {
+    var id = Number(replyId || 0);
+    if (!(id > 0)) throw new Error("Invalid reply selected.");
+    var payload = await api("/.netlify/functions/user-learning-community-reply-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+        reply_id: id,
+        body: clean(text),
+      }),
+    });
+    var item = payload && payload.item ? payload.item : null;
+    if (!item) return;
+    var threadId = Number(item.thread_id || 0);
+    var replies = state.communityRepliesByThread.get(threadId);
+    if (!Array.isArray(replies)) replies = [];
+    state.communityRepliesByThread.set(threadId, replies.map(function (row) {
+      return Number(row && row.id || 0) === id ? item : row;
+    }));
+    renderCommunityThreads();
+  }
+
+  async function deleteCommunityReply(replyId, threadId) {
+    var id = Number(replyId || 0);
+    var ownerThreadId = Number(threadId || 0);
+    if (!(id > 0)) throw new Error("Invalid reply selected.");
+    await api("/.netlify/functions/user-learning-community-reply-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: state.courseSlug,
+        reply_id: id,
+      }),
+    });
+    var replies = state.communityRepliesByThread.get(ownerThreadId);
+    if (!Array.isArray(replies)) replies = [];
+    replies = replies.filter(function (row) {
+      return Number(row && row.id || 0) !== id;
+    });
+    state.communityRepliesByThread.set(ownerThreadId, replies);
+    state.communityThreads = (state.communityThreads || []).map(function (thread) {
+      if (Number(thread && thread.id || 0) !== ownerThreadId) return thread;
+      return Object.assign({}, thread, {
+        replies_count: Math.max(Number(thread && thread.replies_count || 0) - 1, 0),
+      });
+    });
+    renderCommunityThreads();
+  }
+
+  function resetAssignmentComposer() {
+    if (assignmentTextInputEl) assignmentTextInputEl.value = "";
+    if (assignmentLinkInputEl) assignmentLinkInputEl.value = "";
+    if (assignmentScreenshotInputEl) assignmentScreenshotInputEl.value = "";
+    state.assignmentScreenshotUploads = [];
+    renderAssignmentScreenshotPreview();
+  }
+
+  function applyAssignmentContextForLesson(lesson) {
+    if (!assignmentLessonContextEl) return;
+    var text = lesson && lesson.title ? lesson.title : "General course submission";
+    assignmentLessonContextEl.value = text;
+  }
+
+  async function submitAssignment() {
+    if (!assignmentEnabled()) throw new Error("Assignment submission is disabled for this course.");
+    var lessonId = Number(state.activeLessonId || 0);
+    var kind = clean(assignmentTypeSelectEl && assignmentTypeSelectEl.value, 24).toLowerCase() || "text";
+    var body = {
+      course_slug: state.courseSlug,
+      lesson_id: Number.isFinite(lessonId) && lessonId > 0 ? lessonId : null,
+      submission_kind: kind,
+    };
+    if (kind === "text") {
+      body.submission_text = clean(assignmentTextInputEl && assignmentTextInputEl.value, 20000);
+    } else if (kind === "link") {
+      body.submission_link = clean(assignmentLinkInputEl && assignmentLinkInputEl.value, 1500);
+    } else if (kind === "screenshots") {
+      body.screenshot_urls = (state.assignmentScreenshotUploads || []).map(function (row) {
+        return clean(row && row.url, 1500);
+      }).filter(Boolean);
+    }
+    var payload = await api("/.netlify/functions/user-learning-assignment-submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (payload && payload.item) {
+      state.assignmentItems = [payload.item].concat(state.assignmentItems || []);
+      renderAssignmentRows();
+    }
+    resetAssignmentComposer();
+  }
+
   async function refreshCourse(openLessonId) {
     setCourseMetaText("Loading lessons...");
     var payload = await api("/.netlify/functions/user-learning-course?course_slug=" + encodeURIComponent(state.courseSlug));
     var course = payload && payload.course ? payload.course : null;
     var account = payload && payload.account ? payload.account : null;
+    var features = payload && payload.features && typeof payload.features === "object" ? payload.features : null;
     state.account = account && typeof account === "object" ? account : null;
+    state.features = features;
     startWatermarkTicker();
     var payloadError = validateCoursePayloadShape(course);
     if (payloadError) throw new Error(payloadError);
@@ -1134,6 +1711,38 @@
     });
 
     applyCourseProgress(state.modules);
+    if (assignmentCardEl) {
+      var enabled = assignmentEnabled();
+      assignmentCardEl.hidden = !enabled;
+      if (assignmentStatusChipEl) {
+        assignmentStatusChipEl.textContent = enabled ? "Enabled" : "Disabled";
+        assignmentStatusChipEl.className = "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold " + (enabled ? "bg-brand-50 text-brand-700" : "bg-gray-100 text-gray-600");
+      }
+    }
+    if (assignmentSubmitBtnEl) assignmentSubmitBtnEl.disabled = !assignmentEnabled();
+    if (assignmentRefreshBtnEl) assignmentRefreshBtnEl.disabled = !assignmentEnabled();
+    setAssignmentMessage("", false);
+    await loadAssignments().catch(function () {
+      state.assignmentItems = [];
+      renderAssignmentRows();
+    });
+    syncCommunityTypeOptions();
+    if (communityCardEl) {
+      var communityIsEnabled = communityEnabled();
+      communityCardEl.hidden = !communityIsEnabled;
+      if (communityStatusChipEl) {
+        communityStatusChipEl.textContent = communityIsEnabled ? "Enabled" : "Disabled";
+        communityStatusChipEl.className = "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold " + (communityIsEnabled ? "bg-brand-50 text-brand-700" : "bg-gray-100 text-gray-600");
+      }
+    }
+    if (communityPostBtnEl) communityPostBtnEl.disabled = !communityEnabled();
+    if (communityRefreshBtnEl) communityRefreshBtnEl.disabled = !communityEnabled();
+    setCommunityMessage("", false);
+    await loadCommunityThreads().catch(function () {
+      state.communityThreads = [];
+      state.communityRepliesByThread = new Map();
+      renderCommunityThreads();
+    });
 
     if (titleEl) {
       var nice = state.courseSlug.split("-").map(function (part) {
@@ -1190,6 +1799,10 @@
   async function init() {
     state.courseSlug = queryCourseSlug();
     state.initialLessonId = queryLessonId();
+    syncAssignmentUIForType();
+    renderAssignmentRows();
+    syncCommunityTypeOptions();
+    renderCommunityThreads();
     if (!state.courseSlug) {
       setCourseMetaText("Course link issue");
       setStatus("Missing course slug. Open this page from My Courses.", true);
@@ -1303,6 +1916,336 @@
       var lessonId = Number(state.lessonOrder[idx + 1] || 0);
       if (!lessonId) return;
       openLesson(lessonId);
+    });
+  }
+
+  if (assignmentTypeSelectEl) {
+    assignmentTypeSelectEl.addEventListener("change", function () {
+      syncAssignmentUIForType();
+    });
+  }
+
+  if (assignmentScreenshotInputEl) {
+    assignmentScreenshotInputEl.addEventListener("change", function () {
+      var files = Array.prototype.slice.call(assignmentScreenshotInputEl.files || []).slice(0, 5);
+      if (!files.length) {
+        state.assignmentScreenshotUploads = [];
+        renderAssignmentScreenshotPreview();
+        return;
+      }
+      setAssignmentMessage("Uploading screenshots...", false);
+      Promise.all(files.map(function (file) {
+        return uploadAssignmentImage(file);
+      }))
+        .then(function (uploads) {
+          state.assignmentScreenshotUploads = uploads;
+          renderAssignmentScreenshotPreview();
+          setAssignmentMessage("Screenshot upload complete.", false);
+        })
+        .catch(function (error) {
+          state.assignmentScreenshotUploads = [];
+          renderAssignmentScreenshotPreview();
+          setAssignmentMessage(error && error.message ? error.message : "Could not upload screenshots.", true);
+        });
+    });
+  }
+
+  if (assignmentSubmitBtnEl) {
+    assignmentSubmitBtnEl.addEventListener("click", function () {
+      if (assignmentSubmitBtnEl.disabled) return;
+      assignmentSubmitBtnEl.disabled = true;
+      assignmentSubmitBtnEl.textContent = "Submitting...";
+      setAssignmentMessage("", false);
+      submitAssignment()
+        .then(function () {
+          setAssignmentMessage("Assignment submitted successfully.", false);
+        })
+        .catch(function (error) {
+          setAssignmentMessage(error && error.message ? error.message : "Could not submit assignment.", true);
+        })
+        .finally(function () {
+          assignmentSubmitBtnEl.disabled = !assignmentEnabled();
+          assignmentSubmitBtnEl.textContent = "Submit Assignment";
+        });
+    });
+  }
+
+  if (assignmentRefreshBtnEl) {
+    assignmentRefreshBtnEl.addEventListener("click", function () {
+      if (assignmentRefreshBtnEl.disabled) return;
+      assignmentRefreshBtnEl.disabled = true;
+      assignmentRefreshBtnEl.textContent = "Refreshing...";
+      loadAssignments()
+        .then(function () {
+          setAssignmentMessage("Assignment list refreshed.", false);
+        })
+        .catch(function (error) {
+          setAssignmentMessage(error && error.message ? error.message : "Could not load assignments.", true);
+        })
+        .finally(function () {
+          assignmentRefreshBtnEl.disabled = !assignmentEnabled();
+          assignmentRefreshBtnEl.textContent = "Refresh Submissions";
+        });
+    });
+  }
+
+  if (communitySearchInputEl) {
+    communitySearchInputEl.addEventListener("input", function () {
+      state.communitySearchTerm = clean(communitySearchInputEl.value, 220).toLowerCase();
+      renderCommunityThreads();
+    });
+  }
+
+  if (communityPostBtnEl) {
+    communityPostBtnEl.addEventListener("click", function () {
+      if (communityPostBtnEl.disabled) return;
+      communityPostBtnEl.disabled = true;
+      communityPostBtnEl.textContent = "Posting...";
+      setCommunityMessage("", false);
+      submitCommunityThread()
+        .then(function () {
+          setCommunityMessage("Question posted to course community.", false);
+        })
+        .catch(function (error) {
+          setCommunityMessage(error && error.message ? error.message : "Could not post question.", true);
+        })
+        .finally(function () {
+          communityPostBtnEl.disabled = !communityEnabled();
+          communityPostBtnEl.textContent = "Post Question";
+        });
+    });
+  }
+
+  if (communityRefreshBtnEl) {
+    communityRefreshBtnEl.addEventListener("click", function () {
+      if (communityRefreshBtnEl.disabled) return;
+      communityRefreshBtnEl.disabled = true;
+      communityRefreshBtnEl.textContent = "Refreshing...";
+      loadCommunityThreads()
+        .then(function () {
+          setCommunityMessage("Community threads refreshed.", false);
+        })
+        .catch(function (error) {
+          setCommunityMessage(error && error.message ? error.message : "Could not load community threads.", true);
+        })
+        .finally(function () {
+          communityRefreshBtnEl.disabled = !communityEnabled();
+          communityRefreshBtnEl.textContent = "Refresh Threads";
+        });
+    });
+  }
+
+  if (communityThreadListEl) {
+    communityThreadListEl.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!target || typeof target.closest !== "function") return;
+
+      var loadBtn = target.closest("[data-community-load-replies]");
+      if (loadBtn && communityThreadListEl.contains(loadBtn)) {
+        var loadId = Number(loadBtn.getAttribute("data-community-load-replies") || 0);
+        if (!(loadId > 0)) return;
+        loadBtn.disabled = true;
+        loadBtn.textContent = "Loading...";
+        loadCommunityReplies(loadId)
+          .catch(function (error) {
+            setCommunityMessage(error && error.message ? error.message : "Could not load replies.", true);
+          })
+          .finally(function () {
+            loadBtn.disabled = false;
+            loadBtn.textContent = "View Replies";
+          });
+        return;
+      }
+
+      var editThreadBtn = target.closest("[data-community-thread-edit]");
+      if (editThreadBtn && communityThreadListEl.contains(editThreadBtn)) {
+        var editThreadId = Number(editThreadBtn.getAttribute("data-community-thread-edit") || 0);
+        if (!(editThreadId > 0)) return;
+        var thread = (state.communityThreads || []).find(function (row) {
+          return Number(row && row.id || 0) === editThreadId;
+        });
+        if (!thread) return;
+        openEditModal({
+          modalTitle: "Edit Post",
+          saveLabel: "Save Post",
+          needsTitle: true,
+          title: clean(thread.title),
+          body: clean(thread.body),
+        }).then(function (result) {
+          if (!result) return;
+          editThreadBtn.disabled = true;
+          editThreadBtn.textContent = "Saving...";
+          updateCommunityThread(editThreadId, result.title, result.body)
+            .then(function () {
+              setCommunityMessage("Post updated.", false);
+            })
+            .catch(function (error) {
+              setCommunityMessage(error && error.message ? error.message : "Could not update post.", true);
+            })
+            .finally(function () {
+              editThreadBtn.disabled = false;
+              editThreadBtn.textContent = "Edit Post";
+            });
+          });
+        return;
+      }
+
+      var deleteThreadBtn = target.closest("[data-community-thread-delete]");
+      if (deleteThreadBtn && communityThreadListEl.contains(deleteThreadBtn)) {
+        var deleteThreadId = Number(deleteThreadBtn.getAttribute("data-community-thread-delete") || 0);
+        if (!(deleteThreadId > 0)) return;
+        openConfirmModal({
+          title: "Delete this post?",
+          body: "This will permanently remove the post and all replies in this thread.",
+          confirmLabel: "Delete Post",
+          danger: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          deleteThreadBtn.disabled = true;
+          deleteThreadBtn.textContent = "Deleting...";
+          deleteCommunityThread(deleteThreadId)
+            .then(function () {
+              setCommunityMessage("Post deleted.", false);
+            })
+            .catch(function (error) {
+              setCommunityMessage(error && error.message ? error.message : "Could not delete post.", true);
+            })
+            .finally(function () {
+              deleteThreadBtn.disabled = false;
+              deleteThreadBtn.textContent = "Delete Post";
+            });
+          });
+        return;
+      }
+
+      var editReplyBtn = target.closest("[data-community-reply-edit]");
+      if (editReplyBtn && communityThreadListEl.contains(editReplyBtn)) {
+        var editReplyId = Number(editReplyBtn.getAttribute("data-community-reply-edit") || 0);
+        var editThreadForReply = Number(editReplyBtn.getAttribute("data-community-thread-id") || 0);
+        if (!(editReplyId > 0) || !(editThreadForReply > 0)) return;
+        var existingReplies = state.communityRepliesByThread.get(editThreadForReply);
+        var existing = Array.isArray(existingReplies) ? existingReplies.find(function (r) {
+          return Number(r && r.id || 0) === editReplyId;
+        }) : null;
+        openEditModal({
+          modalTitle: "Edit Reply",
+          saveLabel: "Save Reply",
+          needsTitle: false,
+          body: clean(existing && existing.body),
+        }).then(function (result) {
+          if (!result) return;
+          editReplyBtn.disabled = true;
+          editReplyBtn.textContent = "Saving...";
+          updateCommunityReply(editReplyId, result.body)
+            .then(function () {
+              setCommunityMessage("Reply updated.", false);
+            })
+            .catch(function (error) {
+              setCommunityMessage(error && error.message ? error.message : "Could not update reply.", true);
+            })
+            .finally(function () {
+              editReplyBtn.disabled = false;
+              editReplyBtn.textContent = "Edit";
+            });
+          });
+        return;
+      }
+
+      var deleteReplyBtn = target.closest("[data-community-reply-delete]");
+      if (deleteReplyBtn && communityThreadListEl.contains(deleteReplyBtn)) {
+        var deleteReplyId = Number(deleteReplyBtn.getAttribute("data-community-reply-delete") || 0);
+        var deleteThreadForReply = Number(deleteReplyBtn.getAttribute("data-community-thread-id") || 0);
+        if (!(deleteReplyId > 0) || !(deleteThreadForReply > 0)) return;
+        openConfirmModal({
+          title: "Delete this reply?",
+          body: "This reply will be permanently removed from this discussion.",
+          confirmLabel: "Delete Reply",
+          danger: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          deleteReplyBtn.disabled = true;
+          deleteReplyBtn.textContent = "Deleting...";
+          deleteCommunityReply(deleteReplyId, deleteThreadForReply)
+            .then(function () {
+              setCommunityMessage("Reply deleted.", false);
+            })
+            .catch(function (error) {
+              setCommunityMessage(error && error.message ? error.message : "Could not delete reply.", true);
+            })
+            .finally(function () {
+              deleteReplyBtn.disabled = false;
+              deleteReplyBtn.textContent = "Delete";
+            });
+          });
+        return;
+      }
+
+      var replyBtn = target.closest("[data-community-reply-submit]");
+      if (replyBtn && communityThreadListEl.contains(replyBtn)) {
+        var threadId = Number(replyBtn.getAttribute("data-community-reply-submit") || 0);
+        if (!(threadId > 0)) return;
+        var input = communityThreadListEl.querySelector('[data-community-reply-input="' + String(threadId) + '"]');
+        var text = clean(input && input.value);
+        if (!text) {
+          setCommunityMessage("Reply cannot be empty.", true);
+          return;
+        }
+        replyBtn.disabled = true;
+        replyBtn.textContent = "Posting...";
+        submitCommunityReply(threadId, text)
+          .then(function () {
+            if (input) input.value = "";
+            setCommunityMessage("Reply posted.", false);
+          })
+          .catch(function (error) {
+            setCommunityMessage(error && error.message ? error.message : "Could not post reply.", true);
+          })
+          .finally(function () {
+            replyBtn.disabled = false;
+            replyBtn.textContent = "Reply";
+          });
+      }
+    });
+  }
+
+  if (confirmModalBackdropEl) {
+    confirmModalBackdropEl.addEventListener("click", function () {
+      closeConfirmModal(false);
+    });
+  }
+  if (confirmModalCloseEl) {
+    confirmModalCloseEl.addEventListener("click", function () {
+      closeConfirmModal(false);
+    });
+  }
+  if (confirmModalCancelEl) {
+    confirmModalCancelEl.addEventListener("click", function () {
+      closeConfirmModal(false);
+    });
+  }
+  if (confirmModalConfirmEl) {
+    confirmModalConfirmEl.addEventListener("click", function () {
+      closeConfirmModal(true);
+    });
+  }
+  if (editModalBackdropEl) {
+    editModalBackdropEl.addEventListener("click", function () {
+      closeEditModal(false);
+    });
+  }
+  if (editModalCloseEl) {
+    editModalCloseEl.addEventListener("click", function () {
+      closeEditModal(false);
+    });
+  }
+  if (editModalCancelEl) {
+    editModalCancelEl.addEventListener("click", function () {
+      closeEditModal(false);
+    });
+  }
+  if (editModalSaveEl) {
+    editModalSaveEl.addEventListener("click", function () {
+      closeEditModal(true);
     });
   }
 
@@ -1428,6 +2371,16 @@
   document.addEventListener("keydown", function (event) {
     if (!event) return;
     var key = String(event.key || "").toLowerCase();
+    if (key === "escape" && confirmModalEl && !confirmModalEl.classList.contains("hidden")) {
+      event.preventDefault();
+      closeConfirmModal(false);
+      return;
+    }
+    if (key === "escape" && editModalEl && !editModalEl.classList.contains("hidden")) {
+      event.preventDefault();
+      closeEditModal(false);
+      return;
+    }
     var hasModifier = !!(event.ctrlKey || event.metaKey);
     if (key === "printscreen" || key === "snapshot") {
       event.preventDefault();

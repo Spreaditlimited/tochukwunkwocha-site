@@ -49,6 +49,15 @@
       }
     </style>
     <style>
+      @media (max-width: 767px) {
+        #internalToolsCard > .flex-1 {
+          min-height: 100dvh;
+        }
+        .internal-topbar {
+          padding-top: env(safe-area-inset-top);
+          min-height: calc(4rem + env(safe-area-inset-top));
+        }
+      }
       @media (max-width: 380px) {
         .internal-topbar {
           padding-left: 0.75rem;

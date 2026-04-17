@@ -11,6 +11,7 @@ const {
 const { canonicalizeCourseSlug } = require("./course-config");
 const { hasSchoolCourseAccess, getSchoolCourseAccessState, SCHOOL_ACCOUNTS_TABLE, SCHOOL_STUDENTS_TABLE } = require("./schools");
 const { canViewTranscript, ensureTranscriptAccessTables } = require("./transcript-access");
+const { ensureLearningAccessOverridesTable, getActiveLearningAccessOverride } = require("./learning-access-overrides");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 
@@ -171,11 +172,29 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
   const email = clean(accountEmail, 220).toLowerCase();
   const slug = clean(courseSlug, 120).toLowerCase();
   if (!email || !slug) return { batch_key: "", batch_start_ms: NaN };
+  const orderWindowStartSql = `COALESCE(
+    CASE
+      WHEN b.batch_start_at IS NOT NULL THEN b.batch_start_at
+      ELSE NULL
+    END,
+    o.paid_at,
+    o.updated_at,
+    o.created_at
+  )`;
+  const manualWindowStartSql = `COALESCE(
+    CASE
+      WHEN b.batch_start_at IS NOT NULL THEN b.batch_start_at
+      ELSE NULL
+    END,
+    m.reviewed_at,
+    m.updated_at,
+    m.created_at
+  )`;
   const [rows] = await pool.query(
     `SELECT x.batch_key,
-            DATE_FORMAT(x.batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
+            DATE_FORMAT(x.window_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
      FROM (
-       SELECT b.batch_key, b.batch_start_at
+       SELECT b.batch_key, ${orderWindowStartSql} AS window_start_at
        FROM course_orders o
        JOIN course_batches b
          ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
@@ -184,11 +203,10 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
          AND o.course_slug = ?
          AND o.status = 'paid'
          AND COALESCE(TRIM(o.batch_key), '') <> ''
-         AND b.batch_start_at IS NOT NULL
-         AND b.batch_start_at <= NOW()
-         AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+         AND ${orderWindowStartSql} <= NOW()
+         AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
        UNION ALL
-       SELECT b.batch_key, b.batch_start_at
+       SELECT b.batch_key, ${manualWindowStartSql} AS window_start_at
        FROM course_manual_payments m
        JOIN course_batches b
          ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
@@ -197,11 +215,10 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
          AND m.course_slug = ?
          AND m.status = 'approved'
          AND COALESCE(TRIM(m.batch_key), '') <> ''
-         AND b.batch_start_at IS NOT NULL
-         AND b.batch_start_at <= NOW()
-         AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
+         AND ${manualWindowStartSql} <= NOW()
+         AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      ) x
-     ORDER BY x.batch_start_at DESC
+     ORDER BY x.window_start_at DESC
      LIMIT 1`,
     [email, slug, email, slug]
   );
@@ -310,6 +327,7 @@ async function safeAlter(pool, sql) {
 
 async function ensureLearningProgressTables(pool) {
   await ensureLearningTables(pool);
+  await ensureLearningAccessOverridesTable(pool);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${LESSON_PROGRESS_TABLE} (
@@ -347,28 +365,47 @@ async function ensureLearningProgressTables(pool) {
 }
 
 async function hasCourseAccess(pool, accountEmail, courseSlug) {
-  const access = await getIndividualCourseAccessState(pool, accountEmail, courseSlug);
-  if (access && access.allowed) return true;
-
   const email = clean(accountEmail, 220).toLowerCase();
   const slug = clean(courseSlug, 120).toLowerCase();
   if (!email || !slug) return false;
-
-  try {
-    return await hasSchoolCourseAccess(pool, {
-      accountId: null,
-      email,
-      courseSlug: slug,
-    });
-  } catch (_error) {
-    return false;
-  }
+  const state = await getCourseAccessState(pool, {
+    account_id: null,
+    account_email: email,
+    course_slug: slug,
+  }).catch(function () {
+    return { allowed: false };
+  });
+  return !!(state && state.allowed);
 }
 
 async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
   const email = clean(accountEmail, 220).toLowerCase();
   const slug = clean(courseSlug, 120).toLowerCase();
   if (!email || !slug) return { allowed: false, reason: "invalid_input" };
+  const orderWindowStartSql = `COALESCE(
+    CASE
+      WHEN COALESCE(TRIM(o.batch_key), '') <> ''
+       AND b.id IS NOT NULL
+       AND b.batch_start_at IS NOT NULL
+      THEN b.batch_start_at
+      ELSE NULL
+    END,
+    o.paid_at,
+    o.updated_at,
+    o.created_at
+  )`;
+  const manualWindowStartSql = `COALESCE(
+    CASE
+      WHEN COALESCE(TRIM(m.batch_key), '') <> ''
+       AND b.id IS NOT NULL
+       AND b.batch_start_at IS NOT NULL
+      THEN b.batch_start_at
+      ELSE NULL
+    END,
+    m.reviewed_at,
+    m.updated_at,
+    m.created_at
+  )`;
 
   const [orderRows] = await pool.query(
     `SELECT 1
@@ -379,19 +416,8 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
-       AND (
-         COALESCE(TRIM(o.batch_key), '') = ''
-         OR (
-           b.id IS NOT NULL
-           AND (
-             b.batch_start_at IS NULL
-             OR (
-               b.batch_start_at <= NOW()
-               AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
-             )
-           )
-         )
-       )
+       AND ${orderWindowStartSql} <= NOW()
+       AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      LIMIT 1`,
     [email, slug]
   );
@@ -408,19 +434,8 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
-       AND (
-         COALESCE(TRIM(m.batch_key), '') = ''
-         OR (
-           b.id IS NOT NULL
-           AND (
-             b.batch_start_at IS NULL
-             OR (
-               b.batch_start_at <= NOW()
-               AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) >= NOW()
-             )
-           )
-         )
-       )
+       AND ${manualWindowStartSql} <= NOW()
+       AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      LIMIT 1`,
     [email, slug]
   );
@@ -429,29 +444,27 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
   }
 
   const [futureOrderRows] = await pool.query(
-    `SELECT DATE_FORMAT(MIN(b.batch_start_at), '%Y-%m-%d %H:%i:%s') AS next_start_at
+    `SELECT DATE_FORMAT(MIN(${orderWindowStartSql}), '%Y-%m-%d %H:%i:%s') AS next_start_at
      FROM course_orders o
-     JOIN course_batches b
+     LEFT JOIN course_batches b
        ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
       AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
-       AND COALESCE(TRIM(o.batch_key), '') <> ''
-       AND b.batch_start_at > NOW()`,
+       AND ${orderWindowStartSql} > NOW()`,
     [email, slug]
   );
   const [futureManualRows] = await pool.query(
-    `SELECT DATE_FORMAT(MIN(b.batch_start_at), '%Y-%m-%d %H:%i:%s') AS next_start_at
+    `SELECT DATE_FORMAT(MIN(${manualWindowStartSql}), '%Y-%m-%d %H:%i:%s') AS next_start_at
      FROM course_manual_payments m
-     JOIN course_batches b
+     LEFT JOIN course_batches b
        ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
       AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
-       AND COALESCE(TRIM(m.batch_key), '') <> ''
-       AND b.batch_start_at > NOW()`,
+       AND ${manualWindowStartSql} > NOW()`,
     [email, slug]
   );
 
@@ -474,31 +487,29 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
   }
 
   const [expiredOrderRows] = await pool.query(
-    `SELECT DATE_FORMAT(MAX(DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
+    `SELECT DATE_FORMAT(MAX(DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
      FROM course_orders o
-     JOIN course_batches b
+     LEFT JOIN course_batches b
        ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
       AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
-       AND COALESCE(TRIM(o.batch_key), '') <> ''
-       AND b.batch_start_at IS NOT NULL
-       AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) < NOW()`,
+       AND ${orderWindowStartSql} IS NOT NULL
+       AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) < NOW()`,
     [email, slug]
   );
   const [expiredManualRows] = await pool.query(
-    `SELECT DATE_FORMAT(MAX(DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
+    `SELECT DATE_FORMAT(MAX(DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_ended_at
      FROM course_manual_payments m
-     JOIN course_batches b
+     LEFT JOIN course_batches b
        ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
       AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
-       AND COALESCE(TRIM(m.batch_key), '') <> ''
-       AND b.batch_start_at IS NOT NULL
-       AND DATE_ADD(b.batch_start_at, INTERVAL 1 YEAR) < NOW()`,
+       AND ${manualWindowStartSql} IS NOT NULL
+       AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) < NOW()`,
     [email, slug]
   );
   const endedAtCandidates = [];
@@ -521,6 +532,20 @@ async function getCourseAccessState(pool, input) {
   const accountEmail = clean(input && input.account_email, 220).toLowerCase();
   const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
   if (!accountEmail || !courseSlug) return { allowed: false, reason: "invalid_input" };
+
+  const override = await getActiveLearningAccessOverride(pool, {
+    email: accountEmail,
+    course_slug: courseSlug,
+  }).catch(function () {
+    return null;
+  });
+  if (override) {
+    return {
+      allowed: true,
+      reason: "admin_override",
+      override: override,
+    };
+  }
 
   const individual = await getIndividualCourseAccessState(pool, accountEmail, courseSlug);
   if (individual.allowed) return { allowed: true, reason: "individual_open" };
@@ -547,6 +572,7 @@ async function getCourseAccessState(pool, input) {
 
   const endedAtCandidates = [];
   if (individual && individual.access_ended_at) endedAtCandidates.push(String(individual.access_ended_at));
+  if (school && school.access_ended_at) endedAtCandidates.push(String(school.access_ended_at));
   endedAtCandidates.sort();
   if (endedAtCandidates.length) {
     return {
@@ -619,6 +645,12 @@ async function getStudentCourseAccessAudit(pool, input) {
     account_email: accountEmail,
     course_slug: courseSlug,
   });
+  const override = await getActiveLearningAccessOverride(pool, {
+    email: accountEmail,
+    course_slug: courseSlug,
+  }).catch(function () {
+    return null;
+  });
 
   return {
     email: accountEmail,
@@ -633,6 +665,21 @@ async function getStudentCourseAccessAudit(pool, input) {
       message: access && access.error ? access.error : null,
       next_start_at: access && access.next_start_at ? access.next_start_at : null,
     },
+    access_override: override
+      ? {
+          status: String(override.status || "active"),
+          allow_before_release: !!override.allow_before_release,
+          allow_before_batch_start: !!override.allow_before_batch_start,
+          expires_at: override.expires_at || null,
+          note: clean(override.note, 500),
+        }
+      : {
+          status: "none",
+          allow_before_release: false,
+          allow_before_batch_start: false,
+          expires_at: null,
+          note: "",
+        },
     evidence: {
       orders_paid: Array.isArray(orderRows) ? orderRows.map(function (row) {
         return {
@@ -908,6 +955,12 @@ async function listCourseForLearner(pool, input) {
   if (!accessState.allowed) {
     return { ok: false, error: accessState.error || "You do not currently have access to this course." };
   }
+  const releaseGuardSql = accessState && accessState.override && accessState.override.allow_before_release
+    ? ""
+    : `AND (
+           c.release_at IS NULL
+           OR c.release_at <= NOW()
+         )`;
   const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
   const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
   const hasCaptionsVtt = await hasLessonColumn(pool, "captions_vtt_url").catch(function () { return false; });
@@ -959,10 +1012,7 @@ async function listCourseForLearner(pool, input) {
        LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
        WHERE cm.course_slug = ?
          AND c.is_published = 1
-         AND (
-           c.release_at IS NULL
-           OR c.release_at <= NOW()
-         )
+         ${releaseGuardSql}
          AND cm.is_active = 1
        ORDER BY cm.sort_order ASC, cm.id ASC, l.lesson_order ASC, l.id ASC`
     : `SELECT
@@ -998,10 +1048,7 @@ async function listCourseForLearner(pool, input) {
        LEFT JOIN ${VIDEO_ASSETS_TABLE} a ON a.id = l.video_asset_id
        WHERE m.course_slug = ?
          AND c.is_published = 1
-         AND (
-           c.release_at IS NULL
-           OR c.release_at <= NOW()
-         )
+         ${releaseGuardSql}
          AND m.is_active = 1
        ORDER BY m.sort_order ASC, m.id ASC, l.lesson_order ASC, l.id ASC`;
 
@@ -1114,6 +1161,29 @@ async function saveLessonProgress(pool, input) {
   if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account_id");
   if (!accountEmail) throw new Error("Invalid account_email");
   if (!Number.isFinite(lessonId) || lessonId <= 0) throw new Error("lesson_id is required");
+  const [lessonPreviewRows] = await pool.query(
+    `SELECT m.course_slug
+     FROM ${LESSONS_TABLE} l
+     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
+     WHERE l.id = ?
+     LIMIT 1`,
+    [lessonId]
+  );
+  const previewCourseSlug = clean(
+    lessonPreviewRows && lessonPreviewRows[0] && lessonPreviewRows[0].course_slug
+      ? lessonPreviewRows[0].course_slug
+      : "",
+    120
+  ).toLowerCase();
+  const releaseOverride = previewCourseSlug
+    ? await getActiveLearningAccessOverride(pool, {
+        email: accountEmail,
+        course_slug: previewCourseSlug,
+      }).catch(function () {
+        return null;
+      })
+    : null;
+  const skipReleaseGuard = !!(releaseOverride && releaseOverride.allow_before_release);
   const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
   const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
 
@@ -1129,9 +1199,9 @@ async function saveLessonProgress(pool, input) {
        AND l.is_active = 1
        AND m.is_active = 1
        AND c.is_published = 1
-       AND (c.release_at IS NULL OR c.release_at <= NOW())
+       AND (? = 1 OR c.release_at IS NULL OR c.release_at <= NOW())
      LIMIT 1`,
-    [lessonId]
+    [lessonId, skipReleaseGuard ? 1 : 0]
   );
   if (!Array.isArray(lessonRows) || !lessonRows.length) {
     throw new Error("Lesson not found");

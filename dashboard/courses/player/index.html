@@ -100,6 +100,39 @@
         max-width: min(88%, 34rem);
         text-align: center;
       }
+      .picker-wrap {
+        position: relative;
+      }
+      .picker-select {
+        display: block;
+        width: 100%;
+        appearance: none;
+        border-radius: 0.75rem;
+        border: 0;
+        background: #ffffff;
+        padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #111827;
+        box-shadow: inset 0 0 0 1px #d1d5db;
+        transition: box-shadow 150ms ease;
+      }
+      .picker-select:hover {
+        box-shadow: inset 0 0 0 1px #99a9cc;
+      }
+      .picker-select:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 2px #1a2849;
+      }
+      .picker-wrap__icon {
+        pointer-events: none;
+        position: absolute;
+        inset-block: 0;
+        right: 0.75rem;
+        display: flex;
+        align-items: center;
+        color: #1a2849;
+      }
     </style>
   </head>
   <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
@@ -210,6 +243,105 @@
                     <video id="lessonSignLanguageVideo" class="h-full w-full" controls playsinline hidden></video>
                   </div>
                 </div>
+                <div id="lessonAssignmentsCard" class="mt-4 rounded-xl border border-gray-200 p-4" hidden>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 class="text-sm font-heading font-bold text-gray-900">Assignment Submission</h3>
+                      <p class="text-xs text-gray-500">Submit as text, link, or screenshots.</p>
+                    </div>
+                    <span id="assignmentStatusChip" class="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-bold text-brand-700">Enabled</span>
+                  </div>
+                  <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Submission Type
+                      <div class="picker-wrap mt-1">
+                        <select id="assignmentTypeSelect" class="picker-select">
+                          <option value="text">Text</option>
+                          <option value="link">Link</option>
+                          <option value="screenshots">Screenshots</option>
+                        </select>
+                        <span class="picker-wrap__icon" aria-hidden="true">
+                          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+                        </span>
+                      </div>
+                    </label>
+                    <label class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Lesson
+                      <input id="assignmentLessonContext" type="text" class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700" readonly />
+                    </label>
+                  </div>
+                  <div class="mt-3 space-y-3">
+                    <textarea id="assignmentTextInput" rows="4" placeholder="Write your assignment response..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500"></textarea>
+                    <input id="assignmentLinkInput" type="url" placeholder="https://example.com/your-assignment" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500 hidden" />
+                    <div id="assignmentScreenshotWrap" class="hidden">
+                      <input id="assignmentScreenshotInput" type="file" accept="image/*" multiple class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-500" />
+                      <p class="mt-1 text-xs text-gray-500">Upload up to 5 screenshots.</p>
+                      <div id="assignmentScreenshotPreview" class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <button id="assignmentSubmitBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500 transition-colors">Submit Assignment</button>
+                    <button id="assignmentRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Refresh Submissions</button>
+                    <p id="assignmentMessage" class="text-xs text-gray-500"></p>
+                  </div>
+                  <div class="mt-3 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 rounded-lg border border-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">Submitted</th>
+                          <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">Type</th>
+                          <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                          <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">Feedback</th>
+                        </tr>
+                      </thead>
+                      <tbody id="assignmentRows" class="divide-y divide-gray-100 bg-white"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="lessonCommunityCard" class="mt-4 rounded-xl border border-gray-200 bg-slate-50/60 p-4" hidden>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 class="text-sm font-heading font-bold text-gray-900">Course Community</h3>
+                      <p class="text-xs text-gray-500">Ask questions, share context, and reply to other learners in this course.</p>
+                    </div>
+                    <span id="communityStatusChip" class="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-bold text-brand-700">Enabled</span>
+                  </div>
+                  <div class="mt-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Start A Thread</p>
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Question Type
+                        <div class="picker-wrap mt-1">
+                          <select id="communityTypeSelect" class="picker-select">
+                            <option value="peer">Peer Question</option>
+                            <option value="tutor">Tutor Question</option>
+                          </select>
+                          <span class="picker-wrap__icon" aria-hidden="true">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+                          </span>
+                        </div>
+                      </label>
+                      <label class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Lesson
+                        <input id="communityLessonContext" type="text" class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700" readonly />
+                      </label>
+                    </div>
+                    <input id="communityTitleInput" type="text" maxlength="220" placeholder="Summarize your question title..." class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500" />
+                    <textarea id="communityBodyInput" rows="3" placeholder="Describe your question with enough context so anyone in your course can help." class="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500"></textarea>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                      <button id="communityPostBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500 transition-colors">Post Question</button>
+                      <button id="communityRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Refresh Threads</button>
+                      <p id="communityMessage" class="text-xs text-gray-500"></p>
+                    </div>
+                  </div>
+                  <div class="mt-3 rounded-xl border border-gray-200 p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Threads</p>
+                      <input id="communitySearchInput" type="search" placeholder="Search threads..." class="w-full sm:w-56 rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-900 focus:border-brand-500 focus:ring-brand-500" />
+                    </div>
+                    <div id="communityThreadList" class="mt-3 space-y-2"></div>
+                  </div>
+                </div>
               </div>
 
               <div id="playerEmpty" hidden class="player-empty-card rounded-2xl p-5 sm:p-6" data-variant="info">
@@ -239,8 +371,59 @@
       </div>
     </section>
 
-    <script src="/assets/user-dashboard-shell.js?v=20260405a" defer></script>
-    <script src="/assets/dashboard-course-player.js?v=20260415e" defer></script>
+    <section id="playerConfirmModal" class="hidden fixed inset-0 z-[90]" aria-hidden="true">
+      <button id="playerConfirmModalBackdrop" type="button" class="absolute inset-0 bg-gray-900/60 backdrop-blur-[1px]"></button>
+      <div class="relative z-10 h-full w-full p-3 sm:p-6 flex items-end sm:items-center justify-center">
+        <div class="w-full max-w-lg rounded-2xl border border-gray-200 bg-white shadow-2xl">
+          <div class="p-5 border-b border-gray-200 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Confirm Action</p>
+              <h4 id="playerConfirmModalTitle" class="mt-1 text-lg font-heading font-bold text-gray-900">Are you sure?</h4>
+            </div>
+            <button id="playerConfirmModalClose" type="button" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Close</button>
+          </div>
+          <div class="p-5">
+            <p id="playerConfirmModalBody" class="text-sm text-gray-700">This action cannot be undone.</p>
+          </div>
+          <div class="p-5 border-t border-gray-200 flex flex-wrap items-center justify-end gap-2">
+            <button id="playerConfirmModalCancel" type="button" class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button id="playerConfirmModalConfirm" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="playerEditModal" class="hidden fixed inset-0 z-[95]" aria-hidden="true">
+      <button id="playerEditModalBackdrop" type="button" class="absolute inset-0 bg-gray-900/60 backdrop-blur-[1px]"></button>
+      <div class="relative z-10 h-full w-full p-3 sm:p-6 flex items-end sm:items-center justify-center">
+        <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
+          <div class="p-5 border-b border-gray-200 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Edit Content</p>
+              <h4 id="playerEditModalTitle" class="mt-1 text-lg font-heading font-bold text-gray-900">Edit</h4>
+            </div>
+            <button id="playerEditModalClose" type="button" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Close</button>
+          </div>
+          <div class="p-5 space-y-3">
+            <label id="playerEditModalTitleWrap" class="block text-sm text-gray-600">
+              <span class="block mb-1 font-medium text-gray-700">Title</span>
+              <input id="playerEditModalTitleInput" type="text" maxlength="220" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900" />
+            </label>
+            <label class="block text-sm text-gray-600">
+              <span class="block mb-1 font-medium text-gray-700">Message</span>
+              <textarea id="playerEditModalBodyInput" rows="5" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900"></textarea>
+            </label>
+          </div>
+          <div class="p-5 border-t border-gray-200 flex flex-wrap items-center justify-end gap-2">
+            <button id="playerEditModalCancel" type="button" class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button id="playerEditModalSave" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="/assets/user-dashboard-shell.js?v=20260417n" defer></script>
+    <script src="/assets/dashboard-course-player.js?v=20260417k" defer></script>
     <p id="lessonLiveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></p>
   </body>
 </html>

@@ -7,6 +7,7 @@
   const batchFilter = document.getElementById("adminBatchFilter");
   const searchInput = document.getElementById("adminSearchInput");
   const reconcileBtn = document.getElementById("adminReconcileBtn");
+  const bulkResendBtn = document.getElementById("adminBulkResendBtn");
   const addStudentBtn = document.getElementById("adminAddStudentBtn");
   const createBatchBtn = document.getElementById("adminCreateBatchBtn");
   const editBatchBtn = document.getElementById("adminEditBatchBtn");
@@ -18,6 +19,9 @@
   const accessCheckEmailInput = document.getElementById("adminAccessCheckEmail");
   const transcriptCourseSelect = document.getElementById("adminTranscriptCourse");
   const accessCheckBtn = document.getElementById("adminAccessCheckBtn");
+  const earlyAccessExpiryInput = document.getElementById("adminEarlyAccessExpiry");
+  const grantEarlyAccessBtn = document.getElementById("adminGrantEarlyAccessBtn");
+  const revokeEarlyAccessBtn = document.getElementById("adminRevokeEarlyAccessBtn");
   const transcriptRequestCountEl = document.getElementById("adminTranscriptRequestCount");
   const transcriptRequestRowsEl = document.getElementById("adminTranscriptRequestRows");
   const logoutBtn = document.getElementById("adminLogoutBtn");
@@ -61,9 +65,20 @@
   const editBatchForm = document.getElementById("editBatchForm");
   const editBatchError = document.getElementById("editBatchError");
   const editBatchSubmitBtn = document.getElementById("editBatchSubmitBtn");
+  const bulkResendModal = document.getElementById("bulkResendModal");
+  const bulkResendForm = document.getElementById("bulkResendForm");
+  const bulkResendCourse = document.getElementById("bulkResendCourse");
+  const bulkResendBatch = document.getElementById("bulkResendBatch");
+  const bulkResendSubject = document.getElementById("bulkResendSubject");
+  const bulkResendMessage = document.getElementById("bulkResendMessage");
+  const bulkResendSubmitBtn = document.getElementById("bulkResendSubmitBtn");
+  const bulkResendResult = document.getElementById("bulkResendResult");
+  const bulkResendLoadFailuresBtn = document.getElementById("bulkResendLoadFailuresBtn");
+  const bulkResendFailures = document.getElementById("bulkResendFailures");
 
   let debounceTimer = null;
   let pendingReviewAction = null;
+  let lastBulkResendRunId = "";
   let latestBatches = [];
   let availableCourses = [];
   let availableCoupons = [];
@@ -603,6 +618,145 @@
     if (editBatchForm) editBatchForm.reset();
   }
 
+  function selectedBulkResendCourseSlug() {
+    const value = canonicalCourseSlug((bulkResendCourse && bulkResendCourse.value) || "");
+    return value || selectedCourseSlug();
+  }
+
+  function selectedBulkResendBatchKey() {
+    return String((bulkResendBatch && bulkResendBatch.value) || "").trim();
+  }
+
+  function selectedBulkResendBatchLabel() {
+    if (!bulkResendBatch) return "";
+    const idx = Number(bulkResendBatch.selectedIndex || 0);
+    const opt = bulkResendBatch.options && bulkResendBatch.options[idx] ? bulkResendBatch.options[idx] : null;
+    return String((opt && opt.text) || "").trim();
+  }
+
+  function defaultBulkResendSubject(batchLabel) {
+    const label = String(batchLabel || "your batch").trim();
+    return `Important: New Password Reset Link for ${label}`;
+  }
+
+  function defaultBulkResendMessage(batchLabel) {
+    const label = String(batchLabel || "your batch").trim();
+    return [
+      "Hello {{first_name}},",
+      "",
+      `You are receiving this email because you are a ${label} student and some earlier password reset links expired before students could use them.`,
+      "",
+      "Please use this new link to reset your dashboard password:",
+      "{{reset_link}}",
+      "",
+      "If you already reset your password successfully, you can ignore this message.",
+      "",
+      "If you need help, reply to this email and our team will assist you.",
+      "",
+      "Tochukwu Tech & AI Academy",
+    ].join("\n");
+  }
+
+  function setBulkResendResult(text, type) {
+    if (!bulkResendResult) return;
+    const msg = String(text || "").trim();
+    bulkResendResult.classList.remove("hidden", "text-red-600", "text-emerald-700", "text-gray-600");
+    if (!msg) {
+      bulkResendResult.textContent = "";
+      bulkResendResult.classList.add("hidden");
+      return;
+    }
+    bulkResendResult.textContent = msg;
+    if (type === "error") bulkResendResult.classList.add("text-red-600");
+    else if (type === "ok") bulkResendResult.classList.add("text-emerald-700");
+    else bulkResendResult.classList.add("text-gray-600");
+  }
+
+  function setBulkResendFailures(items) {
+    if (!bulkResendFailures) return;
+    const list = Array.isArray(items) ? items.filter(Boolean) : [];
+    if (!list.length) {
+      bulkResendFailures.value = "";
+      bulkResendFailures.classList.add("hidden");
+      return;
+    }
+    bulkResendFailures.value = list.join("\n");
+    bulkResendFailures.classList.remove("hidden");
+  }
+
+  function setBulkResendCourseOptions(items) {
+    if (!bulkResendCourse) return;
+    const current = selectedBulkResendCourseSlug();
+    const list = Array.isArray(items) && items.length ? items : FALLBACK_COURSES;
+    bulkResendCourse.innerHTML = list
+      .map(function (item) {
+        const slug = canonicalCourseSlug(item.slug);
+        const label = String(item.label || slug || "Course").trim();
+        if (!slug) return "";
+        return '<option value="' + escapeHtml(slug) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean)
+      .join("");
+    if (list.some(function (item) { return canonicalCourseSlug(item.slug) === current; })) {
+      bulkResendCourse.value = current;
+    } else if (list.length) {
+      bulkResendCourse.value = canonicalCourseSlug(list[0].slug);
+    }
+  }
+
+  function syncBulkResendDefaults() {
+    if (!bulkResendSubject || !bulkResendMessage) return;
+    const batchLabel = selectedBulkResendBatchLabel() || "Batch";
+    bulkResendSubject.value = defaultBulkResendSubject(batchLabel);
+    bulkResendMessage.value = defaultBulkResendMessage(batchLabel);
+  }
+
+  async function loadBulkResendBatches(courseSlug, preferredBatchKey) {
+    if (!bulkResendBatch) return;
+    const batches = await loadCourseBatches(courseSlug);
+    const options = batches
+      .map(function (item) {
+        const key = String(item.batchKey || "").trim();
+        const label = String(item.batchLabel || key).trim();
+        if (!key) return "";
+        return '<option value="' + escapeHtml(key) + '">' + escapeHtml(label) + "</option>";
+      })
+      .filter(Boolean);
+    bulkResendBatch.innerHTML = options.join("");
+    if (!options.length) {
+      bulkResendBatch.value = "";
+      return;
+    }
+    const preferred = String(preferredBatchKey || "").trim();
+    if (preferred) bulkResendBatch.value = preferred;
+    if (!bulkResendBatch.value) bulkResendBatch.selectedIndex = 0;
+  }
+
+  function openBulkResendModal() {
+    if (!bulkResendModal) return;
+    setBulkResendResult("", "");
+    setBulkResendCourseOptions(availableCourses);
+    if (bulkResendCourse) bulkResendCourse.value = selectedCourseSlug();
+    loadBulkResendBatches(selectedBulkResendCourseSlug(), selectedBatchKey())
+      .then(function () {
+        syncBulkResendDefaults();
+      })
+      .catch(function (error) {
+        setBulkResendResult(error.message || "Could not load batches", "error");
+      });
+    bulkResendModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (bulkResendMessage) bulkResendMessage.focus();
+  }
+
+  function closeBulkResendModal() {
+    if (!bulkResendModal) return;
+    bulkResendModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    setBulkResendResult("", "");
+    setBulkResendFailures([]);
+  }
+
   function normalizeBatchStartText(value) {
     const raw = String(value || "").trim();
     if (!raw) return "";
@@ -1119,7 +1273,16 @@
     var email = String(payload && payload.email || "").trim().toLowerCase();
     var paymentUuid = String(payload && payload.paymentUuid || "").trim();
     var fullName = String(payload && payload.fullName || "").trim();
-    if (!email && !paymentUuid) {
+    var mode = String(payload && payload.mode || "single").trim().toLowerCase();
+    var courseSlug = canonicalCourseSlug(payload && (payload.courseSlug || payload.course_slug) || "");
+    var batchKey = String(payload && (payload.batchKey || payload.batch_key) || "").trim();
+    var batchLabel = String(payload && (payload.batchLabel || payload.batch_label) || "").trim();
+    var subject = String(payload && payload.subject || "").trim();
+    var messageTemplate = String(payload && payload.messageTemplate || "").trim();
+    var runId = String(payload && (payload.runId || payload.run_id) || "").trim();
+    var cursor = Number(payload && payload.cursor);
+    var limit = Number(payload && payload.limit);
+    if (mode !== "batch" && mode !== "batch_failures" && !email && !paymentUuid) {
       throw new Error("Missing student email.");
     }
     var res = await fetch("/.netlify/functions/admin-student-onboarding-resend", {
@@ -1127,14 +1290,27 @@
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
+        mode: mode === "batch" ? "batch" : "single",
         email: email || null,
         paymentUuid: paymentUuid || null,
         fullName: fullName || null,
+        courseSlug: courseSlug || null,
+        batchKey: batchKey || null,
+        batchLabel: batchLabel || null,
+        subject: subject || null,
+        messageTemplate: messageTemplate || null,
+        runId: runId || null,
+        cursor: Number.isFinite(cursor) && cursor >= 0 ? Math.trunc(cursor) : null,
+        limit: Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : null,
       }),
     });
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok) {
-      throw new Error((json && json.error) || "Could not resend onboarding email.");
+      var fallback = "Could not resend onboarding email.";
+      if (!json) {
+        throw new Error(fallback);
+      }
+      throw new Error((json && json.error) || fallback);
     }
     return json;
   }
@@ -1178,6 +1354,12 @@
     });
   }
 
+  if (bulkResendBtn) {
+    bulkResendBtn.addEventListener("click", function () {
+      openBulkResendModal();
+    });
+  }
+
   async function runAccessCheck() {
     const email = String((accessCheckEmailInput && accessCheckEmailInput.value) || "").trim().toLowerCase();
     if (!email) {
@@ -1192,9 +1374,10 @@
     setMessage("Checking learning access...", "ok");
 
     try {
+      const courseSlug = selectedTranscriptCourseSlug();
       const res = await fetch(
         "/.netlify/functions/admin-learning-access-check?course_slug=" +
-          encodeURIComponent("prompt-to-profit") +
+          encodeURIComponent(courseSlug) +
           "&email=" +
           encodeURIComponent(email),
         { method: "GET", headers: { Accept: "application/json" } }
@@ -1208,8 +1391,12 @@
       const access = json.audit.access || {};
       if (access.allowed) {
         const transcriptStatus = String((json && json.transcript_access && json.transcript_access.status) || "none");
+        const override = json && json.access_override ? json.access_override : null;
+        const overrideText = override && String(override.status || "").toLowerCase() === "active"
+          ? " Early access override: active" + (override.expires_at ? " (expires " + String(override.expires_at) + ")" : "") + "."
+          : "";
         setMessage(
-          "Access ALLOWED for " + email + " (" + String(access.reason || "allowed") + "). Transcript access: " + transcriptStatus + ".",
+          "Access ALLOWED for " + email + " (" + String(access.reason || "allowed") + "). Transcript access: " + transcriptStatus + "." + overrideText,
           "ok"
         );
       } else {
@@ -1217,6 +1404,10 @@
           ? " Starts at: " + String(access.next_start_at) + "."
           : "";
         const transcriptStatusBlocked = String((json && json.transcript_access && json.transcript_access.status) || "none");
+        const overrideBlocked = json && json.access_override ? json.access_override : null;
+        const overrideBlockedText = overrideBlocked && String(overrideBlocked.status || "").toLowerCase() === "active"
+          ? " Early access override is active but does not satisfy the current block."
+          : "";
         setMessage(
           "Access BLOCKED for " +
             email +
@@ -1227,7 +1418,8 @@
             details +
             " Transcript access: " +
             transcriptStatusBlocked +
-            ".",
+            "." +
+            overrideBlockedText,
           "error"
         );
       }
@@ -1280,6 +1472,72 @@
     }
   }
 
+  async function setEarlyAccessOverride(action) {
+    const mode = String(action || "").trim().toLowerCase();
+    if (mode !== "grant" && mode !== "revoke") return;
+    const email = String((accessCheckEmailInput && accessCheckEmailInput.value) || "").trim().toLowerCase();
+    const courseSlug = selectedTranscriptCourseSlug();
+    if (!email) {
+      setMessage("Enter an email to manage early access.", "error");
+      return;
+    }
+
+    const grant = mode === "grant";
+    const btn = grant ? grantEarlyAccessBtn : revokeEarlyAccessBtn;
+    const peerBtn = grant ? revokeEarlyAccessBtn : grantEarlyAccessBtn;
+    const prev = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = grant ? "Granting..." : "Revoking...";
+    }
+    if (peerBtn) peerBtn.disabled = true;
+
+    try {
+      const body = {
+        action: mode,
+        email: email,
+        course_slug: courseSlug,
+      };
+      if (grant) {
+        body.allow_before_release = true;
+        body.allow_before_batch_start = true;
+        const expiresAt = String((earlyAccessExpiryInput && earlyAccessExpiryInput.value) || "").trim();
+        if (expiresAt) body.expires_at = expiresAt;
+      }
+      const res = await fetch("/.netlify/functions/admin-learning-access-override", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok) {
+        throw new Error((json && json.error) || "Could not update early access override");
+      }
+      if (grant) {
+        const expiresText = json && json.override && json.override.expires_at
+          ? " Expires at: " + String(json.override.expires_at) + "."
+          : "";
+        setMessage("Early access granted for " + email + " (" + courseSlug + ")." + expiresText, "ok");
+      } else {
+        setMessage("Early access revoked for " + email + " (" + courseSlug + ").", "ok");
+      }
+      await runAccessCheck().catch(function () {
+        return null;
+      });
+    } catch (error) {
+      setMessage(error.message || "Could not update early access override", "error");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prev || (grant ? "Grant Early Access" : "Revoke Early Access");
+      }
+      if (peerBtn) peerBtn.disabled = false;
+    }
+  }
+
   if (accessCheckBtn) {
     accessCheckBtn.addEventListener("click", function () {
       runAccessCheck().catch(function (error) {
@@ -1294,6 +1552,22 @@
       event.preventDefault();
       runAccessCheck().catch(function (error) {
         setMessage(error.message || "Could not check course access", "error");
+      });
+    });
+  }
+
+  if (grantEarlyAccessBtn) {
+    grantEarlyAccessBtn.addEventListener("click", function () {
+      setEarlyAccessOverride("grant").catch(function (error) {
+        setMessage(error.message || "Could not grant early access", "error");
+      });
+    });
+  }
+
+  if (revokeEarlyAccessBtn) {
+    revokeEarlyAccessBtn.addEventListener("click", function () {
+      setEarlyAccessOverride("revoke").catch(function (error) {
+        setMessage(error.message || "Could not revoke early access", "error");
       });
     });
   }
@@ -1389,6 +1663,166 @@
   if (editBatchModal) {
     editBatchModal.querySelectorAll("[data-edit-batch-close]").forEach(function (el) {
       el.addEventListener("click", closeEditBatchModal);
+    });
+  }
+
+  if (bulkResendModal) {
+    bulkResendModal.querySelectorAll("[data-bulk-resend-close]").forEach(function (el) {
+      el.addEventListener("click", closeBulkResendModal);
+    });
+  }
+
+  if (bulkResendCourse) {
+    bulkResendCourse.addEventListener("change", function () {
+      setBulkResendResult("", "");
+      loadBulkResendBatches(selectedBulkResendCourseSlug(), "")
+        .then(function () {
+          syncBulkResendDefaults();
+        })
+        .catch(function (error) {
+          setBulkResendResult(error.message || "Could not load batches", "error");
+        });
+    });
+  }
+
+  if (bulkResendBatch) {
+    bulkResendBatch.addEventListener("change", function () {
+      if (!bulkResendSubject || !bulkResendMessage) return;
+      if (!bulkResendSubject.value.trim()) {
+        bulkResendSubject.value = defaultBulkResendSubject(selectedBulkResendBatchLabel() || "Batch");
+      }
+      if (!bulkResendMessage.value.trim()) {
+        bulkResendMessage.value = defaultBulkResendMessage(selectedBulkResendBatchLabel() || "Batch");
+      }
+    });
+  }
+
+  if (bulkResendForm) {
+    bulkResendForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const courseSlug = selectedBulkResendCourseSlug();
+      const batchKey = selectedBulkResendBatchKey();
+      const batchLabel = selectedBulkResendBatchLabel();
+      const subject = String((bulkResendSubject && bulkResendSubject.value) || "").trim();
+      const messageTemplate = String((bulkResendMessage && bulkResendMessage.value) || "").trim();
+      if (!courseSlug || !batchKey) {
+        setBulkResendResult("Select both course and batch.", "error");
+        return;
+      }
+      if (!subject) {
+        setBulkResendResult("Email subject is required.", "error");
+        return;
+      }
+      if (!messageTemplate) {
+        setBulkResendResult("Email message is required.", "error");
+        return;
+      }
+      if (bulkResendSubmitBtn) {
+        bulkResendSubmitBtn.disabled = true;
+        bulkResendSubmitBtn.textContent = "Sending...";
+      }
+      if (bulkResendLoadFailuresBtn) bulkResendLoadFailuresBtn.disabled = true;
+      setBulkResendFailures([]);
+      setBulkResendResult("Preparing batch send...", "");
+      try {
+        let cursor = 0;
+        let runId = "";
+        let total = 0;
+        let processed = 0;
+        let sent = 0;
+        let failed = 0;
+        let created = 0;
+        const failedEmails = [];
+        let safety = 0;
+        while (safety < 500) {
+          safety += 1;
+          const result = await handleResendOnboardingEmail({
+            mode: "batch",
+            courseSlug: courseSlug,
+            batchKey: batchKey,
+            batchLabel: batchLabel || "Batch",
+            subject: subject,
+            messageTemplate: messageTemplate,
+            cursor: cursor,
+            limit: 20,
+            runId: runId || null,
+          });
+          total = Number(result && result.total || total || 0);
+          processed = Math.max(processed, Number(result && result.cursor || 0) + Number(result && result.processed || 0));
+          sent = Number(result && result.sent || sent || 0);
+          failed = Number(result && result.failed || failed || 0);
+          created = Number(result && result.createdAccounts || created || 0);
+          runId = String(result && result.run_id || runId || "").trim();
+          if (runId) lastBulkResendRunId = runId;
+          const failures = Array.isArray(result && result.failures) ? result.failures : [];
+          failures.forEach(function (entry) {
+            const email = String(entry && entry.email || "").trim().toLowerCase();
+            if (!email) return;
+            if (failedEmails.indexOf(email) === -1) failedEmails.push(email);
+          });
+          setBulkResendResult(
+            `Sending... ${Math.min(processed, total || processed)}/${total || processed} processed (${sent} sent, ${failed} failed).`,
+            ""
+          );
+          const nextCursor = Number(result && result.nextCursor);
+          if (!Number.isFinite(nextCursor) || nextCursor < 0) break;
+          cursor = Math.trunc(nextCursor);
+        }
+        setBulkResendFailures(failedEmails);
+        const failedPreview = failedEmails.length
+          ? ` Failed emails: ${failedEmails.slice(0, 8).join(", ")}${failedEmails.length > 8 ? "..." : ""}`
+          : "";
+        const summary =
+          `Batch email complete: ${sent}/${total} sent, ${failed} failed, ${created} accounts created.` +
+          (runId ? ` Run ID: ${runId}.` : "") +
+          failedPreview;
+        setBulkResendResult(summary, failed > 0 ? "error" : "ok");
+        setMessage(summary, failed > 0 ? "error" : "ok");
+      } catch (error) {
+        const message = error.message || "Could not send batch access email.";
+        setBulkResendResult(message, "error");
+        setMessage(message, "error");
+      } finally {
+        if (bulkResendSubmitBtn) {
+          bulkResendSubmitBtn.disabled = false;
+          bulkResendSubmitBtn.textContent = "Send To Batch";
+        }
+        if (bulkResendLoadFailuresBtn) bulkResendLoadFailuresBtn.disabled = false;
+      }
+    });
+  }
+
+  if (bulkResendLoadFailuresBtn) {
+    bulkResendLoadFailuresBtn.addEventListener("click", async function () {
+      const courseSlug = selectedBulkResendCourseSlug();
+      const batchKey = selectedBulkResendBatchKey();
+      const runId = String(lastBulkResendRunId || "").trim();
+      bulkResendLoadFailuresBtn.disabled = true;
+      setBulkResendResult("Loading failed recipients...", "");
+      try {
+        const result = await handleResendOnboardingEmail({
+          mode: "batch_failures",
+          courseSlug: courseSlug,
+          batchKey: batchKey,
+          runId: runId || null,
+        });
+        const failures = Array.isArray(result && result.failures) ? result.failures : [];
+        const emails = failures.map(function (item) {
+          return String(item && item.email || "").trim().toLowerCase();
+        }).filter(Boolean);
+        const effectiveRunId = String(result && result.run_id || runId || "").trim();
+        if (effectiveRunId) lastBulkResendRunId = effectiveRunId;
+        setBulkResendFailures(emails);
+        setBulkResendResult(
+          `Loaded ${emails.length} failed recipients${effectiveRunId ? ` from run ${effectiveRunId}` : ""}.`,
+          emails.length ? "error" : "ok"
+        );
+      } catch (error) {
+        setBulkResendResult(error.message || "Could not load failed recipients.", "error");
+        setBulkResendFailures([]);
+      } finally {
+        bulkResendLoadFailuresBtn.disabled = false;
+      }
     });
   }
 
@@ -1854,6 +2288,9 @@
     }
     if (event.key === "Escape" && editBatchModal && editBatchModal.getAttribute("aria-hidden") === "false") {
       closeEditBatchModal();
+    }
+    if (event.key === "Escape" && bulkResendModal && bulkResendModal.getAttribute("aria-hidden") === "false") {
+      closeBulkResendModal();
     }
   });
 

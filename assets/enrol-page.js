@@ -43,7 +43,7 @@
     "ai-for-everyday-business-owners": {
       name: "AI for Everyday Business Owners",
       intro:
-        "Secure your seat for the next intake. Once payment is confirmed, you will be added to the onboarding list immediately.",
+        "Complete payment to enrol now. Once payment is confirmed, you will have immediate access to the course.",
     },
   };
 
@@ -193,7 +193,7 @@
   function launchScheduleText() {
     var startDate = parseBatchStart(activeCourseBatchStartAt);
     if (!startDate) return "";
-    return "Launch is " + formatDayTime(startDate, "Africa/Lagos") + " WAT.";
+    return "Batch starts " + formatDayTime(startDate, "Africa/Lagos") + " WAT.";
   }
 
   function updateIntro() {

@@ -15,6 +15,34 @@ function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
 }
 
+function extractCloudflareStreamUid(value) {
+  const raw = clean(value, 1200);
+  if (!raw) return "";
+  const direct = raw.match(/^[a-f0-9]{32}$/i);
+  if (direct) return clean(direct[0], 120).toLowerCase();
+
+  try {
+    const url = new URL(raw);
+    const host = String(url.hostname || "").toLowerCase();
+    const parts = String(url.pathname || "")
+      .split("/")
+      .map(function (part) { return clean(part, 180); })
+      .filter(Boolean);
+    if (
+      host.indexOf("videodelivery.net") !== -1 ||
+      host.indexOf("cloudflarestream.com") !== -1
+    ) {
+      for (const part of parts) {
+        if (/^[a-f0-9]{32}$/i.test(part)) return part.toLowerCase();
+      }
+    }
+  } catch (_error) {}
+
+  const embedded = raw.match(/([a-f0-9]{32})/i);
+  if (embedded && embedded[1]) return embedded[1].toLowerCase();
+  return "";
+}
+
 function toInt(value, fallback) {
   const n = Number(value);
   if (!Number.isFinite(n)) return Number.isFinite(fallback) ? fallback : 0;
@@ -743,7 +771,10 @@ async function backfillLearningFromLegacyAssetColumns(pool) {
 
 async function upsertVideoAsset(pool, input) {
   const now = nowSql();
-  const uid = clean(input && input.video_uid, 120);
+  const uid = extractCloudflareStreamUid(input && input.video_uid) ||
+    extractCloudflareStreamUid(input && input.hls_url) ||
+    extractCloudflareStreamUid(input && input.dash_url) ||
+    clean(input && input.video_uid, 120).toLowerCase();
   if (!uid) throw new Error("video_uid is required");
 
   const provider = clean((input && input.provider) || "cloudflare_stream", 60) || "cloudflare_stream";
@@ -1160,6 +1191,7 @@ module.exports = {
   MODULE_BATCH_DRIPS_TABLE,
   LESSONS_TABLE,
   clean,
+  extractCloudflareStreamUid,
   slugify,
   toInt,
   ensureLearningTables,

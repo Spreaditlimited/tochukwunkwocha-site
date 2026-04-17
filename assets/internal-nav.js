@@ -6,6 +6,7 @@
     { path: "/internal/domain-management/", label: "Domain Management" },
     { path: "/internal/video-library/", label: "Video Library" },
     { path: "/internal/learning-progress/", label: "Learning Progress" },
+    { path: "/internal/learning-support/", label: "Learning Support" },
     { path: "/internal/schools/", label: "Schools" },
     { path: "/internal/school-calls/", label: "School Calls" },
     { path: "/internal/settings/", label: "Settings" },
@@ -40,6 +41,7 @@
     if (path === "/internal/domain-management/") return { page: "Domain Management", doc: "Domain Management | Internal" };
     if (path === "/internal/video-library/") return { page: "Video Library", doc: "Video Library | Internal" };
     if (path === "/internal/learning-progress/") return { page: "Learning Progress", doc: "Learning Progress | Internal" };
+    if (path === "/internal/learning-support/") return { page: "Learning Support", doc: "Learning Support | Internal" };
     if (path === "/internal/schools/") return { page: "Schools", doc: "Schools | Internal" };
     if (path === "/internal/school-calls/") return { page: "School Calls", doc: "School Calls | Internal" };
     if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
@@ -290,6 +292,8 @@
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-9 5h7a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>',
       "/internal/learning-progress/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m3 3V4M4 20h16" /></svg>',
+      "/internal/learning-support/":
+        '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8m-8 4h6M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1h-5l-3 3-3-3H4a1 1 0 01-1-1V7a1 1 0 011-1z" /></svg>',
       "/internal/schools/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m2-10h6m-6 4h6" /></svg>',
       "/internal/school-calls/":

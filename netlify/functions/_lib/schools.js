@@ -1186,6 +1186,7 @@ async function getSchoolCourseAccessState(pool, input) {
   const email = normalizeEmail(input && input.email);
   const courseSlug = clean(input && input.courseSlug, 120).toLowerCase();
   if (!courseSlug) return { allowed: false, reason: "invalid_course" };
+  const schoolWindowStartSql = "COALESCE(sc.access_starts_at, sc.paid_at, sc.created_at)";
 
   const whereAccount = Number.isFinite(accountId) && accountId > 0 ? " OR ss.account_id = ?" : "";
   const params = [email, courseSlug];
@@ -1198,8 +1199,10 @@ async function getSchoolCourseAccessState(pool, input) {
        AND ss.status = 'active'
        AND sc.status = 'active'
        AND sc.course_slug = ?
+       AND ${schoolWindowStartSql} IS NOT NULL
        AND (sc.access_starts_at IS NULL OR sc.access_starts_at <= NOW())
        AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())
+       AND DATE_ADD(${schoolWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      LIMIT 1`,
     params
   );
@@ -1215,6 +1218,7 @@ async function getSchoolCourseAccessState(pool, input) {
        AND ss.status = 'active'
        AND sc.status = 'active'
        AND sc.course_slug = ?
+       AND ${schoolWindowStartSql} IS NOT NULL
        AND sc.access_starts_at IS NOT NULL
        AND sc.access_starts_at > NOW()
        AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())`,
@@ -1228,6 +1232,40 @@ async function getSchoolCourseAccessState(pool, input) {
       allowed: false,
       reason: "school_access_not_started",
       next_start_at: nextStartAt,
+    };
+  }
+
+  const [expiredRows] = await pool.query(
+    `SELECT DATE_FORMAT(
+              MAX(
+                LEAST(
+                  COALESCE(sc.access_expires_at, DATE_ADD(${schoolWindowStartSql}, INTERVAL 1 YEAR)),
+                  DATE_ADD(${schoolWindowStartSql}, INTERVAL 1 YEAR)
+                )
+              ),
+              '%Y-%m-%d %H:%i:%s'
+            ) AS access_ended_at
+     FROM ${SCHOOL_STUDENTS_TABLE} ss
+     JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = ss.school_id
+     WHERE (LOWER(ss.email) COLLATE utf8mb4_general_ci = ?${whereAccount})
+       AND ss.status = 'active'
+       AND sc.status = 'active'
+       AND sc.course_slug = ?
+       AND ${schoolWindowStartSql} IS NOT NULL
+       AND (
+         (sc.access_expires_at IS NOT NULL AND sc.access_expires_at < NOW())
+         OR DATE_ADD(${schoolWindowStartSql}, INTERVAL 1 YEAR) < NOW()
+       )`,
+    params
+  );
+  const accessEndedAt = expiredRows && expiredRows[0] && expiredRows[0].access_ended_at
+    ? String(expiredRows[0].access_ended_at)
+    : "";
+  if (accessEndedAt) {
+    return {
+      allowed: false,
+      reason: "school_access_expired",
+      access_ended_at: accessEndedAt,
     };
   }
 
