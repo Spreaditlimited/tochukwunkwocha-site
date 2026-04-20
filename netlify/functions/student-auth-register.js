@@ -42,6 +42,13 @@ exports.handler = async function (event) {
           accountUuid: account.account_uuid,
           fullName: account.full_name,
           email: account.email,
+          certificateNameConfirmedAt: account.certificate_name_confirmed_at
+            ? new Date(account.certificate_name_confirmed_at).toISOString()
+            : null,
+          certificateNameUpdatedAt: account.certificate_name_updated_at
+            ? new Date(account.certificate_name_updated_at).toISOString()
+            : null,
+          certificateNameNeedsConfirmation: !account.certificate_name_confirmed_at,
         },
       }),
     };

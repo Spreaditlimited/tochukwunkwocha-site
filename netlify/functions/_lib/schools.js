@@ -304,6 +304,7 @@ async function ensureSchoolTables(pool) {
       student_id BIGINT NOT NULL,
       course_slug VARCHAR(120) NOT NULL,
       certificate_no VARCHAR(120) NOT NULL,
+      recipient_name VARCHAR(180) NOT NULL DEFAULT '',
       status VARCHAR(40) NOT NULL DEFAULT 'issued',
       issued_by_admin_id BIGINT NOT NULL,
       issued_at DATETIME NOT NULL,
@@ -320,6 +321,7 @@ async function ensureSchoolTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN account_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_url VARCHAR(1000) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_submitted_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CERTIFICATES_TABLE} ADD COLUMN recipient_name VARCHAR(180) NOT NULL DEFAULT ''`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_expires_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_requested_at DATETIME NULL`);

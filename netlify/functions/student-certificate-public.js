@@ -25,6 +25,7 @@ exports.handler = async function (event) {
     const [rows] = await pool.query(
       `SELECT
          c.certificate_no,
+         c.recipient_name,
          c.issued_at,
          c.course_slug,
          a.full_name AS student_name,
@@ -45,7 +46,7 @@ exports.handler = async function (event) {
         issuedAt: row.issued_at ? new Date(row.issued_at).toISOString() : null,
         courseSlug: clean(row.course_slug, 120),
         courseName: humanCourseName(row.course_slug),
-        studentName: clean(row.student_name, 180),
+        studentName: clean(row.recipient_name || row.student_name, 180),
         studentEmail: clean(row.student_email, 220),
       },
     });

@@ -401,12 +401,16 @@
       }
 
       const items = Array.isArray(json.items) ? json.items : [];
+      const certificateNameNeedsConfirmation = !!(json.account && json.account.certificateNameNeedsConfirmation);
       const ownedSlugs = items.map(function (item) {
         return normalizeSlug(item.courseSlug);
       });
       if (metaEl) {
         const who = json.account && json.account.email ? ` for ${json.account.email}` : "";
-        metaEl.textContent = `Showing ${items.length} paid course(s)${who}.`;
+        const note = certificateNameNeedsConfirmation
+          ? " Confirm your profile name in Dashboard Profile to enable certificate issuance."
+          : "";
+        metaEl.textContent = `Showing ${items.length} paid course(s)${who}.${note}`;
       }
 
       if (!items.length) {
@@ -499,7 +503,9 @@
                       ].join("")
                     : isPending
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
-                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
+                    : individualCompletionPercent >= 100 && certificateNameNeedsConfirmation
+                      ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
+                      : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
                   "</div>",
                 ].join("")
               : "";

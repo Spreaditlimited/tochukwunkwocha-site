@@ -6,7 +6,6 @@
   var menuLinks = Array.prototype.slice.call(
     document.querySelectorAll('aside a[href^="/dashboard/"]')
   );
-  if (!menuLinks.length) return;
   var signoutButtons = Array.prototype.slice.call(
     document.querySelectorAll("[data-user-signout]")
   );

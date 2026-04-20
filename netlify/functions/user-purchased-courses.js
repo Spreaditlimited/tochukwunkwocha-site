@@ -55,6 +55,12 @@ function nowSqlDateTime() {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
 
+function isUnknownColumnError(error) {
+  const code = String(error && error.code || "").toUpperCase();
+  const msg = String(error && error.message || "").toLowerCase();
+  return code === "ER_BAD_FIELD_ERROR" || msg.indexOf("unknown column") !== -1;
+}
+
 function certificateNo() {
   return `TN-IND-${crypto.randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`;
 }
@@ -122,50 +128,87 @@ async function loadCourseCompletionMap(pool, accountId, courseSlugs) {
   return map;
 }
 
-async function issueAndLoadStudentCertificates(pool, accountId, courseSlugs, completionMap) {
+async function issueAndLoadStudentCertificates(pool, accountId, courseSlugs, completionMap, options) {
   const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
   const certMap = new Map();
   if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return certMap;
 
   await ensureStudentCertificatesTable(pool);
+  const cfg = options && typeof options === "object" ? options : {};
+  const allowIssue = cfg.allowIssue === true;
+  const recipientName = clean(cfg.recipientName, 180);
   const now = nowSqlDateTime();
-  for (let i = 0; i < slugs.length; i += 1) {
-    const slug = slugs[i];
-    const progress = completionMap.get(slug);
-    if (!progress) continue;
-    const totalLessons = Number(progress.totalLessons || 0);
-    const completedLessons = Number(progress.completedLessons || 0);
-    if (totalLessons <= 0 || completedLessons < totalLessons) continue;
-    await pool.query(
-      `INSERT INTO ${STUDENT_CERTIFICATES_TABLE}
-        (account_id, course_slug, certificate_no, status, issued_at, created_at, updated_at)
-       VALUES (?, ?, ?, 'issued', ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         certificate_no = certificate_no,
-         status = 'issued',
-         issued_at = issued_at,
-         updated_at = VALUES(updated_at)`,
-      [Number(accountId), slug, certificateNo(), now, now, now]
-    );
+  if (allowIssue && recipientName) {
+    for (let i = 0; i < slugs.length; i += 1) {
+      const slug = slugs[i];
+      const progress = completionMap.get(slug);
+      if (!progress) continue;
+      const totalLessons = Number(progress.totalLessons || 0);
+      const completedLessons = Number(progress.completedLessons || 0);
+      if (totalLessons <= 0 || completedLessons < totalLessons) continue;
+      try {
+        await pool.query(
+          `INSERT INTO ${STUDENT_CERTIFICATES_TABLE}
+            (account_id, course_slug, certificate_no, recipient_name, status, issued_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'issued', ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             certificate_no = certificate_no,
+             recipient_name = recipient_name,
+             status = 'issued',
+             issued_at = issued_at,
+             updated_at = VALUES(updated_at)`,
+          [Number(accountId), slug, certificateNo(), recipientName, now, now, now]
+        );
+      } catch (error) {
+        if (!isUnknownColumnError(error)) throw error;
+        await pool.query(
+          `INSERT INTO ${STUDENT_CERTIFICATES_TABLE}
+            (account_id, course_slug, certificate_no, status, issued_at, created_at, updated_at)
+           VALUES (?, ?, ?, 'issued', ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             certificate_no = certificate_no,
+             status = 'issued',
+             issued_at = issued_at,
+             updated_at = VALUES(updated_at)`,
+          [Number(accountId), slug, certificateNo(), now, now, now]
+        );
+      }
+    }
   }
 
   const placeholders = slugs.map(function () {
     return "?";
   }).join(",");
-  const [rows] = await pool.query(
-    `SELECT course_slug, certificate_no, issued_at
-     FROM ${STUDENT_CERTIFICATES_TABLE}
-     WHERE account_id = ?
-       AND status = 'issued'
-       AND course_slug IN (${placeholders})`,
-    [Number(accountId)].concat(slugs)
-  );
+  let rows = [];
+  try {
+    const [primaryRows] = await pool.query(
+      `SELECT course_slug, certificate_no, recipient_name, issued_at
+       FROM ${STUDENT_CERTIFICATES_TABLE}
+       WHERE account_id = ?
+         AND status = 'issued'
+         AND course_slug IN (${placeholders})`,
+      [Number(accountId)].concat(slugs)
+    );
+    rows = primaryRows;
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    const [fallbackRows] = await pool.query(
+      `SELECT course_slug, certificate_no, issued_at
+       FROM ${STUDENT_CERTIFICATES_TABLE}
+       WHERE account_id = ?
+         AND status = 'issued'
+         AND course_slug IN (${placeholders})`,
+      [Number(accountId)].concat(slugs)
+    );
+    rows = fallbackRows;
+  }
   (Array.isArray(rows) ? rows : []).forEach(function (row) {
     const slug = normalizeKey(row.course_slug);
     if (!slug) return;
     const certNo = clean(row.certificate_no, 140);
     certMap.set(slug, {
       certificateNo: certNo,
+      recipientName: clean(row.recipient_name, 180),
       issuedAt: row.issued_at ? new Date(row.issued_at).toISOString() : null,
       certificateUrl: certNo
         ? `/dashboard/certificate/?certificate_no=${encodeURIComponent(certNo)}`
@@ -553,7 +596,11 @@ exports.handler = async function (event) {
       pool,
       Number(session.account.id || 0),
       individualEligibleCourseSlugs,
-      completionByCourse
+      completionByCourse,
+      {
+        allowIssue: session.account.certificateNameNeedsConfirmation !== true,
+        recipientName: session.account.fullName,
+      }
     );
 
     const enrichedItems = items.map(function (item) {
@@ -588,6 +635,7 @@ exports.handler = async function (event) {
         individualTotalLessons: !isSchool && completion ? Number(completion.totalLessons || 0) : 0,
         individualCompletionPercent: !isSchool && completion ? Number(completion.completionPercent || 0) : 0,
         individualCertificateNo: !isSchool && certificate ? String(certificate.certificateNo || "") : "",
+        individualCertificateRecipientName: !isSchool && certificate ? String(certificate.recipientName || "") : "",
         individualCertificateIssuedAt: !isSchool && certificate ? certificate.issuedAt : null,
         individualCertificateUrl: !isSchool && certificate ? String(certificate.certificateUrl || "") : "",
       };
@@ -598,6 +646,8 @@ exports.handler = async function (event) {
       account: {
         fullName: session.account.fullName,
         email: session.account.email,
+        certificateNameConfirmedAt: session.account.certificateNameConfirmedAt || null,
+        certificateNameNeedsConfirmation: session.account.certificateNameNeedsConfirmation === true,
       },
       items: enrichedItems,
     });

@@ -21,6 +21,11 @@ async function safeAlter(pool, sql) {
   }
 }
 
+async function ensureCertificateNameColumns(pool) {
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_confirmed_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_updated_at DATETIME NULL`);
+}
+
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -182,6 +187,8 @@ async function ensureStudentAuthTables(pool) {
       password_salt VARCHAR(255) NOT NULL,
       must_reset_password TINYINT(1) NOT NULL DEFAULT 0,
       domains_auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      certificate_name_confirmed_at DATETIME NULL,
+      certificate_name_updated_at DATETIME NULL,
       reset_token_hash VARCHAR(128) NULL,
       reset_token_expires_at DATETIME NULL,
       reset_requested_at DATETIME NULL,
@@ -199,6 +206,8 @@ async function ensureStudentAuthTables(pool) {
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_token_expires_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_requested_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_confirmed_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_updated_at DATETIME NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${STUDENT_SESSIONS_TABLE} (
@@ -672,21 +681,45 @@ async function requireStudentSession(pool, event) {
   if (!token) return { ok: false, statusCode: 401, error: "Not signed in" };
 
   const tokenHash = shaToken(token);
-  const [rows] = await pool.query(
-    `SELECT s.id AS session_id,
-            s.account_id,
-            s.expires_at,
-            a.account_uuid,
-            a.full_name,
-            a.email,
-            a.must_reset_password,
-            a.domains_auto_renew_enabled
-     FROM ${STUDENT_SESSIONS_TABLE} s
-     JOIN student_accounts a ON a.id = s.account_id
-     WHERE s.token_hash = ?
-     LIMIT 1`,
-    [tokenHash]
-  );
+  let rows = [];
+  try {
+    const [primaryRows] = await pool.query(
+      `SELECT s.id AS session_id,
+              s.account_id,
+              s.expires_at,
+              a.account_uuid,
+              a.full_name,
+              a.email,
+              a.must_reset_password,
+              a.domains_auto_renew_enabled,
+              a.certificate_name_confirmed_at,
+              a.certificate_name_updated_at
+       FROM ${STUDENT_SESSIONS_TABLE} s
+       JOIN student_accounts a ON a.id = s.account_id
+       WHERE s.token_hash = ?
+       LIMIT 1`,
+      [tokenHash]
+    );
+    rows = primaryRows;
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    const [fallbackRows] = await pool.query(
+      `SELECT s.id AS session_id,
+              s.account_id,
+              s.expires_at,
+              a.account_uuid,
+              a.full_name,
+              a.email,
+              a.must_reset_password,
+              a.domains_auto_renew_enabled
+       FROM ${STUDENT_SESSIONS_TABLE} s
+       JOIN student_accounts a ON a.id = s.account_id
+       WHERE s.token_hash = ?
+       LIMIT 1`,
+      [tokenHash]
+    );
+    rows = fallbackRows;
+  }
   if (!rows || !rows.length) return { ok: false, statusCode: 401, error: "Session invalid" };
   const row = rows[0];
   const exp = new Date(row.expires_at).getTime();
@@ -695,6 +728,12 @@ async function requireStudentSession(pool, event) {
     return { ok: false, statusCode: 401, error: "Session expired" };
   }
   await pool.query(`UPDATE ${STUDENT_SESSIONS_TABLE} SET last_seen_at = ? WHERE id = ?`, [nowSql(), row.session_id]);
+  const certificateNameConfirmedAt = row.certificate_name_confirmed_at
+    ? new Date(row.certificate_name_confirmed_at).toISOString()
+    : null;
+  const certificateNameUpdatedAt = row.certificate_name_updated_at
+    ? new Date(row.certificate_name_updated_at).toISOString()
+    : null;
   return {
     ok: true,
     account: {
@@ -704,9 +743,125 @@ async function requireStudentSession(pool, event) {
       email: row.email,
       mustResetPassword: Number(row.must_reset_password || 0) === 1,
       domainsAutoRenewEnabled: Number(row.domains_auto_renew_enabled || 0) === 1,
+      certificateNameConfirmedAt,
+      certificateNameUpdatedAt,
+      certificateNameNeedsConfirmation: !certificateNameConfirmedAt,
     },
     token,
   };
+}
+
+async function updateStudentProfileName(pool, input) {
+  const accountId = Number(input && input.accountId);
+  const fullName = clean(input && input.fullName, 180);
+  if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
+  if (!fullName) throw new Error("Full name is required");
+
+  await ensureCertificateNameColumns(pool);
+  let existingRows = [];
+  try {
+    const [rows] = await pool.query(
+      `SELECT certificate_name_confirmed_at
+       FROM student_accounts
+       WHERE id = ?
+       LIMIT 1`,
+      [accountId]
+    );
+    existingRows = rows;
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
+  }
+  const existing = existingRows && existingRows.length ? existingRows[0] : null;
+  if (existing && existing.certificate_name_confirmed_at) {
+    throw new Error("Certificate name has been confirmed and locked. Name changes are no longer allowed.");
+  }
+
+  const now = nowSql();
+  try {
+    await pool.query(
+      `UPDATE student_accounts
+       SET full_name = ?, certificate_name_confirmed_at = NULL, certificate_name_updated_at = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [fullName, now, now, accountId]
+    );
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
+  }
+
+  try {
+    await pool.query(
+      `UPDATE ${SCHOOL_STUDENTS_TABLE}
+       SET full_name = ?, updated_at = ?
+       WHERE account_id = ?`,
+      [fullName, now, accountId]
+    );
+  } catch (error) {
+    if (!isMissingTableError(error) && !isUnknownColumnError(error)) throw error;
+  }
+
+  const [rows] = await pool.query(
+    `SELECT id, account_uuid, full_name, email, certificate_name_confirmed_at, certificate_name_updated_at
+     FROM student_accounts
+     WHERE id = ?
+     LIMIT 1`,
+    [accountId]
+  );
+  const row = rows && rows.length ? rows[0] : null;
+  if (!row) throw new Error("Account not found");
+  return {
+    id: Number(row.id),
+    accountUuid: String(row.account_uuid || ""),
+    fullName: String(row.full_name || ""),
+    email: String(row.email || ""),
+    certificateNameConfirmedAt: row.certificate_name_confirmed_at
+      ? new Date(row.certificate_name_confirmed_at).toISOString()
+      : null,
+    certificateNameUpdatedAt: row.certificate_name_updated_at
+      ? new Date(row.certificate_name_updated_at).toISOString()
+      : null,
+  };
+}
+
+async function confirmStudentCertificateName(pool, input) {
+  const accountId = Number(input && input.accountId);
+  if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
+  await ensureCertificateNameColumns(pool);
+  let rows = [];
+  try {
+    const [existingRows] = await pool.query(
+      `SELECT full_name, certificate_name_confirmed_at
+       FROM student_accounts
+       WHERE id = ?
+       LIMIT 1`,
+      [accountId]
+    );
+    rows = existingRows;
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
+  }
+  const account = rows && rows.length ? rows[0] : null;
+  if (!account) throw new Error("Account not found");
+  if (!clean(account.full_name, 180)) throw new Error("Profile name is required before confirmation");
+  if (account.certificate_name_confirmed_at) {
+    throw new Error("Certificate name has already been confirmed and cannot be confirmed again.");
+  }
+  const now = nowSql();
+  try {
+    await pool.query(
+      `UPDATE student_accounts
+       SET certificate_name_confirmed_at = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [now, now, accountId]
+    );
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+    throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
+  }
 }
 
 async function updateStudentDomainAutoRenew(pool, input) {
@@ -819,6 +974,8 @@ module.exports = {
   createPasswordResetToken,
   consumePasswordResetToken,
   createStudentSecurityAlert,
+  updateStudentProfileName,
+  confirmStudentCertificateName,
   setStudentCookieHeader,
   clearStudentCookieHeader,
 };

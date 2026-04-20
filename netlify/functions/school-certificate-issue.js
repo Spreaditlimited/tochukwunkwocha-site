@@ -57,6 +57,26 @@ exports.handler = async function (event) {
     if (!Number.isFinite(accountId) || accountId <= 0) {
       return json(400, { ok: false, error: "Student has no learner account yet" });
     }
+    const [accountRows] = await pool.query(
+      `SELECT full_name, certificate_name_confirmed_at
+       FROM student_accounts
+       WHERE id = ?
+       LIMIT 1`,
+      [accountId]
+    );
+    const account = accountRows && accountRows.length ? accountRows[0] : null;
+    if (!account) return json(404, { ok: false, error: "Learner account not found" });
+    if (!account.certificate_name_confirmed_at) {
+      return json(400, {
+        ok: false,
+        code: "CERTIFICATE_NAME_CONFIRMATION_REQUIRED",
+        error: "Student must confirm their certificate name in profile before certificate can be issued",
+      });
+    }
+    const recipientName = String(account.full_name || "").trim();
+    if (!recipientName) {
+      return json(400, { ok: false, error: "Student profile name is missing" });
+    }
 
     const [totRows] = await pool.query(
       `SELECT COUNT(*) AS total_lessons
@@ -92,10 +112,11 @@ exports.handler = async function (event) {
     const now = new Date().toISOString().slice(0, 19).replace("T", " ");
     await pool.query(
       `INSERT INTO ${SCHOOL_CERTIFICATES_TABLE}
-        (school_id, student_id, course_slug, certificate_no, status, issued_by_admin_id, issued_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'issued', ?, ?, ?, ?)
+        (school_id, student_id, course_slug, certificate_no, recipient_name, status, issued_by_admin_id, issued_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'issued', ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          certificate_no = certificate_no,
+         recipient_name = recipient_name,
          status = 'issued',
          issued_by_admin_id = VALUES(issued_by_admin_id),
          issued_at = VALUES(issued_at),
@@ -105,6 +126,7 @@ exports.handler = async function (event) {
         studentId,
         session.admin.courseSlug,
         certNo,
+        recipientName,
         Number(session.admin.id),
         now,
         now,
@@ -133,7 +155,7 @@ exports.handler = async function (event) {
           : new Date().toISOString(),
         student: {
           id: Number(student.id),
-          fullName: String(student.full_name || ""),
+          fullName: recipientName,
           email: String(student.email || ""),
         },
       },

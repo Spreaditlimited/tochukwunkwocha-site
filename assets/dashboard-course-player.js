@@ -149,6 +149,29 @@
     return d.toLocaleString();
   }
 
+  function renderLessonNotes(rawNotes) {
+    if (!lessonNotesEl) return;
+    var normalized = String(rawNotes || "").replace(/\r\n?/g, "\n").trim();
+    if (!normalized) {
+      lessonNotesEl.innerHTML = "";
+      lessonNotesEl.hidden = true;
+      return;
+    }
+
+    var paragraphs = normalized.split(/\n{2,}/).map(function (part) {
+      return String(part || "").trim();
+    }).filter(Boolean);
+
+    var html = [
+      '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Notes</p>',
+    ];
+    paragraphs.forEach(function (paragraph) {
+      html.push('<p class="mt-1 text-sm text-gray-700 whitespace-pre-line">' + escapeHtml(paragraph) + "</p>");
+    });
+    lessonNotesEl.innerHTML = html.join("");
+    lessonNotesEl.hidden = false;
+  }
+
   function parseFutureAccessAt(message) {
     var text = clean(message);
     if (!text) return "";
@@ -1102,11 +1125,7 @@
     var doneText = lesson.progress && lesson.progress.is_completed ? "Completed" : "Not completed";
     var lastText = lesson.progress && lesson.progress.last_watched_at ? "Last watched: " + fmtDate(lesson.progress.last_watched_at) : "";
     if (lessonMetaEl) lessonMetaEl.textContent = [doneText, lastText].filter(Boolean).join(" • ");
-    if (lessonNotesEl) {
-      var notes = clean(lesson.notes || "");
-      lessonNotesEl.textContent = notes ? "Notes: " + notes : "";
-      lessonNotesEl.hidden = !notes;
-    }
+    renderLessonNotes(lesson && lesson.notes || "");
     renderLessonAccessibility(lesson);
     applyAssignmentContextForLesson(lesson);
     applyCommunityContextForLesson(lesson);

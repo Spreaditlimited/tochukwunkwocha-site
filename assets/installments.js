@@ -21,6 +21,23 @@
   const accountName = document.getElementById("walletAccountName");
   const accountEmail = document.getElementById("walletAccountEmail");
   const accountIdentity = document.getElementById("walletAccountIdentity");
+  const profileForm = document.getElementById("walletProfileForm");
+  const profileCard = profileForm ? profileForm.closest(".bg-gray-50") : null;
+  const profileFullNameInput = document.getElementById("walletProfileFullName");
+  const profileSaveBtn = document.getElementById("walletProfileSaveBtn");
+  const profileMsg = document.getElementById("walletProfileMsg");
+  const certWarnBanner = document.getElementById("walletCertWarnBanner");
+  const certState = document.getElementById("walletProfileCertState");
+  const confirmCertNameBtn = document.getElementById("walletConfirmCertificateNameBtn");
+  const certConfirmModal = document.getElementById("walletCertificateConfirmModal");
+  const certConfirmModalName = document.getElementById("walletCertificateConfirmName");
+  const certConfirmModalAcceptBtn = document.getElementById("walletCertificateConfirmAcceptBtn");
+  const passwordForm = document.getElementById("walletPasswordForm");
+  const currentPasswordInput = document.getElementById("walletCurrentPassword");
+  const newPasswordInput = document.getElementById("walletNewPassword");
+  const passwordSaveBtn = document.getElementById("walletPasswordSaveBtn");
+  const profileActionMsg = document.getElementById("walletProfileActionMsg");
+  const profileNavLink = document.querySelector("[data-profile-nav-link]");
   const courseSelect = document.getElementById("walletCourse");
   const batchSelect = document.getElementById("walletBatch");
   const couponCodeInput = document.getElementById("walletCouponCode");
@@ -186,6 +203,95 @@
     el.classList.remove("error", "ok");
     if (type === "error") el.classList.add("error");
     if (type === "ok") el.classList.add("ok");
+  }
+
+  function profileFromDashboard() {
+    return dashboard && dashboard.account && typeof dashboard.account === "object"
+      ? dashboard.account
+      : null;
+  }
+
+  function fmtDate(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return "";
+    return d.toLocaleString();
+  }
+
+  function renderProfile() {
+    const account = profileFromDashboard();
+    if (!account) {
+      if (profileFullNameInput) profileFullNameInput.value = "";
+      if (profileMsg) profileMsg.textContent = "";
+      if (certWarnBanner) certWarnBanner.classList.add("hidden");
+      if (certState) {
+        certState.textContent = "";
+        certState.classList.add("hidden");
+      }
+      if (confirmCertNameBtn) {
+        confirmCertNameBtn.disabled = true;
+        confirmCertNameBtn.textContent = "Confirm Certificate Name";
+      }
+      return;
+    }
+
+    if (profileFullNameInput && !profileFullNameInput.matches(":focus")) {
+      profileFullNameInput.value = String(account.fullName || "");
+    }
+
+    const needs = account.certificateNameNeedsConfirmation === true;
+    const confirmedAt = String(account.certificateNameConfirmedAt || "");
+    const isLocked = !!confirmedAt && !needs;
+    if (profileMsg) {
+      profileMsg.textContent = isLocked
+        ? "Certificate name is locked after one-time confirmation."
+        : needs
+        ? "Confirm your certificate name after any name change. Certificates will only be issued after confirmation."
+        : confirmedAt
+          ? "Certificate name confirmed on " + fmtDate(confirmedAt) + "."
+          : "Certificate name confirmed.";
+    }
+    if (certWarnBanner) {
+      if (needs) {
+        certWarnBanner.textContent = "Certificate issuance is paused until you confirm your profile name.";
+        certWarnBanner.classList.remove("hidden");
+      } else {
+        certWarnBanner.classList.add("hidden");
+      }
+    }
+    if (certState) {
+      certState.textContent = needs ? "Confirmation required" : "Confirmed";
+      certState.classList.remove("hidden");
+      certState.classList.toggle("text-amber-700", needs);
+      certState.classList.toggle("text-emerald-700", !needs);
+    }
+    if (confirmCertNameBtn) {
+      confirmCertNameBtn.disabled = !needs;
+      confirmCertNameBtn.textContent = needs ? "Confirm Certificate Name" : "Certificate Name Confirmed";
+    }
+    if (profileFullNameInput) {
+      profileFullNameInput.readOnly = isLocked;
+      profileFullNameInput.classList.toggle("bg-gray-100", isLocked);
+    }
+    if (profileSaveBtn) {
+      profileSaveBtn.disabled = isLocked;
+      profileSaveBtn.textContent = isLocked ? "Name Locked" : "Save Name";
+    }
+  }
+
+  function openCertificateConfirmModal() {
+    if (!certConfirmModal) return;
+    const fullName = String((profileFullNameInput && profileFullNameInput.value) || "").trim()
+      || String((profileFromDashboard() && profileFromDashboard().fullName) || "").trim();
+    if (certConfirmModalName) certConfirmModalName.textContent = fullName || "No name set";
+    certConfirmModal.classList.remove("hidden");
+    certConfirmModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeCertificateConfirmModal() {
+    if (!certConfirmModal) return;
+    certConfirmModal.classList.add("hidden");
+    certConfirmModal.setAttribute("aria-hidden", "true");
   }
 
   function authHeaders() {
@@ -382,6 +488,7 @@
         accountEmail.textContent = String(json.account.email || "");
       }
       setWalletState(true);
+      renderProfile();
       renderPlans();
       setMsg(planMsg, "", "");
     } catch (_error) {
@@ -389,7 +496,89 @@
       if (accountName) accountName.textContent = "";
       if (accountEmail) accountEmail.textContent = "";
       setWalletState(false);
+      renderProfile();
       throw _error;
+    }
+  }
+
+  async function updateProfileName() {
+    const fullName = String((profileFullNameInput && profileFullNameInput.value) || "").trim();
+    if (!fullName) {
+      setMsg(profileActionMsg, "Enter your full name.", "error");
+      return;
+    }
+    if (!profileSaveBtn) return;
+    profileSaveBtn.disabled = true;
+    profileSaveBtn.textContent = "Saving...";
+    try {
+      const json = await api("/.netlify/functions/user-profile-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName }),
+      });
+      if (!dashboard) dashboard = {};
+      dashboard.account = Object.assign({}, dashboard.account || {}, json.profile || {});
+      if (accountName && json.profile) accountName.textContent = String(json.profile.fullName || fullName);
+      renderProfile();
+      setMsg(profileActionMsg, "Name updated. Reconfirm certificate name before issuance.", "ok");
+    } catch (error) {
+      setMsg(profileActionMsg, error.message || "Could not update profile name.", "error");
+    } finally {
+      profileSaveBtn.disabled = false;
+      profileSaveBtn.textContent = "Save Name";
+      renderProfile();
+    }
+  }
+
+  async function confirmCertificateName() {
+    if (!confirmCertNameBtn) return;
+    confirmCertNameBtn.disabled = true;
+    const originalText = confirmCertNameBtn.textContent;
+    confirmCertNameBtn.textContent = "Confirming...";
+    try {
+      const json = await api("/.netlify/functions/user-profile-confirm-certificate-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!dashboard) dashboard = {};
+      if (!dashboard.account) dashboard.account = {};
+      dashboard.account.certificateNameConfirmedAt = json.certificateNameConfirmedAt || new Date().toISOString();
+      dashboard.account.certificateNameNeedsConfirmation = false;
+      renderProfile();
+      setMsg(profileActionMsg, "Certificate name confirmed.", "ok");
+    } catch (error) {
+      setMsg(profileActionMsg, error.message || "Could not confirm certificate name.", "error");
+    } finally {
+      confirmCertNameBtn.textContent = originalText;
+      renderProfile();
+    }
+  }
+
+  async function changePassword() {
+    const currentPassword = String((currentPasswordInput && currentPasswordInput.value) || "");
+    const newPassword = String((newPasswordInput && newPasswordInput.value) || "");
+    if (!currentPassword || !newPassword) {
+      setMsg(profileActionMsg, "Enter your current and new password.", "error");
+      return;
+    }
+    if (!passwordSaveBtn) return;
+    passwordSaveBtn.disabled = true;
+    const originalText = passwordSaveBtn.textContent;
+    passwordSaveBtn.textContent = "Updating...";
+    try {
+      await api("/.netlify/functions/user-password-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (passwordForm) passwordForm.reset();
+      setMsg(profileActionMsg, "Password updated successfully.", "ok");
+    } catch (error) {
+      setMsg(profileActionMsg, error.message || "Could not change password.", "error");
+    } finally {
+      passwordSaveBtn.disabled = false;
+      passwordSaveBtn.textContent = originalText || "Change Password";
     }
   }
 
@@ -701,7 +890,9 @@
       if (accountName) accountName.textContent = "";
       if (accountEmail) accountEmail.textContent = "";
       setWalletState(false);
+      renderProfile();
       setMsg(planMsg, "", "");
+      setMsg(profileActionMsg, "", "");
       setAuthView("signin");
     });
   }
@@ -716,6 +907,71 @@
       createPlan().catch(function (error) {
         setMsg(planMsg, error.message || "Could not start plan", "error");
       });
+    });
+  }
+
+  if (profileForm) {
+    profileForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      updateProfileName().catch(function () {
+        return null;
+      });
+    });
+  }
+
+  if (confirmCertNameBtn) {
+    confirmCertNameBtn.addEventListener("click", function () {
+      const account = profileFromDashboard();
+      if (!account || account.certificateNameNeedsConfirmation !== true) return;
+      openCertificateConfirmModal();
+    });
+  }
+
+  if (certConfirmModal) {
+    certConfirmModal.addEventListener("click", function (event) {
+      if (event.target.closest("[data-cert-confirm-modal-close]")) {
+        closeCertificateConfirmModal();
+      }
+    });
+  }
+
+  if (certConfirmModalAcceptBtn) {
+    certConfirmModalAcceptBtn.addEventListener("click", function () {
+      certConfirmModalAcceptBtn.disabled = true;
+      certConfirmModalAcceptBtn.textContent = "Confirming...";
+      confirmCertificateName()
+        .then(function () {
+          closeCertificateConfirmModal();
+        })
+        .catch(function () {
+          return null;
+        })
+        .finally(function () {
+          certConfirmModalAcceptBtn.disabled = false;
+          certConfirmModalAcceptBtn.textContent = "Confirm & Lock Name";
+        });
+    });
+  }
+
+  if (passwordForm) {
+    passwordForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      changePassword().catch(function () {
+        return null;
+      });
+    });
+  }
+
+  if (profileNavLink) {
+    profileNavLink.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (!profileCard) return;
+      profileCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (profileFullNameInput) {
+        setTimeout(function () {
+          profileFullNameInput.focus();
+        }, 220);
+      }
     });
   }
 
@@ -795,4 +1051,9 @@
     });
   setAuthView("signin");
   enforcePlanStartAvailability();
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && certConfirmModal && !certConfirmModal.classList.contains("hidden")) {
+      closeCertificateConfirmModal();
+    }
+  });
 })();
