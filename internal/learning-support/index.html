@@ -107,7 +107,7 @@
                       <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
                     </span>
                   </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2.5 text-sm font-medium text-gray-700">
                       <input id="featureAssignmentsEnabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-600" />
                       Assignment Submission
@@ -116,10 +116,14 @@
                       <input id="featureCommunityEnabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-600" />
                       Course Community
                     </label>
+                    <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2.5 text-sm font-medium text-gray-700">
+                      <input id="featureCertificateProofRequired" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-600" />
+                      Certificate Proof Required
+                    </label>
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
                   <label class="text-sm text-gray-600">
                     <span class="block mb-1 font-medium text-gray-700">Alumni Participation</span>
                     <div class="picker-wrap w-full">
@@ -139,6 +143,17 @@
                       <select id="featureTutorQuestionsEnabled" class="picker-select">
                         <option value="0">Disabled</option>
                         <option value="1">Enabled</option>
+                      </select>
+                      <span class="picker-wrap__icon" aria-hidden="true">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+                      </span>
+                    </div>
+                  </label>
+                  <label class="text-sm text-gray-600">
+                    <span class="block mb-1 font-medium text-gray-700">Certificate Proof Type</span>
+                    <div class="picker-wrap w-full">
+                      <select id="featureCertificateProofType" class="picker-select">
+                        <option value="website_link">Website link</option>
                       </select>
                       <span class="picker-wrap__icon" aria-hidden="true">
                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>

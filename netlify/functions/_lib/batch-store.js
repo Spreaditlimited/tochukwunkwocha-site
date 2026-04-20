@@ -45,14 +45,14 @@ function normalizeBatchStartAt(value) {
   const raw = String(value || "").trim();
   if (!raw) return null;
   const match = raw.match(
-    /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/
   );
   if (!match) throw new Error("Valid batch start date is required");
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
+  const hour = Number(match[4] || "0");
+  const minute = Number(match[5] || "0");
   const second = Number(match[6] || "0");
   if (
     !Number.isFinite(year) ||

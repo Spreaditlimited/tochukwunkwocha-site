@@ -44,6 +44,8 @@ exports.handler = async function (event) {
       course_community_enabled: body.course_community_enabled,
       tutor_questions_enabled: body.tutor_questions_enabled,
       alumni_participation_mode: body.alumni_participation_mode,
+      certificate_proof_required: body.certificate_proof_required,
+      certificate_proof_type: body.certificate_proof_type,
     });
 
     return json(200, { ok: true, features });

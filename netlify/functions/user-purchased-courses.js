@@ -7,6 +7,13 @@ const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 const { ensureLearningAccessOverridesTable } = require("./_lib/learning-access-overrides");
+const {
+  COURSE_FEATURES_TABLE,
+  ASSIGNMENTS_TABLE,
+  ensureLearningSupportTables,
+} = require("./_lib/learning-support");
+
+const CERTIFICATE_PROOF_MARKER = "[CERTIFICATE_PROOF_WEBSITE]";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -51,6 +58,14 @@ function normalizeDate(value) {
   return d.toISOString();
 }
 
+function addOneYearIso(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return null;
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return d.toISOString();
+}
+
 function nowSqlDateTime() {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
@@ -63,6 +78,85 @@ function isUnknownColumnError(error) {
 
 function certificateNo() {
   return `TN-IND-${crypto.randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`;
+}
+
+async function loadCertificateProofRequirements(pool, courseSlugs) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  const map = new Map();
+  slugs.forEach(function (slug) {
+    map.set(slug, { required: false, type: "website_link" });
+  });
+  if (!slugs.length) return map;
+
+  await ensureLearningSupportTables(pool).catch(function () {
+    return false;
+  });
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+  try {
+    const [rows] = await pool.query(
+      `SELECT course_slug, certificate_proof_required, certificate_proof_type
+       FROM ${COURSE_FEATURES_TABLE}
+       WHERE course_slug IN (${placeholders})`,
+      slugs
+    );
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      const slug = normalizeKey(row && row.course_slug);
+      if (!slug || !map.has(slug)) return;
+      map.set(slug, {
+        required: Number(row && row.certificate_proof_required || 0) === 1,
+        type: clean(row && row.certificate_proof_type, 24).toLowerCase() || "website_link",
+      });
+    });
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+  }
+  return map;
+}
+
+async function loadCertificateProofStatusByCourse(pool, accountId, email, courseSlugs) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  const map = new Map();
+  slugs.forEach(function (slug) {
+    map.set(slug, { status: "missing", submittedAt: null, link: "" });
+  });
+  if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return map;
+
+  await ensureLearningSupportTables(pool).catch(function () {
+    return false;
+  });
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+  try {
+    const [rows] = await pool.query(
+      `SELECT course_slug, status, submission_link,
+              DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+       FROM ${ASSIGNMENTS_TABLE}
+       WHERE account_id = ?
+         AND LOWER(student_email) COLLATE utf8mb4_general_ci = ?
+         AND submission_kind = 'link'
+         AND submission_text = ?
+         AND course_slug IN (${placeholders})
+       ORDER BY id DESC`,
+      [Number(accountId), String(email || "").toLowerCase(), CERTIFICATE_PROOF_MARKER].concat(slugs)
+    );
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      const slug = normalizeKey(row && row.course_slug);
+      if (!slug || !map.has(slug)) return;
+      if (map.get(slug).status !== "missing") return;
+      const status = clean(row && row.status, 32).toLowerCase() || "submitted";
+      map.set(slug, {
+        status: status === "approved" ? "approved" : (status === "rejected" ? "rejected" : "pending"),
+        submittedAt: row && row.created_at ? normalizeDate(row.created_at) : null,
+        link: clean(row && row.submission_link, 1500),
+      });
+    });
+  } catch (error) {
+    if (!isUnknownColumnError(error)) throw error;
+  }
+  return map;
 }
 
 async function loadCourseCompletionMap(pool, accountId, courseSlugs) {
@@ -137,6 +231,8 @@ async function issueAndLoadStudentCertificates(pool, accountId, courseSlugs, com
   const cfg = options && typeof options === "object" ? options : {};
   const allowIssue = cfg.allowIssue === true;
   const recipientName = clean(cfg.recipientName, 180);
+  const proofRequirementByCourse = cfg.proofRequirementByCourse instanceof Map ? cfg.proofRequirementByCourse : new Map();
+  const proofStatusByCourse = cfg.proofStatusByCourse instanceof Map ? cfg.proofStatusByCourse : new Map();
   const now = nowSqlDateTime();
   if (allowIssue && recipientName) {
     for (let i = 0; i < slugs.length; i += 1) {
@@ -146,6 +242,9 @@ async function issueAndLoadStudentCertificates(pool, accountId, courseSlugs, com
       const totalLessons = Number(progress.totalLessons || 0);
       const completedLessons = Number(progress.completedLessons || 0);
       if (totalLessons <= 0 || completedLessons < totalLessons) continue;
+      const proofCfg = proofRequirementByCourse.get(slug) || { required: false, type: "website_link" };
+      const proofStatus = proofStatusByCourse.get(slug) || { status: "missing" };
+      if (proofCfg.required && proofStatus.status !== "approved") continue;
       try {
         await pool.query(
           `INSERT INTO ${STUDENT_CERTIFICATES_TABLE}
@@ -356,21 +455,51 @@ exports.handler = async function (event) {
 
     const email = String(session.account.email || "").trim().toLowerCase();
 
+    const orderWindowStartSql = `CASE
+      WHEN COALESCE(TRIM(o.batch_key), '') <> '' AND b.batch_start_at IS NOT NULL THEN b.batch_start_at
+      ELSE COALESCE(o.paid_at, o.updated_at, o.created_at)
+    END`;
     const [autoRows] = await pool.query(
-      `SELECT course_slug, batch_key, batch_label, MAX(paid_at) AS paid_at
-       FROM course_orders
-       WHERE email = ?
-         AND status = 'paid'
-       GROUP BY course_slug, batch_key, batch_label`,
+      `SELECT o.course_slug,
+              o.batch_key,
+              o.batch_label,
+              DATE_FORMAT(MAX(CASE
+                WHEN COALESCE(TRIM(o.batch_key), '') <> '' THEN b.batch_start_at
+                ELSE NULL
+              END), '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+              DATE_FORMAT(MAX(COALESCE(o.paid_at, o.updated_at, o.created_at)), '%Y-%m-%d %H:%i:%s') AS paid_at,
+              DATE_FORMAT(MAX(DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_expires_at
+       FROM course_orders o
+       LEFT JOIN course_batches b
+         ON b.course_slug COLLATE utf8mb4_general_ci = o.course_slug COLLATE utf8mb4_general_ci
+        AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
+       WHERE o.email = ?
+         AND o.status = 'paid'
+       GROUP BY o.course_slug, o.batch_key, o.batch_label`,
       [email]
     );
 
+    const manualWindowStartSql = `CASE
+      WHEN COALESCE(TRIM(m.batch_key), '') <> '' AND b.batch_start_at IS NOT NULL THEN b.batch_start_at
+      ELSE COALESCE(m.reviewed_at, m.updated_at, m.created_at)
+    END`;
     const [manualRows] = await pool.query(
-      `SELECT course_slug, batch_key, batch_label, MAX(reviewed_at) AS paid_at
-       FROM course_manual_payments
-       WHERE email = ?
-         AND status = 'approved'
-       GROUP BY course_slug, batch_key, batch_label`,
+      `SELECT m.course_slug,
+              m.batch_key,
+              m.batch_label,
+              DATE_FORMAT(MAX(CASE
+                WHEN COALESCE(TRIM(m.batch_key), '') <> '' THEN b.batch_start_at
+                ELSE NULL
+              END), '%Y-%m-%d %H:%i:%s') AS batch_start_at,
+              DATE_FORMAT(MAX(COALESCE(m.reviewed_at, m.updated_at, m.created_at)), '%Y-%m-%d %H:%i:%s') AS paid_at,
+              DATE_FORMAT(MAX(DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR)), '%Y-%m-%d %H:%i:%s') AS access_expires_at
+       FROM course_manual_payments m
+       LEFT JOIN course_batches b
+         ON b.course_slug COLLATE utf8mb4_general_ci = m.course_slug COLLATE utf8mb4_general_ci
+        AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
+       WHERE m.email = ?
+         AND m.status = 'approved'
+       GROUP BY m.course_slug, m.batch_key, m.batch_label`,
       [email]
     );
     const [manualPendingRows] = await pool.query(
@@ -388,7 +517,8 @@ exports.handler = async function (event) {
     try {
       const [rows] = await pool.query(
         `SELECT course_slug,
-                DATE_FORMAT(MAX(updated_at), '%Y-%m-%d %H:%i:%s') AS paid_at
+                DATE_FORMAT(MAX(updated_at), '%Y-%m-%d %H:%i:%s') AS paid_at,
+                DATE_FORMAT(MAX(expires_at), '%Y-%m-%d %H:%i:%s') AS access_expires_at
          FROM tochukwu_learning_access_overrides
          WHERE LOWER(email) COLLATE utf8mb4_general_ci = ?
            AND status = 'active'
@@ -414,6 +544,8 @@ exports.handler = async function (event) {
       const batchLabel = String(row.batch_label || "").trim();
       const key = `${courseSlug}::${batchKey}`;
       const paidAt = row.paid_at || null;
+      const accessExpiresAt = row.access_expires_at || null;
+      const batchStartAt = row.batch_start_at || null;
       const existing = map.get(key);
       if (!existing) {
         map.set(key, {
@@ -421,7 +553,9 @@ exports.handler = async function (event) {
           courseName: getCourseName(courseSlug),
           batchKey: batchKey || null,
           batchLabel: batchLabel || null,
+          batchStartAt,
           paidAt,
+          accessExpiresAt,
           submittedAt: submittedAt || null,
           source,
           status,
@@ -431,7 +565,9 @@ exports.handler = async function (event) {
       const prevRank = statusRank(existing.status);
       const nextRank = statusRank(status);
       if (nextRank > prevRank) {
+        existing.batchStartAt = batchStartAt;
         existing.paidAt = paidAt;
+        existing.accessExpiresAt = accessExpiresAt;
         existing.submittedAt = submittedAt || existing.submittedAt || null;
         existing.source = source;
         existing.status = status;
@@ -441,7 +577,9 @@ exports.handler = async function (event) {
         const prevTime = existing.paidAt ? new Date(existing.paidAt).getTime() : 0;
         const nextTime = paidAt ? new Date(paidAt).getTime() : 0;
         if (nextTime > prevTime) {
+          existing.batchStartAt = batchStartAt;
           existing.paidAt = paidAt;
+          existing.accessExpiresAt = accessExpiresAt;
           existing.source = source;
         }
       }
@@ -462,7 +600,9 @@ exports.handler = async function (event) {
           course_slug: row.course_slug,
           batch_key: "admin-override",
           batch_label: "Admin Early Access",
+          batch_start_at: null,
           paid_at: row.paid_at || null,
+          access_expires_at: row.access_expires_at || null,
         },
         "admin_override",
         "paid",
@@ -473,7 +613,8 @@ exports.handler = async function (event) {
     const [schoolRows] = await pool.query(
       `SELECT
          sc.course_slug,
-         sc.access_starts_at AS paid_at,
+         DATE_FORMAT(COALESCE(sc.paid_at, sc.created_at), '%Y-%m-%d %H:%i:%s') AS paid_at,
+         DATE_FORMAT(DATE_ADD(COALESCE(sc.paid_at, sc.created_at), INTERVAL 1 YEAR), '%Y-%m-%d %H:%i:%s') AS access_expires_at,
          ss.website_url,
          DATE_FORMAT(ss.website_submitted_at, '%Y-%m-%d %H:%i:%s') AS website_submitted_at,
          cert.certificate_no,
@@ -486,7 +627,7 @@ exports.handler = async function (event) {
        WHERE (LOWER(ss.email) = ? OR ss.account_id = ?)
          AND ss.status = 'active'
          AND sc.status = 'active'
-         AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())`,
+         AND DATE_ADD(COALESCE(sc.paid_at, sc.created_at), INTERVAL 1 YEAR) >= NOW()`,
       [email, Number(session.account.id || 0)]
     );
     (schoolRows || []).forEach(function (row) {
@@ -495,7 +636,9 @@ exports.handler = async function (event) {
           course_slug: row.course_slug,
           batch_key: "school",
           batch_label: "School Access",
+          batch_start_at: null,
           paid_at: row.paid_at,
+          access_expires_at: row.access_expires_at || null,
         },
         "school",
         "paid",
@@ -592,6 +735,13 @@ exports.handler = async function (event) {
       Number(session.account.id || 0),
       individualEligibleCourseSlugs
     );
+    const proofRequirementByCourse = await loadCertificateProofRequirements(pool, individualEligibleCourseSlugs);
+    const proofStatusByCourse = await loadCertificateProofStatusByCourse(
+      pool,
+      Number(session.account.id || 0),
+      email,
+      individualEligibleCourseSlugs
+    );
     const individualCertificatesByCourse = await issueAndLoadStudentCertificates(
       pool,
       Number(session.account.id || 0),
@@ -600,6 +750,8 @@ exports.handler = async function (event) {
       {
         allowIssue: session.account.certificateNameNeedsConfirmation !== true,
         recipientName: session.account.fullName,
+        proofRequirementByCourse,
+        proofStatusByCourse,
       }
     );
 
@@ -621,13 +773,28 @@ exports.handler = async function (event) {
       }
       const resume = resumeByCourse.get(courseSlug) || null;
       const isSchool = normalizeKey(item.source) === "school";
+      const source = normalizeKey(item.source);
+      const isOrderOrManual = source === "order" || source === "manual-payment";
+      const itemBatchStartAt = normalizeDate(item.batchStartAt);
+      const metaBatchStartAt = meta && meta.batchStartAt ? normalizeDate(meta.batchStartAt) : null;
+      const effectiveBatchStartAt = metaBatchStartAt || itemBatchStartAt;
       const completion = completionByCourse.get(courseSlug) || null;
       const certificate = individualCertificatesByCourse.get(courseSlug) || null;
+      const proofCfg = proofRequirementByCourse.get(courseSlug) || { required: false, type: "website_link" };
+      const proof = proofStatusByCourse.get(courseSlug) || { status: "missing", submittedAt: null, link: "" };
+      const derivedAccessExpiresAt = isSchool
+        ? addOneYearIso(item.paidAt)
+        : (
+          isOrderOrManual && effectiveBatchStartAt
+            ? addOneYearIso(effectiveBatchStartAt)
+            : (isOrderOrManual ? addOneYearIso(item.paidAt) : normalizeDate(item.accessExpiresAt))
+        );
       return {
         ...item,
-        batchStartAt: meta ? meta.batchStartAt : null,
+        batchStartAt: meta ? meta.batchStartAt : (item.batchStartAt || null),
         batchStatus: meta ? meta.batchStatus : null,
         batchIsActive: meta ? meta.batchIsActive : false,
+        accessExpiresAt: derivedAccessExpiresAt,
         resumeLessonId: resume ? Number(resume.resume_lesson_id || 0) : 0,
         resumeSource: resume ? String(resume.resume_source || "") : "",
         lastActivityAt: resume ? resume.last_activity_at : null,
@@ -638,6 +805,11 @@ exports.handler = async function (event) {
         individualCertificateRecipientName: !isSchool && certificate ? String(certificate.recipientName || "") : "",
         individualCertificateIssuedAt: !isSchool && certificate ? certificate.issuedAt : null,
         individualCertificateUrl: !isSchool && certificate ? String(certificate.certificateUrl || "") : "",
+        certificateProofRequired: !isSchool && proofCfg.required === true,
+        certificateProofType: !isSchool ? String(proofCfg.type || "website_link") : "",
+        certificateProofStatus: !isSchool ? String(proof.status || "missing") : "missing",
+        certificateProofSubmittedAt: !isSchool ? proof.submittedAt : null,
+        certificateProofLink: !isSchool ? String(proof.link || "") : "",
       };
     });
 

@@ -760,9 +760,13 @@
   function normalizeBatchStartText(value) {
     const raw = String(value || "").trim();
     if (!raw) return "";
-    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?/);
+    const m = raw.match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::\d{2})?)?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/
+    );
     if (!m) return "";
-    return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}`;
+    const hh = m[4] || "00";
+    const mm = m[5] || "00";
+    return `${m[1]}-${m[2]}-${m[3]} ${hh}:${mm}`;
   }
 
   function fmtBatchStart(value) {

@@ -40,6 +40,12 @@ function normalizeAlumniMode(value) {
   return "none";
 }
 
+function normalizeCertificateProofType(value) {
+  var raw = clean(value, 24).toLowerCase();
+  if (raw === "website_link") return raw;
+  return "website_link";
+}
+
 function normalizeAssignmentKind(value) {
   var raw = clean(value, 24).toLowerCase();
   if (raw === "text" || raw === "link" || raw === "screenshots") return raw;
@@ -140,6 +146,8 @@ async function ensureLearningSupportTables(pool, options) {
         course_community_enabled TINYINT(1) NOT NULL DEFAULT 0,
         tutor_questions_enabled TINYINT(1) NOT NULL DEFAULT 0,
         alumni_participation_mode VARCHAR(24) NOT NULL DEFAULT 'none',
+        certificate_proof_required TINYINT(1) NOT NULL DEFAULT 0,
+        certificate_proof_type VARCHAR(24) NOT NULL DEFAULT 'website_link',
         created_at DATETIME NOT NULL,
         updated_at DATETIME NOT NULL,
         PRIMARY KEY (id),
@@ -250,6 +258,8 @@ async function ensureLearningSupportTables(pool, options) {
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN course_community_enabled TINYINT(1) NOT NULL DEFAULT 0`);
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN tutor_questions_enabled TINYINT(1) NOT NULL DEFAULT 0`);
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN alumni_participation_mode VARCHAR(24) NOT NULL DEFAULT 'none'`);
+    await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN certificate_proof_required TINYINT(1) NOT NULL DEFAULT 0`);
+    await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN certificate_proof_type VARCHAR(24) NOT NULL DEFAULT 'website_link'`);
 
     supportTablesAvailable = true;
   } catch (_error) {
@@ -269,6 +279,8 @@ function defaultCourseFeatures(courseSlug) {
     course_community_enabled: false,
     tutor_questions_enabled: false,
     alumni_participation_mode: "none",
+    certificate_proof_required: false,
+    certificate_proof_type: "website_link",
   };
 }
 
@@ -282,7 +294,8 @@ async function getCourseLearningFeatures(pool, courseSlug) {
 
   try {
     var [rows] = await pool.query(
-      `SELECT course_slug, assignments_enabled, course_community_enabled, tutor_questions_enabled, alumni_participation_mode
+      `SELECT course_slug, assignments_enabled, course_community_enabled, tutor_questions_enabled, alumni_participation_mode,
+              certificate_proof_required, certificate_proof_type
        FROM ${COURSE_FEATURES_TABLE}
        WHERE course_slug = ?
        LIMIT 1`,
@@ -296,6 +309,8 @@ async function getCourseLearningFeatures(pool, courseSlug) {
       course_community_enabled: Number(row.course_community_enabled || 0) === 1,
       tutor_questions_enabled: Number(row.tutor_questions_enabled || 0) === 1,
       alumni_participation_mode: normalizeAlumniMode(row.alumni_participation_mode),
+      certificate_proof_required: Number(row.certificate_proof_required || 0) === 1,
+      certificate_proof_type: normalizeCertificateProofType(row.certificate_proof_type),
     };
   } catch (error) {
     if (isMissingTableError(error)) return defaultCourseFeatures(slug);
@@ -314,18 +329,22 @@ async function saveCourseLearningFeatures(pool, input) {
   var communityEnabled = toFlag(input && input.course_community_enabled, false);
   var tutorQuestionsEnabled = toFlag(input && input.tutor_questions_enabled, false);
   var alumniMode = normalizeAlumniMode(input && input.alumni_participation_mode);
+  var certificateProofRequired = toFlag(input && input.certificate_proof_required, false);
+  var certificateProofType = normalizeCertificateProofType(input && input.certificate_proof_type);
 
   await pool.query(
     `INSERT INTO ${COURSE_FEATURES_TABLE}
-      (course_slug, assignments_enabled, course_community_enabled, tutor_questions_enabled, alumni_participation_mode, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+      (course_slug, assignments_enabled, course_community_enabled, tutor_questions_enabled, alumni_participation_mode, certificate_proof_required, certificate_proof_type, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        assignments_enabled = VALUES(assignments_enabled),
        course_community_enabled = VALUES(course_community_enabled),
        tutor_questions_enabled = VALUES(tutor_questions_enabled),
        alumni_participation_mode = VALUES(alumni_participation_mode),
+       certificate_proof_required = VALUES(certificate_proof_required),
+       certificate_proof_type = VALUES(certificate_proof_type),
        updated_at = VALUES(updated_at)`,
-    [slug, assignmentsEnabled, communityEnabled, tutorQuestionsEnabled, alumniMode, now, now]
+    [slug, assignmentsEnabled, communityEnabled, tutorQuestionsEnabled, alumniMode, certificateProofRequired, certificateProofType, now, now]
   );
 
   return getCourseLearningFeatures(pool, slug);
@@ -1073,6 +1092,7 @@ module.exports = {
   normalizeAssignmentKind,
   normalizeCommunityQuestionType,
   normalizeAlumniMode,
+  normalizeCertificateProofType,
   normalizeUrl,
   sanitizeScreenshotUrls,
 };

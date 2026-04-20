@@ -1,9 +1,12 @@
 (function () {
+  var CERTIFICATE_PROOF_MARKER = "[CERTIFICATE_PROOF_WEBSITE]";
   var courseFilterEl = document.getElementById("supportCourseFilter");
   var featureAssignmentsEnabledEl = document.getElementById("featureAssignmentsEnabled");
   var featureCommunityEnabledEl = document.getElementById("featureCommunityEnabled");
   var featureTutorQuestionsEnabledEl = document.getElementById("featureTutorQuestionsEnabled");
   var featureAlumniModeEl = document.getElementById("featureAlumniMode");
+  var featureCertificateProofRequiredEl = document.getElementById("featureCertificateProofRequired");
+  var featureCertificateProofTypeEl = document.getElementById("featureCertificateProofType");
   var saveFeatureBtnEl = document.getElementById("saveFeatureBtn");
   var featureMessageEl = document.getElementById("featureMessage");
 
@@ -65,6 +68,13 @@
     featureMessageEl.className = "text-xs sm:text-sm " + (bad ? "text-red-600" : "text-gray-500");
   }
 
+  function syncCertificateProofControls() {
+    if (!featureCertificateProofTypeEl) return;
+    var required = !!(featureCertificateProofRequiredEl && featureCertificateProofRequiredEl.checked);
+    featureCertificateProofTypeEl.disabled = !required;
+    if (!required) featureCertificateProofTypeEl.value = "website_link";
+  }
+
   async function api(url, init) {
     var response = await fetch(url, Object.assign({
       credentials: "include",
@@ -115,6 +125,9 @@
     if (featureCommunityEnabledEl) featureCommunityEnabledEl.checked = !!features.course_community_enabled;
     if (featureTutorQuestionsEnabledEl) featureTutorQuestionsEnabledEl.value = features.tutor_questions_enabled ? "1" : "0";
     if (featureAlumniModeEl) featureAlumniModeEl.value = clean(features.alumni_participation_mode, 24) || "none";
+    if (featureCertificateProofRequiredEl) featureCertificateProofRequiredEl.checked = !!features.certificate_proof_required;
+    if (featureCertificateProofTypeEl) featureCertificateProofTypeEl.value = clean(features.certificate_proof_type, 24) || "website_link";
+    syncCertificateProofControls();
   }
 
   async function saveCourseFeatures() {
@@ -133,6 +146,8 @@
         course_community_enabled: !!(featureCommunityEnabledEl && featureCommunityEnabledEl.checked),
         tutor_questions_enabled: featureTutorQuestionsEnabledEl && featureTutorQuestionsEnabledEl.value === "1",
         alumni_participation_mode: clean(featureAlumniModeEl && featureAlumniModeEl.value, 24) || "none",
+        certificate_proof_required: !!(featureCertificateProofRequiredEl && featureCertificateProofRequiredEl.checked),
+        certificate_proof_type: clean(featureCertificateProofTypeEl && featureCertificateProofTypeEl.value, 24) || "website_link",
       }),
     });
     setFeatureMessage("Saved feature settings for " + slug + ".", false);
@@ -149,12 +164,16 @@
     }
 
     rowsEl.innerHTML = items.map(function (item) {
+      var kind = clean(item && item.submission_kind, 24).toLowerCase();
+      var text = clean(item && item.submission_text, 20000);
+      var submissionLabel = kind;
+      if (kind === "link" && text === CERTIFICATE_PROOF_MARKER) submissionLabel = "certificate_proof_link";
       return [
         "<tr>",
         '<td class="px-3 py-2.5 text-sm text-gray-600">' + escapeHtml(fmtDate(item.created_at)) + "</td>",
         '<td class="px-3 py-2.5"><p class="text-sm font-semibold text-gray-900">' + escapeHtml(item.student_name || "Student") + '</p><p class="text-xs text-gray-500">' + escapeHtml(item.student_email || "") + "</p></td>",
         '<td class="px-3 py-2.5 text-sm text-gray-700">' + escapeHtml(item.course_slug || "") + "</td>",
-        '<td class="px-3 py-2.5 text-sm text-gray-700">' + escapeHtml(item.submission_kind || "") + "</td>",
+        '<td class="px-3 py-2.5 text-sm text-gray-700">' + escapeHtml(submissionLabel || "") + "</td>",
         '<td class="px-3 py-2.5"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">' + escapeHtml(item.status || "submitted") + "</span></td>",
         '<td class="px-3 py-2.5 text-right"><button type="button" data-assignment-id="' + String(item.id || "") + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Review</button></td>',
         "</tr>",
@@ -183,10 +202,14 @@
     if (!state.activeItem || !modalEl) return;
     var value = state.activeItem;
     if (modalTitleEl) {
-      modalTitleEl.textContent = (value.student_name || value.student_email || "Student") + " • " + (value.submission_kind || "assignment");
+      var kind = clean(value && value.submission_kind, 24).toLowerCase();
+      var text = clean(value && value.submission_text, 20000);
+      var kindLabel = kind;
+      if (kind === "link" && text === CERTIFICATE_PROOF_MARKER) kindLabel = "certificate_proof_link";
+      modalTitleEl.textContent = (value.student_name || value.student_email || "Student") + " • " + (kindLabel || "assignment");
     }
     var bodyParts = [];
-    if (value.submission_text) bodyParts.push("Text:\n" + value.submission_text);
+    if (value.submission_text && value.submission_text !== CERTIFICATE_PROOF_MARKER) bodyParts.push("Text:\n" + value.submission_text);
     if (value.submission_link) bodyParts.push("Link:\n" + value.submission_link);
     if (modalBodyEl) modalBodyEl.textContent = bodyParts.join("\n\n") || "No text body provided.";
     if (modalStatusEl) modalStatusEl.value = clean(value.status, 32) || "submitted";
@@ -324,8 +347,13 @@
     });
   }
 
+  if (featureCertificateProofRequiredEl) {
+    featureCertificateProofRequiredEl.addEventListener("change", syncCertificateProofControls);
+  }
+
   async function init() {
     setMessage("Loading...", false);
+    syncCertificateProofControls();
     await loadCourses();
     await loadCourseFeatures();
     await loadAssignments();

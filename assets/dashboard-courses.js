@@ -303,25 +303,33 @@
 
   function batchTimingMeta(item) {
     const startDate = parseSqlDate(item && item.batchStartAt);
+    const accessExpiresDate = parseAnyDate(item && item.accessExpiresAt);
     const batchStatus = normalizeSlug(item && item.batchStatus);
     const courseSlug = normalizeSlug(item && item.courseSlug);
     const durationDays = Number(COURSE_DURATION_DAYS[courseSlug] || 0);
     const paidOrSubmittedAt = parseAnyDate((item && item.paidAt) || (item && item.submittedAt));
     const now = new Date();
+    const hasActiveAccess = !!(accessExpiresDate && accessExpiresDate.getTime() > now.getTime());
+    function passedLabel() {
+      if (hasActiveAccess && startDate && startDate.getTime() <= now.getTime()) {
+        return {
+          label: "Batch access valid",
+          css: "bg-emerald-100 text-emerald-700",
+        };
+      }
+      return {
+        label: "Batch already passed",
+        css: "bg-rose-100 text-rose-700",
+      };
+    }
     if (!startDate) {
       if (batchStatus === "closed") {
-        return {
-          label: "Batch already passed",
-          css: "bg-rose-100 text-rose-700",
-        };
+        return passedLabel();
       }
       if (durationDays > 0 && paidOrSubmittedAt) {
         const inferredEnd = new Date(paidOrSubmittedAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
         if (now.getTime() >= inferredEnd.getTime()) {
-          return {
-            label: "Batch already passed",
-            css: "bg-rose-100 text-rose-700",
-          };
+          return passedLabel();
         }
       }
       return {
@@ -340,10 +348,7 @@
     if (durationDays > 0) {
       const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
       if (now.getTime() >= endDate.getTime()) {
-        return {
-          label: "Batch already passed",
-          css: "bg-rose-100 text-rose-700",
-        };
+        return passedLabel();
       }
       return {
         label: `In progress (ends ${formatDateShort(endDate)})`,
@@ -352,10 +357,7 @@
     }
 
     if (batchStatus === "closed") {
-      return {
-        label: "Batch already passed",
-        css: "bg-rose-100 text-rose-700",
-      };
+      return passedLabel();
     }
 
     return {
@@ -382,6 +384,28 @@
     });
     if (!res.ok || !json || !json.ok) {
       throw new Error((json && json.error) || "Could not submit website link.");
+    }
+    return json;
+  }
+
+  async function submitCertificateProof(courseSlug, websiteUrl) {
+    const res = await fetch("/.netlify/functions/user-certificate-proof-submit", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        course_slug: String(courseSlug || "").trim().toLowerCase(),
+        website_url: String(websiteUrl || "").trim(),
+      }),
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not submit certificate proof.");
     }
     return json;
   }
@@ -434,6 +458,7 @@
             const isPending = status === "pending_verification";
             const paidAt = item.paidAt ? new Date(item.paidAt).toLocaleString() : "Unknown";
             const submittedAt = item.submittedAt ? new Date(item.submittedAt).toLocaleString() : "Unknown";
+            const accessExpiresAt = item.accessExpiresAt ? new Date(item.accessExpiresAt).toLocaleString() : "";
             const statusLabel = isPending ? "Pending verification" : "Paid";
             const statusBadge = isPending
               ? '<span class="status-pill status-pending_verification">Pending verification</span>'
@@ -462,6 +487,21 @@
               ? new Date(item.individualCertificateIssuedAt).toLocaleString()
               : "";
             const individualCertificateUrl = String(item.individualCertificateUrl || "").trim();
+            const certificateProofRequired = !!item.certificateProofRequired;
+            const certificateProofStatus = String(item.certificateProofStatus || "missing").toLowerCase();
+            const certificateProofSubmittedAt = item.certificateProofSubmittedAt
+              ? new Date(item.certificateProofSubmittedAt).toLocaleString()
+              : "";
+            const certificateProofLink = String(item.certificateProofLink || "").trim();
+            const proofSubmissionUnlocked = individualCompletionPercent >= 100;
+            const proofSubmitEnabled = proofSubmissionUnlocked && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
+            const certificateProofBadge = certificateProofStatus === "approved"
+              ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Proof approved</span>'
+              : certificateProofStatus === "pending"
+                ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Proof pending review</span>'
+                : certificateProofStatus === "rejected"
+                  ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Proof rejected</span>'
+                  : '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">Proof missing</span>';
             const websiteBlock = isSchool
               ? [
                   '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
@@ -493,7 +533,40 @@
             const individualCertificateBlock = !isSchool
               ? [
                   '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
+                  '<div class="flex flex-wrap items-center gap-2">',
                   '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Certificate</p>',
+                  certificateProofRequired ? certificateProofBadge : "",
+                  "</div>",
+                  certificateProofRequired
+                    ? `<p class="mt-1 text-xs text-gray-600">Complete all lessons and submit your website link to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`
+                    : "",
+                  certificateProofRequired
+                    ? `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <input type="url" data-certificate-proof-input="${escapeHtml(item.courseSlug)}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm ${proofSubmitEnabled ? "" : "bg-gray-100 text-gray-500"}" placeholder="https://yourwebsite.com" value="${escapeHtml(certificateProofLink)}" ${proofSubmitEnabled ? "" : "disabled"} />
+                        <button type="button" data-submit-certificate-proof="${escapeHtml(item.courseSlug)}" data-certificate-proof-enabled="${proofSubmitEnabled ? "1" : "0"}" class="inline-flex w-full items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[128px] sm:flex-none" ${proofSubmitEnabled ? "" : "disabled"}>Submit Proof</button>
+                      </div>`
+                    : "",
+                  certificateProofRequired
+                    ? `<p data-certificate-proof-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${
+                      certificateProofStatus === "approved"
+                        ? "text-emerald-700"
+                        : certificateProofStatus === "pending"
+                          ? "text-amber-700"
+                          : certificateProofStatus === "rejected"
+                            ? "text-rose-700"
+                            : "text-gray-500"
+                    }">${
+                      !proofSubmissionUnlocked
+                        ? "Finish all lessons to enable proof submission."
+                        : certificateProofStatus === "approved"
+                          ? "Approved" + (certificateProofSubmittedAt ? ": " + escapeHtml(certificateProofSubmittedAt) : "")
+                          : certificateProofStatus === "pending"
+                            ? "Submitted for admin review" + (certificateProofSubmittedAt ? ": " + escapeHtml(certificateProofSubmittedAt) : "")
+                            : certificateProofStatus === "rejected"
+                              ? "Rejected. Submit an improved website proof link."
+                              : "No proof submitted yet."
+                    }</p>`
+                    : "",
                   individualCertificateUrl
                     ? [
                         `<a href="${escapeHtml(individualCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
@@ -503,9 +576,15 @@
                       ].join("")
                     : isPending
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
+                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus === "rejected"
+                      ? '<p class="mt-1 text-xs text-rose-700">Certificate is locked. Your proof link was rejected, submit an improved website link.</p>'
+                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
+                      ? '<p class="mt-1 text-xs text-gray-600">Certificate is locked. Submit your website link to unlock it.</p>'
                     : individualCompletionPercent >= 100 && certificateNameNeedsConfirmation
                       ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
-                      : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
+                    : certificateProofRequired
+                      ? ""
+                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
                   "</div>",
                 ].join("")
               : "";
@@ -517,6 +596,7 @@
                 <span>Batch: ${escapeHtml(item.batchLabel || item.batchKey || "N/A")}</span>
                 ${statusBadge}
                 <span>${escapeHtml(statusLabel)}: ${escapeHtml(isPending ? submittedAt : paidAt)}</span>
+                <span>Access Expires: ${escapeHtml(accessExpiresAt || "Not set")}</span>
               </div></div>`,
               `<span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${theme.badge}">Enrolled</span>`,
               "</div>",
@@ -554,6 +634,60 @@
   if (listEl) {
     listEl.addEventListener("click", function (event) {
       const target = event.target && event.target.closest ? event.target.closest("[data-submit-school-website]") : null;
+      const proofTarget = event.target && event.target.closest ? event.target.closest("[data-submit-certificate-proof]") : null;
+      if (!target && !proofTarget) return;
+      if (proofTarget) {
+        const enabled = String(proofTarget.getAttribute("data-certificate-proof-enabled") || "0") === "1";
+        const courseSlug = String(proofTarget.getAttribute("data-submit-certificate-proof") || "").trim().toLowerCase();
+        if (!courseSlug) return;
+        const input = listEl.querySelector('[data-certificate-proof-input="' + courseSlug + '"]');
+        const status = listEl.querySelector('[data-certificate-proof-status="' + courseSlug + '"]');
+        const badge = listEl.querySelector('[data-certificate-proof-badge="' + courseSlug + '"]');
+        if (!enabled) {
+          if (status) {
+            status.textContent = "Finish all lessons before submitting proof.";
+            status.className = "mt-2 text-xs text-gray-600";
+          }
+          return;
+        }
+        const websiteUrl = String(input && input.value || "").trim();
+        if (!websiteUrl) {
+          if (status) {
+            status.textContent = "Enter website URL.";
+            status.className = "mt-2 text-xs text-red-600";
+          }
+          return;
+        }
+        proofTarget.disabled = true;
+        const proofPrev = proofTarget.textContent;
+        proofTarget.textContent = "Submitting...";
+        submitCertificateProof(courseSlug, websiteUrl)
+          .then(function (json) {
+            if (status) {
+              const ts = json && json.proof && json.proof.submitted_at ? new Date(json.proof.submitted_at).toLocaleString() : "Just now";
+              status.textContent = "Submitted for review: " + ts;
+              status.className = "mt-2 text-xs text-amber-700";
+            }
+            if (badge) {
+              badge.textContent = "Proof pending review";
+              badge.className = "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700";
+            }
+            load().catch(function () {
+              return null;
+            });
+          })
+          .catch(function (error) {
+            if (status) {
+              status.textContent = error.message || "Could not submit proof link.";
+              status.className = "mt-2 text-xs text-red-600";
+            }
+          })
+          .finally(function () {
+            proofTarget.disabled = false;
+            proofTarget.textContent = proofPrev || "Submit Proof";
+          });
+        return;
+      }
       if (!target) return;
       const courseSlug = String(target.getAttribute("data-submit-school-website") || "").trim().toLowerCase();
       if (!courseSlug) return;
