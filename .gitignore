@@ -10,3 +10,11 @@ deno.lock
 
 # local deps
 node_modules/
+
+# Local-only content generation scripts (do not commit/deploy)
+scripts/export-prompt-to-production-curriculum-pdf.sh
+scripts/export-prompt-to-profit-advanced-pptx.py
+
+# Private working files
+.private/
+*.pptx

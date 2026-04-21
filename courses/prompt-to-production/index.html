@@ -114,6 +114,9 @@
         .tw-btn-outline {
           @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-4 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 hover:shadow hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
         }
+        .tw-btn-download {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3.5 text-sm sm:text-base font-bold text-white shadow-md ring-1 ring-inset ring-brand-500 transition-all hover:bg-brand-500 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
         
         .faq-wrap { @apply space-y-4; }
         .faq-item { @apply rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-brand-300; }
@@ -211,7 +214,7 @@
                 Build real apps with VS Code & AI
               </h1>
               <p class="mt-6 text-lg leading-relaxed text-gray-300 max-w-2xl mx-auto sm:mx-0">
-                Move beyond simple static websites. Learn how to use professional tools—VS Code and AI coding assistants—to build, debug, and deploy fully functional web applications. No computer science degree required.
+                Move beyond simple static websites. Learn how to use professional tools - VS Code and AI coding assistants, to build, debug, and deploy fully functional web and mobile applications. No computer science degree required.
               </p>
               <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
                 <a class="tw-btn-primary text-lg px-8 bg-blue-600 hover:bg-blue-500 focus:ring-blue-600" href="/enrol-prompt-to-production/">Enrol in the 4-Week Program</a>
@@ -234,7 +237,7 @@
                   <p class="ml-4"><span class="text-blue-300">format</span>: <span class="text-green-400">'Hybrid (Live + Recorded)'</span>,</p>
                   <p class="ml-4"><span class="text-blue-300">tools</span>: [<span class="text-green-400">'VS Code'</span>, <span class="text-green-400">'AI Copilot'</span>, <span class="text-green-400">'Git'</span>],</p>
                   <p class="ml-4"><span class="text-blue-300">outcome</span>: <span class="text-yellow-300">()</span> <span class="text-pink-400">=></span> {</p>
-                  <p class="ml-8"><span class="text-pink-400">return</span> <span class="text-green-400">'Production-ready Web Apps'</span>;</p>
+                  <p class="ml-8"><span class="text-pink-400">return</span> <span class="text-green-400">'Production-ready Web and Mobile Apps'</span>;</p>
                   <p class="ml-4">}</p>
                   <p>};</p>
                   <p class="mt-4 animate-pulse">_</p>
@@ -300,59 +303,73 @@
         <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div class="mb-16 text-center">
             <p class="tw-section-label">4-Week Program</p>
-            <h2 class="tw-h2 mb-6">A hybrid curriculum built for serious execution.</h2>
+            <h2 class="tw-h2 mb-6">A 4-week production curriculum for web + mobile shipping.</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              We combine the flexibility of recorded weekday modules with the intensity of live weekend "Build-Along" sessions to ensure you never get stuck on a technical hurdle.
+              Students set up a professional AI-assisted workflow, build a real web product, extend it into a mobile client, and ship to both hosting and app stores.
             </p>
+            <div class="mt-8">
+              <a class="tw-btn-download" href="/assets/downloads/prompt-to-profit-advanced-curriculum.pdf" download>
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v11m0 0l4-4m-4 4l-4-4M4 17h16v4H4z" /></svg>
+                <span>Download Curriculum PDF</span>
+              </a>
+            </div>
           </div>
 
           <div class="space-y-6">
             <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-2 h-full bg-brand-400"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 1</p>
-              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">The AI Developer Environment</h3>
-              <p class="text-gray-600 leading-relaxed mb-6">We strip away the mystery of the code editor. You will set up your professional environment and learn how to navigate it confidently.</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Production Environment + AI Workflow Setup</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Set up your complete build environment for web and mobile, then validate an AI-assisted workflow that can safely edit, run, and fix your app.</p>
               <ul class="space-y-3 mb-6">
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Installing and configuring VS Code & AI Extensions</li>
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Understanding folders, files, and the terminal</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Install and configure Node, Git, IDE, mobile SDKs, simulator/emulator</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Set up project architecture for web + mobile + shared backend</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Configure Codex workflow for implementation, review, and safe refactors</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Run a full setup validation on local web and mobile builds</li>
               </ul>
-              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend Setup Session</div>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Deliverable: Production-ready setup checklist passed</div>
             </article>
 
             <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-2 h-full bg-brand-500"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 2</p>
-              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Building the Interface (Frontend)</h3>
-              <p class="text-gray-600 leading-relaxed mb-6">Use AI to generate complex, modern user interfaces that look like professional SaaS products.</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Project Selection + Web App MVP Build</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Choose a high-potential project, define clear requirements, and build a real web application with authentication, data, and core business logic.</p>
               <ul class="space-y-3 mb-6">
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Generating layouts and dashboards with Tailwind CSS</li>
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Prompting for interactive components (modals, forms)</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Select app concept based on pain point, speed to MVP, and monetization</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Define personas, user stories, acceptance criteria, and MVP scope</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Build core web flows, auth, and persistent data models</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Add testing, analytics events, and production-oriented error handling</li>
               </ul>
-              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend UI Build</div>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Deliverable: Working web MVP with real user flow</div>
             </article>
 
             <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-2 h-full bg-brand-600"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 3</p>
-              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">The Brains of the App (Backend & Logic)</h3>
-              <p class="text-gray-600 leading-relaxed mb-6">This is where it becomes an app. We teach AI to handle logic, store data, and execute tasks.</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Mobile Client Extension</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Extend the same product into a mobile experience by connecting a dedicated app client to your existing backend and polishing key user journeys.</p>
               <ul class="space-y-3 mb-6">
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Storing user input into simple databases</li>
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> How to feed error logs to AI to fix broken code</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Set up mobile app architecture, navigation, and shared API integration</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Build core screens: onboarding, auth, and primary in-app journey</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Implement data fetching, caching, and resilient offline/loading states</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Test on emulator/simulator and physical devices for release readiness</li>
               </ul>
-              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Includes Live Weekend Debugging Session</div>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Deliverable: Functional mobile app connected to backend</div>
             </article>
 
             <article class="rounded-3xl bg-gray-50 border border-gray-200 p-8 sm:p-10 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-2 h-full bg-brand-800"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-3">Week 4</p>
-              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Deployment & Launch</h3>
-              <p class="text-gray-600 leading-relaxed mb-6">Get your app out of your local editor and onto the live internet for users to access.</p>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Deployment + Play Store + App Store Release</h3>
+              <p class="text-gray-600 leading-relaxed mb-6">Launch your full product stack: deploy the web app and complete the full release workflow for Google Play and Apple App Store.</p>
               <ul class="space-y-3 mb-6">
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Connecting your code to hosting platforms (Vercel/Netlify)</li>
-                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Managing environment variables and live updates</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Deploy web app/backend with production environment and domain setup</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Prepare signed builds, release tracks, and required store listing assets</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Submit through Play Console and App Store Connect workflows</li>
+                <li class="flex items-center gap-3 text-sm text-gray-700"><svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Execute launch checklist, monitoring, and post-launch iteration plan</li>
               </ul>
-              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Final Capstone Project & Live Review</div>
+              <div class="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"><span class="mr-2 h-2 w-2 rounded-full bg-red-500"></span> Deliverable: Live web app + mobile app submitted/published</div>
             </article>
           </div>
         </div>
