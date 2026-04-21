@@ -14,6 +14,7 @@ const { canViewTranscript, ensureTranscriptAccessTables } = require("./transcrip
 const { ensureLearningAccessOverridesTable, getActiveLearningAccessOverride } = require("./learning-access-overrides");
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
+const LEARNING_WALL_CLOCK_TIME_ZONE = "Africa/Lagos";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -35,6 +36,34 @@ function parseSqlDateMs(value) {
   const normalized = raw.indexOf("T") !== -1 ? raw : raw.replace(" ", "T");
   const ms = new Date(normalized + "Z").getTime();
   return Number.isFinite(ms) ? ms : NaN;
+}
+
+function nowInTimeZoneWallClockMs(timeZone) {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: String(timeZone || "UTC"),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const lookup = {};
+  parts.forEach(function (p) {
+    if (p && p.type && p.value) lookup[p.type] = p.value;
+  });
+
+  return Date.UTC(
+    Number(lookup.year || "0"),
+    Number(lookup.month || "1") - 1,
+    Number(lookup.day || "1"),
+    Number(lookup.hour || "0"),
+    Number(lookup.minute || "0"),
+    Number(lookup.second || "0")
+  );
 }
 
 const moduleColumnCache = new Map();
@@ -303,7 +332,7 @@ async function isModuleReleasedForLearner(pool, input) {
     drip_at: input && input.drip_at,
     drip_batch_key: input && input.drip_batch_key,
     drip_offset_seconds: input && input.drip_offset_seconds,
-  }, context, Date.now());
+  }, context, nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE));
 }
 
 async function safeAlter(pool, sql) {
@@ -1061,7 +1090,7 @@ async function listCourseForLearner(pool, input) {
     return id > 0;
   })));
   dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, moduleIdsForSchedule);
-  const nowMs = Date.now();
+  const nowMs = nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE);
   const gatedRows = (Array.isArray(rows) ? rows : []).filter(function (row) {
     return moduleIsReleasedForContext(row, dripContext, nowMs);
   });
@@ -1226,7 +1255,7 @@ async function saveLessonProgress(pool, input) {
 
   const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
   dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, [moduleId]);
-  if (!moduleIsReleasedForContext(lesson, dripContext, Date.now())) {
+  if (!moduleIsReleasedForContext(lesson, dripContext, nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE))) {
     return {
       ok: false,
       statusCode: 403,
