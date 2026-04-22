@@ -129,6 +129,43 @@
       .site-footer { margin-top: 0 !important; }
       .production-hero {
         padding-top: 64px;
+        background: #000 !important;
+        border-bottom-color: #27272a !important;
+      }
+      .production-hero::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .production-hero .tw-btn-primary,
+      .production-hero .tw-btn-outline {
+        min-width: 250px;
+        height: 56px;
+        border-radius: 14px;
+        padding: 14px 22px;
+        font-size: 0.98rem;
+        font-weight: 700;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: none;
+        transform: none;
+        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+      }
+      .production-hero .tw-btn-primary:hover,
+      .production-hero .tw-btn-primary:focus-visible,
+      .production-hero .tw-btn-outline:hover,
+      .production-hero .tw-btn-outline:focus-visible {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.18);
+        transform: translateY(-1px);
       }
       .hero-label-lockup {
         display: inline-flex;
@@ -207,9 +244,6 @@
     <main class="flex-1 w-full">
       
       <section class="production-hero relative overflow-hidden bg-brand-900 pb-20 lg:pb-32 reveal border-b border-brand-800">
-        <div class="absolute inset-0 bg-[url('/assets/grid.svg')] bg-center opacity-[0.03]"></div>
-        <div class="absolute -right-40 -top-40 w-96 h-96 bg-brand-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-        <div class="absolute -left-20 bottom-0 w-72 h-72 bg-brand-600 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
         
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
@@ -221,14 +255,14 @@
                 <span class="hero-label-advanced">Advanced</span>
               </div>
               <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[4rem] leading-[1.1]">
-                Build a real Web & Mobile App with AI.
+                Build a real Web & Mobile App with AI
               </h1>
               <p class="mt-6 text-lg sm:text-xl leading-relaxed text-brand-100 max-w-2xl mx-auto sm:mx-0 font-light">
                 Stop generating static text. Step into the code editor. Master VS Code, GitHub, Supabase, and Expo to build, deploy, and launch your first full-stack startup: <strong>PocketBudget</strong>.
               </p>
               <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
                 <a class="tw-btn-primary text-lg px-8" href="/enrol-prompt-to-production/">Enrol in the 4-Week Program</a>
-                <a class="tw-btn-outline text-lg px-8 !bg-white/5 !text-white !ring-white/20 hover:!bg-white/10" href="/dashboard/?course_slug=prompt-to-production">Pay in Installments</a>
+                <a class="tw-btn-outline text-lg px-8" href="/dashboard/?course_slug=prompt-to-production">Pay in Installments</a>
               </div>
             </div>
 

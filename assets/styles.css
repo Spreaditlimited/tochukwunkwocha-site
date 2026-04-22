@@ -1823,7 +1823,8 @@ body.modal-open {
   }
 
   body.public-page--prompt-to-production .site-header + main {
-    background: linear-gradient(#0a101e 0 28px, transparent 28px);
+    padding-top: 0 !important;
+    background: #000000;
   }
 
   body.public-page--prompt-to-profit-schools .site-header + main {
