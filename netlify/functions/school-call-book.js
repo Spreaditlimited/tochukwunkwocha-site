@@ -5,6 +5,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { siteBaseUrl } = require("./_lib/payments");
 const { sendEmail } = require("./_lib/email");
 const { createZoomMeeting } = require("./_lib/zoom");
+const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
 const {
   SCHOOL_CALL_BOOKINGS_TABLE,
   ensureSchoolCallTablesTochukwu,
@@ -30,6 +31,18 @@ function firstName(fullName) {
     .split(/\s+/)
     .filter(Boolean);
   return parts.length ? parts[0] : "there";
+}
+
+function firstHeader(headers, names) {
+  const src = headers && typeof headers === "object" ? headers : {};
+  for (const name of names || []) {
+    if (!name) continue;
+    const direct = src[name];
+    if (direct) return String(direct);
+    const lower = src[String(name).toLowerCase()];
+    if (lower) return String(lower);
+  }
+  return "";
 }
 
 function looksLikeCandidateSlot(slotStartIso) {
@@ -202,6 +215,36 @@ exports.handler = async function (event) {
       });
     } catch (_error) {}
 
+    const reqMeta = requestContextToMetaData({ headers: event.headers });
+    const metaEventId = `lead_school_call_${bookingUuid}`;
+    const explicitOrigin = firstHeader(event.headers, ["origin"]);
+    const forwardedProto = firstHeader(event.headers, ["x-forwarded-proto"]);
+    const host = firstHeader(event.headers, ["host"]);
+    const fallbackOrigin = forwardedProto && host ? `${forwardedProto}://${host}` : "";
+    const originHeader = explicitOrigin || fallbackOrigin;
+    const eventSourceUrl = clean(originHeader) ? `${clean(originHeader).replace(/\/+$/, "")}/schools/book-call/` : "";
+    let metaLeadSent = false;
+    try {
+      const metaRes = await sendMetaLead({
+        eventId: metaEventId,
+        eventSourceUrl,
+        email: workEmail,
+        phone,
+        fullName,
+        externalId: `school_call:${workEmail}`,
+        fbp: reqMeta.fbp,
+        fbc: reqMeta.fbc,
+        clientIpAddress: reqMeta.clientIpAddress,
+        clientUserAgent: reqMeta.clientUserAgent,
+        customData: {
+          content_name: "Prompt to Profit for Schools Call Booking",
+          content_category: "booking",
+          lead_type: "call_booked",
+        },
+      });
+      metaLeadSent = Boolean(metaRes && metaRes.ok);
+    } catch (_metaError) {}
+
     return json(200, {
       ok: true,
       bookingUuid,
@@ -211,6 +254,10 @@ exports.handler = async function (event) {
       slotEndIso: slotEndDate.toISOString(),
       slotLabel: slotHuman,
       status: "booked",
+      meta: {
+        eventId: metaEventId,
+        leadSent: metaLeadSent,
+      },
     });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not create booking" });

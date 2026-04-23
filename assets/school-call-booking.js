@@ -207,6 +207,33 @@
     return data;
   }
 
+  function trackLeadEvent(eventId) {
+    var id = String(eventId || "").trim();
+    if (!id) return;
+    if (typeof window.fbq !== "function") return;
+
+    var storageKey = "meta_lead_sent_" + id;
+    try {
+      if (window.sessionStorage && window.sessionStorage.getItem(storageKey) === "1") return;
+    } catch (_error) {}
+
+    try {
+      window.fbq(
+        "track",
+        "Lead",
+        {
+          content_name: "Prompt to Profit for Schools Call Booking",
+          content_category: "booking",
+          lead_type: "call_booked",
+        },
+        { eventID: id }
+      );
+      try {
+        if (window.sessionStorage) window.sessionStorage.setItem(storageKey, "1");
+      } catch (_storageError) {}
+    } catch (_error) {}
+  }
+
   async function loadSlots() {
     if (slotTimeGrid) slotTimeGrid.innerHTML = "";
     if (rescheduleTimeGrid) rescheduleTimeGrid.innerHTML = "";
@@ -348,6 +375,7 @@
         body: JSON.stringify(payload),
       })
         .then(function (data) {
+          trackLeadEvent(data && data.meta && data.meta.eventId);
           setStatus(bookStatus, "Call booked successfully. Check your email for details.", "ok");
           renderBookedPanel(data);
           bookForm.reset();

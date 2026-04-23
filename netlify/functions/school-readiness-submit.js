@@ -1,6 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { sendEmail } = require("./_lib/email");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
+const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
 
 const BREVO_SCHOOL_READINESS_LIST_ID = 6;
 
@@ -196,6 +197,18 @@ function firstName(fullName) {
   return parts.length ? parts[0] : "there";
 }
 
+function firstHeader(headers, names) {
+  const src = headers && typeof headers === "object" ? headers : {};
+  for (const name of names || []) {
+    if (!name) continue;
+    const direct = src[name];
+    if (direct) return String(direct);
+    const lower = src[String(name).toLowerCase()];
+    if (lower) return String(lower);
+  }
+  return "";
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -216,6 +229,7 @@ exports.handler = async function (event) {
   const phone = clean(body.phone, 80);
   const role = clean(body.role, 120);
   const studentPopulation = clean(body.studentPopulation, 60);
+  const leadSourcePath = "/courses/prompt-to-profit-schools/";
 
   if (!fullName || !schoolName || !workEmail || !phone || !role || !studentPopulation) {
     return json(400, { ok: false, error: "All lead form fields are required." });
@@ -332,6 +346,38 @@ exports.handler = async function (event) {
       });
     } catch (_ackError) {}
 
+    const reqMeta = requestContextToMetaData({ headers: event.headers });
+    const metaEventId = `lead_school_readiness_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+    const explicitOrigin = firstHeader(event.headers, ["origin"]);
+    const forwardedProto = firstHeader(event.headers, ["x-forwarded-proto"]);
+    const host = firstHeader(event.headers, ["host"]);
+    const fallbackOrigin = forwardedProto && host ? `${forwardedProto}://${host}` : "";
+    const originHeader = explicitOrigin || fallbackOrigin;
+    const eventSourceUrl = clean(originHeader) ? `${clean(originHeader).replace(/\/+$/, "")}${leadSourcePath}` : "";
+    let metaLeadSent = false;
+    try {
+      const metaRes = await sendMetaLead({
+        eventId: metaEventId,
+        eventSourceUrl,
+        email: workEmail,
+        phone,
+        fullName,
+        externalId: `scorecard:${workEmail}`,
+        fbp: reqMeta.fbp,
+        fbc: reqMeta.fbc,
+        clientIpAddress: reqMeta.clientIpAddress,
+        clientUserAgent: reqMeta.clientUserAgent,
+        customData: {
+          content_name: "Prompt to Profit for Schools Scorecard",
+          content_category: "scorecard",
+          lead_type: "scorecard_submit",
+          score,
+          band_key: bandKey,
+        },
+      });
+      metaLeadSent = Boolean(metaRes && metaRes.ok);
+    } catch (_metaError) {}
+
     // Best effort Brevo sync: first email is handled in code above, followups run via Brevo automations.
     let brevoSynced = false;
     let brevoError = "";
@@ -354,6 +400,10 @@ exports.handler = async function (event) {
       bandKey,
       headline: band.headline,
       nextStep: band.ctaText,
+      meta: {
+        eventId: metaEventId,
+        leadSent: metaLeadSent,
+      },
       brevo: {
         synced: brevoSynced,
         listId: BREVO_SCHOOL_READINESS_LIST_ID,

@@ -447,6 +447,33 @@
     });
   }
 
+  function trackLeadEvent(eventId) {
+    var id = String(eventId || "").trim();
+    if (!id) return;
+    if (typeof window.fbq !== "function") return;
+
+    var storageKey = "meta_lead_sent_" + id;
+    try {
+      if (window.sessionStorage && window.sessionStorage.getItem(storageKey) === "1") return;
+    } catch (_error) {}
+
+    try {
+      window.fbq(
+        "track",
+        "Lead",
+        {
+          content_name: "Prompt to Profit for Schools Scorecard",
+          content_category: "scorecard",
+          lead_type: "scorecard_submit",
+        },
+        { eventID: id }
+      );
+      try {
+        if (window.sessionStorage) window.sessionStorage.setItem(storageKey, "1");
+      } catch (_storageError) {}
+    } catch (_error) {}
+  }
+
   async function submitLeadAndOpenResult(payload) {
     setLeadBusy(true);
     setStatusText(leadStatus, "", "idle");
@@ -479,6 +506,7 @@
         throw new Error((data && data.error) || "Could not send your result email right now.");
       }
 
+      trackLeadEvent(data && data.meta && data.meta.eventId);
       state.submission = { ok: true, message: "" };
     } catch (error) {
       state.submission = {
