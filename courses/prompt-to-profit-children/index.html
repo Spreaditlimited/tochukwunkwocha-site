@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt to Profit for Kids | Turn Screen Time into Tech Skills</title>
+    <meta
+      name="description"
+      content="Equip your child with future-ready skills. Prompt to Profit teaches kids how to use AI to build real websites in just 5 days—no coding required."
+    />
+    <link rel="canonical" href="https://tochukwunkwocha.com/courses/prompt-to-profit-kids/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tochukwu Tech and AI Academy" />
+    <meta property="og:title" content="Prompt to Profit for Kids | Turn Screen Time into Tech Skills" />
+    <meta
+      property="og:description"
+      content="Equip your child with future-ready skills. Prompt to Profit teaches kids how to use AI to build real websites in just 5 days—no coding required."
+    />
+    <meta property="og:url" content="https://tochukwunkwocha.com/courses/prompt-to-profit-kids/" />
+    <meta property="og:image" content="https://tochukwunkwocha.com/assets/Proof/tochukwunkwocha-desktop.png" />
+    <meta property="og:image:alt" content="Tochukwu Tech and AI Academy website preview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Prompt to Profit for Kids | Turn Screen Time into Tech Skills" />
+    <meta
+      name="twitter:description"
+      content="Equip your child with future-ready skills. Prompt to Profit teaches kids how to use AI to build real websites in just 5 days—no coding required."
+    />
+    <meta name="twitter:image" content="https://tochukwunkwocha.com/assets/Proof/tochukwunkwocha-desktop.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "Prompt to Profit for Kids",
+        "description": "A kid-friendly 5-day course that teaches children and teens how to use AI to build real websites and develop future-ready tech skills.",
+        "provider": {
+          "@type": "Organization",
+          "name": "Tochukwu Tech and AI Academy",
+          "url": "https://tochukwunkwocha.com/"
+        },
+        "url": "https://tochukwunkwocha.com/courses/prompt-to-profit-kids/"
+      }
+    </script>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#f0f5fa',
+                100: '#e1ebf6',
+                200: '#c8dced',
+                300: '#a2c4e0',
+                400: '#75a5d0',
+                500: '#5286bf',
+                600: '#3f6ba4',
+                700: '#345585',
+                800: '#2d476e',
+                900: '#0a1930', /* Deep Navy */
+              }
+            },
+            boxShadow: {
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+              'float': '0 20px 40px -5px rgba(0,0,0,0.1)',
+            },
+            animation: {
+              'float-slow': 'float 6s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tw-section-label {
+          @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-6 shadow-sm;
+        }
+        .tw-h2 {
+          @apply text-3xl font-heading font-extrabold tracking-tight text-brand-900 sm:text-4xl lg:text-5xl leading-tight;
+        }
+        .tw-btn-primary {
+          @apply inline-flex items-center justify-center rounded-2xl bg-brand-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-500 hover:shadow-xl hover:shadow-brand-500/40 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        .tw-btn-outline {
+          @apply inline-flex items-center justify-center rounded-2xl bg-white px-8 py-4 text-base font-bold text-brand-900 shadow-sm ring-1 ring-inset ring-brand-200 transition-all hover:bg-brand-50 hover:ring-brand-300 hover:shadow hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+        
+        .faq-wrap { @apply space-y-4; }
+        .faq-item { @apply rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm transition-all hover:border-brand-300 hover:shadow-md; }
+        .faq-question { @apply flex w-full items-center justify-between text-left font-heading font-bold text-brand-900 text-lg sm:text-xl focus:outline-none cursor-pointer bg-transparent border-0 p-0; }
+        .faq-answer p { @apply mt-4 text-gray-600 leading-relaxed pr-8 text-base; }
+      }
+    </style>
+    <style>
+      main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+      .site-footer { margin-top: 0 !important; }
+      .course-hero {
+        padding-top: 64px;
+      }
+      .hero-label-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 24px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 8px 16px;
+        border-radius: 99px;
+      }
+      .hero-brand-logo {
+        width: min(180px, 50vw);
+        height: auto;
+      }
+      @media (max-width: 640px) {
+        .hero-label-lockup {
+          margin: 0 auto 20px;
+        }
+      }
+      @media (min-width: 1024px) {
+        .course-hero {
+          padding-top: 96px;
+        }
+      }
+      
+      /* Subtle grid background for modern tech feel */
+      .bg-tech-grid {
+        background-image: linear-gradient(to right, rgba(52, 85, 133, 0.05) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(52, 85, 133, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+
+      .testimonial-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      @media (min-width: 1024px) {
+        .testimonial-grid {
+          flex-direction: row;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding-bottom: 16px;
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        .testimonial-grid::-webkit-scrollbar {
+          display: none;
+        }
+        .testimonial-grid .testimonial-card {
+          flex: 0 0 400px;
+          scroll-snap-align: start;
+        }
+      }
+
+      .browser-mockup {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+        background: white;
+      }
+      .browser-header {
+        background: #f3f4f6;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .browser-dots {
+        display: flex;
+        gap: 6px;
+      }
+      .browser-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .browser-url {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-family: monospace;
+        font-size: 12px;
+        color: #6b7280;
+        margin-left: 12px;
+        flex: 1;
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body class="public-page--prompt-to-profit-children bg-white font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full">
+      
+      <section class="course-hero relative overflow-hidden bg-brand-900 pb-20 lg:pb-32 reveal border-b border-brand-800">
+        <div class="absolute inset-0 bg-[url('/assets/grid.svg')] bg-center opacity-[0.03]"></div>
+        <div class="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-brand-500/20 to-transparent pointer-events-none"></div>
+        <div class="absolute -left-20 bottom-0 w-96 h-96 bg-brand-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+        
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+            
+            <div class="text-center sm:text-left pt-8 lg:pt-0">
+              <div class="hero-label-lockup">
+                <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-brand-logo" />
+                <span class="text-white/30">|</span>
+                <span class="text-amber-400 font-heading font-bold tracking-widest uppercase text-sm">For Kids & Teens</span>
+              </div>
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.8rem] leading-[1.1]">
+                Turn screen time into a tech superpower
+              </h1>
+              <p class="mt-6 text-lg sm:text-xl leading-relaxed text-brand-100 font-light">
+                Equip your child with future-ready skills. This friendly 5-day course teaches children as young as 8 how to use AI to build real, beautiful websites—with <strong class="text-white font-bold">absolutely zero coding required</strong>.
+              </p>
+              <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+                <a class="tw-btn-primary" href="/enrol-prompt-to-profit/">Enrol Your Child Now</a>
+                <a class="tw-btn-outline !bg-white/5 !text-white !ring-white/20 hover:!bg-white/10" href="#proof">See Kids' Projects</a>
+              </div>
+            </div>
+
+            <div class="mt-16 lg:mt-0 relative hidden sm:block">
+              <div class="relative w-full max-w-lg mx-auto lg:ml-auto">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-[2.5rem] blur-lg opacity-40 animate-pulse"></div>
+                
+                <img src="/assets/black-child-coding.jpg" alt="A brilliant 8-year-old black child smiling while building a website on a laptop" class="relative rounded-[2rem] shadow-float border-4 border-white/10 object-cover aspect-square w-full bg-brand-800" />
+                
+                <div class="absolute -bottom-6 -left-8 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-4 animate-float-slow border border-gray-100">
+                  <div class="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-inner">🚀</div>
+                  <div>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Project Status</p>
+                    <p class="text-sm font-extrabold text-brand-900">Website Published!</p>
+                  </div>
+                </div>
+
+                <div class="absolute top-10 -right-6 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-lg flex items-center gap-3 animate-float-slow border border-white/20" style="animation-delay: 2s;">
+                  <div class="bg-amber-100 w-10 h-10 rounded-full flex items-center justify-center text-lg">💡</div>
+                  <div>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Skill Unlocked</p>
+                    <p class="text-xs font-bold text-brand-900">AI Prompting</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white py-24 reveal relative">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            
+            <div class="lg:col-span-6">
+              <p class="tw-section-label">My Promise to Parents</p>
+              <h2 class="tw-h2 mb-6">Learning tech should boost their confidence, not crush it.</h2>
+              <p class="text-lg leading-relaxed text-gray-600 mb-8">
+                Traditional coding bootcamps for kids often end in frustration, tears, and boring syntax errors. We do it differently. By teaching your child to act as a "director" for AI, they get to focus on creativity, logic, and seeing their ideas come to life instantly.
+              </p>
+              <ul class="space-y-4">
+                <li class="flex items-start bg-brand-50 rounded-xl p-4 border border-brand-100">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <span class="text-brand-900 font-semibold">Transform YouTube and gaming time into productive building time.</span>
+                </li>
+                <li class="flex items-start bg-brand-50 rounded-xl p-4 border border-brand-100">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                  <span class="text-brand-900 font-semibold">Give them a massive confidence boost by publishing real projects online.</span>
+                </li>
+                <li class="flex items-start bg-brand-50 rounded-xl p-4 border border-brand-100">
+                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  <span class="text-brand-900 font-semibold">A safe, encouraging, completely beginner-friendly learning environment.</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="mt-16 lg:mt-0 lg:col-span-6">
+              <div class="rounded-[2rem] bg-brand-900 p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 rounded-full blur-[80px] opacity-20"></div>
+                <p class="text-amber-400 font-bold tracking-widest uppercase text-xs mb-8">3 Big Wins For Your Child</p>
+                <div class="space-y-8 relative z-10">
+                  <div>
+                    <h3 class="text-xl font-heading font-bold text-white mb-2">1. Instant Creative Reward</h3>
+                    <p class="text-brand-200 leading-relaxed text-sm">Instead of typing code for months to see a button, they build full web pages on Day 1.</p>
+                  </div>
+                  <div class="h-px w-full bg-white/10"></div>
+                  <div>
+                    <h3 class="text-xl font-heading font-bold text-white mb-2">2. Future-Proof Skills</h3>
+                    <p class="text-brand-200 leading-relaxed text-sm">They learn how to communicate with Artificial Intelligence—the most critical skill of the next decade.</p>
+                  </div>
+                  <div class="h-px w-full bg-white/10"></div>
+                  <div>
+                    <h3 class="text-xl font-heading font-bold text-white mb-2">3. Entrepreneurial Thinking</h3>
+                    <p class="text-brand-200 leading-relaxed text-sm">They will see how creating digital tools solves real problems, sparking early business mindsets.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section id="proof" class="bg-brand-50 bg-tech-grid border-y border-brand-100 py-24 reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <p class="tw-section-label !bg-white">Real Student Results</p>
+          <h2 class="tw-h2 mb-6">"My 8-year-old built 3 websites in one day!"</h2>
+          <p class="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+            This isn't theory. Children are taking this knowledge and building incredible things almost immediately. Explore this real website built by an 8-year-old student right after taking the class:
+          </p>
+
+          <div class="browser-mockup transform transition duration-500 hover:shadow-2xl">
+            <div class="browser-header">
+              <div class="browser-dots">
+                <div class="browser-dot bg-red-400"></div>
+                <div class="browser-dot bg-amber-400"></div>
+                <div class="browser-dot bg-green-400"></div>
+              </div>
+              <div class="browser-url">
+                tiny-lolly-2d2969.netlify.app
+              </div>
+            </div>
+            <iframe 
+              src="https://69e818fd29d582b06750c1df--tiny-lolly-2d2969.netlify.app" 
+              title="Website built by an 8-year-old student"
+              class="w-full h-[500px] md:h-[650px] bg-white border-0"
+              loading="lazy"
+            ></iframe>
+          </div>
+          
+          <div class="mt-8 flex justify-center">
+            <a href="https://69e818fd29d582b06750c1df--tiny-lolly-2d2969.netlify.app" target="_blank" class="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-800 transition-colors bg-white px-6 py-3 rounded-xl shadow-sm border border-brand-100">
+              Open site in new tab
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="tutor" class="bg-white py-24 reveal border-b border-gray-100">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            
+            <div class="lg:col-span-5 relative mb-12 lg:mb-0">
+              <div class="relative w-full max-w-md mx-auto">
+                <div class="absolute inset-0 bg-brand-100 rounded-[3rem] transform translate-x-4 translate-y-4"></div>
+                <img src="/assets/tochukwu.jpg" alt="Tochukwu Nkwocha" class="relative rounded-[3rem] shadow-xl border-8 border-white object-cover aspect-[4/5] w-full" loading="lazy" />
+              </div>
+            </div>
+
+            <div class="lg:col-span-7">
+              <p class="tw-section-label">Meet the Instructor</p>
+              <h2 class="tw-h2 mb-6">Hi, I'm Tochukwu. I make complex tech incredibly simple.</h2>
+              <p class="text-lg text-gray-600 leading-relaxed mb-6">
+                As a software engineer and AI educator, I build real tools for businesses—but my true passion is breaking down intimidating technology so anyone, <strong>especially children</strong>, can understand and use it confidently.
+              </p>
+              <p class="text-lg text-gray-600 leading-relaxed mb-8">
+                I believe that teaching kids tech shouldn't be about forcing them to memorize boring code. It should be about giving them a magic wand (AI) and teaching them the exact words to say to build whatever their imagination desires. In my class, there are no bad questions, and we celebrate every single milestone.
+              </p>
+              <div class="flex items-center gap-4 bg-brand-50 p-4 rounded-2xl border border-brand-100 max-w-md">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-2xl shrink-0">🛡️</div>
+                <p class="text-sm font-bold text-brand-900">A Safe, Encouraging Space</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-brand-900 py-24 reveal overflow-hidden relative">
+        <div class="absolute -right-40 -top-40 w-[500px] h-[500px] bg-brand-600 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
+        
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div class="text-center max-w-3xl mx-auto mb-16">
+            <p class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-400 mb-6 backdrop-blur-md">
+              What Parents Are Seeing
+            </p>
+            <h2 class="text-3xl font-heading font-extrabold text-white sm:text-4xl lg:text-5xl mb-6">Don't just take my word for it.</h2>
+          </div>
+          
+          <div class="testimonial-grid">
+
+            <article class="testimonial-card bg-white p-8 rounded-[2rem] shadow-soft flex flex-col justify-between h-full">
+              <div>
+                <div class="flex items-center gap-4 mb-6">
+                  <div class="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center font-heading font-bold text-brand-600 text-xl shrink-0">AO</div>
+                  <div>
+                    <h3 class="font-heading font-bold text-brand-900 text-lg">Anuri Okongwu</h3>
+                    <p class="text-sm text-gray-500 font-medium">Mother of two boys (JS1 & SS1)</p>
+                  </div>
+                </div>
+                <div class="flex gap-1 text-amber-400 mb-4">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+                <p class="text-gray-700 leading-relaxed italic">
+                  "Your Prompt to Profit class was truly excellent. Your teaching style is clear, practical, and very effective. I initially registered for my two sons who are in secondary school... Thanks to your training, they built their websites in just a few days without any prior knowledge of HTML and CSS, and they are already live. We are all excited."
+                </p>
+              </div>
+            </article>
+
+            <article class="testimonial-card bg-white p-8 rounded-[2rem] shadow-soft flex flex-col justify-between h-full">
+              <div>
+                <div class="flex items-center gap-4 mb-6">
+                  <div class="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center font-heading font-bold text-emerald-600 text-xl shrink-0">PM</div>
+                  <div>
+                    <h3 class="font-heading font-bold text-brand-900 text-lg">Proud Mum</h3>
+                    <p class="text-sm text-gray-500 font-medium">Mother of an 8-year-old</p>
+                  </div>
+                </div>
+                <div class="flex gap-1 text-amber-400 mb-4">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+                <p class="text-gray-700 leading-relaxed italic">
+                  "My 8-year-old child was able to follow the instructions so clearly. In just one single day, they built three completely different websites by themselves! I am so impressed with how accessible this was made for children to understand."
+                </p>
+              </div>
+            </article>
+
+            <article class="testimonial-card bg-white p-8 rounded-[2rem] shadow-soft flex flex-col justify-between h-full">
+              <div>
+                <div class="flex items-center gap-4 mb-6">
+                  <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center font-heading font-bold text-amber-600 text-xl shrink-0">DM</div>
+                  <div>
+                    <h3 class="font-heading font-bold text-brand-900 text-lg">David M.</h3>
+                    <p class="text-sm text-gray-500 font-medium">Father of a 10-year-old</p>
+                  </div>
+                </div>
+                <div class="flex gap-1 text-amber-400 mb-4">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+                <p class="text-gray-700 leading-relaxed italic">
+                  "My daughter used to spend hours just playing games on her tablet. This course flipped a switch in her brain. Now she's creating her own web pages about her favorite books and showing them off to her grandparents. The way Tochukwu explains AI makes it so accessible and fun!"
+                </p>
+              </div>
+            </article>
+
+          </div>
+        </div>
+      </section>
+
+      <section id="curriculum" class="bg-brand-50 py-24 reveal">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-16">
+            <p class="tw-section-label !bg-white">How We Do It</p>
+            <h2 class="tw-h2 mb-6">A one-week plan made for kids.</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+              We move fast, but we keep it incredibly simple. Your child can always pause the videos, rewind, and ask questions during our live calls.
+            </p>
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2">
+            <article class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 1 • Live Video Call</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Meeting their AI Assistant</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">We kick things off together. We teach them how to talk to AI safely, give it clear instructions, and understand what it can (and cannot) do.</p>
+            </article>
+
+            <article class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 2 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">The magic of websites</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">They will learn how websites actually work behind the scenes. Then, we use AI to build their very first simple webpage in minutes.</p>
+            </article>
+
+            <article class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 3 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Building their dream project</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">Now they turn their ideas into reality! Whether it's a page about their favorite hobby or a science project, they will guide AI to build it.</p>
+            </article>
+
+            <article class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 4 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Making it look cool & going live</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">We teach them how to ask AI for beautiful colors and layouts. Then, I'll show them how to put their website on the internet so they can share it!</p>
+            </article>
+
+            <article class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition-shadow sm:col-span-2 sm:max-w-md sm:mx-auto">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 5 • Live Video Call</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Fixing bugs and celebrating</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">We meet live again! We will fix any "bugs" they ran into, celebrate their finished websites, and talk about what they can build next.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="bg-white py-24 reveal border-t border-gray-100">
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div class="mb-12 text-center">
+            <p class="tw-section-label">FAQ</p>
+            <h2 class="tw-h2">Questions from Parents</h2>
+          </div>
+          <div class="faq-wrap">
+            <article class="faq-item">
+              <button class="faq-question" type="button">
+                What age is this course suitable for?
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div class="faq-answer">
+                <p>This course is designed for children ages 8 and above. As long as they can read, type, and use a mouse, they can successfully build websites with AI.</p>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">
+                Do I need to be tech-savvy to help them?
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div class="faq-answer">
+                <p>Not at all! You don't need any coding knowledge. Many parents choose to sit in and learn alongside their kids, while older children easily follow the videos independently.</p>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">
+                What kind of computer do they need?
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div class="faq-answer">
+                <p>Any basic laptop or desktop computer with an internet connection will work perfectly. They do not need an expensive or high-powered machine.</p>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question" type="button">
+                Is the AI tool safe for children?
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div class="faq-answer">
+                <p>Yes. We guide them on how to use standard, safe AI assistants strictly for educational coding and design purposes during the course.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="py-24 bg-brand-50 reveal px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto bg-brand-900 rounded-[3rem] shadow-2xl overflow-hidden relative border border-brand-800">
+          <div class="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-[0.05] pointer-events-none"></div>
+          <div class="absolute -left-40 -top-40 w-96 h-96 bg-brand-600 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
+
+          <div class="lg:grid lg:grid-cols-2 items-center relative z-10">
+            <div class="p-10 sm:p-16 lg:p-20">
+              <h2 class="text-4xl sm:text-5xl font-heading font-extrabold text-white leading-tight mb-6">Give them a skill that lasts a lifetime.</h2>
+              <p class="text-brand-200 text-lg sm:text-xl font-light leading-relaxed mb-10">
+                Join other parents who are turning their children's screen time into a productive, future-ready superpower.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-4">
+                <a class="tw-btn-primary !bg-white !text-brand-900 hover:!bg-brand-50" href="/enrol-prompt-to-profit/">Enrol Your Child Today</a>
+                <a class="tw-btn-outline !bg-transparent !text-white !ring-white/20 hover:!bg-white/10" href="/dashboard/">Pay in Installments</a>
+              </div>
+            </div>
+
+            <div class="hidden lg:block relative h-full min-h-[400px] bg-brand-800 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-tr from-brand-600 to-amber-400 opacity-20 mix-blend-overlay"></div>
+              <img src="/assets/kids-celebrating.jpg" alt="Happy children celebrating their successful tech project" class="absolute inset-0 w-full h-full object-cover mix-blend-luminosity opacity-80" onerror="this.style.display='none'" />
+              
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="relative w-64 h-64">
+                  <div class="absolute inset-0 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+                  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-to-br from-amber-400 to-brand-500 rounded-3xl shadow-2xl rotate-12 flex items-center justify-center">
+                    <span class="text-6xl text-white drop-shadow-md">🚀</span>
+                  </div>
+                  <div class="absolute top-10 left-0 w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl shadow-xl -rotate-12 flex items-center justify-center border border-white/30 animate-float-slow">
+                    <span class="text-2xl text-white">⭐</span>
+                  </div>
+                  <div class="absolute bottom-10 right-0 w-24 h-24 bg-brand-600/50 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center border border-white/20 animate-float-slow" style="animation-delay: 1.5s;">
+                    <span class="text-3xl text-white">💻</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+        </div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js"></script>
+    <script>
+      (function initFaqAccordion() {
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+          const btn = item.querySelector('.faq-question');
+          const answer = item.querySelector('.faq-answer');
+          
+          // Hide answers by default for clean look (or keep visible via CSS, but toggle logic is better)
+          answer.style.display = 'none';
+          
+          btn.addEventListener('click', () => {
+            const isVisible = answer.style.display === 'block';
+            answer.style.display = isVisible ? 'none' : 'block';
+            
+            // Rotate SVG arrow
+            const svg = btn.querySelector('svg');
+            if(svg) {
+              svg.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+              svg.style.transition = 'transform 0.3s ease';
+            }
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
