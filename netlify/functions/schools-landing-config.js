@@ -21,7 +21,7 @@ exports.handler = async function (event) {
   return json(200, {
     ok: true,
     trust: {
-      trainedValue: configValue("SCHOOLS_TRUST_TRAINED_VALUE", "200+", 80),
+      trainedValue: configValue("SCHOOLS_TRUST_TRAINED_VALUE", "", 80),
       trainedLabel: configValue("SCHOOLS_TRUST_TRAINED_LABEL", "Learners trained in the first 2 months after launch.", 240),
       reviewsValue: configValue("SCHOOLS_TRUST_REVIEWS_VALUE", "Multiple", 80),
       reviewsLabel: configValue("SCHOOLS_TRUST_REVIEWS_LABEL", "Positive parent and student reviews across early cohorts.", 240),
@@ -30,4 +30,3 @@ exports.handler = async function (event) {
     },
   });
 };
-
