@@ -12,6 +12,9 @@
     const isAuthed = !!authed;
     if (loginCard) loginCard.hidden = isAuthed;
     if (toolsCard) toolsCard.hidden = !isAuthed;
+    try {
+      document.dispatchEvent(new CustomEvent("internal-auth-state", { detail: { authed: isAuthed } }));
+    } catch (_error) {}
   }
 
   function nextUrl() {
@@ -28,7 +31,11 @@
       headers: { Accept: "application/json" },
       credentials: "include",
     });
-    return res.ok;
+    if (!res.ok) return { ok: false, account: null };
+    const data = await res.json().catch(function () {
+      return null;
+    });
+    return { ok: true, account: data && data.account ? data.account : null };
   }
 
   function withTimeout(promise, timeoutMs) {
@@ -53,7 +60,7 @@
     });
   }
 
-  async function login(password) {
+  async function login(email, password) {
     var controller = new AbortController();
     var timer = setTimeout(function () {
       controller.abort();
@@ -64,7 +71,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
         signal: controller.signal,
       });
     } catch (error) {
@@ -99,6 +106,7 @@
     loginForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       if (loginErr) loginErr.textContent = "";
+      const email = String((loginForm.email && loginForm.email.value) || "").trim().toLowerCase();
       const password = String((loginForm.password && loginForm.password.value) || "");
       if (!password.trim()) {
         if (loginErr) loginErr.textContent = "Password is required.";
@@ -109,7 +117,7 @@
         loginBtn.textContent = "Signing in...";
       }
       try {
-        await login(password);
+        await login(email, password);
         const next = nextUrl();
         if (next) {
           window.location.href = next;
@@ -135,15 +143,24 @@
     });
   }
 
-  // Avoid blank page while auth probe is in-flight.
-  setView(false);
+  // Keep the initial hidden state while auth probe runs to avoid login-card flash.
+  (function surfaceDeniedMessage() {
+    if (!loginErr) return;
+    try {
+      var qs = new URLSearchParams(window.location.search || "");
+      var denied = String(qs.get("denied") || "").trim();
+      if (denied) {
+        loginErr.textContent = "Access denied for " + denied + ".";
+      }
+    } catch (_error) {}
+  })();
 
   var sessionProbe = checkSession();
 
   sessionProbe
-    .then(function (authed) {
+    .then(function (session) {
       authResolved = true;
-      if (authed) {
+      if (session && session.ok) {
         setView(true);
       } else {
         setView(false);
@@ -156,10 +173,10 @@
 
   // If the auth endpoint is slow/unavailable, keep UI usable.
   withTimeout(sessionProbe, 2500)
-    .then(function (authed) {
+    .then(function (session) {
       if (authResolved) return;
       authResolved = true;
-      setView(!!authed);
+      setView(!!(session && session.ok));
     })
     .catch(function () {
       if (authResolved) return;

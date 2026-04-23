@@ -2,6 +2,7 @@
   var countEl = document.getElementById("studentSecurityAlertCount");
   var rowsEl = document.getElementById("studentSecurityAlertRows");
   if (!countEl || !rowsEl) return;
+  var sectionEl = rowsEl.closest("section");
   var actionConfirmModal = document.getElementById("actionConfirmModal");
   var actionConfirmBackdrop = document.getElementById("actionConfirmBackdrop");
   var actionConfirmCloseBtn = document.getElementById("actionConfirmCloseBtn");
@@ -12,6 +13,7 @@
   var latestItems = [];
   var resettingByAccountId = {};
   var feedbackTimeout = 0;
+  var hasBootstrapped = false;
 
   function clean(value) {
     return String(value || "").trim();
@@ -110,6 +112,10 @@
     }, 3200);
   }
 
+  function hideSection() {
+    if (sectionEl) sectionEl.classList.add("hidden");
+  }
+
   function closeActionConfirm(result) {
     if (!actionConfirmModal) return;
     actionConfirmModal.setAttribute("aria-hidden", "true");
@@ -150,6 +156,16 @@
     var json = await res.json().catch(function () {
       return null;
     });
+    if (res.status === 403) {
+      var denied = clean(json && json.error).toLowerCase();
+      if (denied.indexOf("access denied") > -1) {
+        hideSection();
+        return;
+      }
+    }
+    if (res.status === 401) {
+      throw new Error("Not signed in");
+    }
     if (!res.ok || !json || !json.ok) {
       throw new Error((json && json.error) || "Could not load security alerts.");
     }
@@ -235,8 +251,25 @@
     if (actionConfirmModal.getAttribute("aria-hidden") === "false") closeActionConfirm(false);
   });
 
-  load().catch(function (error) {
-    countEl.textContent = "!";
-    rowsEl.innerHTML = '<p class="text-sm text-red-600">' + escapeHtml(error.message || "Could not load security alerts.") + "</p>";
+  function bootLoad() {
+    if (hasBootstrapped) return;
+    hasBootstrapped = true;
+    load().catch(function (error) {
+      var text = clean(error && error.message);
+      if (/not signed in|unauthorized|session/i.test(text)) {
+        hasBootstrapped = false;
+        return;
+      }
+      countEl.textContent = "!";
+      rowsEl.innerHTML = '<p class="text-sm text-red-600">' + escapeHtml(text || "Could not load security alerts.") + "</p>";
+    });
+  }
+
+  document.addEventListener("internal-auth-state", function (event) {
+    var authed = Boolean(event && event.detail && event.detail.authed);
+    if (!authed) return;
+    bootLoad();
   });
+
+  bootLoad();
 })();

@@ -1,7 +1,9 @@
 const { json, badMethod } = require("./_lib/http");
+const { getPool } = require("./_lib/db");
 const { sendEmail } = require("./_lib/email");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
+const { ensureSchoolScorecardTablesTochukwu, saveSchoolScorecardLead } = require("./_lib/school-scorecards-tochukwu");
 
 const BREVO_SCHOOL_READINESS_LIST_ID = 6;
 
@@ -330,6 +332,7 @@ exports.handler = async function (event) {
   ].join("\n");
 
   try {
+    const leadUuid = `scorecard_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
     await sendEmail({
       to: "support@tochukwunkwocha.com",
       subject: internalSubject,
@@ -394,6 +397,35 @@ exports.handler = async function (event) {
       brevoError = error && error.message ? String(error.message) : "brevo_sync_failed";
     }
 
+    let stored = false;
+    try {
+      const pool = getPool();
+      await ensureSchoolScorecardTablesTochukwu(pool);
+      await saveSchoolScorecardLead(pool, {
+        leadUuid,
+        fullName,
+        schoolName,
+        workEmail,
+        phone,
+        role,
+        studentPopulation,
+        score,
+        bandKey,
+        headline: band.headline,
+        nextStep: band.ctaText,
+        answers: scoreResult.normalizedAnswers,
+        sourcePath: leadSourcePath,
+        eventSourceUrl,
+        metaEventId,
+        metaLeadSent,
+        brevoSynced,
+        brevoError,
+        clientIpAddress: reqMeta.clientIpAddress,
+        clientUserAgent: reqMeta.clientUserAgent,
+      });
+      stored = true;
+    } catch (_storeError) {}
+
     return json(200, {
       ok: true,
       score,
@@ -408,6 +440,9 @@ exports.handler = async function (event) {
         synced: brevoSynced,
         listId: BREVO_SCHOOL_READINESS_LIST_ID,
         error: brevoError || null,
+      },
+      storage: {
+        stored,
       },
     });
   } catch (error) {

@@ -28,9 +28,16 @@ exports.handler = async function (event) {
   const action = clean(body.action, 40).toLowerCase();
   const slotStartIso = clean(body.slotStartIso, 64);
   const note = clean(body.note, 255);
+  const outcomeStatus = clean(body.outcomeStatus, 40).toLowerCase();
+  const outcomeFeedback = clean(body.outcomeFeedback, 4000);
+  const assignedOwner = clean(body.assignedOwner, 180);
+  const nextFollowUpAtIso = clean(body.nextFollowUpAtIso, 64);
+  const outcomeUpdatedBy = clean(body.outcomeUpdatedBy, 120) || "admin";
 
   if (!bookingUuid || !action) return json(400, { ok: false, error: "bookingUuid and action are required" });
-  if (action !== "cancel" && action !== "reschedule") return json(400, { ok: false, error: "Action must be cancel or reschedule" });
+  if (action !== "cancel" && action !== "reschedule" && action !== "outcome") {
+    return json(400, { ok: false, error: "Action must be cancel, reschedule, or outcome" });
+  }
 
   const pool = getPool();
   try {
@@ -42,6 +49,48 @@ exports.handler = async function (event) {
     const [rows] = await pool.query(`SELECT * FROM ${SCHOOL_CALL_BOOKINGS_TABLE} WHERE booking_uuid = ? LIMIT 1`, [bookingUuid]);
     if (!rows || !rows.length) return json(404, { ok: false, error: "Booking not found" });
     const booking = rows[0];
+
+    if (action === "outcome") {
+      const allowedOutcomes = new Set(["pending", "completed", "no_show", "won", "lost", "follow_up"]);
+      if (outcomeStatus && !allowedOutcomes.has(outcomeStatus)) {
+        return json(400, { ok: false, error: "Invalid outcomeStatus" });
+      }
+
+      let nextFollowUpAtSql = null;
+      if (nextFollowUpAtIso) {
+        const date = new Date(nextFollowUpAtIso);
+        if (!Number.isFinite(date.getTime())) return json(400, { ok: false, error: "Invalid nextFollowUpAtIso" });
+        nextFollowUpAtSql = sqlFromIso(date.toISOString());
+      }
+
+      await pool.query(
+        `UPDATE ${SCHOOL_CALL_BOOKINGS_TABLE}
+         SET assigned_owner = ?,
+             call_outcome_status = ?,
+             outcome_feedback = ?,
+             next_follow_up_at = ?,
+             outcome_updated_by = ?,
+             outcome_updated_at = ?,
+             updated_at = ?
+         WHERE id = ?`,
+        [
+          assignedOwner || null,
+          outcomeStatus || null,
+          outcomeFeedback || null,
+          nextFollowUpAtSql,
+          outcomeUpdatedBy,
+          nowSql(),
+          nowSql(),
+          Number(booking.id),
+        ]
+      );
+
+      return json(200, {
+        ok: true,
+        status: clean(booking.status, 40).toLowerCase(),
+        outcome: outcomeStatus || null,
+      });
+    }
 
     if (action === "cancel") {
       const meetingId = clean(booking.zoom_meeting_id, 120);

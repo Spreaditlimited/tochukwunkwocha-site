@@ -9,6 +9,7 @@
     { path: "/internal/learning-support/", label: "Learning Support" },
     { path: "/internal/schools/", label: "Schools" },
     { path: "/internal/school-calls/", label: "School Calls" },
+    { path: "/internal/school-scorecards/", label: "School Scorecards" },
     { path: "/internal/settings/", label: "Settings" },
   ];
   var menuLinks = Array.prototype.slice.call(
@@ -44,6 +45,7 @@
     if (path === "/internal/learning-support/") return { page: "Learning Support", doc: "Learning Support | Internal" };
     if (path === "/internal/schools/") return { page: "Schools", doc: "Schools | Internal" };
     if (path === "/internal/school-calls/") return { page: "School Calls", doc: "School Calls | Internal" };
+    if (path === "/internal/school-scorecards/") return { page: "School Scorecards", doc: "School Scorecards | Internal" };
     if (path === "/internal/settings/") return { page: "Settings", doc: "Settings | Internal" };
     if (path === "/internal/verifier/") return { page: "Business Plan Verification Queue", doc: "Business Plan Verifier | Internal" };
     return null;
@@ -94,6 +96,8 @@
 
   var currentPath = normalizePath(window.location.pathname);
   var hiddenInternalPaths = ["/internal/leadpage-jobs/", "/internal/business-plan-manager/", "/internal/verifier/"];
+  var allowedPages = null;
+  var permissionsHydrated = false;
 
   function injectHiddenScrollbarStyles() {
     if (!document || !document.head) return;
@@ -233,6 +237,37 @@
     }
   }
 
+  function ensureSchoolScorecardsNavLink() {
+    var added = [];
+    var asides = Array.prototype.slice.call(document.querySelectorAll("aside"));
+    asides.forEach(function (aside) {
+      if (!aside) return;
+      var existing = aside.querySelector('a[href="/internal/school-scorecards/"]');
+      if (existing) return;
+
+      var schoolCallsLink = aside.querySelector('a[href="/internal/school-calls/"]');
+      var settingsLink = aside.querySelector('a[href="/internal/settings/"]');
+      var anchor = schoolCallsLink || settingsLink;
+      if (!anchor || !anchor.parentNode) return;
+
+      var a = document.createElement("a");
+      a.href = "/internal/school-scorecards/";
+      a.className = "flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors group";
+      a.textContent = "School Scorecards";
+
+      if (schoolCallsLink && schoolCallsLink.parentNode) {
+        schoolCallsLink.parentNode.insertBefore(a, schoolCallsLink.nextSibling);
+      } else {
+        anchor.parentNode.insertBefore(a, anchor);
+      }
+      added.push(a);
+    });
+
+    if (added.length) {
+      menuLinks = menuLinks.concat(added);
+    }
+  }
+
   function canonicalizeInternalNav() {
     sidebars.forEach(function (aside) {
       if (!aside) return;
@@ -298,6 +333,8 @@
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m2-10h6m-6 4h6" /></svg>',
       "/internal/school-calls/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" /></svg>',
+      "/internal/school-scorecards/":
+        '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>',
       "/internal/settings/":
         '<svg class="h-5 w-5 text-brand-300 group-hover:text-brand-100 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.591 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.59c1.756.427 1.756 2.925 0 3.352a1.724 1.724 0 00-1.066 2.59c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.59 1.066c-.427 1.756-2.925 1.756-3.352 0a1.724 1.724 0 00-2.59-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.59c-1.756-.427-1.756-2.925 0-3.352a1.724 1.724 0 001.066-2.59c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.59-1.066z" /></svg>',
       "/internal/verifier/":
@@ -476,6 +513,64 @@
     return hiddenInternalPaths.indexOf(path) !== -1;
   }
 
+  function fetchSessionAccess() {
+    return fetch("/.netlify/functions/admin-session", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    }).then(function (res) {
+      if (!res.ok) return null;
+      return res.json().catch(function () { return null; });
+    }).then(function (data) {
+      var account = data && data.account ? data.account : null;
+      if (!account) return null;
+      if (account.isOwner === true) return [];
+      var pages = Array.isArray(account.allowedPages) ? account.allowedPages : [];
+      return pages.map(function (x) { return normalizePath(x); }).filter(Boolean);
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function applyPagePermissions() {
+    if (!Array.isArray(allowedPages)) return;
+
+    menuLinks.forEach(function (link) {
+      link.classList.remove("hidden");
+    });
+    var allCardLinks = Array.prototype.slice.call(document.querySelectorAll('main article a[href^="/internal/"]'));
+    allCardLinks.forEach(function (cardLink) {
+      var card = cardLink.closest("article");
+      if (card) card.classList.remove("hidden");
+    });
+    hideInternalEntries();
+
+    if (!allowedPages.length) return;
+
+    menuLinks.forEach(function (link) {
+      var targetPath = getPathFromHref(link.getAttribute("href"));
+      if (!targetPath) return;
+      if (targetPath === "/internal/") return;
+      if (allowedPages.indexOf(targetPath) === -1) {
+        link.classList.add("hidden");
+      }
+    });
+
+    allCardLinks.forEach(function (cardLink) {
+      var targetPath = getPathFromHref(cardLink.getAttribute("href"));
+      if (!targetPath || targetPath === "/internal/") return;
+      if (allowedPages.indexOf(targetPath) === -1) {
+        var card = cardLink.closest("article");
+        if (card) card.classList.add("hidden");
+      }
+    });
+
+    if (currentPath !== "/internal/" && allowedPages.indexOf(currentPath) === -1) {
+      var denied = encodeURIComponent(currentPath.replace(/^\/internal\/|\/$/g, "") || "requested page");
+      window.location.replace("/internal/?denied=" + denied);
+    }
+  }
+
   function redirectHiddenCurrentPath() {
     if (!shouldHidePath(currentPath)) return;
     window.location.replace("/internal/");
@@ -511,6 +606,31 @@
     linkEl.setAttribute("aria-busy", "true");
   }
 
+  function applyPermissionLoadingMask() {
+    if (permissionsHydrated) return;
+    menuLinks.forEach(function (link) {
+      var targetPath = getPathFromHref(link.getAttribute("href"));
+      if (!targetPath || targetPath === "/internal/" || shouldHidePath(targetPath)) return;
+      link.classList.add("hidden");
+    });
+    var cardLinks = Array.prototype.slice.call(document.querySelectorAll('main article a[href^="/internal/"]'));
+    cardLinks.forEach(function (cardLink) {
+      var targetPath = getPathFromHref(cardLink.getAttribute("href"));
+      if (!targetPath || targetPath === "/internal/" || shouldHidePath(targetPath)) return;
+      var card = cardLink.closest("article");
+      if (card) card.classList.add("hidden");
+    });
+  }
+
+  function hydratePermissions() {
+    return fetchSessionAccess().then(function (pages) {
+      if (!Array.isArray(pages)) return;
+      permissionsHydrated = true;
+      allowedPages = pages;
+      applyPagePermissions();
+    });
+  }
+
   syncPageTitle();
   injectHiddenScrollbarStyles();
   redirectHiddenCurrentPath();
@@ -518,6 +638,7 @@
   ensureLearningProgressNavLink();
   ensureSchoolsNavLink();
   ensureSchoolCallsNavLink();
+  ensureSchoolScorecardsNavLink();
   sidebars = Array.prototype.slice.call(document.querySelectorAll("aside")).filter(function (aside) {
     return !!aside.querySelector('a[href^="/internal/"]');
   });
@@ -527,6 +648,13 @@
   ensureSidebarLabelWrappers();
   ensureRailToggleButtons();
   applySidebarCollapsed(readCollapsedPref());
+  applyPermissionLoadingMask();
+  hydratePermissions();
+  document.addEventListener("internal-auth-state", function (event) {
+    var authed = Boolean(event && event.detail && event.detail.authed);
+    if (!authed) return;
+    hydratePermissions();
+  });
   window.addEventListener("resize", function () {
     applySidebarCollapsed(readCollapsedPref());
   });

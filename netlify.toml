@@ -27,6 +27,11 @@
   to = "/schools/login/"
   status = 301
 
+[[redirects]]
+  from = "/courses/prompt-to-profit-kids/"
+  to = "/courses/prompt-to-profit-children/"
+  status = 301
+
 [[headers]]
   for = "/dashboard"
   [headers.values]
@@ -61,3 +66,6 @@
 
 [functions."affiliate-commissions-mature-cron"]
   schedule = "0 * * * *"
+
+[functions."school-call-reminder-cron"]
+  schedule = "*/10 * * * *"

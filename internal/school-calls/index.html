@@ -32,6 +32,46 @@
         },
       };
     </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        body.modal-open {
+          overflow: hidden;
+        }
+        .picker-wrap {
+          @apply relative;
+        }
+        .picker-select {
+          @apply block w-full appearance-none rounded-xl border-0 bg-white py-3 pl-4 pr-11 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all;
+          @apply hover:ring-brand-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-600;
+        }
+        .picker-wrap__icon {
+          @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-600;
+        }
+        .review-modal {
+          @apply fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300;
+        }
+        .review-modal[aria-hidden="true"] {
+          @apply opacity-0 pointer-events-none;
+        }
+        .review-modal[aria-hidden="false"] {
+          @apply opacity-100 pointer-events-auto;
+        }
+        .review-modal__backdrop {
+          @apply absolute inset-0 bg-gray-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default;
+        }
+        .review-modal__panel {
+          @apply relative bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 sm:p-8 transform transition-transform duration-300 mx-4;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .review-modal[aria-hidden="true"] .review-modal__panel {
+          @apply translate-y-4 scale-95;
+        }
+        .review-modal[aria-hidden="false"] .review-modal__panel {
+          @apply translate-y-0 scale-100;
+        }
+      }
+    </style>
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden">
     <section class="flex h-full w-full">
@@ -63,7 +103,9 @@
             </label>
             <h2 class="text-xl font-heading font-extrabold text-gray-900">School Calls</h2>
           </div>
-          <button id="schoolCallsRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-500">Refresh</button>
+          <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
+            Sign out
+          </button>
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -77,6 +119,8 @@
                       <th class="text-left px-4 py-3">School</th>
                       <th class="text-left px-4 py-3">Contact</th>
                       <th class="text-left px-4 py-3">Slot</th>
+                      <th class="text-left px-4 py-3">Owner</th>
+                      <th class="text-left px-4 py-3">Outcome</th>
                       <th class="text-left px-4 py-3">Status</th>
                       <th class="text-left px-4 py-3">Zoom</th>
                       <th class="text-right px-4 py-3">Actions</th>
@@ -91,8 +135,86 @@
       </div>
     </section>
 
+    <div class="review-modal" id="schoolCallModal" aria-hidden="true">
+      <button type="button" class="review-modal__backdrop" data-school-call-modal-close aria-label="Close"></button>
+      <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="schoolCallModalTitle">
+        <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" data-school-call-modal-close aria-label="Close dialog">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+
+        <div class="mb-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-1" id="schoolCallModalEyebrow">School call action</p>
+          <h3 class="text-2xl font-heading font-bold text-gray-900" id="schoolCallModalTitle">Confirm action</h3>
+          <p class="mt-2 text-sm text-gray-600" id="schoolCallModalDesc"></p>
+        </div>
+
+        <form id="schoolCallModalForm" class="space-y-5" novalidate>
+          <div id="schoolCallModalOutcomeFields" class="space-y-4 hidden">
+            <div>
+              <label for="schoolCallOutcomeStatus" class="block text-sm font-semibold leading-6 text-gray-900">Outcome status</label>
+              <div class="picker-wrap mt-2">
+                <select id="schoolCallOutcomeStatus" class="picker-select">
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="no_show">No show</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                  <option value="follow_up">Follow up</option>
+                </select>
+                <span class="picker-wrap__icon" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" /></svg>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label for="schoolCallAssignedOwner" class="block text-sm font-semibold leading-6 text-gray-900">Assigned owner</label>
+              <input id="schoolCallAssignedOwner" type="text" placeholder="Closer/admin name" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="schoolCallFollowUpAt" class="block text-sm font-semibold leading-6 text-gray-900">Next follow-up (optional)</label>
+              <input id="schoolCallFollowUpAt" type="datetime-local" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+            <div>
+              <label for="schoolCallOutcomeFeedback" class="block text-sm font-semibold leading-6 text-gray-900">Feedback / call notes</label>
+              <textarea id="schoolCallOutcomeFeedback" rows="4" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm"></textarea>
+            </div>
+          </div>
+
+          <div id="schoolCallModalRescheduleFields" class="space-y-4 hidden">
+            <div>
+              <label for="schoolCallRescheduleSlot" class="block text-sm font-semibold leading-6 text-gray-900">New slot</label>
+              <div class="picker-wrap mt-2">
+                <select id="schoolCallRescheduleSlot" class="picker-select"></select>
+                <span class="picker-wrap__icon" aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" /></svg>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label for="schoolCallRescheduleNote" class="block text-sm font-semibold leading-6 text-gray-900">Reschedule note (optional)</label>
+              <input id="schoolCallRescheduleNote" type="text" placeholder="Rescheduled by admin" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm" />
+            </div>
+          </div>
+
+          <div id="schoolCallModalCancelFields" class="space-y-4 hidden">
+            <div>
+              <label for="schoolCallCancelNote" class="block text-sm font-semibold leading-6 text-gray-900">Cancellation note</label>
+              <textarea id="schoolCallCancelNote" rows="3" class="mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm">Cancelled by admin</textarea>
+            </div>
+          </div>
+
+          <p id="schoolCallModalError" class="text-sm text-red-600 hidden" role="alert"></p>
+
+          <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-gray-100">
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-school-call-modal-close>Cancel</button>
+            <button type="submit" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors" id="schoolCallModalConfirmBtn">Confirm Action</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script src="/assets/internal-auth.js" defer></script>
     <script src="/assets/internal-nav.js?v=20260412a" defer></script>
-    <script src="/assets/admin-school-calls.js?v=20260412a" defer></script>
+    <script src="/assets/admin-school-calls.js?v=20260423a" defer></script>
   </body>
 </html>

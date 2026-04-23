@@ -42,6 +42,12 @@ async function ensureSchoolCallTablesTochukwu(pool) {
       zoom_start_url VARCHAR(1200) NULL,
       cancel_reason VARCHAR(255) NULL,
       reschedule_note VARCHAR(255) NULL,
+      assigned_owner VARCHAR(180) NULL,
+      call_outcome_status VARCHAR(40) NULL,
+      outcome_feedback TEXT NULL,
+      next_follow_up_at DATETIME NULL,
+      outcome_updated_by VARCHAR(120) NULL,
+      outcome_updated_at DATETIME NULL,
       cancelled_at DATETIME NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
@@ -51,14 +57,22 @@ async function ensureSchoolCallTablesTochukwu(pool) {
       UNIQUE KEY uniq_school_call_slot_start_tochukwu (slot_start_utc),
       KEY idx_school_call_email_tochukwu (work_email),
       KEY idx_school_call_status_tochukwu (status),
+      KEY idx_school_call_outcome_status_tochukwu (call_outcome_status),
       KEY idx_school_call_zoom_meeting_tochukwu (zoom_meeting_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN cancel_reason VARCHAR(255) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN reschedule_note VARCHAR(255) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN assigned_owner VARCHAR(180) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN call_outcome_status VARCHAR(40) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN outcome_feedback TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN next_follow_up_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN outcome_updated_by VARCHAR(120) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN outcome_updated_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN cancelled_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD UNIQUE KEY uniq_school_call_slot_start_tochukwu (slot_start_utc)`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD KEY idx_school_call_outcome_status_tochukwu (call_outcome_status)`);
 }
 
 function getLondonDateParts(date) {
@@ -115,16 +129,24 @@ function londonLocalToUtcIso(year, month, day, hour, minute) {
 }
 
 function sqlFromIso(iso) {
-  const d = new Date(iso);
+  const d = iso instanceof Date ? new Date(iso.getTime()) : new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
   return d.toISOString().slice(0, 19).replace("T", " ");
 }
 
 function isoFromSql(value) {
-  const raw = clean(value, 40);
+  if (!value) return "";
+  if (value instanceof Date) {
+    const fromDate = new Date(value.getTime());
+    if (!Number.isFinite(fromDate.getTime())) return "";
+    return fromDate.toISOString();
+  }
+
+  const raw = String(value).trim().slice(0, 64);
   if (!raw) return "";
-  const normalized = raw.replace(" ", "T") + "Z";
-  const d = new Date(normalized);
+  const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const withZone = /(?:Z|[+\-]\d{2}:\d{2})$/i.test(normalized) ? normalized : normalized + "Z";
+  const d = new Date(withZone);
   if (!Number.isFinite(d.getTime())) return "";
   return d.toISOString();
 }
@@ -186,6 +208,7 @@ async function fetchActiveBookedSlotMap(pool) {
 }
 
 function toPublicBookingRow(row) {
+  const slotStartIso = isoFromSql(row.slot_start_utc);
   return {
     bookingUuid: clean(row.booking_uuid, 72),
     fullName: clean(row.full_name, 180),
@@ -196,7 +219,7 @@ function toPublicBookingRow(row) {
     studentPopulation: clean(row.student_population, 60),
     timezone: clean(row.timezone_label, 80) || "UTC",
     status: clean(row.status, 40),
-    slotStartIso: isoFromSql(row.slot_start_utc),
+    slotStartIso: slotStartIso,
     slotEndIso: isoFromSql(row.slot_end_utc),
     durationMinutes: Number(row.duration_minutes || 30),
     zoomJoinUrl: clean(row.zoom_join_url, 1200),
@@ -205,8 +228,14 @@ function toPublicBookingRow(row) {
     updatedAt: isoFromSql(row.updated_at),
     cancelReason: clean(row.cancel_reason, 255),
     rescheduleNote: clean(row.reschedule_note, 255),
+    assignedOwner: clean(row.assigned_owner, 180),
+    callOutcomeStatus: clean(row.call_outcome_status, 40).toLowerCase(),
+    outcomeFeedback: clean(row.outcome_feedback, 4000),
+    nextFollowUpAt: isoFromSql(row.next_follow_up_at),
+    outcomeUpdatedBy: clean(row.outcome_updated_by, 120),
+    outcomeUpdatedAt: isoFromSql(row.outcome_updated_at),
     cancelledAt: isoFromSql(row.cancelled_at),
-    slotLabel: slotLabel(isoFromSql(row.slot_start_utc)),
+    slotLabel: slotLabel(slotStartIso),
   };
 }
 
