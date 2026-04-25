@@ -33,7 +33,7 @@
     "prompt-to-profit": {
       name: "Prompt to Profit",
       intro:
-        "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
+        "Pay now to reserve your spot. Your learning account will be created immediately, and once classes begin, you will have access to both the live and recorded lessons.",
     },
     "prompt-to-production": {
       name: "Prompt to Profit Advanced",
@@ -193,7 +193,7 @@
   function launchScheduleText() {
     var startDate = parseBatchStart(activeCourseBatchStartAt);
     if (!startDate) return "";
-    return "Batch starts " + formatDayTime(startDate, "Africa/Lagos") + " WAT.";
+    return "Classes begin " + formatDayTime(startDate, "Africa/Lagos") + " WAT.";
   }
 
   function updateIntro() {
