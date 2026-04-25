@@ -1,6 +1,7 @@
 const { nowSql } = require("./db");
 
 const SCHOOL_CALL_BOOKINGS_TABLE = "school_call_bookings_tochukwu";
+const SCHOOL_CALL_TIMEZONE = "Africa/Lagos";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 400);
@@ -32,7 +33,7 @@ async function ensureSchoolCallTablesTochukwu(pool) {
       phone VARCHAR(80) NULL,
       role_title VARCHAR(140) NULL,
       student_population VARCHAR(60) NULL,
-      timezone_label VARCHAR(80) NOT NULL DEFAULT 'UTC',
+      timezone_label VARCHAR(80) NOT NULL DEFAULT 'Africa/Lagos',
       slot_start_utc DATETIME NULL,
       slot_end_utc DATETIME NULL,
       duration_minutes INT NOT NULL DEFAULT 30,
@@ -75,9 +76,9 @@ async function ensureSchoolCallTablesTochukwu(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD KEY idx_school_call_outcome_status_tochukwu (call_outcome_status)`);
 }
 
-function getLondonDateParts(date) {
+function getLagosDateParts(date) {
   const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
+    timeZone: SCHOOL_CALL_TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -120,10 +121,10 @@ function timeZoneOffsetMinutes(date, timeZone) {
   return (asUTC - date.getTime()) / 60000;
 }
 
-function londonLocalToUtcIso(year, month, day, hour, minute) {
+function lagosLocalToUtcIso(year, month, day, hour, minute) {
   const naiveUtcMs = Date.UTC(year, month - 1, day, hour, minute, 0);
   const probe = new Date(naiveUtcMs);
-  const offsetMin = timeZoneOffsetMinutes(probe, "Europe/London");
+  const offsetMin = timeZoneOffsetMinutes(probe, SCHOOL_CALL_TIMEZONE);
   const utcMs = naiveUtcMs - offsetMin * 60000;
   return new Date(utcMs).toISOString();
 }
@@ -157,7 +158,7 @@ function slotLabel(iso) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "full",
     timeStyle: "short",
-    timeZone: "Europe/London",
+    timeZone: SCHOOL_CALL_TIMEZONE,
   }).format(d);
 }
 
@@ -167,15 +168,15 @@ function buildCandidateSlots(input) {
   const now = new Date();
   const slots = [];
 
-  const londonHours = [10, 12, 14, 16];
+  const lagosHours = [10, 12, 14, 16];
   for (let i = 0; i < days; i += 1) {
     const cursor = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
-    const parts = getLondonDateParts(cursor);
+    const parts = getLagosDateParts(cursor);
     if (!parts.year || !parts.month || !parts.day) continue;
     if (parts.weekday === "sat" || parts.weekday === "sun") continue;
 
-    for (const hour of londonHours) {
-      const startIso = londonLocalToUtcIso(parts.year, parts.month, parts.day, hour, 0);
+    for (const hour of lagosHours) {
+      const startIso = lagosLocalToUtcIso(parts.year, parts.month, parts.day, hour, 0);
       const startDate = new Date(startIso);
       if (!Number.isFinite(startDate.getTime())) continue;
       if (startDate.getTime() <= now.getTime() + 2 * 60 * 60 * 1000) continue;
@@ -217,7 +218,7 @@ function toPublicBookingRow(row) {
     phone: clean(row.phone, 80),
     role: clean(row.role_title, 140),
     studentPopulation: clean(row.student_population, 60),
-    timezone: clean(row.timezone_label, 80) || "UTC",
+    timezone: clean(row.timezone_label, 80) || SCHOOL_CALL_TIMEZONE,
     status: clean(row.status, 40),
     slotStartIso: slotStartIso,
     slotEndIso: isoFromSql(row.slot_end_utc),
@@ -251,4 +252,5 @@ module.exports = {
   fetchActiveBookedSlotMap,
   toPublicBookingRow,
   slotLabel,
+  SCHOOL_CALL_TIMEZONE,
 };

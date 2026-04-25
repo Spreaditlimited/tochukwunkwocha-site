@@ -15,6 +15,7 @@ const { ensureLearningAccessOverridesTable, getActiveLearningAccessOverride } = 
 
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 const LEARNING_WALL_CLOCK_TIME_ZONE = "Africa/Lagos";
+const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -36,6 +37,11 @@ function parseSqlDateMs(value) {
   const normalized = raw.indexOf("T") !== -1 ? raw : raw.replace(" ", "T");
   const ms = new Date(normalized + "Z").getTime();
   return Number.isFinite(ms) ? ms : NaN;
+}
+
+function normalizeModuleBatchAccessMode(value) {
+  const mode = clean(value, 24).toLowerCase();
+  return mode === "immediate" ? "immediate" : "drip";
 }
 
 function nowInTimeZoneWallClockMs(timeZone) {
@@ -69,6 +75,7 @@ function nowInTimeZoneWallClockMs(timeZone) {
 const moduleColumnCache = new Map();
 const lessonColumnCache = new Map();
 let moduleBatchDripsTableExists = null;
+let moduleBatchDripsAccessModeColumnExists = null;
 let courseModuleMappingsTableExists = null;
 
 async function hasModuleColumn(pool, columnName) {
@@ -121,6 +128,21 @@ async function hasModuleBatchDripsTable(pool) {
   return moduleBatchDripsTableExists;
 }
 
+async function hasModuleBatchDripsAccessModeColumn(pool) {
+  if (typeof moduleBatchDripsAccessModeColumnExists === "boolean") return moduleBatchDripsAccessModeColumnExists;
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = 'access_mode'
+     LIMIT 1`,
+    [MODULE_BATCH_DRIPS_TABLE]
+  );
+  moduleBatchDripsAccessModeColumnExists = Array.isArray(rows) && rows.length > 0;
+  return moduleBatchDripsAccessModeColumnExists;
+}
+
 async function hasCourseModuleMappingsTable(pool) {
   if (typeof courseModuleMappingsTableExists === "boolean") return courseModuleMappingsTableExists;
   const [rows] = await pool.query(
@@ -144,9 +166,16 @@ async function loadModuleBatchDripMap(pool, moduleIds) {
   if (!ids.length) return new Map();
   const exists = await hasModuleBatchDripsTable(pool).catch(function () { return false; });
   if (!exists) return new Map();
+  const hasAccessMode = await hasModuleBatchDripsAccessModeColumn(pool).catch(function () { return false; });
   const placeholders = ids.map(function () { return "?"; }).join(",");
+  const accessModeSelect = hasAccessMode
+    ? "access_mode"
+    : `CASE
+         WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN 'immediate'
+         ELSE 'drip'
+       END AS access_mode`;
   const [rows] = await pool.query(
-    `SELECT module_id, batch_key, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
+    `SELECT module_id, batch_key, ${accessModeSelect}, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
      FROM ${MODULE_BATCH_DRIPS_TABLE}
      WHERE module_id IN (${placeholders})`,
     ids
@@ -155,10 +184,14 @@ async function loadModuleBatchDripMap(pool, moduleIds) {
   (Array.isArray(rows) ? rows : []).forEach(function (row) {
     const moduleId = Number(row && row.module_id || 0);
     const batchKey = clean(row && row.batch_key, 64).toLowerCase();
+    const accessMode = normalizeModuleBatchAccessMode(row && row.access_mode);
     const dripAtMs = parseSqlDateMs(row && row.drip_at);
-    if (!(moduleId > 0) || !batchKey || !Number.isFinite(dripAtMs)) return;
+    if (!(moduleId > 0) || !batchKey) return;
     if (!map.has(moduleId)) map.set(moduleId, new Map());
-    map.get(moduleId).set(batchKey, dripAtMs);
+    map.get(moduleId).set(batchKey, {
+      access_mode: accessMode,
+      drip_at_ms: Number.isFinite(dripAtMs) ? dripAtMs : NaN,
+    });
   });
   return map;
 }
@@ -267,15 +300,22 @@ function moduleIsReleasedForContext(moduleRow, context, nowMsInput) {
     ? context.module_batch_drip_map.get(moduleId)
     : null;
   if (schedules && schedules instanceof Map && schedules.size > 0) {
-    if (!learnerBatchKey) return true;
-    if (!schedules.has(learnerBatchKey)) return true;
-    return nowMs >= Number(schedules.get(learnerBatchKey));
+    // When a module has explicit per-batch schedules, enforce strict cohort isolation.
+    if (!learnerBatchKey) return false;
+    if (!schedules.has(learnerBatchKey)) return false;
+    const entry = schedules.get(learnerBatchKey);
+    const mode = normalizeModuleBatchAccessMode(entry && entry.access_mode);
+    if (mode === "immediate") return true;
+    const dripAtMs = Number(entry && entry.drip_at_ms);
+    if (Number.isFinite(dripAtMs)) return nowMs >= dripAtMs;
+    return true;
   }
   const targetBatchKey = clean(row.drip_batch_key, 64).toLowerCase();
   const activeBatchKey = clean(context && context.course_active_batch_key, 64).toLowerCase();
   if (targetBatchKey) {
-    if (!learnerBatchKey) return true;
-    if (targetBatchKey !== learnerBatchKey) return true;
+    // Legacy single-batch targeting should also be strict.
+    if (!learnerBatchKey) return false;
+    if (targetBatchKey !== learnerBatchKey) return false;
     const targetedDripMs = parseSqlDateMs(row.drip_at);
     if (Number.isFinite(targetedDripMs)) return nowMs >= targetedDripMs;
     return true;

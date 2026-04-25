@@ -14,6 +14,7 @@ const { ensureCourseBatchesTable } = require("./_lib/batch-store");
 
 let hasDripBatchKeyColumnCached = null;
 let hasDripOffsetSecondsColumnCached = null;
+let hasModuleBatchAccessModeColumnCached = null;
 let hasLessonCaptionsColumnCached = null;
 let hasLessonTranscriptColumnCached = null;
 let hasLessonCaptionsLanguagesColumnCached = null;
@@ -21,6 +22,7 @@ let hasLessonAudioDescriptionColumnCached = null;
 let hasLessonSignLanguageColumnCached = null;
 let hasLessonAccessibilityStatusColumnCached = null;
 let hasCourseModuleMappingsTableCached = null;
+const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
 
 async function hasCourseModuleMappingsTable(pool) {
   if (hasCourseModuleMappingsTableCached === true) return true;
@@ -80,6 +82,29 @@ async function hasLessonColumn(pool, columnName) {
     [LESSONS_TABLE, String(columnName || "")]
   );
   return Array.isArray(rows) && rows.length > 0;
+}
+
+async function hasTableColumn(pool, tableName, columnName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [String(tableName || ""), String(columnName || "")]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function hasModuleBatchAccessModeColumn(pool) {
+  if (hasModuleBatchAccessModeColumnCached === true) return true;
+  try {
+    hasModuleBatchAccessModeColumnCached = await hasTableColumn(pool, MODULE_BATCH_DRIPS_TABLE, "access_mode");
+  } catch (_error) {
+    hasModuleBatchAccessModeColumnCached = false;
+  }
+  return hasModuleBatchAccessModeColumnCached;
 }
 
 async function hasLessonCaptionsColumn(pool) {
@@ -165,6 +190,7 @@ exports.handler = async function (event) {
     const hasSignLanguage = await hasLessonSignLanguageColumn(pool);
     const hasAccessibilityStatus = await hasLessonAccessibilityStatusColumn(pool);
     const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
+    const hasBatchAccessMode = await hasModuleBatchAccessModeColumn(pool);
     const dripBatchKeySelect = hasBatchKey ? "m.drip_batch_key" : "NULL AS drip_batch_key";
     const dripOffsetSecondsSelect = hasOffset ? "m.drip_offset_seconds" : "NULL AS drip_offset_seconds";
     const missingCaptionsSelect = hasCaptions
@@ -262,8 +288,20 @@ exports.handler = async function (event) {
        ORDER BY course_slug ASC, batch_start_at ASC, batch_key ASC`
     );
 
+    const accessModeSelect = hasBatchAccessMode
+      ? "access_mode"
+      : `CASE
+           WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN 'immediate'
+           ELSE 'drip'
+         END AS access_mode`;
+    const dripAtSelect = hasBatchAccessMode
+      ? "DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at"
+      : `CASE
+           WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN NULL
+           ELSE DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s')
+         END AS drip_at`;
     const [moduleDripSchedules] = await pool.query(
-      `SELECT module_id, batch_key, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
+      `SELECT module_id, batch_key, ${accessModeSelect}, ${dripAtSelect}
        FROM ${MODULE_BATCH_DRIPS_TABLE}
        ORDER BY module_id ASC, batch_key ASC`
     );

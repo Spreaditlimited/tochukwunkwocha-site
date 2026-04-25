@@ -13,15 +13,48 @@ const {
   MODULE_BATCH_DRIPS_TABLE,
 } = require("./_lib/learning");
 
+const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
+
 function normalizeBatchKey(value) {
   return clean(value, 64).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 64);
+}
+
+function normalizeAccessMode(value) {
+  const raw = clean(value, 24).toLowerCase();
+  return raw === "immediate" ? "immediate" : "drip";
 }
 
 function normalizeDripDateTime(value) {
   const raw = clean(value, 64);
   if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw + " 00:00:00";
+  }
+  const usDateMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+  if (usDateMatch) {
+    const mm = String(Math.max(1, Math.min(12, Number(usDateMatch[1])))).padStart(2, "0");
+    const dd = String(Math.max(1, Math.min(31, Number(usDateMatch[2])))).padStart(2, "0");
+    const yyyy = String(usDateMatch[3]);
+    const hh = String(Math.max(0, Math.min(23, Number(usDateMatch[4] || 0)))).padStart(2, "0");
+    const mi = String(Math.max(0, Math.min(59, Number(usDateMatch[5] || 0)))).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:00`;
+  }
   if (!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(raw)) return null;
   return raw.replace("T", " ") + (raw.length === 16 ? ":00" : "");
+}
+
+function hasInvalidDripScheduleRows(rawSchedules) {
+  const rows = Array.isArray(rawSchedules) ? rawSchedules : [];
+  for (const item of rows) {
+    const batchKey = normalizeBatchKey(item && item.batch_key);
+    if (!batchKey) continue;
+    const modeFromInput = clean(item && item.access_mode, 24).toLowerCase();
+    const isImmediate = modeFromInput === "immediate";
+    if (isImmediate) continue;
+    const dripAt = normalizeDripDateTime(item && item.drip_at);
+    if (!dripAt) return true;
+  }
+  return false;
 }
 
 function parseSqlDateMs(value) {
@@ -75,13 +108,19 @@ function buildValidatedSchedules(rawSchedules, fallbackLegacy) {
   (Array.isArray(rawSchedules) ? rawSchedules : []).forEach(function (item) {
     const batchKey = normalizeBatchKey(item && item.batch_key);
     const dripAt = normalizeDripDateTime(item && item.drip_at);
-    if (!batchKey || !dripAt) return;
-    list.push({ batch_key: batchKey, drip_at: dripAt });
+    const modeFromInput = clean(item && item.access_mode, 24).toLowerCase();
+    const accessMode = modeFromInput === "immediate"
+      ? "immediate"
+      : (modeFromInput === "drip" ? "drip" : (dripAt ? "drip" : "immediate"));
+    if (!batchKey) return;
+    if (accessMode === "drip" && !dripAt) return;
+    list.push({ batch_key: batchKey, access_mode: accessMode, drip_at: dripAt || null });
   });
 
   if (!list.length && fallbackLegacy && fallbackLegacy.batch_key && fallbackLegacy.drip_at) {
     list.push({
       batch_key: normalizeBatchKey(fallbackLegacy.batch_key),
+      access_mode: normalizeAccessMode(fallbackLegacy.access_mode || "drip"),
       drip_at: normalizeDripDateTime(fallbackLegacy.drip_at),
     });
   }
@@ -89,7 +128,8 @@ function buildValidatedSchedules(rawSchedules, fallbackLegacy) {
   const deduped = [];
   const seen = new Set();
   list.forEach(function (row) {
-    if (!row.batch_key || !row.drip_at) return;
+    if (!row.batch_key) return;
+    if (row.access_mode === "drip" && !row.drip_at) return;
     if (seen.has(row.batch_key)) return;
     seen.add(row.batch_key);
     deduped.push(row);
@@ -98,16 +138,32 @@ function buildValidatedSchedules(rawSchedules, fallbackLegacy) {
 }
 
 function pickPrimaryDripSchedule(schedules) {
-  const rows = (Array.isArray(schedules) ? schedules : []).slice();
+  const rows = (Array.isArray(schedules) ? schedules : []).filter(function (row) {
+    return normalizeAccessMode(row && row.access_mode) === "drip" && !!normalizeDripDateTime(row && row.drip_at);
+  }).slice();
   rows.sort(function (a, b) {
     return String(a.drip_at || "").localeCompare(String(b.drip_at || ""));
   });
   return rows.length ? rows[0] : null;
 }
 
+async function hasModuleBatchAccessModeColumn(pool) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = 'access_mode'
+     LIMIT 1`,
+    [MODULE_BATCH_DRIPS_TABLE]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function replaceModuleDripSchedules(pool, moduleId, schedules) {
   const id = Number(moduleId || 0);
   if (!(id > 0)) return;
+  const hasAccessMode = await hasModuleBatchAccessModeColumn(pool).catch(function () { return false; });
   await pool.query(
     `DELETE FROM ${MODULE_BATCH_DRIPS_TABLE}
      WHERE module_id = ?`,
@@ -115,20 +171,45 @@ async function replaceModuleDripSchedules(pool, moduleId, schedules) {
   );
   const rows = Array.isArray(schedules) ? schedules : [];
   for (const row of rows) {
-    await pool.query(
-      `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
-        (module_id, batch_key, drip_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, row.batch_key, row.drip_at, nowSql(), nowSql()]
-    );
+    const accessMode = normalizeAccessMode(row && row.access_mode);
+    const dripAt = normalizeDripDateTime(row && row.drip_at) || nowSql();
+    if (hasAccessMode) {
+      await pool.query(
+        `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
+          (module_id, batch_key, access_mode, drip_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, row.batch_key, accessMode, dripAt, nowSql(), nowSql()]
+      );
+    } else {
+      const legacyDripAt = accessMode === "immediate" ? LEGACY_IMMEDIATE_DRIP_SENTINEL : dripAt;
+      await pool.query(
+        `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
+          (module_id, batch_key, drip_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, row.batch_key, legacyDripAt, nowSql(), nowSql()]
+      );
+    }
   }
 }
 
 async function fetchModuleDripSchedules(pool, moduleId) {
   const id = Number(moduleId || 0);
   if (!(id > 0)) return [];
+  const hasAccessMode = await hasModuleBatchAccessModeColumn(pool).catch(function () { return false; });
+  const accessModeSelect = hasAccessMode
+    ? "access_mode"
+    : `CASE
+         WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN 'immediate'
+         ELSE 'drip'
+       END AS access_mode`;
+  const dripAtSelect = hasAccessMode
+    ? "DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at"
+    : `CASE
+         WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN NULL
+         ELSE DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s')
+       END AS drip_at`;
   const [rows] = await pool.query(
-    `SELECT batch_key, DATE_FORMAT(drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at
+    `SELECT batch_key, ${accessModeSelect}, ${dripAtSelect}
      FROM ${MODULE_BATCH_DRIPS_TABLE}
      WHERE module_id = ?
      ORDER BY batch_key ASC`,
@@ -214,13 +295,17 @@ exports.handler = async function (event) {
 
     const legacyDripAt = normalizeDripDateTime(body.drip_at);
     const legacyDripBatchKey = normalizeBatchKey(body.drip_batch_key);
+    if (dripEnabled && hasInvalidDripScheduleRows(body.drip_schedules)) {
+      return json(400, { ok: false, error: "Set a valid drip date/time for every selected batch that is not marked Immediate access." });
+    }
     const schedules = buildValidatedSchedules(body.drip_schedules, {
       batch_key: legacyDripBatchKey,
+      access_mode: body.access_mode || "drip",
       drip_at: legacyDripAt,
     });
     const courseBatchKeys = await listCourseBatchKeys(pool, courseSlug);
     if (dripEnabled && courseBatchKeys.length && !schedules.length) {
-      return json(400, { ok: false, error: "Add at least one batch drip date when drip is enabled." });
+      return json(400, { ok: false, error: "Add at least one batch access rule when batch access control is enabled." });
     }
     if (dripEnabled && schedules.some(function (row) { return courseBatchKeys.length && courseBatchKeys.indexOf(row.batch_key) === -1; })) {
       return json(400, { ok: false, error: "One or more drip batches are invalid for this course." });

@@ -337,6 +337,7 @@ async function ensureLearningTables(pool) {
       id BIGINT NOT NULL AUTO_INCREMENT,
       module_id BIGINT NOT NULL,
       batch_key VARCHAR(64) NOT NULL,
+      access_mode VARCHAR(24) NOT NULL DEFAULT 'drip',
       drip_at DATETIME NOT NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
@@ -347,6 +348,7 @@ async function ensureLearningTables(pool) {
       CONSTRAINT fk_module_batch_drip_module FOREIGN KEY (module_id) REFERENCES ${MODULES_TABLE}(id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await safeAlter(pool, `ALTER TABLE ${MODULE_BATCH_DRIPS_TABLE} ADD COLUMN access_mode VARCHAR(24) NOT NULL DEFAULT 'drip'`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${LESSONS_TABLE} (

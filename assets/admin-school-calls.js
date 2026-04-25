@@ -49,7 +49,15 @@
     if (!value) return "-";
     var d = new Date(value);
     if (!Number.isFinite(d.getTime())) return "-";
-    return d.toLocaleString();
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Africa/Lagos",
+      }).format(d);
+    } catch (_error) {
+      return "-";
+    }
   }
 
   function fmtDateInZone(iso, zone) {
@@ -63,6 +71,29 @@
         dateStyle: "medium",
         timeStyle: "short",
         timeZone: rawZone,
+      }).format(d);
+    } catch (_error) {
+      return "-";
+    }
+  }
+
+  function fmtDateInZoneDetailed(iso, zone) {
+    var rawIso = clean(iso);
+    var rawZone = clean(zone);
+    if (!rawIso || !rawZone) return "-";
+    var d = new Date(rawIso);
+    if (!Number.isFinite(d.getTime())) return "-";
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        weekday: "long",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: rawZone,
+        timeZoneName: "short",
       }).format(d);
     } catch (_error) {
       return "-";
@@ -311,7 +342,6 @@
 
     rowsEl.innerHTML = items.map(function (row) {
       var zoom = clean(row.zoomJoinUrl);
-      var contactTz = clean(row.timezone) || "UTC";
       var slotStartIso = clean(row.slotStartIso);
       var slotEndIso = clean(row.slotEndIso);
       var outcomeStatus = clean(row.callOutcomeStatus).toLowerCase();
@@ -333,10 +363,9 @@
         "</td>",
 
         '<td class="px-4 py-3 text-gray-700">',
-        '<p class="text-sm font-medium text-gray-800">' + escapeHtml(row.slotLabel || "-") + "</p>",
-        '<p class="text-xs text-gray-500">Lead timezone (' + escapeHtml(contactTz) + '): ' + escapeHtml(fmtDateInZone(slotStartIso, contactTz)) + "</p>",
-        '<p class="text-xs text-gray-500">UTC start: ' + escapeHtml(fmtDateInZone(slotStartIso, "UTC")) + "</p>",
-        '<p class="text-xs text-gray-500">UTC end: ' + escapeHtml(fmtDateInZone(slotEndIso, "UTC")) + "</p>",
+        '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Call timezone (Africa/Lagos - WAT)</p>',
+        '<p class="text-sm font-semibold text-gray-800">' + escapeHtml(fmtDateInZoneDetailed(slotStartIso, "Africa/Lagos")) + "</p>",
+        '<p class="text-xs text-gray-500">WAT window: ' + escapeHtml(fmtDateInZone(slotStartIso, "Africa/Lagos")) + " → " + escapeHtml(fmtDateInZone(slotEndIso, "Africa/Lagos")) + "</p>",
         "</td>",
 
         '<td class="px-4 py-3 text-gray-700">',

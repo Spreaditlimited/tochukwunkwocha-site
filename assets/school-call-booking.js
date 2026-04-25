@@ -42,11 +42,11 @@
     return String(params.get("manage") || "").trim();
   }
 
-  function toLondonDateKey(iso) {
+  function toWATDateKey(iso) {
     var dt = new Date(String(iso || ""));
     if (Number.isNaN(dt.getTime())) return "";
     var parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
+      timeZone: "Africa/Lagos",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -66,11 +66,11 @@
     return year + "-" + month + "-" + day;
   }
 
-  function toLondonTimeLabel(iso) {
+  function toWATTimeLabel(iso) {
     var dt = new Date(String(iso || ""));
     if (Number.isNaN(dt.getTime())) return "";
     return new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
+      timeZone: "Africa/Lagos",
       hour: "numeric",
       minute: "2-digit",
     }).format(dt);
@@ -83,13 +83,13 @@
       var startIso = String((slot && slot.startIso) || "").trim();
       if (!startIso) return;
 
-      var dateKey = toLondonDateKey(startIso);
+      var dateKey = toWATDateKey(startIso);
       if (!dateKey) return;
 
       if (!slotsByDate[dateKey]) slotsByDate[dateKey] = [];
       slotsByDate[dateKey].push({
         startIso: startIso,
-        timeLabel: toLondonTimeLabel(startIso),
+        timeLabel: toWATTimeLabel(startIso),
         label: String((slot && slot.label) || "").trim(),
       });
     });
@@ -172,7 +172,7 @@
       return;
     }
 
-    var preferredDate = toLondonDateKey(preferredIso);
+    var preferredDate = toWATDateKey(preferredIso);
     var dateValue = String(dateInput.value || "").trim();
 
     if (preferredDate && slotDateKeys.indexOf(preferredDate) >= 0) {
@@ -274,7 +274,7 @@
 
     var html = [
       "<p><strong>Booked successfully.</strong></p>",
-      slotLabel ? "<p><strong>Time:</strong> " + slotLabel + " (Europe/London)</p>" : "",
+      slotLabel ? "<p><strong>Time:</strong> " + slotLabel + " (WAT)</p>" : "",
       zoomJoinUrl ? '<p><strong>Zoom:</strong> <a href="' + zoomJoinUrl + '" target="_blank" rel="noopener noreferrer">Join meeting</a></p>' : "",
       '<p><strong>Manage:</strong> <a href="' + manageUrl + '">Reschedule or cancel</a></p>',
     ].join("");
@@ -289,7 +289,7 @@
 
     var summary = [
       "Booking: " + String(booking.schoolName || ""),
-      booking.slotLabel ? "Time: " + booking.slotLabel + " (Europe/London)" : "",
+      booking.slotLabel ? "Time: " + booking.slotLabel + " (WAT)" : "",
       booking.status ? "Status: " + booking.status : "",
       booking.zoomJoinUrl ? "Zoom: " + booking.zoomJoinUrl : "",
     ]
@@ -347,7 +347,7 @@
         role: String((bookForm.role && bookForm.role.value) || "").trim(),
         studentPopulation: String((bookForm.studentPopulation && bookForm.studentPopulation.value) || "").trim(),
         slotStartIso: String((bookForm.slotStartIso && bookForm.slotStartIso.value) || "").trim(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        timezone: "Africa/Lagos",
         website: String((bookForm.website && bookForm.website.value) || "").trim(),
       };
 

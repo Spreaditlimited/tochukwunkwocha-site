@@ -344,11 +344,16 @@
     if (!moduleDripScheduleRows) return;
     var rows = Array.isArray(schedules) ? schedules : [];
     if (!rows.length) {
-      moduleDripScheduleRows.innerHTML = '<p class="text-xs text-gray-500">No batch drip dates added yet.</p>';
+      moduleDripScheduleRows.innerHTML = '<p class="text-xs text-gray-500">No batch access rules added yet.</p>';
       return;
     }
     var batches = listBatchesForCourse(courseSlug);
     moduleDripScheduleRows.innerHTML = rows.map(function (row, index) {
+      var accessMode = String(row && row.access_mode || "").trim().toLowerCase() === "immediate" ? "immediate" : "drip";
+      var immediateChecked = accessMode === "immediate" ? " checked" : "";
+      var dripDisabled = accessMode === "immediate" ? " disabled" : "";
+      var dripClasses = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm";
+      if (accessMode === "immediate") dripClasses += " bg-gray-100 text-gray-500";
       var batchOptions = ['<option value="">Select batch</option>'];
       batches.forEach(function (b) {
         var key = String(b.batch_key || "").trim().toLowerCase();
@@ -359,8 +364,12 @@
       });
       return [
         '<div class="grid gap-2 sm:grid-cols-12" data-drip-schedule-index="' + String(index) + '">',
-        '<div class="sm:col-span-6"><select data-drip-field="batch_key" class="premium-picker bg-white">' + batchOptions.join("") + '</select></div>',
-        '<div class="sm:col-span-5"><input data-drip-field="drip_at" type="datetime-local" value="' + escapeHtml(toDatetimeLocalValue(row.drip_at || "")) + '" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" /></div>',
+        '<div class="sm:col-span-5"><select data-drip-field="batch_key" class="premium-picker bg-white">' + batchOptions.join("") + '</select></div>',
+        '<label class="sm:col-span-3 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700">',
+        '<input data-drip-field="is_immediate" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600"' + immediateChecked + " />",
+        "Immediate access",
+        "</label>",
+        '<div class="sm:col-span-3"><input data-drip-field="drip_at" type="datetime-local" value="' + escapeHtml(toDatetimeLocalValue(row.drip_at || "")) + '" class="' + dripClasses + '"' + dripDisabled + " /></div>",
         '<div class="sm:col-span-1"><button type="button" data-remove-drip-row="' + String(index) + '" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">X</button></div>',
         "</div>",
       ].join("");
@@ -374,10 +383,17 @@
     nodes.forEach(function (node) {
       var batchInput = node.querySelector('[data-drip-field="batch_key"]');
       var dateInput = node.querySelector('[data-drip-field="drip_at"]');
+      var immediateInput = node.querySelector('[data-drip-field="is_immediate"]');
       var batchKey = String(batchInput && batchInput.value || "").trim().toLowerCase();
       var dripAt = String(dateInput && dateInput.value || "").trim();
-      if (!batchKey || !dripAt) return;
-      list.push({ batch_key: batchKey, drip_at: dripAt });
+      var isImmediate = !!(immediateInput && immediateInput.checked);
+      if (!batchKey) return;
+      if (isImmediate) {
+        list.push({ batch_key: batchKey, access_mode: "immediate", drip_at: "" });
+        return;
+      }
+      if (!dripAt) return;
+      list.push({ batch_key: batchKey, access_mode: "drip", drip_at: dripAt });
     });
     return list;
   }
@@ -613,7 +629,8 @@
       if (!state.moduleDripSchedulesByModule.has(moduleId)) state.moduleDripSchedulesByModule.set(moduleId, []);
       state.moduleDripSchedulesByModule.get(moduleId).push({
         batch_key: String(row.batch_key || "").trim().toLowerCase(),
-        drip_at: row.drip_at || "",
+        access_mode: String(row.access_mode || "").trim().toLowerCase() === "immediate" ? "immediate" : "drip",
+        drip_at: String(row.access_mode || "").trim().toLowerCase() === "immediate" ? "" : (row.drip_at || ""),
       });
     });
     state.lessons = Array.isArray(payload.lessons) ? payload.lessons : [];
@@ -1287,12 +1304,30 @@
   if (addModuleDripScheduleRowBtn) {
     addModuleDripScheduleRowBtn.addEventListener("click", function () {
       var current = collectModuleDripSchedulesFromForm();
-      current.push({ batch_key: "", drip_at: "" });
+      current.push({ batch_key: "", access_mode: "immediate", drip_at: "" });
       renderModuleDripScheduleRows(selectedModuleCourseSlug(), current);
     });
   }
 
   if (moduleDripScheduleRows) {
+    moduleDripScheduleRows.addEventListener("change", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var immediateInput = target.closest('[data-drip-field="is_immediate"]');
+      if (!immediateInput) return;
+      var row = immediateInput.closest("[data-drip-schedule-index]");
+      if (!row) return;
+      var dateInput = row.querySelector('[data-drip-field="drip_at"]');
+      if (!dateInput) return;
+      var isImmediate = !!immediateInput.checked;
+      dateInput.disabled = isImmediate;
+      if (isImmediate) {
+        dateInput.classList.add("bg-gray-100", "text-gray-500");
+      } else {
+        dateInput.classList.remove("bg-gray-100", "text-gray-500");
+      }
+    });
+
     moduleDripScheduleRows.addEventListener("click", function (event) {
       var target = event.target;
       if (!(target instanceof Element)) return;

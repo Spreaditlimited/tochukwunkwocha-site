@@ -5,6 +5,7 @@ const {
   ensureSchoolCallTablesTochukwu,
   buildCandidateSlots,
   fetchActiveBookedSlotMap,
+  SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
 
 exports.handler = async function (event) {
@@ -24,7 +25,7 @@ exports.handler = async function (event) {
 
     return json(200, {
       ok: true,
-      timezone: "Europe/London",
+      timezone: SCHOOL_CALL_TIMEZONE,
       durationMinutes: 30,
       slots: available.slice(0, 60),
     });

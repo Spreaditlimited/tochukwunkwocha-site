@@ -9,6 +9,7 @@ const {
   clean,
   isoFromSql,
   sqlFromIso,
+  SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
 
 const NOTIFICATIONS_TABLE = "tochukwu_school_call_notifications";
@@ -66,13 +67,13 @@ function slotLabel(iso, timezone) {
     return new Intl.DateTimeFormat("en-GB", {
       dateStyle: "full",
       timeStyle: "short",
-      timeZone: clean(timezone, 80) || "Europe/London",
+      timeZone: clean(timezone, 80) || SCHOOL_CALL_TIMEZONE,
     }).format(d);
   } catch (_error) {
     return new Intl.DateTimeFormat("en-GB", {
       dateStyle: "full",
       timeStyle: "short",
-      timeZone: "Europe/London",
+      timeZone: SCHOOL_CALL_TIMEZONE,
     }).format(d);
   }
 }
@@ -91,10 +92,10 @@ function parseAdminRecipients() {
 function reminderEmailForLead(row, stage) {
   const fullName = clean(row.full_name, 180);
   const schoolName = clean(row.school_name, 220);
-  const timezone = clean(row.timezone_label, 80) || "Europe/London";
+  const timezone = SCHOOL_CALL_TIMEZONE;
   const slotIso = isoFromSql(row.slot_start_utc);
   const slotInLeadZone = slotLabel(slotIso, timezone);
-  const slotInLondon = slotLabel(slotIso, "Europe/London");
+  const slotInLagos = slotLabel(slotIso, SCHOOL_CALL_TIMEZONE);
   const zoomUrl = clean(row.zoom_join_url, 1200);
   const manageToken = clean(row.manage_token, 140);
   const manageUrl = `${siteBaseUrl()}/schools/book-call/?manage=${encodeURIComponent(manageToken)}`;
@@ -104,7 +105,7 @@ function reminderEmailForLead(row, stage) {
   const html = [
     `<p>Hello ${escapeHtml(firstName(fullName))},</p>`,
     `<p>This is a reminder that your school call is ${escapeHtml(whenText)}.</p>`,
-    `<p><strong>School:</strong> ${escapeHtml(schoolName)}<br/><strong>Your timezone (${escapeHtml(timezone)}):</strong> ${escapeHtml(slotInLeadZone)}<br/><strong>Europe/London:</strong> ${escapeHtml(slotInLondon)}</p>`,
+    `<p><strong>School:</strong> ${escapeHtml(schoolName)}<br/><strong>Your timezone (${escapeHtml(timezone)}):</strong> ${escapeHtml(slotInLeadZone)}<br/><strong>WAT (${escapeHtml(SCHOOL_CALL_TIMEZONE)}):</strong> ${escapeHtml(slotInLagos)}</p>`,
     zoomUrl ? `<p><strong>Zoom:</strong> <a href="${zoomUrl}">Join Meeting</a></p>` : "",
     `<p>Need to change it? <a href="${manageUrl}">Reschedule or cancel your booking</a>.</p>`,
     "<p>Regards,<br/>Tochukwu Tech and AI Academy</p>",
@@ -116,7 +117,7 @@ function reminderEmailForLead(row, stage) {
     `This is a reminder that your school call is ${whenText}.`,
     `School: ${schoolName}`,
     `Your timezone (${timezone}): ${slotInLeadZone}`,
-    `Europe/London: ${slotInLondon}`,
+    `WAT (${SCHOOL_CALL_TIMEZONE}): ${slotInLagos}`,
     zoomUrl ? `Zoom: ${zoomUrl}` : "",
     `Manage booking: ${manageUrl}`,
   ].filter(Boolean).join("\n");
@@ -131,10 +132,10 @@ function reminderEmailForAdmin(row, stage) {
   const phone = clean(row.phone, 80);
   const role = clean(row.role_title, 140);
   const studentPopulation = clean(row.student_population, 60);
-  const timezone = clean(row.timezone_label, 80) || "Europe/London";
+  const timezone = SCHOOL_CALL_TIMEZONE;
   const slotIso = isoFromSql(row.slot_start_utc);
   const slotInLeadZone = slotLabel(slotIso, timezone);
-  const slotInLondon = slotLabel(slotIso, "Europe/London");
+  const slotInLagos = slotLabel(slotIso, SCHOOL_CALL_TIMEZONE);
   const zoomUrl = clean(row.zoom_join_url, 1200);
   const manageToken = clean(row.manage_token, 140);
   const manageUrl = `${siteBaseUrl()}/schools/book-call/?manage=${encodeURIComponent(manageToken)}`;
@@ -151,8 +152,8 @@ function reminderEmailForAdmin(row, stage) {
     `Phone: ${phone}`,
     `Role: ${role}`,
     `Student population: ${studentPopulation}`,
-    `Lead timezone (${timezone}): ${slotInLeadZone}`,
-    `Europe/London: ${slotInLondon}`,
+    `Call timezone (${timezone}): ${slotInLeadZone}`,
+    `WAT (${SCHOOL_CALL_TIMEZONE}): ${slotInLagos}`,
     zoomUrl ? `Zoom: ${zoomUrl}` : "",
     `Manage: ${manageUrl}`,
   ].filter(Boolean).join("\n");

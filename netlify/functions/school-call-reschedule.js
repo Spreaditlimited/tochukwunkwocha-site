@@ -9,6 +9,7 @@ const {
   nowSql,
   sqlFromIso,
   buildCandidateSlots,
+  SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
 
 function looksLikeCandidateSlot(slotStartIso) {
@@ -72,7 +73,7 @@ exports.handler = async function (event) {
         topic: `School Onboarding Call - ${clean(booking.school_name, 220)}`,
         startTimeIso: startDate.toISOString(),
         durationMinutes: 30,
-        timezone: "UTC",
+        timezone: SCHOOL_CALL_TIMEZONE,
         agenda: `School onboarding call with ${clean(booking.full_name, 180)} (${clean(booking.role_title, 120)})`,
       });
     } else {
@@ -80,7 +81,7 @@ exports.handler = async function (event) {
         topic: `School Onboarding Call - ${clean(booking.school_name, 220)}`,
         startTimeIso: startDate.toISOString(),
         durationMinutes: 30,
-        timezone: "UTC",
+        timezone: SCHOOL_CALL_TIMEZONE,
         agenda: `School onboarding call with ${clean(booking.full_name, 180)} (${clean(booking.role_title, 120)})`,
       });
     }
@@ -127,7 +128,7 @@ exports.handler = async function (event) {
     const slotLabel = new Intl.DateTimeFormat("en-GB", {
       dateStyle: "full",
       timeStyle: "short",
-      timeZone: "Europe/London",
+      timeZone: SCHOOL_CALL_TIMEZONE,
     }).format(startDate);
 
     return json(200, {

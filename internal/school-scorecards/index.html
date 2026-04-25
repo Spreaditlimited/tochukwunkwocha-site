@@ -119,9 +119,8 @@
             </label>
             <h2 class="text-xl font-heading font-extrabold text-gray-900">School Scorecards</h2>
           </div>
-          <div class="flex items-center gap-2">
-            <button id="schoolScorecardsRefreshBtn" type="button" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">Refresh</button>
-            <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Sign out</button>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap">Sign out</button>
           </div>
         </header>
 
@@ -152,6 +151,9 @@
                   Search
                   <input id="schoolScorecardsSearch" type="text" placeholder="Name, school, email, phone" class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800" />
                 </label>
+                <div class="flex items-end sm:justify-end">
+                  <button id="schoolScorecardsRefreshBtn" type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">Refresh</button>
+                </div>
               </div>
             </section>
 
@@ -207,6 +209,6 @@
 
     <script src="/assets/internal-auth.js?v=20260423b" defer></script>
     <script src="/assets/internal-nav.js?v=20260423c" defer></script>
-    <script src="/assets/admin-school-scorecards.js?v=20260423b" defer></script>
+    <script src="/assets/admin-school-scorecards.js?v=20260424c" defer></script>
   </body>
 </html>

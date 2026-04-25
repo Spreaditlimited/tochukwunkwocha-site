@@ -9,6 +9,7 @@ const {
   clean,
   nowSql,
   sqlFromIso,
+  SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
 
 exports.handler = async function (event) {
@@ -122,14 +123,14 @@ exports.handler = async function (event) {
         topic: `School Onboarding Call - ${clean(booking.school_name, 220)}`,
         startTimeIso: startDate.toISOString(),
         durationMinutes: 30,
-        timezone: "UTC",
+        timezone: SCHOOL_CALL_TIMEZONE,
       });
     } else {
       zoomResult = await createZoomMeeting({
         topic: `School Onboarding Call - ${clean(booking.school_name, 220)}`,
         startTimeIso: startDate.toISOString(),
         durationMinutes: 30,
-        timezone: "UTC",
+        timezone: SCHOOL_CALL_TIMEZONE,
       });
     }
 

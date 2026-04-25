@@ -12,6 +12,7 @@ const {
   sqlFromIso,
   buildCandidateSlots,
   fetchActiveBookedSlotMap,
+  SCHOOL_CALL_TIMEZONE,
   clean,
 } = require("./_lib/school-calls-tochukwu");
 const {
@@ -62,7 +63,7 @@ exports.handler = async function (event) {
 
   const leadUuid = clean(body.leadUuid, 64);
   const slotStartIso = clean(body.slotStartIso, 64);
-  const timezone = clean(body.timezone, 80) || "Europe/London";
+  const timezone = SCHOOL_CALL_TIMEZONE;
 
   if (!leadUuid || !slotStartIso) {
     return json(400, { ok: false, error: "leadUuid and slotStartIso are required" });
@@ -173,7 +174,7 @@ exports.handler = async function (event) {
       topic: `School Onboarding Call - ${schoolName}`,
       startTimeIso: slotStartDate.toISOString(),
       durationMinutes: 30,
-      timezone: "UTC",
+      timezone: SCHOOL_CALL_TIMEZONE,
       agenda: `School onboarding call with ${fullName} (${role}) from ${schoolName}`,
     });
 
@@ -206,14 +207,14 @@ exports.handler = async function (event) {
     const slotHuman = new Intl.DateTimeFormat("en-GB", {
       dateStyle: "full",
       timeStyle: "short",
-      timeZone: "Europe/London",
+      timeZone: SCHOOL_CALL_TIMEZONE,
     }).format(slotStartDate);
 
     const userSubject = "Your School Call is Booked";
     const userHtml = [
       `<p>Hello ${escapeHtml(firstName(fullName))},</p>`,
       `<p>Your call has been booked successfully.</p>`,
-      `<p><strong>School:</strong> ${escapeHtml(schoolName)}<br/><strong>Time:</strong> ${escapeHtml(slotHuman)} (Europe/London)</p>`,
+      `<p><strong>School:</strong> ${escapeHtml(schoolName)}<br/><strong>Time:</strong> ${escapeHtml(slotHuman)} (WAT)</p>`,
       zoomJoinUrl ? `<p><strong>Zoom link:</strong> <a href="${zoomJoinUrl}">Join Meeting</a></p>` : "",
       "<p>Regards,<br/>Tochukwu Tech and AI Academy</p>",
     ].join("");

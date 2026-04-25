@@ -14,6 +14,7 @@ const {
   nowSql,
   sqlFromIso,
   buildCandidateSlots,
+  SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
 
 function escapeHtml(value) {
@@ -68,7 +69,7 @@ exports.handler = async function (event) {
   const phone = clean(body.phone, 80);
   const role = clean(body.role, 140);
   const studentPopulation = clean(body.studentPopulation, 60);
-  const timezone = clean(body.timezone, 80) || "Europe/London";
+  const timezone = SCHOOL_CALL_TIMEZONE;
   const slotStartIso = clean(body.slotStartIso, 64);
 
   const slotStartDate = new Date(slotStartIso);
@@ -131,7 +132,7 @@ exports.handler = async function (event) {
       topic: `School Onboarding Call - ${schoolName}`,
       startTimeIso: slotStartDate.toISOString(),
       durationMinutes: 30,
-      timezone: "UTC",
+      timezone: SCHOOL_CALL_TIMEZONE,
       agenda: `School onboarding call with ${fullName} (${role}) from ${schoolName}`,
     });
 
@@ -162,7 +163,7 @@ exports.handler = async function (event) {
     const slotHuman = new Intl.DateTimeFormat("en-GB", {
       dateStyle: "full",
       timeStyle: "short",
-      timeZone: "Europe/London",
+      timeZone: SCHOOL_CALL_TIMEZONE,
     }).format(slotStartDate);
 
     const safeName = escapeHtml(firstName(fullName));
@@ -172,7 +173,7 @@ exports.handler = async function (event) {
     const userHtml = [
       `<p>Hello ${safeName},</p>`,
       `<p>Your call has been booked successfully.</p>`,
-      `<p><strong>School:</strong> ${safeSchool}<br/><strong>Time:</strong> ${escapeHtml(slotHuman)} (Europe/London)</p>`,
+      `<p><strong>School:</strong> ${safeSchool}<br/><strong>Time:</strong> ${escapeHtml(slotHuman)} (WAT)</p>`,
       `<p><strong>Zoom link:</strong> <a href=\"${zoomJoinUrl}\">Join Meeting</a></p>`,
       `<p>You can reschedule or cancel here: <a href=\"${manageUrl}\">Manage booking</a></p>`,
       "<p>Regards,<br/>Tochukwu Tech and AI Academy</p>",
@@ -183,7 +184,7 @@ exports.handler = async function (event) {
       "",
       "Your call has been booked successfully.",
       `School: ${schoolName}`,
-      `Time: ${slotHuman} (Europe/London)`,
+      `Time: ${slotHuman} (WAT)`,
       `Zoom link: ${zoomJoinUrl}`,
       `Manage booking: ${manageUrl}`,
     ].join("\n");
@@ -197,7 +198,7 @@ exports.handler = async function (event) {
       `Phone: ${phone}`,
       `Role: ${role}`,
       `Student population: ${studentPopulation}`,
-      `Time: ${slotHuman} (Europe/London)`,
+      `Time: ${slotHuman} (WAT)`,
       `Zoom join link: ${zoomJoinUrl}`,
       `Manage link: ${manageUrl}`,
     ].join("\n");

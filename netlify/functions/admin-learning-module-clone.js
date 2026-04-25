@@ -13,6 +13,8 @@ const {
   LESSONS_TABLE,
 } = require("./_lib/learning");
 
+const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
+
 async function hasCourseModuleMappingsTable(pool) {
   const [rows] = await pool.query(
     `SELECT 1
@@ -21,6 +23,19 @@ async function hasCourseModuleMappingsTable(pool) {
        AND table_name = ?
      LIMIT 1`,
     [COURSE_MODULES_TABLE]
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function hasModuleBatchAccessModeColumn(pool) {
+  const [rows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = 'access_mode'
+     LIMIT 1`,
+    [MODULE_BATCH_DRIPS_TABLE]
   );
   return Array.isArray(rows) && rows.length > 0;
 }
@@ -164,8 +179,15 @@ exports.handler = async function (event) {
        ORDER BY lesson_order ASC, id ASC`,
       [sourceModuleId]
     );
+    const hasBatchAccessMode = await hasModuleBatchAccessModeColumn(pool).catch(function () { return false; });
+    const accessModeSelect = hasBatchAccessMode
+      ? "access_mode"
+      : `CASE
+           WHEN drip_at <= '${LEGACY_IMMEDIATE_DRIP_SENTINEL}' THEN 'immediate'
+           ELSE 'drip'
+         END AS access_mode`;
     const [sourceDripRows] = await pool.query(
-      `SELECT batch_key, drip_at
+      `SELECT batch_key, ${accessModeSelect}, drip_at
        FROM ${MODULE_BATCH_DRIPS_TABLE}
        WHERE module_id = ?
        ORDER BY batch_key ASC`,
@@ -235,12 +257,34 @@ exports.handler = async function (event) {
 
     for (const drip of (Array.isArray(sourceDripRows) ? sourceDripRows : [])) {
       // eslint-disable-next-line no-await-in-loop
-      await conn.query(
-        `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
-          (module_id, batch_key, drip_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?)`,
-        [newModuleId, clean(drip.batch_key, 64).toLowerCase(), drip.drip_at, now, now]
-      );
+      if (hasBatchAccessMode) {
+        await conn.query(
+          `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
+            (module_id, batch_key, access_mode, drip_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            newModuleId,
+            clean(drip.batch_key, 64).toLowerCase(),
+            clean(drip.access_mode, 24).toLowerCase() === "immediate" ? "immediate" : "drip",
+            drip.drip_at,
+            now,
+            now,
+          ]
+        );
+      } else {
+        await conn.query(
+          `INSERT INTO ${MODULE_BATCH_DRIPS_TABLE}
+            (module_id, batch_key, drip_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            newModuleId,
+            clean(drip.batch_key, 64).toLowerCase(),
+            drip.drip_at,
+            now,
+            now,
+          ]
+        );
+      }
     }
 
     await conn.commit();

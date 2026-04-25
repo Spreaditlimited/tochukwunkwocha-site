@@ -31,7 +31,32 @@
     if (!value) return "-";
     var d = new Date(value);
     if (!Number.isFinite(d.getTime())) return "-";
-    return d.toLocaleString();
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Africa/Lagos",
+      }).format(d);
+    } catch (_error) {
+      return "-";
+    }
+  }
+
+  function fmtDateInZone(iso, zone) {
+    var rawIso = clean(iso);
+    var rawZone = clean(zone);
+    if (!rawIso || !rawZone) return "-";
+    var d = new Date(rawIso);
+    if (!Number.isFinite(d.getTime())) return "-";
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: rawZone,
+      }).format(d);
+    } catch (_error) {
+      return "-";
+    }
   }
 
   function scoreBadge(score) {
@@ -229,7 +254,7 @@
         '<td class="px-4 py-3 align-top">',
         '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ' + callStatusBadge(callStatus) + '">' + escapeHtml(callStatus) + "</span>",
         '<p class="mt-2 text-xs text-gray-600">Outcome: ' + escapeHtml(outcome || "-") + "</p>",
-        '<p class="text-xs text-gray-500">Start: ' + escapeHtml(fmtDate(call.slotStartIso)) + "</p>",
+        '<p class="text-xs text-gray-500">Start (Africa/Lagos - WAT): ' + escapeHtml(fmtDateInZone(call.slotStartIso, "Africa/Lagos")) + "</p>",
         '<p class="text-xs text-gray-500">Owner: ' + escapeHtml(call.assignedOwner || "-") + "</p>",
         "</td>",
         '<td class="px-4 py-3 align-top">',
@@ -243,24 +268,27 @@
         "</td>",
         '<td class="px-4 py-3 align-top text-xs text-gray-700 min-w-[320px]">',
         '<div class="space-y-2">',
-        '<select data-lead="' + escapeHtml(leadId) + '" data-field="outcome" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-800">',
+        '<span class="picker-wrap block">',
+        '<select data-lead="' + escapeHtml(leadId) + '" data-field="outcome" class="picker-select !rounded-lg !py-2 !pl-3 !pr-10 !text-xs !font-semibold">',
         ["pending", "follow_up", "completed", "won", "lost", "no_show"].map(function (x) {
           return '<option value="' + x + '"' + (x === outcome ? ' selected' : '') + '>' + x.replace(/_/g, " ") + '</option>';
         }).join(""),
         '</select>',
+        '<span class="picker-wrap__icon"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg></span>',
+        '</span>',
         '<input data-lead="' + escapeHtml(leadId) + '" data-field="owner" value="' + escapeHtml(call.assignedOwner || "") + '" placeholder="Owner" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-800" />',
         '<input data-lead="' + escapeHtml(leadId) + '" data-field="follow" type="datetime-local" value="' + escapeHtml(toDatetimeLocalValue(call.nextFollowUpAt)) + '" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-800" />',
         '<textarea data-lead="' + escapeHtml(leadId) + '" data-field="feedback" rows="2" placeholder="Feedback" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-800">' + escapeHtml(row.nextStep || call.outcomeFeedback || "") + '</textarea>',
         call.bookingUuid
-          ? '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="save" class="inline-flex items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Save</button>'
+          ? '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="save" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Save</button>'
           : '<span class="text-xs text-amber-700">Book a call first to save outcome</span>',
         '</div>',
         "</td>",
         '<td class="px-4 py-3 align-top text-right">',
-        '<div class="inline-flex flex-col items-end gap-2">',
+        '<div class="flex w-full flex-col items-stretch sm:items-end gap-2">',
         (call.bookingUuid
-          ? '<a href="/internal/school-calls/" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors">View Call</a>'
-          : '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="book" class="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">Book Call</button>'),
+          ? '<a href="/internal/school-calls/" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors">View Call</a>'
+          : '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="book" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">Book Call</button>'),
         '</div>',
         "</td>",
         "</tr>",
@@ -349,7 +377,7 @@
         body: JSON.stringify({
           leadUuid: clean(currentLeadForBook.leadUuid),
           slotStartIso: slotStartIso,
-          timezone: "Europe/London",
+          timezone: "Africa/Lagos",
         }),
       });
 
