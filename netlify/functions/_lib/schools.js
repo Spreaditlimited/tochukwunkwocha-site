@@ -711,138 +711,156 @@ async function markSchoolOrderPaidBy(pool, input) {
     params.push(providerOrderId);
   }
 
-  const [rows] = await pool.query(
-    `SELECT id, order_uuid, school_id, school_name, admin_name, admin_email, course_slug, seats_requested,
-            price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, status
-     FROM ${SCHOOL_ORDERS_TABLE}
-     WHERE ${where.join(" OR ")}
-     ORDER BY id DESC
-     LIMIT 1`,
-    params
-  );
-  if (!rows || !rows.length) return { ok: false, error: "School order not found" };
-  const order = rows[0];
-  const now = nowSql();
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
 
-  if (String(order.status) !== "paid") {
-    await pool.query(
-      `UPDATE ${SCHOOL_ORDERS_TABLE}
-       SET status = 'paid',
-           provider = COALESCE(?, provider),
-           provider_reference = COALESCE(?, provider_reference),
-           provider_order_id = COALESCE(?, provider_order_id),
-           paid_at = ?,
-           updated_at = ?
-       WHERE id = ?`,
-      [provider, providerReference || null, providerOrderId || null, now, now, Number(order.id)]
+    const [rows] = await connection.query(
+      `SELECT id, order_uuid, school_id, school_name, admin_name, admin_email, course_slug, seats_requested,
+              price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, status
+       FROM ${SCHOOL_ORDERS_TABLE}
+       WHERE ${where.join(" OR ")}
+       ORDER BY id DESC
+       LIMIT 1
+       FOR UPDATE`,
+      params
     );
-  }
+    if (!rows || !rows.length) {
+      await connection.rollback();
+      return { ok: false, error: "School order not found" };
+    }
+    const order = rows[0];
+    const now = nowSql();
+    const alreadyPaid = String(order.status) === "paid";
 
-  let schoolId = Number(order.school_id || 0);
-  if (!schoolId) {
-    const schoolUuid = `sch_${crypto.randomUUID().replace(/-/g, "")}`;
-    const startsAt = now;
-    const expiresAt = oneYearLaterSql(new Date());
-    await pool.query(
-      `INSERT INTO ${SCHOOL_ACCOUNTS_TABLE}
-        (school_uuid, school_name, course_slug, seats_purchased, price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, status, paid_at, access_starts_at, access_expires_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
-      [
-        schoolUuid,
-        clean(order.school_name, 220),
-        clean(order.course_slug, 120),
-        Number(order.seats_requested || 0),
-        Number(order.price_per_student_minor || 0),
-        Number(order.vat_bps || 0),
-        Number(order.subtotal_minor || 0),
-        Number(order.vat_minor || 0),
-        Number(order.total_minor || 0),
-        now,
-        startsAt,
-        expiresAt,
-        now,
-        now,
-      ]
-    );
-    const [schoolRows] = await pool.query(
-      `SELECT id
-       FROM ${SCHOOL_ACCOUNTS_TABLE}
-       WHERE school_uuid = ?
-       LIMIT 1`,
-      [schoolUuid]
-    );
-    schoolId = Number(schoolRows && schoolRows[0] && schoolRows[0].id || 0);
-    if (!schoolId) throw new Error("Could not provision school account");
-    await pool.query(`UPDATE ${SCHOOL_ORDERS_TABLE} SET school_id = ?, updated_at = ? WHERE id = ?`, [schoolId, nowSql(), Number(order.id)]);
-  } else {
-    const [schoolRows] = await pool.query(
-      `SELECT seats_purchased, subtotal_minor, vat_minor, total_minor
-       FROM ${SCHOOL_ACCOUNTS_TABLE}
-       WHERE id = ?
-       LIMIT 1`,
-      [schoolId]
-    );
-    if (Array.isArray(schoolRows) && schoolRows.length) {
-      await pool.query(
-        `UPDATE ${SCHOOL_ACCOUNTS_TABLE}
-         SET school_name = ?,
-             seats_purchased = ?,
-             subtotal_minor = ?,
-             vat_minor = ?,
-             total_minor = ?,
+    if (!alreadyPaid) {
+      await connection.query(
+        `UPDATE ${SCHOOL_ORDERS_TABLE}
+         SET status = 'paid',
+             provider = COALESCE(?, provider),
+             provider_reference = COALESCE(?, provider_reference),
+             provider_order_id = COALESCE(?, provider_order_id),
              paid_at = ?,
              updated_at = ?
-         WHERE id = ?
-         LIMIT 1`,
+         WHERE id = ?`,
+        [provider, providerReference || null, providerOrderId || null, now, now, Number(order.id)]
+      );
+    }
+
+    let schoolId = Number(order.school_id || 0);
+    if (!schoolId) {
+      const schoolUuid = `sch_${crypto.randomUUID().replace(/-/g, "")}`;
+      const startsAt = now;
+      const expiresAt = oneYearLaterSql(new Date());
+      await connection.query(
+        `INSERT INTO ${SCHOOL_ACCOUNTS_TABLE}
+          (school_uuid, school_name, course_slug, seats_purchased, price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, status, paid_at, access_starts_at, access_expires_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
         [
+          schoolUuid,
           clean(order.school_name, 220),
-          Number(schoolRows[0].seats_purchased || 0) + Number(order.seats_requested || 0),
-          Number(schoolRows[0].subtotal_minor || 0) + Number(order.subtotal_minor || 0),
-          Number(schoolRows[0].vat_minor || 0) + Number(order.vat_minor || 0),
-          Number(schoolRows[0].total_minor || 0) + Number(order.total_minor || 0),
+          clean(order.course_slug, 120),
+          Number(order.seats_requested || 0),
+          Number(order.price_per_student_minor || 0),
+          Number(order.vat_bps || 0),
+          Number(order.subtotal_minor || 0),
+          Number(order.vat_minor || 0),
+          Number(order.total_minor || 0),
+          now,
+          startsAt,
+          expiresAt,
           now,
           now,
-          schoolId,
         ]
       );
-    }
-  }
-
-  let admin = await findSchoolAdminByEmail(pool, order.admin_email);
-  let tempPassword = "";
-  if (!admin) {
-    tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
-    admin = await createSchoolAdmin(pool, {
-      schoolId,
-      fullName: order.admin_name,
-      email: order.admin_email,
-      password: tempPassword,
-    });
-  } else {
-    const existingSchoolId = Number(admin.school_id || 0);
-    if (!Number.isFinite(existingSchoolId) || existingSchoolId <= 0 || existingSchoolId !== Number(schoolId)) {
-      await pool.query(
-        `UPDATE ${SCHOOL_ADMINS_TABLE}
-         SET school_id = ?, is_active = 1, updated_at = ?
+      const [schoolRows] = await connection.query(
+        `SELECT id
+         FROM ${SCHOOL_ACCOUNTS_TABLE}
+         WHERE school_uuid = ?
+         LIMIT 1`,
+        [schoolUuid]
+      );
+      schoolId = Number(schoolRows && schoolRows[0] && schoolRows[0].id || 0);
+      if (!schoolId) throw new Error("Could not provision school account");
+      await connection.query(`UPDATE ${SCHOOL_ORDERS_TABLE} SET school_id = ?, updated_at = ? WHERE id = ?`, [schoolId, nowSql(), Number(order.id)]);
+    } else if (!alreadyPaid) {
+      const [schoolRows] = await connection.query(
+        `SELECT seats_purchased, subtotal_minor, vat_minor, total_minor
+         FROM ${SCHOOL_ACCOUNTS_TABLE}
          WHERE id = ?
          LIMIT 1`,
-        [Number(schoolId), nowSql(), Number(admin.id)]
+        [schoolId]
       );
-      admin.school_id = Number(schoolId);
+      if (Array.isArray(schoolRows) && schoolRows.length) {
+        await connection.query(
+          `UPDATE ${SCHOOL_ACCOUNTS_TABLE}
+           SET school_name = ?,
+               seats_purchased = ?,
+               subtotal_minor = ?,
+               vat_minor = ?,
+               total_minor = ?,
+               paid_at = ?,
+               updated_at = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [
+            clean(order.school_name, 220),
+            Number(schoolRows[0].seats_purchased || 0) + Number(order.seats_requested || 0),
+            Number(schoolRows[0].subtotal_minor || 0) + Number(order.subtotal_minor || 0),
+            Number(schoolRows[0].vat_minor || 0) + Number(order.vat_minor || 0),
+            Number(schoolRows[0].total_minor || 0) + Number(order.total_minor || 0),
+            now,
+            now,
+            schoolId,
+          ]
+        );
+      }
     }
-  }
-  if (!admin || !admin.id) throw new Error("Could not provision school admin");
 
-  return {
-    ok: true,
-    orderUuid: clean(order.order_uuid, 80),
-    schoolId,
-    adminId: Number(admin.id),
-    adminEmail: clean(order.admin_email, 220),
-    adminName: clean(order.admin_name, 180),
-    tempPassword,
-    courseSlug: clean(order.course_slug, 120),
-  };
+    let admin = await findSchoolAdminByEmail(connection, order.admin_email);
+    let tempPassword = "";
+    if (!admin) {
+      tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
+      admin = await createSchoolAdmin(connection, {
+        schoolId,
+        fullName: order.admin_name,
+        email: order.admin_email,
+        password: tempPassword,
+      });
+    } else {
+      const existingSchoolId = Number(admin.school_id || 0);
+      if (!Number.isFinite(existingSchoolId) || existingSchoolId <= 0 || existingSchoolId !== Number(schoolId)) {
+        await connection.query(
+          `UPDATE ${SCHOOL_ADMINS_TABLE}
+           SET school_id = ?, is_active = 1, updated_at = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [Number(schoolId), nowSql(), Number(admin.id)]
+        );
+        admin.school_id = Number(schoolId);
+      }
+    }
+    if (!admin || !admin.id) throw new Error("Could not provision school admin");
+
+    await connection.commit();
+    return {
+      ok: true,
+      orderUuid: clean(order.order_uuid, 80),
+      schoolId,
+      adminId: Number(admin.id),
+      adminEmail: clean(order.admin_email, 220),
+      adminName: clean(order.admin_name, 180),
+      tempPassword,
+      courseSlug: clean(order.course_slug, 120),
+    };
+  } catch (error) {
+    try {
+      await connection.rollback();
+    } catch (_rollbackError) {}
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 function parseCsv(text) {
