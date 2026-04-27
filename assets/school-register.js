@@ -11,8 +11,9 @@
   var statusEl = document.getElementById("schoolRegisterStatus");
   var btn = document.getElementById("schoolRegisterBtn");
   var introEl = document.getElementById("schoolsPricingIntro");
+  var seatCountLabelEl = document.querySelector('label[for="seatCount"] span, label[for="seatCount"]');
 
-  var MIN_SEATS = 50;
+  var MIN_SEATS = null;
   var PRICE_PER_STUDENT_MINOR = 850000;
   var VAT_PERCENT = 7.5;
   var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
@@ -63,6 +64,10 @@
     return { seats: seats, subtotal: subtotal, vat: vat, total: total };
   }
 
+  function hasMinSeatsConfigured() {
+    return Number.isFinite(Number(MIN_SEATS)) && Number(MIN_SEATS) > 0;
+  }
+
   function updatePricing() {
     var p = pricingForSeats(seatCountEl && seatCountEl.value);
     if (subtotalEl) subtotalEl.textContent = "Subtotal: " + naira(p.subtotal);
@@ -70,9 +75,38 @@
     if (totalEl) totalEl.textContent = "Total: " + naira(p.total);
   }
 
+  function updateSeatLabel() {
+    if (!seatCountLabelEl) return;
+    if (!hasMinSeatsConfigured()) {
+      seatCountLabelEl.textContent = "Number of Students";
+      return;
+    }
+    seatCountLabelEl.textContent = "Number of Students (min " + String(MIN_SEATS) + ")";
+  }
+
+  function applySeatConstraints() {
+    if (!seatCountEl) return;
+    if (!hasMinSeatsConfigured()) {
+      seatCountEl.removeAttribute("min");
+      return;
+    }
+    seatCountEl.min = String(MIN_SEATS);
+    if (Number(seatCountEl.value || 0) < MIN_SEATS) seatCountEl.value = String(MIN_SEATS);
+  }
+
   if (seatCountEl) {
     seatCountEl.addEventListener("input", updatePricing);
     seatCountEl.addEventListener("change", updatePricing);
+  }
+
+  updateSeatLabel();
+  applySeatConstraints();
+
+  if (btn) {
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+    btn.textContent = "Loading pricing...";
+    btn.title = "Loading school pricing configuration";
   }
 
   async function loadConfig() {
@@ -85,12 +119,13 @@
       var data = await response.json().catch(function () {
         return null;
       });
-      if (!response.ok || !data || data.ok !== true) return;
+      if (!response.ok || !data || data.ok !== true) return false;
       var cfg = data.config || {};
       var minSeats = Number(cfg.minSeats || 0);
       var fee = Number(cfg.pricePerStudentMinor || 0);
       var vatPercent = Number(cfg.vatPercent || 0);
-      if (Number.isFinite(minSeats) && minSeats > 0) MIN_SEATS = Math.trunc(minSeats);
+      if (!Number.isFinite(minSeats) || minSeats <= 0) return false;
+      MIN_SEATS = Math.trunc(minSeats);
       if (Number.isFinite(fee) && fee > 0) PRICE_PER_STUDENT_MINOR = Math.trunc(fee);
       if (Number.isFinite(vatPercent) && vatPercent >= 0) VAT_PERCENT = vatPercent;
       if (introEl) {
@@ -101,26 +136,45 @@
           naira(PRICE_PER_STUDENT_MINOR) +
           " per student + VAT.";
       }
-      if (seatCountEl) {
-        seatCountEl.min = String(MIN_SEATS);
-        if (Number(seatCountEl.value || 0) < MIN_SEATS) seatCountEl.value = String(MIN_SEATS);
-      }
+      updateSeatLabel();
+      applySeatConstraints();
       updatePricing();
-    } catch (_error) {}
+      return true;
+    } catch (_error) {
+      return false;
+    }
   }
-  loadConfig().finally(updatePricing);
+  loadConfig()
+    .then(function (ok) {
+      if (ok) {
+        if (btn) {
+          btn.disabled = false;
+          btn.removeAttribute("aria-disabled");
+          btn.removeAttribute("title");
+          btn.textContent = "Continue to Payment";
+        }
+        return;
+      }
+      if (introEl) introEl.textContent = "School pricing is temporarily unavailable. Please refresh to try again.";
+      setStatus("Could not load school pricing configuration. Please refresh and try again.", true);
+      if (btn) {
+        btn.disabled = true;
+        btn.setAttribute("aria-disabled", "true");
+        btn.title = "Pricing configuration unavailable";
+        btn.textContent = "Pricing Unavailable";
+      }
+    })
+    .finally(updatePricing);
 
   if (!form) return;
-
-  if (btn) {
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-    btn.removeAttribute("title");
-  }
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
     setStatus("", false);
+    if (!hasMinSeatsConfigured()) {
+      setStatus("School pricing is not loaded yet. Please refresh and try again.", true);
+      return;
+    }
     var seatCount = Math.trunc(Number(seatCountEl && seatCountEl.value || 0));
     if (!Number.isFinite(seatCount) || seatCount < MIN_SEATS) {
       setStatus("Minimum seat count is " + String(MIN_SEATS) + ".", true);
