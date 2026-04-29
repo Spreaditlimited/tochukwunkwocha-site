@@ -494,7 +494,8 @@
               : "";
             const certificateProofLink = String(item.certificateProofLink || "").trim();
             const proofSubmissionUnlocked = individualCompletionPercent >= 100;
-            const proofSubmitEnabled = proofSubmissionUnlocked && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
+            const proofNameConfirmed = !certificateNameNeedsConfirmation;
+            const proofSubmitEnabled = proofSubmissionUnlocked && proofNameConfirmed && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
             const certificateProofBadge = certificateProofStatus === "approved"
               ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Proof approved</span>'
               : certificateProofStatus === "pending"
@@ -558,6 +559,8 @@
                     }">${
                       !proofSubmissionUnlocked
                         ? "Finish all lessons to enable proof submission."
+                        : !proofNameConfirmed
+                          ? "Confirm your profile name in Dashboard Profile to enable certificate issuance."
                         : certificateProofStatus === "approved"
                           ? "Approved" + (certificateProofSubmittedAt ? ": " + escapeHtml(certificateProofSubmittedAt) : "")
                           : certificateProofStatus === "pending"
@@ -578,6 +581,8 @@
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
                     : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus === "rejected"
                       ? '<p class="mt-1 text-xs text-rose-700">Certificate is locked. Your proof link was rejected, submit an improved website link.</p>'
+                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateNameNeedsConfirmation
+                      ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
                     : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate is locked. Submit your website link to unlock it.</p>'
                     : individualCompletionPercent >= 100 && certificateNameNeedsConfirmation

@@ -150,6 +150,12 @@ exports.handler = async function (event) {
     await ensureLearningSupportTables(pool, { bootstrap: true });
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
+    if (session.account && session.account.certificateNameNeedsConfirmation === true) {
+      return json(400, {
+        ok: false,
+        error: "Confirm your profile name in Dashboard Profile before submitting certificate proof.",
+      });
+    }
 
     const email = String(session.account.email || "").toLowerCase();
     const hasAccess = await hasIndividualAccessForCourse(pool, { email, courseSlug });

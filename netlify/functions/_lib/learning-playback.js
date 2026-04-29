@@ -236,7 +236,7 @@ function buildSignedLessonEmbedUrl(input) {
   const base = streamEmbedBase(uid, hls);
   if (!base) throw new Error("Could not build playback URL");
   const signed = createSignedPlaybackToken(uid);
-  const refreshAfterSeconds = Math.max(45, signed.ttl_seconds - 60);
+  const refreshAfterSeconds = Math.max(90, signed.ttl_seconds - 300);
   return {
     embed_url: replaceVideoUidWithToken(base, uid, signed.token),
     expires_at: signed.expires_at,

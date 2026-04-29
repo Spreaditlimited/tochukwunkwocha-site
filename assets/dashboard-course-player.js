@@ -123,6 +123,8 @@
     communitySearchTerm: "",
     confirmResolver: null,
     editResolver: null,
+    pendingResumeSeconds: null,
+    pendingResumeShouldPlay: false,
   };
 
   var WATCH_HEARTBEAT_SECONDS = 15;
@@ -616,6 +618,60 @@
     state.pendingWatchSeconds += delta;
   }
 
+  function safeReadPlayerCurrentTime(player) {
+    if (!player) return NaN;
+    try {
+      var value = Number(player.currentTime);
+      if (Number.isFinite(value) && value >= 0) return value;
+    } catch (_error) {}
+    return NaN;
+  }
+
+  function capturePlaybackResumeState() {
+    var seconds = safeReadPlayerCurrentTime(state.playerApi);
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      seconds = Number.isFinite(state.lastTrackedPlayerSecond) ? Number(state.lastTrackedPlayerSecond) : NaN;
+    }
+    return {
+      seconds: Number.isFinite(seconds) && seconds >= 0 ? seconds : null,
+      shouldPlay: !!state.isPlaying,
+    };
+  }
+
+  function attemptResumePlayback(player, embedToken) {
+    if (!player) return;
+    var resumeSeconds = Number(state.pendingResumeSeconds);
+    var shouldPlay = !!state.pendingResumeShouldPlay;
+    if (!Number.isFinite(resumeSeconds) || resumeSeconds < 0) return;
+    var applied = false;
+    function tryApply() {
+      if (applied) return;
+      if (embedToken !== state.activeEmbedToken || player !== state.playerApi) return;
+      try {
+        player.currentTime = resumeSeconds;
+        state.lastTrackedPlayerSecond = resumeSeconds;
+        applied = true;
+      } catch (_error) {
+        return;
+      }
+      if (shouldPlay && typeof player.play === "function") {
+        try {
+          var playResult = player.play();
+          if (playResult && typeof playResult.catch === "function") playResult.catch(function () {});
+        } catch (_error) {}
+      }
+      state.pendingResumeSeconds = null;
+      state.pendingResumeShouldPlay = false;
+    }
+    if (player && typeof player.addEventListener === "function") {
+      player.addEventListener("loadedmetadata", tryApply);
+      player.addEventListener("canplay", tryApply);
+      player.addEventListener("playing", tryApply);
+    }
+    setTimeout(tryApply, 1200);
+    setTimeout(tryApply, 2800);
+  }
+
   function parsePlayerTimeSeconds(payload) {
     if (Number.isFinite(Number(payload))) return Number(payload);
     if (!payload || typeof payload !== "object") return NaN;
@@ -707,6 +763,7 @@
         if (embedToken !== state.activeEmbedToken || iframe !== state.iframeEl) return;
         var player = Stream(iframe);
         state.playerApi = player;
+        attemptResumePlayback(player, embedToken);
 
         function onPlay() {
           if (embedToken !== state.activeEmbedToken || iframe !== state.iframeEl) return;
@@ -897,14 +954,25 @@
       if (id !== Number(state.activeLessonId || 0)) return;
       if (embedToken !== state.activeEmbedToken) return;
       fetchLessonPlayback(id, { force: true, silent: true })
-        .then(function () {
+        .then(function (playback) {
           if (id !== Number(state.activeLessonId || 0)) return;
           if (embedToken !== state.activeEmbedToken) return;
+          if (playback && playback.embedUrl && state.iframeEl) {
+            var currentSrc = clean(state.iframeEl.getAttribute("src"));
+            if (currentSrc && currentSrc !== clean(playback.embedUrl)) {
+              var snapshot = capturePlaybackResumeState();
+              state.pendingResumeSeconds = snapshot.seconds;
+              state.pendingResumeShouldPlay = snapshot.shouldPlay;
+              setStatus("Refreshing secure playback session...", false);
+              setVideoSource(playback.embedUrl);
+            }
+          }
           schedulePlaybackRefresh(id, embedToken);
         })
         .catch(function () {
           if (id !== Number(state.activeLessonId || 0)) return;
           if (embedToken !== state.activeEmbedToken) return;
+          setStatus("Reauthorizing secure video session...", false);
           state.playbackRefreshTimer = setTimeout(function () {
             schedulePlaybackRefresh(id, embedToken);
           }, 45000);

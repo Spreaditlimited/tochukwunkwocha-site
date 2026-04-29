@@ -7,11 +7,7 @@ const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 const { getCourseName } = require("./_lib/course-config");
 const { sendEmail } = require("./_lib/email");
-const {
-  ASSIGNMENTS_TABLE,
-  ensureLearningSupportTables,
-  updateAssignmentByAdmin,
-} = require("./_lib/learning-support");
+const { ASSIGNMENTS_TABLE, ensureLearningSupportTables } = require("./_lib/learning-support");
 
 const CERTIFICATE_PROOF_MARKER = "[CERTIFICATE_PROOF_WEBSITE]";
 
@@ -125,20 +121,16 @@ async function issueIndividualCertificateIfEligible(pool, assignment) {
   );
   const certNo = clean(certRows && certRows[0] && certRows[0].certificate_no, 140);
   if (!certNo) return { issued: false, reason: "certificate_not_found_after_upsert" };
-
   return {
     issued: true,
     certificateNo: certNo,
     certificateUrl: `${siteBaseUrl()}/dashboard/certificate/?certificate_no=${encodeURIComponent(certNo)}`,
-    issuedAt: certRows && certRows[0] && certRows[0].issued_at
-      ? new Date(certRows[0].issued_at).toISOString()
-      : new Date().toISOString(),
   };
 }
 
 async function sendApprovalEmail(input) {
   const to = clean(input && input.to, 220).toLowerCase();
-  if (!to) return;
+  if (!to) throw new Error("Student email is missing.");
   const studentName = clean(input && input.studentName, 180) || "Student";
   const courseName = clean(input && input.courseName, 180) || "your course";
   const adminFeedback = clean(input && input.adminFeedback, 4000);
@@ -173,74 +165,57 @@ async function sendApprovalEmail(input) {
     "",
     "Tochukwu Tech and AI Academy",
   ].filter(Boolean).join("\n");
-
   await sendEmail({ to, subject, html, text });
 }
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
-
   const auth = requireAdminSession(event);
   if (!auth.ok) return json(auth.statusCode || 401, { ok: false, error: auth.error || "Unauthorized" });
 
   const body = parseBody(event);
   if (!body) return json(400, { ok: false, error: "Invalid JSON payload" });
+  const assignmentId = Number(body.assignment_id || 0);
+  if (!(assignmentId > 0)) return json(400, { ok: false, error: "assignment_id is required" });
 
   const pool = getPool();
   try {
     await ensureLearningSupportTables(pool, { bootstrap: true });
-    const assignmentId = Number(body.assignment_id || 0);
-    const [beforeRows] = await pool.query(
-      `SELECT id, course_slug, account_id, student_email, student_name, submission_kind, submission_text, submission_link, status
+    const [rows] = await pool.query(
+      `SELECT id, course_slug, account_id, student_email, student_name, submission_kind, submission_text, submission_link, status, admin_feedback
        FROM ${ASSIGNMENTS_TABLE}
        WHERE id = ?
        LIMIT 1`,
       [assignmentId]
     );
-    const before = beforeRows && beforeRows[0] ? beforeRows[0] : null;
-    const item = await updateAssignmentByAdmin(pool, {
-      assignment_id: assignmentId,
-      status: body.status,
-      admin_feedback: body.admin_feedback,
-      admin_actor: auth && auth.payload ? auth.payload.role : "admin",
-    });
-    const becameApproved = clean(before && before.status, 32).toLowerCase() !== "approved"
-      && clean(item && item.status, 32).toLowerCase() === "approved";
-    const isCertificateProof = clean(before && before.submission_kind, 24).toLowerCase() === "link"
-      && clean(before && before.submission_text, 120) === CERTIFICATE_PROOF_MARKER;
-    let email = {
-      attempted: false,
-      sent: false,
-      certificateReady: false,
-      note: "",
-    };
-    if (becameApproved && isCertificateProof) {
-      email.attempted = true;
-      const cert = await issueIndividualCertificateIfEligible(pool, before);
-      email.certificateReady = !!(cert && cert.issued);
-      try {
-        await sendApprovalEmail({
-          to: before.student_email,
-          studentName: before.student_name,
-          courseName: getCourseName(before.course_slug),
-          websiteUrl: before.submission_link,
-          certificateUrl: cert && cert.issued ? cert.certificateUrl : "",
-          adminFeedback: item && item.admin_feedback ? item.admin_feedback : "",
-        });
-        email.sent = true;
-        email.note = cert && cert.issued
-          ? "Approval email sent with certificate link."
-          : "Approval email sent. Certificate link not included: " + certificateBlockReasonText(cert && cert.reason) + ".";
-      } catch (emailError) {
-        email.note = emailError && emailError.message ? emailError.message : "Email send failed";
-        console.warn("assignment_approval_email_failed", {
-          assignment_id: assignmentId,
-          error: emailError && emailError.message ? emailError.message : String(emailError || "unknown"),
-        });
-      }
+    if (!Array.isArray(rows) || !rows.length) return json(404, { ok: false, error: "Assignment not found." });
+    const item = rows[0];
+    const isCertificateProof = clean(item.submission_kind, 24).toLowerCase() === "link"
+      && clean(item.submission_text, 120) === CERTIFICATE_PROOF_MARKER;
+    if (!isCertificateProof) return json(400, { ok: false, error: "This assignment is not a certificate proof submission." });
+    if (clean(item.status, 32).toLowerCase() !== "approved") {
+      return json(400, { ok: false, error: "Approve this submission before sending an approval email." });
     }
-    return json(200, { ok: true, item, email });
+
+    const cert = await issueIndividualCertificateIfEligible(pool, item);
+    await sendApprovalEmail({
+      to: item.student_email,
+      studentName: item.student_name,
+      courseName: getCourseName(item.course_slug),
+      websiteUrl: item.submission_link,
+      certificateUrl: cert && cert.issued ? cert.certificateUrl : "",
+      adminFeedback: item.admin_feedback,
+    });
+
+    return json(200, {
+      ok: true,
+      sent: true,
+      certificateReady: !!(cert && cert.issued),
+      message: cert && cert.issued
+        ? "Approval email sent with certificate link."
+        : "Approval email sent. Certificate link not included: " + certificateBlockReasonText(cert && cert.reason) + ".",
+    });
   } catch (error) {
-    return json(500, { ok: false, error: error.message || "Could not update assignment." });
+    return json(500, { ok: false, error: error.message || "Could not send approval email." });
   }
 };

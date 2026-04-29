@@ -26,6 +26,8 @@
   var modalAttachmentsEl = document.getElementById("assignmentModalAttachments");
   var modalStatusEl = document.getElementById("assignmentModalStatus");
   var modalFeedbackEl = document.getElementById("assignmentModalFeedback");
+  var modalEmailStatusEl = document.getElementById("assignmentModalEmailStatus");
+  var modalSendEmailBtnEl = document.getElementById("assignmentModalSendEmail");
 
   var state = {
     courses: [],
@@ -54,6 +56,27 @@
     var d = new Date(value);
     if (!Number.isFinite(d.getTime())) return "-";
     return d.toLocaleString();
+  }
+
+  function isCertificateProofItem(item) {
+    var kind = clean(item && item.submission_kind, 24).toLowerCase();
+    var text = clean(item && item.submission_text, 20000);
+    return kind === "link" && text === CERTIFICATE_PROOF_MARKER;
+  }
+
+  function setModalEmailStatus(text, bad) {
+    if (!modalEmailStatusEl) return;
+    modalEmailStatusEl.textContent = clean(text, 500);
+    modalEmailStatusEl.className = "text-xs sm:col-span-2 " + (bad ? "text-red-600" : "text-gray-500");
+  }
+
+  function syncModalSendEmailButton(item) {
+    if (!modalSendEmailBtnEl) return;
+    var eligible = isCertificateProofItem(item) && clean(item && item.status, 32).toLowerCase() === "approved";
+    modalSendEmailBtnEl.disabled = !eligible;
+    modalSendEmailBtnEl.className = eligible
+      ? "inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+      : "inline-flex items-center justify-center rounded-xl border border-gray-200 bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-500 cursor-not-allowed";
   }
 
   function setMessage(text, bad) {
@@ -175,7 +198,12 @@
         '<td class="px-3 py-2.5 text-sm text-gray-700">' + escapeHtml(item.course_slug || "") + "</td>",
         '<td class="px-3 py-2.5 text-sm text-gray-700">' + escapeHtml(submissionLabel || "") + "</td>",
         '<td class="px-3 py-2.5"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">' + escapeHtml(item.status || "submitted") + "</span></td>",
-        '<td class="px-3 py-2.5 text-right"><button type="button" data-assignment-id="' + String(item.id || "") + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Review</button></td>',
+        '<td class="px-3 py-2.5 text-right"><div class="inline-flex items-center gap-2">' +
+          (clean(item.certificate_url, 1500)
+            ? '<a href="' + escapeHtml(clean(item.certificate_url, 1500)) + '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">View Cert</a>'
+            : "") +
+          '<button type="button" data-assignment-id="' + String(item.id || "") + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Review</button>' +
+          "</div></td>",
         "</tr>",
       ].join("");
     }).join("");
@@ -208,12 +236,21 @@
       if (kind === "link" && text === CERTIFICATE_PROOF_MARKER) kindLabel = "certificate_proof_link";
       modalTitleEl.textContent = (value.student_name || value.student_email || "Student") + " • " + (kindLabel || "assignment");
     }
-    var bodyParts = [];
-    if (value.submission_text && value.submission_text !== CERTIFICATE_PROOF_MARKER) bodyParts.push("Text:\n" + value.submission_text);
-    if (value.submission_link) bodyParts.push("Link:\n" + value.submission_link);
-    if (modalBodyEl) modalBodyEl.textContent = bodyParts.join("\n\n") || "No text body provided.";
+    if (modalBodyEl) {
+      var bodyParts = [];
+      if (value.submission_text && value.submission_text !== CERTIFICATE_PROOF_MARKER) {
+        bodyParts.push('<div><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Text</p><p class="mt-1 whitespace-pre-wrap">' + escapeHtml(value.submission_text) + "</p></div>");
+      }
+      if (value.submission_link) {
+        var safeUrl = clean(value.submission_link, 1500);
+        bodyParts.push('<div><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Link</p><a href="' + escapeHtml(safeUrl) + '" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex break-all text-brand-700 underline hover:text-brand-900">' + escapeHtml(safeUrl) + "</a></div>");
+      }
+      modalBodyEl.innerHTML = bodyParts.join('<div class="my-3 border-t border-gray-100"></div>') || "No text body provided.";
+    }
     if (modalStatusEl) modalStatusEl.value = clean(value.status, 32) || "submitted";
     if (modalFeedbackEl) modalFeedbackEl.value = clean(value.admin_feedback, 8000);
+    setModalEmailStatus("", false);
+    syncModalSendEmailButton(value);
 
     if (modalAttachmentsEl) {
       var attachments = Array.isArray(value.attachments) ? value.attachments : [];
@@ -267,14 +304,54 @@
         state.items = (state.items || []).map(function (item) {
           return Number(item && item.id || 0) === id ? updated : item;
         });
+        state.activeItem = updated;
       }
       renderRows();
-      closeModal();
+      var email = data && data.email ? data.email : null;
+      if (email && email.attempted) {
+        setModalEmailStatus(
+          email.sent
+            ? clean(email.note, 300) || "Approval email sent."
+            : "Auto-send failed. You can use 'Send Approval Email'.",
+          !email.sent
+        );
+      } else {
+        setModalEmailStatus("Review saved. No auto-email sent for this status/type.", false);
+      }
+      if (updated) syncModalSendEmailButton(updated);
       setMessage("Assignment review updated.", false);
     } finally {
       if (modalSaveEl) {
         modalSaveEl.disabled = false;
         modalSaveEl.textContent = "Save Review";
+      }
+    }
+  }
+
+  async function sendApprovalEmailForActiveItem() {
+    if (!state.activeItem) return;
+    var id = Number(state.activeItem.id || 0);
+    if (!(id > 0)) return;
+    if (modalSendEmailBtnEl) {
+      modalSendEmailBtnEl.disabled = true;
+      modalSendEmailBtnEl.textContent = "Sending...";
+    }
+    setModalEmailStatus("", false);
+    try {
+      var data = await api("/.netlify/functions/admin-learning-assignment-approval-email-send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ assignment_id: id }),
+      });
+      setModalEmailStatus(clean(data && data.message, 320) || "Approval email sent.", false);
+      setMessage("Approval email sent.", false);
+    } finally {
+      if (modalSendEmailBtnEl) {
+        modalSendEmailBtnEl.textContent = "Send Approval Email";
+        syncModalSendEmailButton(state.activeItem);
       }
     }
   }
@@ -300,6 +377,13 @@
     modalSaveEl.addEventListener("click", function () {
       saveModalReview().catch(function (error) {
         setMessage(error.message || "Could not save assignment review", true);
+      });
+    });
+  }
+  if (modalSendEmailBtnEl) {
+    modalSendEmailBtnEl.addEventListener("click", function () {
+      sendApprovalEmailForActiveItem().catch(function (error) {
+        setModalEmailStatus(error.message || "Could not send approval email.", true);
       });
     });
   }
