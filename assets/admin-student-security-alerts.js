@@ -1,6 +1,7 @@
 (function () {
   var countEl = document.getElementById("studentSecurityAlertCount");
   var rowsEl = document.getElementById("studentSecurityAlertRows");
+  var searchEl = document.getElementById("studentSecurityAlertSearch");
   if (!countEl || !rowsEl) return;
   var sectionEl = rowsEl.closest("section");
   var actionConfirmModal = document.getElementById("actionConfirmModal");
@@ -14,6 +15,9 @@
   var resettingByAccountId = {};
   var feedbackTimeout = 0;
   var hasBootstrapped = false;
+  var activeQuery = "";
+  var activeTotal = 0;
+  var searchDebounce = 0;
 
   function clean(value) {
     return String(value || "").trim();
@@ -42,11 +46,12 @@
     return "bg-slate-100 text-slate-700";
   }
 
-  function render(items) {
+  function render(items, total) {
     latestItems = Array.isArray(items) ? items.slice() : [];
-    countEl.textContent = String(items.length);
+    activeTotal = Number(total || 0);
+    countEl.textContent = String(activeTotal);
     if (!items.length) {
-      rowsEl.innerHTML = '<p class="text-sm text-gray-500">No open student security alerts.</p>';
+      rowsEl.innerHTML = '<p class="text-sm text-gray-500">' + (activeQuery ? "No security alerts match this search." : "No open student security alerts.") + "</p>";
       return;
     }
     rowsEl.innerHTML = items.map(function (item) {
@@ -147,8 +152,11 @@
     });
   }
 
-  async function load() {
-    var res = await fetch("/.netlify/functions/admin-student-security-alerts-list", {
+  async function load(query) {
+    activeQuery = clean(query || "").toLowerCase();
+    var endpoint = "/.netlify/functions/admin-student-security-alerts-list";
+    if (activeQuery) endpoint += "?q=" + encodeURIComponent(activeQuery);
+    var res = await fetch(endpoint, {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" },
@@ -169,7 +177,7 @@
     if (!res.ok || !json || !json.ok) {
       throw new Error((json && json.error) || "Could not load security alerts.");
     }
-    render(Array.isArray(json.alerts) ? json.alerts : []);
+    render(Array.isArray(json.alerts) ? json.alerts : [], Number(json.total || 0));
   }
 
   async function resetStudentDevices(accountId, studentName) {
@@ -201,7 +209,7 @@
       if (!res.ok || !json || !json.ok) {
         throw new Error((json && json.error) || "Could not reset student devices.");
       }
-      await load();
+      await load(activeQuery);
       setFeedback(
         "Devices reset for " +
           label +
@@ -225,6 +233,20 @@
       setFeedback(message || "Could not reset student devices.", "error");
     });
   });
+
+  if (searchEl) {
+    searchEl.addEventListener("input", function (event) {
+      var value = clean(event && event.target ? event.target.value : "");
+      if (searchDebounce) window.clearTimeout(searchDebounce);
+      searchDebounce = window.setTimeout(function () {
+        load(value).catch(function (error) {
+          var text = clean(error && error.message);
+          countEl.textContent = "!";
+          rowsEl.innerHTML = '<p class="text-sm text-red-600">' + escapeHtml(text || "Could not load security alerts.") + "</p>";
+        });
+      }, 220);
+    });
+  }
 
   if (actionConfirmBackdrop) {
     actionConfirmBackdrop.addEventListener("click", function () {
@@ -254,7 +276,7 @@
   function bootLoad() {
     if (hasBootstrapped) return;
     hasBootstrapped = true;
-    load().catch(function (error) {
+    load(activeQuery).catch(function (error) {
       var text = clean(error && error.message);
       if (/not signed in|unauthorized|session/i.test(text)) {
         hasBootstrapped = false;

@@ -25,10 +25,27 @@ exports.handler = async function (event) {
       await applyRuntimeSettings(pool);
     } catch (_error) {}
     await ensureStudentAuthTables(pool);
+    const query = clean(event && event.queryStringParameters && event.queryStringParameters.q, 160).toLowerCase();
+    const hasQuery = Boolean(query);
+    const like = "%" + query.replace(/\s+/g, "%") + "%";
+    const whereSql = hasQuery
+      ? "WHERE a.status = 'open' AND (LOWER(sa.full_name) LIKE ? OR LOWER(sa.email) LIKE ?)"
+      : "WHERE a.status = 'open'";
+    const countParams = hasQuery ? [like, like] : [];
+    const listParams = hasQuery ? [like, like] : [];
 
     let rows = [];
+    let total = 0;
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total
+         FROM student_security_alerts a
+         JOIN student_accounts sa ON sa.id = a.account_id
+         ${whereSql}`,
+      countParams
+    );
+    total = Number(countRows && countRows[0] && countRows[0].total || 0);
     try {
-         const [withSchool] = await pool.query(
+      const [withSchool] = await pool.query(
         `SELECT
            a.id,
            a.account_id,
@@ -46,9 +63,10 @@ exports.handler = async function (event) {
          FROM student_security_alerts a
          JOIN student_accounts sa ON sa.id = a.account_id
          LEFT JOIN school_accounts sc ON sc.id = a.school_id
-         WHERE a.status = 'open'
+         ${whereSql}
          ORDER BY a.last_seen_at DESC, a.id DESC
-         LIMIT 100`
+         LIMIT 100`,
+        listParams
       );
       rows = Array.isArray(withSchool) ? withSchool : [];
     } catch (error) {
@@ -72,15 +90,17 @@ exports.handler = async function (event) {
            '' AS school_name
          FROM student_security_alerts a
          JOIN student_accounts sa ON sa.id = a.account_id
-         WHERE a.status = 'open'
+         ${whereSql}
          ORDER BY a.last_seen_at DESC, a.id DESC
-         LIMIT 100`
+         LIMIT 100`,
+        listParams
       );
       rows = Array.isArray(withoutSchool) ? withoutSchool : [];
     }
 
     return json(200, {
       ok: true,
+      total,
       alerts: rows.map(function (row) {
         return {
           id: Number(row.id),

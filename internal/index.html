@@ -263,6 +263,15 @@
                 </div>
                 <span id="studentSecurityAlertCount" class="inline-flex items-center justify-center rounded-full bg-brand-50 px-3 py-1 text-sm font-bold text-brand-700">...</span>
               </div>
+              <div class="mt-4">
+                <label for="studentSecurityAlertSearch" class="sr-only">Search student security alerts</label>
+                <input
+                  id="studentSecurityAlertSearch"
+                  type="search"
+                  placeholder="Search by student name or email"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none ring-brand-500/20 placeholder:text-gray-400 focus:border-brand-500 focus:ring-4"
+                />
+              </div>
               <div id="studentSecurityAlertRows" class="hide-scrollbar mt-4 grid max-h-[28rem] grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
                 <p class="text-sm text-gray-500">Loading security alerts...</p>
               </div>
