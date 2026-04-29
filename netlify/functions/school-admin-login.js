@@ -1,7 +1,6 @@
 const { getPool } = require("./_lib/db");
 const { json, badMethod } = require("./_lib/http");
 const {
-  ensureSchoolTables,
   verifySchoolAdminCredentials,
   createSchoolAdminSession,
   setSchoolAdminCookieHeader,
@@ -56,7 +55,6 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureSchoolTables(pool);
     const admin = await verifySchoolAdminCredentials(pool, { email, password });
     if (!admin || !admin.id) return json(401, { ok: false, error: "Invalid credentials" });
     await repairMissingSchoolLink(pool, admin);

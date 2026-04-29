@@ -15,6 +15,12 @@
   const loginBtn = document.getElementById("walletLoginBtn");
   const forgotPasswordBtn = document.getElementById("walletForgotPasswordBtn");
   const authMsg = document.getElementById("walletAuthMsg");
+  const schoolStudentCodeForm = document.getElementById("schoolStudentCodeForm");
+  const schoolStudentCodeInput = document.getElementById("schoolStudentCodeInput");
+  const schoolStudentCodeBtn = document.getElementById("schoolStudentCodeBtn");
+  const schoolStudentCodeConfirmHint = document.getElementById("schoolStudentCodeConfirmHint");
+  const schoolStudentNameConfirmWrap = document.getElementById("schoolStudentNameConfirmWrap");
+  const schoolStudentNameConfirmInput = document.getElementById("schoolStudentNameConfirmInput");
 
   const logoutBtn = document.getElementById("walletLogoutBtn");
   const accountMeta = document.getElementById("walletAccountMeta");
@@ -50,6 +56,7 @@
   const planMsg = document.getElementById("walletPlanMsg");
 
   let dashboard = null;
+  let schoolStudentChallenge = "";
   let authMode = "signin";
   let appliedPlanCoupon = null;
   const PLAN_START_ENABLED = true;
@@ -652,6 +659,76 @@
     }
   }
 
+  async function handleSchoolStudentCodeLogin() {
+    setMsg(authMsg, "", "");
+    const code = String((schoolStudentCodeInput && schoolStudentCodeInput.value) || "").trim().toUpperCase();
+    if (!code) {
+      setMsg(authMsg, "Enter your student code.", "error");
+      return;
+    }
+    if (!schoolStudentCodeBtn) return;
+
+    const originalText = schoolStudentCodeBtn.textContent;
+    schoolStudentCodeBtn.disabled = true;
+    schoolStudentCodeBtn.textContent = schoolStudentChallenge ? "Signing in..." : "Checking...";
+    try {
+      const payload = schoolStudentChallenge
+        ? {
+            code: code,
+            confirm: true,
+            challenge: schoolStudentChallenge,
+            confirmName: String((schoolStudentNameConfirmInput && schoolStudentNameConfirmInput.value) || "").trim(),
+          }
+        : { code: code };
+      const data = await api("/.netlify/functions/school-student-code-login", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (data && data.needsConfirm) {
+        schoolStudentChallenge = String(data.challenge || "");
+        if (schoolStudentCodeConfirmHint) {
+          schoolStudentCodeConfirmHint.textContent = "Confirm student: " + String(data.student && data.student.maskedName || "Student");
+          schoolStudentCodeConfirmHint.classList.remove("hidden");
+        }
+        if (schoolStudentNameConfirmWrap) schoolStudentNameConfirmWrap.classList.remove("hidden");
+        if (schoolStudentNameConfirmInput) {
+          schoolStudentNameConfirmInput.value = "";
+          schoolStudentNameConfirmInput.focus();
+        }
+        schoolStudentCodeBtn.textContent = "Confirm & Sign In";
+        setMsg(authMsg, "Type your full name to continue.", "ok");
+        return;
+      }
+
+      schoolStudentChallenge = "";
+      if (schoolStudentCodeConfirmHint) {
+        schoolStudentCodeConfirmHint.textContent = "";
+        schoolStudentCodeConfirmHint.classList.add("hidden");
+      }
+      if (schoolStudentNameConfirmWrap) schoolStudentNameConfirmWrap.classList.add("hidden");
+      if (schoolStudentNameConfirmInput) schoolStudentNameConfirmInput.value = "";
+      setWalletState(true);
+      setMsg(authMsg, "Signed in.", "ok");
+      if (schoolStudentCodeForm) schoolStudentCodeForm.reset();
+      await loadDashboard();
+      await loadBatches();
+    } catch (error) {
+      schoolStudentChallenge = "";
+      if (schoolStudentCodeConfirmHint) {
+        schoolStudentCodeConfirmHint.textContent = "";
+        schoolStudentCodeConfirmHint.classList.add("hidden");
+      }
+      if (schoolStudentNameConfirmWrap) schoolStudentNameConfirmWrap.classList.add("hidden");
+      if (schoolStudentNameConfirmInput) schoolStudentNameConfirmInput.value = "";
+      setMsg(authMsg, error.message || "Could not sign in with student code", "error");
+    } finally {
+      schoolStudentCodeBtn.disabled = false;
+      if (!schoolStudentChallenge) schoolStudentCodeBtn.textContent = originalText || "Continue With Code";
+    }
+  }
+
   async function createPlan() {
     if (!PLAN_START_ENABLED) {
       setMsg(planMsg, PLAN_START_DISABLED_MSG, "error");
@@ -828,6 +905,12 @@
       handleLogin().catch(function () {
         return null;
       });
+    });
+  }
+  if (schoolStudentCodeForm) {
+    schoolStudentCodeForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      handleSchoolStudentCodeLogin();
     });
   }
 

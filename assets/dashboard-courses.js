@@ -306,6 +306,7 @@
     const accessExpiresDate = parseAnyDate(item && item.accessExpiresAt);
     const batchStatus = normalizeSlug(item && item.batchStatus);
     const courseSlug = normalizeSlug(item && item.courseSlug);
+    const source = normalizeSlug(item && item.source);
     const durationDays = Number(COURSE_DURATION_DAYS[courseSlug] || 0);
     const paidOrSubmittedAt = parseAnyDate((item && item.paidAt) || (item && item.submittedAt));
     const now = new Date();
@@ -323,6 +324,12 @@
       };
     }
     if (!startDate) {
+      if (source === "school" && hasActiveAccess) {
+        return {
+          label: "Access active now",
+          css: "bg-emerald-100 text-emerald-700",
+        };
+      }
       if (batchStatus === "closed") {
         return passedLabel();
       }
@@ -480,9 +487,9 @@
               ? new Date(item.schoolCertificateIssuedAt).toLocaleString()
               : "";
             const schoolCertificateUrl = String(item.schoolCertificateUrl || "").trim();
-            const individualCompletionPercent = Number(item.individualCompletionPercent || 0);
-            const individualCompletedLessons = Number(item.individualCompletedLessons || 0);
-            const individualTotalLessons = Number(item.individualTotalLessons || 0);
+            const completionPercent = Number(item.individualCompletionPercent || 0);
+            const completedLessons = Number(item.individualCompletedLessons || 0);
+            const totalLessons = Number(item.individualTotalLessons || 0);
             const individualCertificateIssuedAt = item.individualCertificateIssuedAt
               ? new Date(item.individualCertificateIssuedAt).toLocaleString()
               : "";
@@ -493,7 +500,7 @@
               ? new Date(item.certificateProofSubmittedAt).toLocaleString()
               : "";
             const certificateProofLink = String(item.certificateProofLink || "").trim();
-            const proofSubmissionUnlocked = individualCompletionPercent >= 100;
+            const proofSubmissionUnlocked = completionPercent >= 100;
             const proofNameConfirmed = !certificateNameNeedsConfirmation;
             const proofSubmitEnabled = proofSubmissionUnlocked && proofNameConfirmed && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
             const certificateProofBadge = certificateProofStatus === "approved"
@@ -503,52 +510,25 @@
                 : certificateProofStatus === "rejected"
                   ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Proof rejected</span>'
                   : '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">Proof missing</span>';
-            const websiteBlock = isSchool
-              ? [
-                  '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
-                  '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">School Submission</p>',
-                  '<p class="mt-1 text-xs text-gray-600">Submit your project website link for school admin review before certificate issuance.</p>',
-                  `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
-                    <input type="url" data-school-website-input="${escapeHtml(item.courseSlug)}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="https://yourwebsite.com" value="${escapeHtml(item.schoolWebsiteUrl || "")}" />
-                    <button type="button" data-submit-school-website="${escapeHtml(item.courseSlug)}" class="inline-flex items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white hover:bg-brand-600">Submit Link</button>
-                  </div>`,
-                  `<p data-school-website-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${websiteSubmittedAt ? "text-emerald-700" : "text-gray-500"}">${
-                    websiteSubmittedAt
-                      ? "Submitted: " + escapeHtml(websiteSubmittedAt)
-                      : "No website submitted yet."
-                  }</p>`,
-                  schoolCertificateUrl
-                    ? [
-                        '<div class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">',
-                        '<p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Certificate</p>',
-                        `<a href="${escapeHtml(schoolCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
-                        certificateIssuedAt
-                          ? `<p class="mt-1 text-xs text-emerald-700">Issued: ${escapeHtml(certificateIssuedAt)}</p>`
-                          : "",
-                        "</div>",
-                      ].join("")
-                    : '<p class="mt-3 text-xs text-gray-500">Certificate will appear here once your school admin issues it.</p>',
-                  "</div>",
-                ].join("")
-              : "";
-            const individualCertificateBlock = !isSchool
-              ? [
+            const certificateBlock = [
                   '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
                   '<div class="flex flex-wrap items-center gap-2">',
                   '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Certificate</p>',
-                  certificateProofRequired ? certificateProofBadge : "",
+                  !isSchool && certificateProofRequired ? certificateProofBadge : "",
                   "</div>",
-                  certificateProofRequired
-                    ? `<p class="mt-1 text-xs text-gray-600">Complete all lessons and submit your website link to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`
-                    : "",
-                  certificateProofRequired
-                    ? `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
-                        <input type="url" data-certificate-proof-input="${escapeHtml(item.courseSlug)}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm ${proofSubmitEnabled ? "" : "bg-gray-100 text-gray-500"}" placeholder="https://yourwebsite.com" value="${escapeHtml(certificateProofLink)}" ${proofSubmitEnabled ? "" : "disabled"} />
-                        <button type="button" data-submit-certificate-proof="${escapeHtml(item.courseSlug)}" data-certificate-proof-enabled="${proofSubmitEnabled ? "1" : "0"}" class="inline-flex w-full items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[128px] sm:flex-none" ${proofSubmitEnabled ? "" : "disabled"}>Submit Proof</button>
+                  `<p class="mt-1 text-xs text-gray-600">Complete all lessons and submit your website link to unlock certificate. Progress: ${escapeHtml(String(completedLessons))}/${escapeHtml(String(totalLessons))} (${escapeHtml(String(completionPercent))}%).</p>`,
+                  `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <input type="url" ${isSchool ? `data-school-website-input="${escapeHtml(item.courseSlug)}"` : `data-certificate-proof-input="${escapeHtml(item.courseSlug)}"`} class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm ${!isSchool && !proofSubmitEnabled ? "bg-gray-100 text-gray-500" : ""}" placeholder="https://yourwebsite.com" value="${escapeHtml(isSchool ? (item.schoolWebsiteUrl || "") : certificateProofLink)}" ${!isSchool && !proofSubmitEnabled ? "disabled" : ""} />
+                        <button type="button" ${isSchool ? `data-submit-school-website="${escapeHtml(item.courseSlug)}"` : `data-submit-certificate-proof="${escapeHtml(item.courseSlug)}" data-certificate-proof-enabled="${proofSubmitEnabled ? "1" : "0"}"`} class="inline-flex w-full items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[128px] sm:flex-none" ${!isSchool && !proofSubmitEnabled ? "disabled" : ""}>Submit Proof</button>
                       </div>`
-                    : "",
-                  certificateProofRequired
-                    ? `<p data-certificate-proof-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${
+                  ,
+                  isSchool
+                    ? `<p data-school-website-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${websiteSubmittedAt ? "text-emerald-700" : "text-gray-500"}">${
+                      websiteSubmittedAt
+                        ? "Submitted: " + escapeHtml(websiteSubmittedAt)
+                        : "No proof submitted yet."
+                    }</p>`
+                    : `<p data-certificate-proof-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${
                       certificateProofStatus === "approved"
                         ? "text-emerald-700"
                         : certificateProofStatus === "pending"
@@ -568,31 +548,29 @@
                             : certificateProofStatus === "rejected"
                               ? "Rejected. Submit an improved website proof link."
                               : "No proof submitted yet."
-                    }</p>`
-                    : "",
-                  individualCertificateUrl
+                    }</p>`,
+                  (isSchool ? schoolCertificateUrl : individualCertificateUrl)
                     ? [
-                        `<a href="${escapeHtml(individualCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
-                        individualCertificateIssuedAt
-                          ? `<p class="mt-1 text-xs text-emerald-700">Issued: ${escapeHtml(individualCertificateIssuedAt)}</p>`
+                        `<a href="${escapeHtml(isSchool ? schoolCertificateUrl : individualCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
+                        (isSchool ? certificateIssuedAt : individualCertificateIssuedAt)
+                          ? `<p class="mt-1 text-xs text-emerald-700">Issued: ${escapeHtml(isSchool ? certificateIssuedAt : individualCertificateIssuedAt)}</p>`
                           : "",
                       ].join("")
                     : isPending
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
-                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus === "rejected"
+                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateProofStatus === "rejected"
                       ? '<p class="mt-1 text-xs text-rose-700">Certificate is locked. Your proof link was rejected, submit an improved website link.</p>'
-                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateNameNeedsConfirmation
+                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateNameNeedsConfirmation
                       ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
-                    : certificateProofRequired && individualCompletionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
+                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate is locked. Submit your website link to unlock it.</p>'
-                    : individualCompletionPercent >= 100 && certificateNameNeedsConfirmation
+                    : completionPercent >= 100 && certificateNameNeedsConfirmation
                       ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
-                    : certificateProofRequired
+                    : !isSchool && certificateProofRequired
                       ? ""
-                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(individualCompletedLessons))}/${escapeHtml(String(individualTotalLessons))} (${escapeHtml(String(individualCompletionPercent))}%).</p>`,
+                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(completedLessons))}/${escapeHtml(String(totalLessons))} (${escapeHtml(String(completionPercent))}%).</p>`,
                   "</div>",
-                ].join("")
-              : "";
+                ].join("");
             return [
               `<article class="rounded-2xl p-5 shadow-sm ring-1 ${theme.card}">`,
               '<div class="flex items-start justify-between gap-3">',
@@ -608,8 +586,7 @@
               `<div class="mt-3"><span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${timing.css}">${escapeHtml(
                 timing.label
               )}</span></div>`,
-              websiteBlock,
-              individualCertificateBlock,
+              certificateBlock,
               resumeDetail ? `<p class="mt-2 text-xs text-gray-600">${resumeDetail}</p>` : "",
               '<div class="mt-4 flex flex-wrap gap-2">',
               `<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${theme.button}" href="${escapeHtml(

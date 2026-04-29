@@ -153,6 +153,7 @@ exports.handler = async function (event) {
       }
     }
     const isReleased = await isModuleReleasedForLearner(pool, {
+      account_id: session.account.id,
       account_email: session.account.email,
       course_slug: String(row.course_slug || "").trim().toLowerCase(),
       module_id: Number(row.module_id || 0),
@@ -167,7 +168,7 @@ exports.handler = async function (event) {
       return json(404, { ok: false, error: "This lesson has no playable video yet." });
     }
 
-    const allowed = await hasCourseAccess(pool, session.account.email, String(row.course_slug || "").trim().toLowerCase());
+    const allowed = await hasCourseAccess(pool, session.account.email, String(row.course_slug || "").trim().toLowerCase(), session.account.id);
     if (!allowed) {
       return json(403, { ok: false, error: "You do not currently have access to this course." });
     }

@@ -1,7 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { ensureSchoolTables } = require("./_lib/schools");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 
 exports.handler = async function (event) {
@@ -14,7 +13,6 @@ exports.handler = async function (event) {
     try {
       await applyRuntimeSettings(pool);
     } catch (_error) {}
-    await ensureSchoolTables(pool);
 
     const [rows] = await pool.query(
       `SELECT
@@ -55,4 +53,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not load schools." });
   }
 };
-

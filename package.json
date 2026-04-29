@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
-    "db:migrate": "node scripts/db-migrate.js"
+    "db:migrate": "node scripts/db-migrate.js",
+    "db:school-student-codes:backfill": "node scripts/school-student-codes-backfill.js"
   },
   "dependencies": {
     "docx": "^9.6.1",

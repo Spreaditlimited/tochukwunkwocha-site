@@ -1,7 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const {
-  ensureSchoolTables,
   consumeSchoolAdminPasswordResetToken,
   createSchoolAdminSession,
   setSchoolAdminCookieHeader,
@@ -24,7 +23,6 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureSchoolTables(pool);
     const admin = await consumeSchoolAdminPasswordResetToken(pool, { token, password });
     const sessionToken = await createSchoolAdminSession(pool, Number(admin.id));
     return {

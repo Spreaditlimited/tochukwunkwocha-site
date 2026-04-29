@@ -2,7 +2,6 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { sendEmail } = require("./_lib/email");
 const {
-  ensureSchoolTables,
   createSchoolAdminPasswordResetToken,
 } = require("./_lib/schools");
 
@@ -28,7 +27,6 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
-    await ensureSchoolTables(pool);
     const reset = await createSchoolAdminPasswordResetToken(pool, email);
     if (reset && reset.token) {
       const link = `${siteBaseUrl()}/schools/reset-password/?token=${encodeURIComponent(reset.token)}`;

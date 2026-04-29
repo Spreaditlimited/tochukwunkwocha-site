@@ -6,6 +6,7 @@ const {
   findStudentByEmail,
   createStudentAccount,
 } = require("./student-auth");
+const { canonicalizeCourseSlug } = require("./course-config");
 const { MODULES_TABLE, LESSONS_TABLE, ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 
@@ -15,6 +16,7 @@ const SCHOOL_ADMINS_TABLE = "school_admins";
 const SCHOOL_ADMIN_SESSIONS_TABLE = "school_admin_sessions";
 const SCHOOL_STUDENTS_TABLE = "school_students";
 const SCHOOL_CERTIFICATES_TABLE = "school_certificates";
+const SCHOOL_STUDENT_CODE_RESETS_TABLE = "school_student_code_resets";
 
 const SCHOOL_ADMIN_COOKIE = "tws_school_admin_session";
 const SCHOOL_ADMIN_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
@@ -22,6 +24,8 @@ const SCHOOL_ADMIN_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const DEFAULT_SCHOOLS_MIN_SEATS = 50;
 const DEFAULT_SCHOOLS_PRICE_PER_STUDENT_MINOR = 850000;
 const DEFAULT_SITE_VAT_PERCENT = 7.5;
+const STUDENT_CODE_LENGTH = 10;
+const STUDENT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -47,10 +51,28 @@ function normalizeWebsiteUrl(value) {
   }
 }
 
+function schoolCourseSlugScope(value) {
+  const slug = canonicalizeCourseSlug(clean(value, 120).toLowerCase());
+  if (!slug) return [];
+  if (slug === "prompt-to-profit-schools" || slug === "prompt-to-profit") {
+    return ["prompt-to-profit", "prompt-to-profit-schools"];
+  }
+  return [slug];
+}
+
 function toInt(value, fallback) {
   const n = Number(value);
   if (!Number.isFinite(n)) return Number.isFinite(fallback) ? Math.trunc(fallback) : 0;
   return Math.trunc(n);
+}
+
+function makeStudentCode() {
+  const bytes = crypto.randomBytes(STUDENT_CODE_LENGTH);
+  let out = "";
+  for (let i = 0; i < STUDENT_CODE_LENGTH; i += 1) {
+    out += STUDENT_CODE_ALPHABET[bytes[i] % STUDENT_CODE_ALPHABET.length];
+  }
+  return out;
 }
 
 function vatPercent() {
@@ -207,6 +229,21 @@ async function ensureSchoolTables(pool) {
       KEY idx_school_course (course_slug, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHOOL_STUDENT_CODE_RESETS_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      school_id BIGINT NOT NULL,
+      student_id BIGINT NOT NULL,
+      previous_code VARCHAR(20) NULL,
+      new_code VARCHAR(20) NOT NULL,
+      reset_by_admin_id BIGINT NOT NULL,
+      reason VARCHAR(300) NULL,
+      created_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      KEY idx_school_code_reset_school (school_id, created_at),
+      KEY idx_school_code_reset_student (student_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${SCHOOL_ORDERS_TABLE} (
@@ -285,6 +322,7 @@ async function ensureSchoolTables(pool) {
       student_uuid VARCHAR(64) NOT NULL,
       full_name VARCHAR(180) NOT NULL,
       email VARCHAR(220) NOT NULL,
+      student_code VARCHAR(20) NULL,
       account_id BIGINT NULL,
       status VARCHAR(40) NOT NULL DEFAULT 'active',
       disabled_at DATETIME NULL,
@@ -293,6 +331,7 @@ async function ensureSchoolTables(pool) {
       PRIMARY KEY (id),
       UNIQUE KEY uniq_school_student_uuid (student_uuid),
       UNIQUE KEY uniq_school_student_email (school_id, email),
+      UNIQUE KEY uniq_school_student_code (school_id, student_code),
       KEY idx_school_student_school (school_id, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
@@ -318,9 +357,11 @@ async function ensureSchoolTables(pool) {
   `);
 
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN school_id BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN student_code VARCHAR(20) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN account_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_url VARCHAR(1000) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_submitted_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD UNIQUE KEY uniq_school_student_code (school_id, student_code)`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CERTIFICATES_TABLE} ADD COLUMN recipient_name VARCHAR(180) NOT NULL DEFAULT ''`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_expires_at DATETIME NULL`);
@@ -904,8 +945,8 @@ function schoolStudentsCsvTemplate() {
   return "full_name,email\nJane Doe,jane@example.com\nJohn Doe,john@example.com\n";
 }
 
-async function seatsUsage(pool, schoolId) {
-  const [countRows] = await pool.query(
+async function seatsUsage(db, schoolId) {
+  const [countRows] = await db.query(
     `SELECT COUNT(*) AS used
      FROM ${SCHOOL_STUDENTS_TABLE}
      WHERE school_id = ?
@@ -920,114 +961,127 @@ async function addSchoolStudents(pool, input) {
   const courseSlug = clean(input && input.courseSlug, 120).toLowerCase() || "prompt-to-profit";
   const rows = Array.isArray(input && input.rows) ? input.rows : [];
   if (!Number.isFinite(schoolId) || schoolId <= 0) throw new Error("Invalid schoolId");
-
-  const [schoolRows] = await pool.query(
-    `SELECT seats_purchased
-     FROM ${SCHOOL_ACCOUNTS_TABLE}
-     WHERE id = ?
-     LIMIT 1`,
-    [schoolId]
-  );
-  if (!schoolRows || !schoolRows.length) throw new Error("School not found");
-  const purchased = Number(schoolRows[0].seats_purchased || 0);
-  const used = await seatsUsage(pool, schoolId);
-  const remaining = Math.max(0, purchased - used);
-  if (!remaining) throw new Error("No available seats. Buy more seats to enroll additional students.");
-
-  const results = {
-    created: 0,
-    updated: 0,
-    reactivated: 0,
-    skipped: 0,
-    errors: [],
-    invites: [],
-    createdStudentIds: [],
-  };
-
-  for (let i = 0; i < rows.length; i += 1) {
-    if (results.created + results.reactivated >= remaining) {
-      results.errors.push(`Seat cap reached at row ${i + 1}`);
-      break;
-    }
-    const fullName = clean(rows[i] && rows[i].full_name, 180);
-    const email = normalizeEmail(rows[i] && rows[i].email);
-    if (!fullName || !email) {
-      results.errors.push(`Row ${i + 1}: full_name and valid email are required`);
-      continue;
-    }
-
-    let account = await findStudentByEmail(pool, email);
-    let createdAccount = false;
-    if (!account) {
-      const tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
-      account = await createStudentAccount(pool, {
-        fullName,
-        email,
-        password: tempPassword,
-        mustResetPassword: true,
-      });
-      createdAccount = true;
-    }
-
-    const [existingRows] = await pool.query(
-      `SELECT id, status
-       FROM ${SCHOOL_STUDENTS_TABLE}
-       WHERE school_id = ?
-         AND email = ?
-       LIMIT 1`,
-      [schoolId, email]
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [schoolRows] = await connection.query(
+      `SELECT seats_purchased
+       FROM ${SCHOOL_ACCOUNTS_TABLE}
+       WHERE id = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [schoolId]
     );
-    const now = nowSql();
-    if (existingRows && existingRows.length) {
-      const prevStatus = clean(existingRows[0].status, 40).toLowerCase();
-      if (prevStatus !== "active" && results.created + results.reactivated >= remaining) {
-        results.errors.push(`Seat cap reached when reactivating row ${i + 1}`);
+    if (!schoolRows || !schoolRows.length) throw new Error("School not found");
+    const purchased = Number(schoolRows[0].seats_purchased || 0);
+    const used = await seatsUsage(connection, schoolId);
+    const remaining = Math.max(0, purchased - used);
+    if (!remaining) throw new Error("No available seats. Buy more seats to enroll additional students.");
+
+    const results = {
+      created: 0,
+      updated: 0,
+      reactivated: 0,
+      skipped: 0,
+      errors: [],
+      invites: [],
+      createdStudentIds: [],
+    };
+
+    for (let i = 0; i < rows.length; i += 1) {
+      if (results.created + results.reactivated >= remaining) {
+        results.errors.push(`Seat cap reached at row ${i + 1}`);
+        break;
+      }
+      const fullName = clean(rows[i] && rows[i].full_name, 180);
+      const email = normalizeEmail(rows[i] && rows[i].email);
+      if (!fullName || !email) {
+        results.errors.push(`Row ${i + 1}: full_name and valid email are required`);
         continue;
       }
-      await pool.query(
-        `UPDATE ${SCHOOL_STUDENTS_TABLE}
-         SET full_name = ?, account_id = ?, status = 'active', disabled_at = NULL, updated_at = ?
-         WHERE id = ?
+
+      let account = await findStudentByEmail(connection, email);
+      let createdAccount = false;
+      if (!account) {
+        const tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
+        account = await createStudentAccount(connection, {
+          fullName,
+          email,
+          password: tempPassword,
+          mustResetPassword: true,
+        });
+        createdAccount = true;
+      }
+
+      const [existingRows] = await connection.query(
+        `SELECT id, status
+         FROM ${SCHOOL_STUDENTS_TABLE}
+         WHERE school_id = ?
+           AND email = ?
          LIMIT 1`,
-        [fullName, Number(account && account.id || 0) || null, now, Number(existingRows[0].id)]
+        [schoolId, email]
       );
-      const reactivated = prevStatus !== "active";
-      if (reactivated) results.reactivated += 1;
-      results.updated += 1;
+      const now = nowSql();
+      if (existingRows && existingRows.length) {
+        const prevStatus = clean(existingRows[0].status, 40).toLowerCase();
+        if (prevStatus !== "active" && results.created + results.reactivated >= remaining) {
+          results.errors.push(`Seat cap reached when reactivating row ${i + 1}`);
+          continue;
+        }
+        await connection.query(
+          `UPDATE ${SCHOOL_STUDENTS_TABLE}
+           SET full_name = ?, account_id = ?, status = 'active', disabled_at = NULL, updated_at = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [fullName, Number(account && account.id || 0) || null, now, Number(existingRows[0].id)]
+        );
+        const reactivated = prevStatus !== "active";
+        if (reactivated) results.reactivated += 1;
+        results.updated += 1;
+        results.invites.push({
+          school_student_id: Number(existingRows[0].id),
+          full_name: fullName,
+          email,
+          account_id: Number(account && account.id || 0) || null,
+          created_account: !!createdAccount,
+          reactivated: !!reactivated,
+        });
+        continue;
+      }
+
+      const [insertRes] = await connection.query(
+        `INSERT INTO ${SCHOOL_STUDENTS_TABLE}
+          (school_id, student_uuid, full_name, email, account_id, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
+        [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, email, Number(account && account.id || 0) || null, now, now]
+      );
+      const schoolStudentId = Number(insertRes && insertRes.insertId || 0);
+      results.created += 1;
+      if (schoolStudentId > 0) results.createdStudentIds.push(schoolStudentId);
       results.invites.push({
-        school_student_id: Number(existingRows[0].id),
+        school_student_id: schoolStudentId || null,
         full_name: fullName,
         email,
         account_id: Number(account && account.id || 0) || null,
         created_account: !!createdAccount,
-        reactivated: !!reactivated,
+        reactivated: false,
       });
-      continue;
     }
 
-    const [insertRes] = await pool.query(
-      `INSERT INTO ${SCHOOL_STUDENTS_TABLE}
-        (school_id, student_uuid, full_name, email, account_id, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
-      [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, email, Number(account && account.id || 0) || null, now, now]
-    );
-    const schoolStudentId = Number(insertRes && insertRes.insertId || 0);
-    results.created += 1;
-    if (schoolStudentId > 0) results.createdStudentIds.push(schoolStudentId);
-    results.invites.push({
-      school_student_id: schoolStudentId || null,
-      full_name: fullName,
-      email,
-      account_id: Number(account && account.id || 0) || null,
-      created_account: !!createdAccount,
-      reactivated: false,
+    const finalSeatsUsed = await seatsUsage(connection, schoolId);
+    await connection.commit();
+    return Object.assign(results, {
+      seatsPurchased: purchased,
+      seatsUsed: finalSeatsUsed,
     });
+  } catch (error) {
+    try {
+      await connection.rollback();
+    } catch (_rollbackError) {}
+    throw error;
+  } finally {
+    connection.release();
   }
-
-  return Object.assign(results, {
-    seatsPurchased: purchased,
-    seatsUsed: await seatsUsage(pool, schoolId),
-  });
 }
 
 async function listSchoolStudents(pool, schoolId, courseSlug) {
@@ -1047,22 +1101,29 @@ async function listSchoolStudents(pool, schoolId, courseSlug) {
        s.id,
        s.full_name,
        s.email,
+       s.student_code,
        s.status,
        s.created_at,
        s.updated_at,
        s.account_id,
        s.website_url,
        s.website_submitted_at,
+       cert.certificate_no,
+       cert.issued_at AS certificate_issued_at,
        COUNT(CASE WHEN p.is_completed = 1 THEN 1 END) AS completed_lessons,
        MAX(COALESCE(p.last_watched_at, p.completed_at)) AS last_activity_at
      FROM ${SCHOOL_STUDENTS_TABLE} s
+     LEFT JOIN ${SCHOOL_CERTIFICATES_TABLE} cert
+       ON cert.student_id = s.id
+      AND cert.course_slug = ?
+      AND cert.status = 'issued'
      LEFT JOIN ${LESSON_PROGRESS_TABLE} p ON p.account_id = s.account_id
      LEFT JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id AND l.is_active = 1
      LEFT JOIN ${MODULES_TABLE} m ON m.id = l.module_id AND m.course_slug = ? AND m.is_active = 1
      WHERE s.school_id = ?
-     GROUP BY s.id, s.full_name, s.email, s.status, s.created_at, s.updated_at, s.account_id
+     GROUP BY s.id, s.full_name, s.email, s.student_code, s.status, s.created_at, s.updated_at, s.account_id, s.website_url, s.website_submitted_at, cert.certificate_no, cert.issued_at
      ORDER BY s.created_at DESC, s.id DESC`,
-    [clean(courseSlug, 120), Number(schoolId)]
+    [clean(courseSlug, 120), clean(courseSlug, 120), Number(schoolId)]
   );
   return (Array.isArray(rows) ? rows : []).map(function (row) {
     const completed = Number(row.completed_lessons || 0);
@@ -1071,10 +1132,13 @@ async function listSchoolStudents(pool, schoolId, courseSlug) {
       id: Number(row.id),
       full_name: clean(row.full_name, 180),
       email: clean(row.email, 220),
+      student_code: clean(row.student_code, 20).toUpperCase(),
       status: clean(row.status, 40) || "active",
       account_id: Number(row.account_id || 0) || null,
       website_url: clean(row.website_url, 1000) || "",
       website_submitted_at: row.website_submitted_at ? new Date(row.website_submitted_at).toISOString() : null,
+      certificate_no: clean(row.certificate_no, 140) || "",
+      certificate_issued_at: row.certificate_issued_at ? new Date(row.certificate_issued_at).toISOString() : null,
       completed_lessons: completed,
       total_lessons: total,
       completion_percent: total ? Math.round((completed / total) * 100) : 0,
@@ -1087,15 +1151,20 @@ async function listSchoolStudents(pool, schoolId, courseSlug) {
 async function submitSchoolStudentWebsite(pool, input) {
   const accountId = Number(input && input.accountId);
   const email = normalizeEmail(input && input.email);
-  const courseSlug = clean(input && input.courseSlug, 120).toLowerCase();
+  const requestedCourseSlug = clean(input && input.courseSlug, 120).toLowerCase();
+  const courseSlugScope = schoolCourseSlugScope(requestedCourseSlug);
   const websiteUrl = normalizeWebsiteUrl(input && input.websiteUrl);
-  if (!courseSlug) throw new Error("course_slug is required");
+  if (!courseSlugScope.length) throw new Error("course_slug is required");
   if (!websiteUrl) throw new Error("Enter a valid website URL.");
   if ((!Number.isFinite(accountId) || accountId <= 0) && !email) throw new Error("Student account is required");
 
   const whereAccount = Number.isFinite(accountId) && accountId > 0 ? " OR ss.account_id = ?" : "";
-  const params = [email, courseSlug];
+  const courseSlugWhereSql = courseSlugScope.length === 1
+    ? "= ?"
+    : `IN (${courseSlugScope.map(function () { return "?"; }).join(",")})`;
+  const params = [email];
   if (whereAccount) params.push(accountId);
+  params.push.apply(params, courseSlugScope);
   const [rows] = await pool.query(
     `SELECT ss.id, ss.school_id, ss.full_name, ss.email, sc.school_name
      FROM ${SCHOOL_STUDENTS_TABLE} ss
@@ -1103,7 +1172,7 @@ async function submitSchoolStudentWebsite(pool, input) {
      WHERE (LOWER(ss.email) = ?${whereAccount})
        AND ss.status = 'active'
        AND sc.status = 'active'
-       AND sc.course_slug = ?
+       AND sc.course_slug ${courseSlugWhereSql}
        AND (sc.access_starts_at IS NULL OR sc.access_starts_at <= NOW())
        AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())
      ORDER BY ss.id DESC
@@ -1165,6 +1234,68 @@ async function setSchoolStudentStatus(pool, input) {
   );
 }
 
+async function resetSchoolStudentCode(pool, input) {
+  const schoolId = Number(input && input.schoolId);
+  const studentId = Number(input && input.studentId);
+  const adminId = Number(input && input.adminId);
+  const reason = clean(input && input.reason, 300) || null;
+  if (!Number.isFinite(schoolId) || schoolId <= 0) throw new Error("Invalid schoolId");
+  if (!Number.isFinite(studentId) || studentId <= 0) throw new Error("Invalid studentId");
+  if (!Number.isFinite(adminId) || adminId <= 0) throw new Error("Invalid adminId");
+
+  const [rows] = await pool.query(
+    `SELECT id, school_id, student_code
+     FROM ${SCHOOL_STUDENTS_TABLE}
+     WHERE id = ?
+       AND school_id = ?
+       AND status = 'active'
+     LIMIT 1`,
+    [studentId, schoolId]
+  );
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error("Active school student not found.");
+  }
+  const student = rows[0];
+  const previousCode = clean(student.student_code, 20).toUpperCase() || null;
+  let newCode = "";
+  let updated = false;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    newCode = makeStudentCode();
+    try {
+      const [res] = await pool.query(
+        `UPDATE ${SCHOOL_STUDENTS_TABLE}
+         SET student_code = ?, updated_at = ?
+         WHERE id = ?
+           AND school_id = ?
+         LIMIT 1`,
+        [newCode, nowSql(), studentId, schoolId]
+      );
+      updated = Number(res && res.affectedRows || 0) > 0;
+      if (updated) break;
+    } catch (error) {
+      const msg = String(error && error.message || "").toLowerCase();
+      const codeErr = String(error && error.code || "").toUpperCase();
+      const duplicate = codeErr === "ER_DUP_ENTRY" || msg.indexOf("duplicate") !== -1;
+      if (duplicate) continue;
+      throw error;
+    }
+  }
+  if (!updated || !newCode) throw new Error("Could not generate a unique student code. Try again.");
+
+  await pool.query(
+    `INSERT INTO ${SCHOOL_STUDENT_CODE_RESETS_TABLE}
+      (school_id, student_id, previous_code, new_code, reset_by_admin_id, reason, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [schoolId, studentId, previousCode, newCode, adminId, reason, nowSql()]
+  );
+
+  return {
+    studentId,
+    previousCode,
+    newCode,
+  };
+}
+
 async function schoolAnalytics(pool, schoolId, courseSlug) {
   const [seatRows] = await pool.query(
     `SELECT seats_purchased, access_expires_at
@@ -1204,13 +1335,17 @@ async function schoolAnalytics(pool, schoolId, courseSlug) {
 async function getSchoolCourseAccessState(pool, input) {
   const accountId = Number(input && input.accountId);
   const email = normalizeEmail(input && input.email);
-  const courseSlug = clean(input && input.courseSlug, 120).toLowerCase();
-  if (!courseSlug) return { allowed: false, reason: "invalid_course" };
+  const courseSlugScope = schoolCourseSlugScope(input && input.courseSlug);
+  if (!courseSlugScope.length) return { allowed: false, reason: "invalid_course" };
   const schoolWindowStartSql = "COALESCE(sc.access_starts_at, sc.paid_at, sc.created_at)";
 
   const whereAccount = Number.isFinite(accountId) && accountId > 0 ? " OR ss.account_id = ?" : "";
-  const params = [email, courseSlug];
+  const courseSlugWhereSql = courseSlugScope.length === 1
+    ? "= ?"
+    : `IN (${courseSlugScope.map(function () { return "?"; }).join(",")})`;
+  const params = [email];
   if (whereAccount) params.push(accountId);
+  params.push.apply(params, courseSlugScope);
   const [rows] = await pool.query(
     `SELECT 1
      FROM ${SCHOOL_STUDENTS_TABLE} ss
@@ -1218,7 +1353,7 @@ async function getSchoolCourseAccessState(pool, input) {
      WHERE (LOWER(ss.email) COLLATE utf8mb4_general_ci = ?${whereAccount})
        AND ss.status = 'active'
        AND sc.status = 'active'
-       AND sc.course_slug = ?
+       AND sc.course_slug ${courseSlugWhereSql}
        AND ${schoolWindowStartSql} IS NOT NULL
        AND (sc.access_starts_at IS NULL OR sc.access_starts_at <= NOW())
        AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())
@@ -1237,7 +1372,7 @@ async function getSchoolCourseAccessState(pool, input) {
      WHERE (LOWER(ss.email) COLLATE utf8mb4_general_ci = ?${whereAccount})
        AND ss.status = 'active'
        AND sc.status = 'active'
-       AND sc.course_slug = ?
+       AND sc.course_slug ${courseSlugWhereSql}
        AND ${schoolWindowStartSql} IS NOT NULL
        AND sc.access_starts_at IS NOT NULL
        AND sc.access_starts_at > NOW()
@@ -1270,7 +1405,7 @@ async function getSchoolCourseAccessState(pool, input) {
      WHERE (LOWER(ss.email) COLLATE utf8mb4_general_ci = ?${whereAccount})
        AND ss.status = 'active'
        AND sc.status = 'active'
-       AND sc.course_slug = ?
+       AND sc.course_slug ${courseSlugWhereSql}
        AND ${schoolWindowStartSql} IS NOT NULL
        AND (
          (sc.access_expires_at IS NOT NULL AND sc.access_expires_at < NOW())
@@ -1324,6 +1459,7 @@ module.exports = {
   addSchoolStudents,
   listSchoolStudents,
   setSchoolStudentStatus,
+  resetSchoolStudentCode,
   schoolAnalytics,
   submitSchoolStudentWebsite,
   getSchoolCourseAccessState,

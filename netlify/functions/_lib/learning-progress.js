@@ -292,6 +292,7 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
 function moduleIsReleasedForContext(moduleRow, context, nowMsInput) {
   const row = moduleRow || {};
   const nowMs = Number(nowMsInput || Date.now());
+  if (context && context.school_immediate_access === true) return true;
   const dripEnabled = Number(row.drip_enabled || 0) === 1;
   if (!dripEnabled) return true;
   const moduleId = Number(row.module_id || 0);
@@ -344,25 +345,33 @@ function moduleIsReleasedForContext(moduleRow, context, nowMsInput) {
   return false;
 }
 
-async function getLearnerDripContext(pool, accountEmail, courseSlug) {
-  const [courseAnchorStartMs, courseActiveBatchKey, learnerBatch] = await Promise.all([
+async function getLearnerDripContext(pool, accountEmail, courseSlug, accountId) {
+  const accountIdNum = Number(accountId || 0);
+  const [courseAnchorStartMs, courseActiveBatchKey, learnerBatch, schoolAccess] = await Promise.all([
     resolveCourseDripAnchorStartMs(pool, courseSlug).catch(function () { return NaN; }),
     resolveCourseActiveBatchKey(pool, courseSlug).catch(function () { return ""; }),
     resolveLearnerActiveBatch(pool, accountEmail, courseSlug).catch(function () { return { batch_key: "", batch_start_ms: NaN }; }),
+    hasSchoolCourseAccess(pool, {
+      accountId: Number.isFinite(accountIdNum) && accountIdNum > 0 ? accountIdNum : null,
+      email: accountEmail,
+      courseSlug: courseSlug,
+    }).catch(function () { return false; }),
   ]);
   return {
     course_anchor_start_ms: Number.isFinite(courseAnchorStartMs) ? courseAnchorStartMs : NaN,
     course_active_batch_key: clean(courseActiveBatchKey, 64).toLowerCase(),
     learner_batch_key: clean(learnerBatch && learnerBatch.batch_key, 64).toLowerCase(),
     learner_batch_start_ms: Number.isFinite(learnerBatch && learnerBatch.batch_start_ms) ? learnerBatch.batch_start_ms : NaN,
+    school_immediate_access: !!schoolAccess,
   };
 }
 
 async function isModuleReleasedForLearner(pool, input) {
   const accountEmail = clean(input && input.account_email, 220).toLowerCase();
+  const accountId = Number(input && input.account_id || 0);
   const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
   if (!accountEmail || !courseSlug) return false;
-  const context = await getLearnerDripContext(pool, accountEmail, courseSlug);
+  const context = await getLearnerDripContext(pool, accountEmail, courseSlug, accountId);
   const moduleId = Number(input && input.module_id || 0);
   const scheduleMap = await loadModuleBatchDripMap(pool, moduleId > 0 ? [moduleId] : []);
   context.module_batch_drip_map = scheduleMap;
@@ -433,12 +442,29 @@ async function ensureLearningProgressTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${LESSON_PROGRESS_TABLE} ADD KEY idx_tochukwu_learning_progress_module (module_id)`);
 }
 
-async function hasCourseAccess(pool, accountEmail, courseSlug) {
+async function hasCourseAccess(pool, accountEmail, courseSlug, accountIdInput) {
   const email = clean(accountEmail, 220).toLowerCase();
-  const slug = clean(courseSlug, 120).toLowerCase();
+  const slug = canonicalizeCourseSlug(clean(courseSlug, 120).toLowerCase());
   if (!email || !slug) return false;
+  let accountId = Number(accountIdInput || 0);
+  if (!(Number.isFinite(accountId) && accountId > 0)) {
+    accountId = null;
+    try {
+      const [rows] = await pool.query(
+        `SELECT id
+         FROM student_accounts
+         WHERE LOWER(email) COLLATE utf8mb4_general_ci = ?
+         LIMIT 1`,
+        [email]
+      );
+      const resolved = Number(rows && rows[0] && rows[0].id || 0);
+      if (Number.isFinite(resolved) && resolved > 0) accountId = resolved;
+    } catch (_error) {
+      accountId = null;
+    }
+  }
   const state = await getCourseAccessState(pool, {
-    account_id: null,
+    account_id: accountId,
     account_email: email,
     course_slug: slug,
   }).catch(function () {
@@ -1123,7 +1149,7 @@ async function listCourseForLearner(pool, input) {
 
   const [rows] = await pool.query(courseScopedSql, [courseSlug]);
 
-  const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
+  const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug, accountId);
   const moduleIdsForSchedule = Array.from(new Set((Array.isArray(rows) ? rows : []).map(function (row) {
     return Number(row && row.module_id || 0);
   }).filter(function (id) {

@@ -61,7 +61,7 @@
     </style>
     <style type="text/tailwindcss">
       @layer utilities {
-        .tw-input { @apply mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-brand-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 bg-white transition-shadow; }
+        .tw-input { @apply mt-2 block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-brand-200 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-brand-200 sm:text-sm sm:leading-6 bg-white transition-shadow; }
         .tw-select {
           @apply appearance-none cursor-pointer pr-10;
           background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
@@ -134,24 +134,30 @@
           <article class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 w-full max-w-2xl mx-auto" id="walletAuthCard" hidden>
             <div class="mb-8">
               <h3 class="text-2xl font-heading font-bold text-gray-900">User Dashboard</h3>
-              <p class="mt-2 text-sm text-gray-500">Sign in to continue, or create a new account.</p>
-            </div>
-            <div class="mb-6 inline-flex w-full rounded-xl bg-gray-100 p-1 ring-1 ring-gray-200" role="tablist">
-              <button type="button" id="walletShowSignInBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-900 bg-white shadow-sm ring-1 ring-gray-200" aria-selected="true">Sign In</button>
-              <button type="button" id="walletShowSignUpBtn" class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-gray-600" aria-selected="false">Sign Up</button>
+              <p class="mt-2 text-sm text-gray-500">Sign in to continue.</p>
             </div>
             <form id="walletSignInForm" class="space-y-6" novalidate>
-              <div><label class="tw-label" for="walletSignInEmail">Email Address</label><input id="walletSignInEmail" name="email" type="email" class="tw-input" required /></div>
-              <div><label class="tw-label" for="walletSignInPassword">Password</label><input id="walletSignInPassword" name="password" type="password" class="tw-input" required minlength="8" /></div>
+              <div><label class="tw-label" for="walletSignInEmail">Email Address</label><input id="walletSignInEmail" name="email" type="email" class="tw-input ring-brand-300 focus:ring-1 focus:ring-brand-300 focus:outline-none" required /></div>
+              <div><label class="tw-label" for="walletSignInPassword">Password</label><input id="walletSignInPassword" name="password" type="password" class="tw-input ring-brand-300 focus:ring-1 focus:ring-brand-300 focus:outline-none" required minlength="8" /></div>
               <button type="submit" class="tw-btn-primary w-full" id="walletLoginBtn">Sign In</button>
               <button type="button" id="walletForgotPasswordBtn" class="text-sm font-semibold text-brand-700 hover:text-brand-600">Forgot password?</button>
             </form>
-            <form id="walletSignUpForm" class="space-y-6" novalidate hidden>
-              <div><label class="tw-label" for="walletSignUpFullName">Full Name</label><input id="walletSignUpFullName" name="fullName" class="tw-input" required /></div>
-              <div><label class="tw-label" for="walletSignUpEmail">Email Address</label><input id="walletSignUpEmail" name="email" type="email" class="tw-input" required /></div>
-              <div><label class="tw-label" for="walletSignUpPassword">Password</label><input id="walletSignUpPassword" name="password" type="password" class="tw-input" required minlength="8" /></div>
-              <button type="submit" class="tw-btn-primary w-full" id="walletRegisterBtn">Create Account</button>
-            </form>
+            <div class="my-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+              <p class="text-sm font-semibold text-gray-900">School Student Sign In</p>
+              <p class="mt-1 text-xs text-gray-500">Use your school student code.</p>
+              <form id="schoolStudentCodeForm" class="mt-3 space-y-3" novalidate>
+                <div>
+                  <label class="tw-label" for="schoolStudentCodeInput">Student Code</label>
+                  <input id="schoolStudentCodeInput" name="code" class="tw-input ring-brand-300 focus:ring-1 focus:ring-brand-300 focus:outline-none" required />
+                </div>
+                <p id="schoolStudentCodeConfirmHint" class="text-xs text-gray-600 hidden"></p>
+                <div id="schoolStudentNameConfirmWrap" class="hidden">
+                  <label class="tw-label" for="schoolStudentNameConfirmInput">Type Full Name To Confirm</label>
+                  <input id="schoolStudentNameConfirmInput" name="confirmName" class="tw-input ring-brand-300 focus:ring-1 focus:ring-brand-300 focus:outline-none" />
+                </div>
+                <button type="submit" id="schoolStudentCodeBtn" class="btn btn-outline w-full">Continue With Code</button>
+              </form>
+            </div>
             <p class="text-sm mt-4" id="walletAuthMsg"></p>
           </article>
           </div>

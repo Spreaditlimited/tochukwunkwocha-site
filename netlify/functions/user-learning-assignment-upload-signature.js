@@ -36,7 +36,7 @@ exports.handler = async function (event) {
     if (!courseSlug) return json(400, { ok: false, error: "course_slug is required" });
 
     await ensureLearningSupportTables(pool, { bootstrap: true });
-    const access = await hasCourseAccess(pool, session.account.email, courseSlug);
+    const access = await hasCourseAccess(pool, session.account.email, courseSlug, session.account.id);
     if (!access) return json(403, { ok: false, error: "You do not currently have access to this course." });
 
     const features = await getCourseLearningFeatures(pool, courseSlug);

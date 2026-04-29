@@ -33,7 +33,7 @@ exports.handler = async function (event) {
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
     await ensureLearningSupportTables(pool, { bootstrap: true });
-    const access = await hasCourseAccess(pool, session.account.email, courseSlug);
+    const access = await hasCourseAccess(pool, session.account.email, courseSlug, session.account.id);
     if (!access) return json(403, { ok: false, error: "You do not currently have access to this course." });
 
     const features = await getCourseLearningFeatures(pool, courseSlug);

@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireStudentSession } = require("./_lib/user-auth");
-const { getCourseName } = require("./_lib/course-config");
+const { getCourseName, canonicalizeCourseSlug } = require("./_lib/course-config");
 const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
@@ -25,6 +25,12 @@ function normalizeKey(value) {
     .replace(/_/g, "-")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function resolveSchoolCourseSlug(value) {
+  const raw = canonicalizeCourseSlug(clean(value, 120).toLowerCase());
+  if (raw === "prompt-to-profit" || raw === "prompt-to-profit-schools") return "prompt-to-profit-schools";
+  return raw || "prompt-to-profit-schools";
 }
 
 function normalizeLabel(value) {
@@ -631,9 +637,10 @@ exports.handler = async function (event) {
       [email, Number(session.account.id || 0)]
     );
     (schoolRows || []).forEach(function (row) {
+      const schoolCourseSlug = resolveSchoolCourseSlug(row && row.course_slug);
       upsert(
         {
-          course_slug: row.course_slug,
+          course_slug: schoolCourseSlug,
           batch_key: "school",
           batch_label: "School Access",
           batch_start_at: null,
@@ -644,7 +651,7 @@ exports.handler = async function (event) {
         "paid",
         null
       );
-      const key = `${String(row.course_slug || "").trim()}::school`;
+      const key = `${schoolCourseSlug}::school`;
       const existing = map.get(key);
       if (existing) {
         existing.schoolWebsiteUrl = clean(row.website_url, 1000) || "";
@@ -716,6 +723,19 @@ exports.handler = async function (event) {
         return item.courseSlug;
       })
     );
+    const completionEligibleCourseSlugs = Array.from(
+      new Set(
+        items
+          .filter(function (item) {
+            const status = normalizeKey(item.status);
+            return status === "paid" || status === "approved";
+          })
+          .map(function (item) {
+            return normalizeKey(item.courseSlug);
+          })
+          .filter(Boolean)
+      )
+    );
     const individualEligibleCourseSlugs = Array.from(
       new Set(
         items
@@ -733,7 +753,7 @@ exports.handler = async function (event) {
     const completionByCourse = await loadCourseCompletionMap(
       pool,
       Number(session.account.id || 0),
-      individualEligibleCourseSlugs
+      completionEligibleCourseSlugs
     );
     const proofRequirementByCourse = await loadCertificateProofRequirements(pool, individualEligibleCourseSlugs);
     const proofStatusByCourse = await loadCertificateProofStatusByCourse(
@@ -798,9 +818,9 @@ exports.handler = async function (event) {
         resumeLessonId: resume ? Number(resume.resume_lesson_id || 0) : 0,
         resumeSource: resume ? String(resume.resume_source || "") : "",
         lastActivityAt: resume ? resume.last_activity_at : null,
-        individualCompletedLessons: !isSchool && completion ? Number(completion.completedLessons || 0) : 0,
-        individualTotalLessons: !isSchool && completion ? Number(completion.totalLessons || 0) : 0,
-        individualCompletionPercent: !isSchool && completion ? Number(completion.completionPercent || 0) : 0,
+        individualCompletedLessons: completion ? Number(completion.completedLessons || 0) : 0,
+        individualTotalLessons: completion ? Number(completion.totalLessons || 0) : 0,
+        individualCompletionPercent: completion ? Number(completion.completionPercent || 0) : 0,
         individualCertificateNo: !isSchool && certificate ? String(certificate.certificateNo || "") : "",
         individualCertificateRecipientName: !isSchool && certificate ? String(certificate.recipientName || "") : "",
         individualCertificateIssuedAt: !isSchool && certificate ? certificate.issuedAt : null,

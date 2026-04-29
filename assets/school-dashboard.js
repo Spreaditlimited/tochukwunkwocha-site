@@ -100,6 +100,42 @@
     uploadStatusEl.className = "text-sm " + (bad ? "text-red-600" : "text-gray-600");
   }
 
+  var toastWrap = null;
+  function ensureToastWrap() {
+    if (toastWrap && document.body.contains(toastWrap)) return toastWrap;
+    toastWrap = document.createElement("div");
+    toastWrap.className = "fixed top-4 right-4 z-[90] flex w-[min(92vw,24rem)] flex-col gap-2";
+    document.body.appendChild(toastWrap);
+    return toastWrap;
+  }
+
+  function showToast(message, bad) {
+    try {
+      var wrap = ensureToastWrap();
+      var classes = "rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur transition-all duration-300";
+      classes += bad
+        ? " border-red-200 bg-red-50/95 text-red-800"
+        : " border-emerald-200 bg-emerald-50/95 text-emerald-800";
+
+      var toast = document.createElement("div");
+      toast.className = classes + " opacity-0 translate-y-[-6px]";
+      toast.textContent = clean(message);
+      wrap.appendChild(toast);
+
+      requestAnimationFrame(function () {
+        toast.classList.remove("opacity-0", "translate-y-[-6px]");
+        toast.classList.add("opacity-100", "translate-y-0");
+      });
+
+      window.setTimeout(function () {
+        toast.classList.add("opacity-0", "translate-y-[-6px]");
+        window.setTimeout(function () {
+          if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 240);
+      }, 2200);
+    } catch (_error) {}
+  }
+
   async function api(url, init) {
     var response = await fetch(url, Object.assign({
       credentials: "include",
@@ -134,7 +170,7 @@
   function renderStudents(students) {
     if (!rowsEl) return;
     if (!students.length) {
-      rowsEl.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-sm text-slate-500">No students yet.</td></tr>';
+      rowsEl.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-sm text-slate-500">No students yet.</td></tr>';
       return;
     }
     rowsEl.innerHTML = students.map(function (student) {
@@ -142,12 +178,19 @@
       var completed = Number(student.completion_percent || 0) >= 100;
       var hasWebsite = clean(student.website_url).length > 0;
       var canIssue = completed && isActive && hasWebsite;
+      var hasCertificate = clean(student.certificate_no).length > 0;
       var certBtnLabel = "Issue cert";
       return [
         "<tr>",
         '<td class="px-4 py-3">',
         '<p class="font-semibold text-slate-900">' + escapeHtml(student.full_name || "Student") + "</p>",
         '<p class="text-xs text-slate-500">' + escapeHtml(student.email || "") + "</p>",
+        "</td>",
+        '<td class="px-4 py-3">',
+        '<div class="flex items-center gap-2">',
+        '<code class="rounded bg-slate-100 px-2 py-1 text-xs font-bold text-slate-800">' + escapeHtml(student.student_code || "-") + "</code>",
+        '<button type="button" data-student-code-copy="' + escapeHtml(student.student_code || "") + '" class="inline-flex items-center justify-center rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Copy</button>',
+        "</div>",
         "</td>",
         '<td class="px-4 py-3 text-slate-700">' + String(student.completion_percent || 0) + "%</td>",
         '<td class="px-4 py-3 text-slate-600">' + escapeHtml(fmtDate(student.last_activity_at)) + "</td>",
@@ -163,6 +206,7 @@
         '<button type="button" data-student-toggle="' + String(student.id) + '" data-next-active="' + (String(student.status || "").toLowerCase() === "active" ? "0" : "1") + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap">' +
           (String(student.status || "").toLowerCase() === "active" ? "Disable" : "Enable") +
           "</button>",
+        '<button type="button" data-student-code-reset="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap">Reset code</button>',
         '<button type="button" data-student-cert="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap ' + (canIssue ? "" : "opacity-40 cursor-not-allowed") + '"' + (canIssue ? "" : " disabled") + ">" + certBtnLabel + "</button>",
         "</div>",
         "</td>",
@@ -186,6 +230,33 @@
         var studentId = Number(btn.getAttribute("data-student-cert") || 0);
         issueCertificate(studentId).catch(function (error) {
           setUploadStatus(error.message || "Could not issue certificate", true);
+        });
+      });
+    });
+
+    Array.prototype.slice.call(rowsEl.querySelectorAll("[data-student-code-reset]")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var studentId = Number(btn.getAttribute("data-student-code-reset") || 0);
+        if (!(studentId > 0)) return;
+        resetStudentCode(studentId).catch(function (error) {
+          setUploadStatus(error.message || "Could not reset student code", true);
+        });
+      });
+    });
+
+
+    Array.prototype.slice.call(rowsEl.querySelectorAll("[data-student-code-copy]")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var code = clean(btn.getAttribute("data-student-code-copy"));
+        if (!code) return;
+        Promise.resolve(
+          navigator && navigator.clipboard && navigator.clipboard.writeText
+            ? navigator.clipboard.writeText(code)
+            : null
+        ).then(function () {
+          showToast("Copied student code", false);
+        }).catch(function () {
+          showToast("Could not copy code. Copy manually.", true);
         });
       });
     });
@@ -233,6 +304,24 @@
         window.open(certUrl, "_blank", "noopener,noreferrer");
       } catch (_error) {}
     }
+  }
+
+  async function resetStudentCode(studentId) {
+    var data = await api("/.netlify/functions/school-student-code-reset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ studentId: studentId }),
+    });
+    var nextCode = clean(data && data.student && data.student.student_code);
+    if (nextCode) {
+      showToast("Student code reset: " + nextCode, false);
+    } else {
+      showToast("Student code reset.", false);
+    }
+    await loadStudents();
   }
 
   if (csvFile) {
