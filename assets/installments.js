@@ -15,6 +15,7 @@
   const loginBtn = document.getElementById("walletLoginBtn");
   const forgotPasswordBtn = document.getElementById("walletForgotPasswordBtn");
   const authMsg = document.getElementById("walletAuthMsg");
+  const schoolStudentCodeCard = document.getElementById("schoolStudentCodeCard");
   const schoolStudentCodeForm = document.getElementById("schoolStudentCodeForm");
   const schoolStudentCodeInput = document.getElementById("schoolStudentCodeInput");
   const schoolStudentCodeBtn = document.getElementById("schoolStudentCodeBtn");
@@ -168,6 +169,7 @@
     authMode = mode === "signup" ? "signup" : "signin";
     if (signInForm) signInForm.hidden = authMode !== "signin";
     if (signUpForm) signUpForm.hidden = authMode !== "signup";
+    if (schoolStudentCodeCard) schoolStudentCodeCard.hidden = authMode !== "signin";
 
     if (showSignInBtn) {
       const active = authMode === "signin";
