@@ -3,6 +3,7 @@ const { getPool, nowSql } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { sendEmail } = require("./_lib/email");
 const { siteBaseUrl } = require("./_lib/payments");
+const { getSchoolNotificationRecipients } = require("./_lib/school-notification-recipients");
 const {
   SCHOOL_CALL_BOOKINGS_TABLE,
   ensureSchoolCallTablesTochukwu,
@@ -79,14 +80,7 @@ function slotLabel(iso, timezone) {
 }
 
 function parseAdminRecipients() {
-  const raw = String(process.env.SCHOOL_CALL_ALERT_EMAILS || "").trim();
-  const fallback = "support@tochukwunkwocha.com";
-  const src = raw || fallback;
-  const emails = src
-    .split(",")
-    .map((item) => String(item || "").trim().toLowerCase())
-    .filter(Boolean);
-  return Array.from(new Set(emails));
+  return getSchoolNotificationRecipients();
 }
 
 function reminderEmailForLead(row, stage) {

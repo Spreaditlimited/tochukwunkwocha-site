@@ -4,7 +4,6 @@
   const auditRowsEl = document.getElementById("settingsAuditRows");
   const saveTopBtn = document.getElementById("settingsSaveBtnTop");
   const saveBottomBtn = document.getElementById("settingsSaveBtnBottom");
-  const pricingSaveBtn = document.getElementById("pricingControlsSaveBtn");
   const adminAccountsMessageEl = document.getElementById("adminAccountsMessage");
   const adminAccountCreateForm = document.getElementById("adminAccountCreateForm");
   const adminAccountCreateBtn = document.getElementById("adminAccountCreateBtn");
@@ -26,13 +25,6 @@
   const adminResetPasswordSubmitBtn = document.getElementById("adminResetPasswordSubmitBtn");
   const adminResetPasswordError = document.getElementById("adminResetPasswordError");
 
-  const PINNED_PRICING_KEYS = [
-    "SITE_VAT_PERCENT",
-    "DOMAIN_VAT_PERCENT",
-    "SCHOOLS_VAT_PERCENT",
-    "SCHOOLS_MIN_SEATS",
-    "SCHOOLS_PRICE_PER_STUDENT_NGN_MINOR",
-  ];
   const HIDDEN_CATEGORIES = new Set([
     "Business Plan",
     "Registrar (Namecheap)",
@@ -216,21 +208,6 @@
         `;
       })
       .join("");
-  }
-
-  function renderPinnedPricing() {
-    const byKey = new Map(
-      (items || []).map(function (item) {
-        return [String(item.key || ""), String(item.value || "")];
-      })
-    );
-    Array.from(document.querySelectorAll("[data-pricing-key]")).forEach(function (input) {
-      const key = String(input.getAttribute("data-pricing-key") || "");
-      if (!key || PINNED_PRICING_KEYS.indexOf(key) === -1) return;
-      if (Object.prototype.hasOwnProperty.call(input, "value")) {
-        input.value = byKey.get(key) || "";
-      }
-    });
   }
 
   function pageLabel(path) {
@@ -548,7 +525,6 @@
     items = Array.isArray(json.items) ? json.items : [];
     auditItems = Array.isArray(json.audit) ? json.audit : [];
     renderItems();
-    renderPinnedPricing();
     renderAudit();
     setMessage("Settings loaded.", "ok");
   }
@@ -559,12 +535,6 @@
     mainInputs.forEach(function (input) {
       const key = String(input.getAttribute("data-key") || "");
       if (!key) return;
-      merged.set(key, String(input.value || "").trim());
-    });
-    const pricingInputs = Array.from(document.querySelectorAll("[data-pricing-key]"));
-    pricingInputs.forEach(function (input) {
-      const key = String(input.getAttribute("data-pricing-key") || "");
-      if (!key || PINNED_PRICING_KEYS.indexOf(key) === -1) return;
       merged.set(key, String(input.value || "").trim());
     });
     return Array.from(merged.entries()).map(function (entry) {
@@ -609,7 +579,6 @@
       items = Array.isArray(json.items) ? json.items : items;
       auditItems = Array.isArray(json.audit) ? json.audit : auditItems;
       renderItems();
-      renderPinnedPricing();
       renderAudit();
       setMessage("Settings saved successfully.", "ok");
     } catch (error) {
@@ -629,12 +598,6 @@
       saveSettings();
     });
   }
-  if (pricingSaveBtn) {
-    pricingSaveBtn.addEventListener("click", function () {
-      saveSettings();
-    });
-  }
-
   if (adminAccountCreateForm) {
     adminAccountCreateForm.addEventListener("submit", function (event) {
       event.preventDefault();

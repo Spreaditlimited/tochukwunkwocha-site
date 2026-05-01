@@ -35,16 +35,13 @@
     <style>
       /* Layout Container - Fixes the edge-touching issue */
       .checkout-container {
-        width: 100%;
-        max-width: 1200px;
+        width: var(--container);
         margin: 40px auto 60px auto;
-        padding: 0 20px; /* Forces breathing room on small screens */
         box-sizing: border-box;
       }
       
       @media (min-width: 768px) {
         .checkout-container {
-          padding: 0 40px; /* More breathing room on tablets */
           margin-top: 60px;
         }
       }

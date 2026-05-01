@@ -38,7 +38,7 @@ function yearsInt(value) {
 }
 
 function vatPercent() {
-  const raw = Number(process.env.DOMAIN_VAT_PERCENT || process.env.SITE_VAT_PERCENT);
+  const raw = Number(process.env.SITE_VAT_PERCENT);
   if (!Number.isFinite(raw) || raw < 0) return 7.5;
   return Math.min(raw, 100);
 }

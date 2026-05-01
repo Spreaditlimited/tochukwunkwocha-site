@@ -4,6 +4,7 @@ const { sendEmail } = require("./_lib/email");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
 const { ensureSchoolScorecardTablesTochukwu, saveSchoolScorecardLead } = require("./_lib/school-scorecards-tochukwu");
+const { getSchoolNotificationRecipients } = require("./_lib/school-notification-recipients");
 
 const BREVO_SCHOOL_READINESS_LIST_ID = 6;
 
@@ -333,12 +334,19 @@ exports.handler = async function (event) {
 
   try {
     const leadUuid = `scorecard_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
-    await sendEmail({
-      to: "support@tochukwunkwocha.com",
-      subject: internalSubject,
-      html: internalHtml,
-      text: internalText,
-    });
+    const adminRecipients = getSchoolNotificationRecipients();
+    await Promise.all(
+      adminRecipients.map(function (to) {
+        return sendEmail({
+          to,
+          subject: internalSubject,
+          html: internalHtml,
+          text: internalText,
+        }).catch(function () {
+          return null;
+        });
+      })
+    );
 
     try {
       await sendEmail({

@@ -45,6 +45,19 @@
   const reviewNoteInput = document.getElementById("reviewNoteInput");
   const reviewModalError = document.getElementById("reviewModalError");
   const reviewModalConfirmBtn = document.getElementById("reviewModalConfirmBtn");
+  const metaSendModal = document.getElementById("metaSendModal");
+  const metaSendEyebrow = document.getElementById("metaSendEyebrow");
+  const metaSendDesc = document.getElementById("metaSendDesc");
+  const metaSendForm = document.getElementById("metaSendForm");
+  const metaSendFbp = document.getElementById("metaSendFbp");
+  const metaSendFbc = document.getElementById("metaSendFbc");
+  const metaSendError = document.getElementById("metaSendError");
+  const metaSendConfirmBtn = document.getElementById("metaSendConfirmBtn");
+  const updateEmailModal = document.getElementById("updateEmailModal");
+  const updateEmailForm = document.getElementById("updateEmailForm");
+  const updateEmailInput = document.getElementById("updateEmailInput");
+  const updateEmailError = document.getElementById("updateEmailError");
+  const updateEmailConfirmBtn = document.getElementById("updateEmailConfirmBtn");
   const addStudentModal = document.getElementById("addStudentModal");
   const addStudentForm = document.getElementById("addStudentForm");
   const addStudentCourse = document.getElementById("addStudentCourse");
@@ -78,6 +91,8 @@
 
   let debounceTimer = null;
   let pendingReviewAction = null;
+  let pendingMetaSendAction = null;
+  let pendingEmailUpdateAction = null;
   let lastBulkResendRunId = "";
   let latestBatches = [];
   let availableCourses = [];
@@ -502,6 +517,64 @@
     reviewModal.classList.remove("review-modal--reject");
   }
 
+  function openMetaSendModal(payload) {
+    pendingMetaSendAction = payload || null;
+    if (!metaSendModal) return;
+    const alreadySent = !!(payload && payload.alreadySent);
+    if (metaSendEyebrow) metaSendEyebrow.textContent = alreadySent ? "Meta CAPI (Resend)" : "Meta CAPI";
+    if (metaSendDesc) {
+      metaSendDesc.textContent = alreadySent
+        ? "Meta CAPI Purchase was previously sent. You can resend it now with optional matching signals."
+        : "Send Meta CAPI Purchase event for this approved manual payment.";
+    }
+    if (metaSendForm) metaSendForm.reset();
+    if (metaSendError) {
+      metaSendError.textContent = "";
+      metaSendError.classList.add("hidden");
+    }
+    if (metaSendConfirmBtn) metaSendConfirmBtn.textContent = alreadySent ? "Resend Meta CAPI" : "Send Meta CAPI";
+    metaSendModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (metaSendFbp) metaSendFbp.focus();
+  }
+
+  function closeMetaSendModal() {
+    pendingMetaSendAction = null;
+    if (!metaSendModal) return;
+    metaSendModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (metaSendError) {
+      metaSendError.textContent = "";
+      metaSendError.classList.add("hidden");
+    }
+    if (metaSendForm) metaSendForm.reset();
+  }
+
+  function openUpdateEmailModal(payload) {
+    pendingEmailUpdateAction = payload || null;
+    if (!updateEmailModal) return;
+    if (updateEmailError) {
+      updateEmailError.textContent = "";
+      updateEmailError.classList.add("hidden");
+    }
+    if (updateEmailInput) updateEmailInput.value = String((payload && payload.currentEmail) || "").trim().toLowerCase();
+    updateEmailModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (updateEmailInput) updateEmailInput.focus();
+  }
+
+  function closeUpdateEmailModal() {
+    pendingEmailUpdateAction = null;
+    if (!updateEmailModal) return;
+    updateEmailModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (updateEmailError) {
+      updateEmailError.textContent = "";
+      updateEmailError.classList.add("hidden");
+    }
+    if (updateEmailForm) updateEmailForm.reset();
+  }
+
   function openAddStudentModal() {
     if (!addStudentModal) return;
     if (addStudentError) {
@@ -872,8 +945,24 @@
     const capiPill = capiSent
       ? '<span class="status-pill status-approved">Sent</span>'
       : '<span class="status-pill status-pending_verification">Not sent</span>';
+    const canSendCapi = source === "manual" && status === "approved";
+    const metaBtn = canSendCapi
+      ? '<button type="button" class="btn-small" data-meta-send="1" data-payment-uuid="' +
+        escapeHtml(item.payment_uuid || "") +
+        '" data-meta-sent="' +
+        (capiSent ? "1" : "0") +
+        '">' + (capiSent ? "Resend Meta CAPI" : "Send Meta CAPI") + "</button>"
+      : "";
 
     const rowKey = escapeHtml(item.payment_uuid || item.email || "");
+    const canUpdateEmail = source === "manual";
+    const updateEmailBtn = canUpdateEmail
+      ? '<button type="button" class="btn-small" data-update-email="1" data-payment-uuid="' +
+        escapeHtml(item.payment_uuid || "") +
+        '" data-email="' +
+        escapeHtml(item.email || "") +
+        '">Update Email</button>'
+      : "";
     const resendBtn =
       item && item.email
         ? '<button type="button" class="btn-small" data-resend-onboarding="1" data-email="' +
@@ -886,6 +975,12 @@
         : "";
     const resendStatus = item && item.email
       ? '<span class="text-xs text-gray-500" data-resend-status="' + rowKey + '"></span>'
+      : "";
+    const metaStatus = canSendCapi
+      ? '<span class="text-xs text-gray-500" data-meta-status="' + escapeHtml(item.payment_uuid || "") + '"></span>'
+      : "";
+    const updateEmailStatus = canUpdateEmail
+      ? '<span class="text-xs text-gray-500" data-update-email-status="' + escapeHtml(item.payment_uuid || "") + '"></span>'
       : "";
 
     return `
@@ -906,12 +1001,54 @@
         <td>
           ${
             canReview
-              ? '<div class="action-buttons"><button type="button" class="btn-small btn-small-approve" data-action="approve">Approve</button><button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button>' + resendBtn + resendStatus + "</div>"
-              : '<div class="action-buttons"><small>' + escapeHtml(item.reviewed_by || "reviewed") + "</small>" + resendBtn + resendStatus + "</div>"
+              ? '<div class="action-buttons"><button type="button" class="btn-small btn-small-approve" data-action="approve">Approve</button><button type="button" class="btn-small btn-small-danger" data-action="reject">Reject</button>' + updateEmailBtn + updateEmailStatus + metaBtn + metaStatus + resendBtn + resendStatus + "</div>"
+              : '<div class="action-buttons"><small>' + escapeHtml(item.reviewed_by || "reviewed") + "</small>" + updateEmailBtn + updateEmailStatus + metaBtn + metaStatus + resendBtn + resendStatus + "</div>"
           }
         </td>
       </tr>
     `;
+  }
+
+  async function handleManualMetaSend(payload) {
+    const paymentUuid = String(payload && payload.paymentUuid || "").trim();
+    const fbp = String(payload && payload.fbp || "").trim();
+    const fbc = String(payload && payload.fbc || "").trim();
+    if (!paymentUuid) throw new Error("Missing payment UUID.");
+    const res = await fetch("/.netlify/functions/admin-manual-payments-meta-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        paymentUuid: paymentUuid,
+        fbp: fbp || "",
+        fbc: fbc || "",
+      }),
+    });
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not send Meta CAPI event.");
+    }
+    return json;
+  }
+
+  async function handleUpdateStudentEmail(payload) {
+    const paymentUuid = String(payload && payload.paymentUuid || "").trim();
+    const newEmail = String(payload && payload.newEmail || "").trim().toLowerCase();
+    if (!paymentUuid || !newEmail) throw new Error("Payment UUID and email are required.");
+    const res = await fetch("/.netlify/functions/admin-manual-payments-email-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        paymentUuid: paymentUuid,
+        newEmail: newEmail,
+      }),
+    });
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not update student email.");
+    }
+    return json;
   }
 
   function transcriptRequestRowMarkup(item) {
@@ -1676,6 +1813,18 @@
     });
   }
 
+  if (metaSendModal) {
+    metaSendModal.querySelectorAll("[data-meta-send-close]").forEach(function (el) {
+      el.addEventListener("click", closeMetaSendModal);
+    });
+  }
+
+  if (updateEmailModal) {
+    updateEmailModal.querySelectorAll("[data-update-email-close]").forEach(function (el) {
+      el.addEventListener("click", closeUpdateEmailModal);
+    });
+  }
+
   if (bulkResendCourse) {
     bulkResendCourse.addEventListener("change", function () {
       setBulkResendResult("", "");
@@ -2186,6 +2335,28 @@
 
   if (rowsEl) {
     rowsEl.addEventListener("click", function (event) {
+      const updateEmailBtn = event.target.closest("button[data-update-email]");
+      if (updateEmailBtn) {
+        const paymentUuid = String(updateEmailBtn.getAttribute("data-payment-uuid") || "").trim();
+        const currentEmail = String(updateEmailBtn.getAttribute("data-email") || "").trim().toLowerCase();
+        openUpdateEmailModal({
+          paymentUuid: paymentUuid,
+          currentEmail: currentEmail,
+        });
+        return;
+      }
+
+      const metaBtn = event.target.closest("button[data-meta-send]");
+      if (metaBtn) {
+        const paymentUuid = String(metaBtn.getAttribute("data-payment-uuid") || "").trim();
+        const alreadySent = String(metaBtn.getAttribute("data-meta-sent") || "") === "1";
+        openMetaSendModal({
+          paymentUuid: paymentUuid,
+          alreadySent: alreadySent,
+        });
+        return;
+      }
+
       const resendBtn = event.target.closest("button[data-resend-onboarding]");
       if (resendBtn) {
         const paymentUuid = String(resendBtn.getAttribute("data-payment-uuid") || "").trim();
@@ -2280,6 +2451,117 @@
     });
   }
 
+  if (metaSendForm) {
+    metaSendForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!pendingMetaSendAction || !pendingMetaSendAction.paymentUuid) return;
+      const paymentUuid = String(pendingMetaSendAction.paymentUuid || "").trim();
+      const fbp = String((metaSendFbp && metaSendFbp.value) || "").trim();
+      const fbc = String((metaSendFbc && metaSendFbc.value) || "").trim();
+      if (metaSendError) {
+        metaSendError.textContent = "";
+        metaSendError.classList.add("hidden");
+      }
+      if (metaSendConfirmBtn) {
+        metaSendConfirmBtn.disabled = true;
+        metaSendConfirmBtn.textContent = "Sending...";
+      }
+      const statusEl = rowsEl ? rowsEl.querySelector('[data-meta-status="' + paymentUuid + '"]') : null;
+      if (statusEl) {
+        statusEl.textContent = "Sending...";
+        statusEl.className = "text-xs text-gray-500";
+      }
+      handleManualMetaSend({ paymentUuid: paymentUuid, fbp: fbp, fbc: fbc })
+        .then(function () {
+          setMessage("Meta CAPI Purchase event sent.", "ok");
+          if (statusEl) {
+            statusEl.textContent = "Meta sent";
+            statusEl.className = "text-xs text-emerald-700";
+          }
+          closeMetaSendModal();
+          return loadItems({ reconcile: false, includeSummary: false });
+        })
+        .catch(function (error) {
+          const msg = error.message || "Could not send Meta CAPI event.";
+          if (metaSendError) {
+            metaSendError.textContent = msg;
+            metaSendError.classList.remove("hidden");
+          }
+          setMessage(msg, "error");
+          if (statusEl) {
+            statusEl.textContent = "Failed";
+            statusEl.className = "text-xs text-red-600";
+          }
+        })
+        .finally(function () {
+          if (metaSendConfirmBtn) {
+            metaSendConfirmBtn.disabled = false;
+            metaSendConfirmBtn.textContent = pendingMetaSendAction && pendingMetaSendAction.alreadySent
+              ? "Resend Meta CAPI"
+              : "Send Meta CAPI";
+          }
+        });
+    });
+  }
+
+  if (updateEmailForm) {
+    updateEmailForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!pendingEmailUpdateAction || !pendingEmailUpdateAction.paymentUuid) return;
+      const paymentUuid = String(pendingEmailUpdateAction.paymentUuid || "").trim();
+      const currentEmail = String(pendingEmailUpdateAction.currentEmail || "").trim().toLowerCase();
+      const nextEmail = String((updateEmailInput && updateEmailInput.value) || "").trim().toLowerCase();
+      if (!nextEmail || nextEmail === currentEmail) {
+        if (updateEmailError) {
+          updateEmailError.textContent = "Enter a different valid email address.";
+          updateEmailError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (updateEmailError) {
+        updateEmailError.textContent = "";
+        updateEmailError.classList.add("hidden");
+      }
+      if (updateEmailConfirmBtn) {
+        updateEmailConfirmBtn.disabled = true;
+        updateEmailConfirmBtn.textContent = "Saving...";
+      }
+      const statusEl = rowsEl ? rowsEl.querySelector('[data-update-email-status="' + paymentUuid + '"]') : null;
+      if (statusEl) {
+        statusEl.textContent = "Updating...";
+        statusEl.className = "text-xs text-gray-500";
+      }
+      handleUpdateStudentEmail({ paymentUuid: paymentUuid, newEmail: nextEmail })
+        .then(function () {
+          setMessage("Student email updated.", "ok");
+          if (statusEl) {
+            statusEl.textContent = "Updated";
+            statusEl.className = "text-xs text-emerald-700";
+          }
+          closeUpdateEmailModal();
+          return loadItems({ reconcile: false, includeSummary: false });
+        })
+        .catch(function (error) {
+          const msg = error.message || "Could not update student email.";
+          if (updateEmailError) {
+            updateEmailError.textContent = msg;
+            updateEmailError.classList.remove("hidden");
+          }
+          setMessage(msg, "error");
+          if (statusEl) {
+            statusEl.textContent = "Failed";
+            statusEl.className = "text-xs text-red-600";
+          }
+        })
+        .finally(function () {
+          if (updateEmailConfirmBtn) {
+            updateEmailConfirmBtn.disabled = false;
+            updateEmailConfirmBtn.textContent = "Save Email";
+          }
+        });
+    });
+  }
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && reviewModal && reviewModal.getAttribute("aria-hidden") === "false") {
       closeReviewModal();
@@ -2295,6 +2577,12 @@
     }
     if (event.key === "Escape" && bulkResendModal && bulkResendModal.getAttribute("aria-hidden") === "false") {
       closeBulkResendModal();
+    }
+    if (event.key === "Escape" && metaSendModal && metaSendModal.getAttribute("aria-hidden") === "false") {
+      closeMetaSendModal();
+    }
+    if (event.key === "Escape" && updateEmailModal && updateEmailModal.getAttribute("aria-hidden") === "false") {
+      closeUpdateEmailModal();
     }
   });
 

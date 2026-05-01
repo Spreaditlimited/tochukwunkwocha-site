@@ -133,12 +133,7 @@ async function backfillMissingSchoolStudentCodes(pool, schoolId) {
 }
 
 function vatPercent() {
-  const raw = Number(
-    process.env.SCHOOLS_VAT_PERCENT ||
-      process.env.SITE_VAT_PERCENT ||
-      process.env.DOMAIN_VAT_PERCENT ||
-      DEFAULT_SITE_VAT_PERCENT
-  );
+  const raw = Number(process.env.SITE_VAT_PERCENT || DEFAULT_SITE_VAT_PERCENT);
   if (!Number.isFinite(raw) || raw < 0) return DEFAULT_SITE_VAT_PERCENT;
   return raw;
 }

@@ -6,6 +6,7 @@ const { siteBaseUrl } = require("./_lib/payments");
 const { sendEmail } = require("./_lib/email");
 const { createZoomMeeting } = require("./_lib/zoom");
 const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
+const { getSchoolNotificationRecipients } = require("./_lib/school-notification-recipients");
 const {
   SCHOOL_CALL_BOOKINGS_TABLE,
   ensureSchoolCallTablesTochukwu,
@@ -207,14 +208,19 @@ exports.handler = async function (event) {
       await sendEmail({ to: workEmail, subject: userSubject, html: userHtml, text: userText });
     } catch (_error) {}
 
-    try {
-      await sendEmail({
-        to: "support@tochukwunkwocha.com",
-        subject: adminSubject,
-        text: adminText,
-        html: adminText.replace(/\n/g, "<br/>")
-      });
-    } catch (_error) {}
+    const adminRecipients = getSchoolNotificationRecipients();
+    await Promise.all(
+      adminRecipients.map(function (to) {
+        return sendEmail({
+          to,
+          subject: adminSubject,
+          text: adminText,
+          html: adminText.replace(/\n/g, "<br/>"),
+        }).catch(function () {
+          return null;
+        });
+      })
+    );
 
     const reqMeta = requestContextToMetaData({ headers: event.headers });
     const metaEventId = `lead_school_call_${bookingUuid}`;
