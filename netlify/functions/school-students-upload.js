@@ -35,13 +35,13 @@ exports.handler = async function (event) {
     const header = parsed[0].map((col) => String(col || "").trim().toLowerCase());
     const fullNameIndex = header.findIndex((col) => col === "full_name" || col === "name");
     const emailIndex = header.findIndex((col) => col === "email");
-    if (fullNameIndex === -1 || emailIndex === -1) {
-      return json(400, { ok: false, error: "CSV header must include full_name and email columns" });
+    if (fullNameIndex === -1) {
+      return json(400, { ok: false, error: "CSV header must include full_name column" });
     }
 
     const rows = parsed.slice(1).map((cols) => ({
       full_name: cols[fullNameIndex],
-      email: cols[emailIndex],
+      email: emailIndex >= 0 ? cols[emailIndex] : "",
     }));
     const result = await addSchoolStudents(pool, {
       schoolId: session.admin.schoolId,

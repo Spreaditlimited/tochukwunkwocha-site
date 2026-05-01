@@ -18,3 +18,8 @@ scripts/export-prompt-to-profit-advanced-pptx.py
 # Private working files
 .private/
 *.pptx
+
+# Environment files
+.env
+.env.*
+!.env.example

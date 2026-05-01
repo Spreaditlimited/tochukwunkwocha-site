@@ -78,6 +78,17 @@
       .replace(/'/g, "&#39;");
   }
 
+  function isSyntheticSchoolEmail(value) {
+    return String(value || "").toLowerCase().indexOf("@student-code.local") !== -1;
+  }
+
+  function maskStudentCode(value) {
+    var code = String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!code) return "";
+    if (code.length <= 4) return code.charAt(0) + "***";
+    return code.slice(0, 3) + "****" + code.slice(-2);
+  }
+
   function selectedCourseSlug() {
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
   }
@@ -488,13 +499,22 @@
       });
       dashboard = json;
       if (accountMeta && json.account) {
-        accountMeta.textContent = `${json.account.fullName} • ${json.account.email}`;
+        var fullName = String(json.account.fullName || "");
+        var email = String(json.account.email || "");
+        var maskedCode = maskStudentCode(json.account.schoolStudentCode || "");
+        accountMeta.textContent = isSyntheticSchoolEmail(email) && maskedCode
+          ? (fullName + " • Code: " + maskedCode)
+          : (fullName + " • " + email);
       }
       if (accountName && json.account) {
         accountName.textContent = String(json.account.fullName || "");
       }
       if (accountEmail && json.account) {
-        accountEmail.textContent = String(json.account.email || "");
+        var emailText = String(json.account.email || "");
+        var maskedCodeText = maskStudentCode(json.account.schoolStudentCode || "");
+        accountEmail.textContent = isSyntheticSchoolEmail(emailText) && maskedCodeText
+          ? ("Code: " + maskedCodeText)
+          : emailText;
       }
       setWalletState(true);
       renderProfile();

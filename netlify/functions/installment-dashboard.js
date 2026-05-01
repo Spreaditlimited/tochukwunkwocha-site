@@ -52,6 +52,7 @@ exports.handler = async function (event) {
         accountUuid: session.account.accountUuid,
         fullName: session.account.fullName,
         email: session.account.email,
+        schoolStudentCode: session.account.schoolStudentCode || "",
         certificateNameConfirmedAt: session.account.certificateNameConfirmedAt || null,
         certificateNameUpdatedAt: session.account.certificateNameUpdatedAt || null,
         certificateNameNeedsConfirmation: session.account.certificateNameNeedsConfirmation === true,

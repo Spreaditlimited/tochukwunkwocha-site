@@ -75,6 +75,63 @@ function makeStudentCode() {
   return out;
 }
 
+async function assignSchoolStudentCode(pool, schoolId, studentId) {
+  const targetSchoolId = Number(schoolId);
+  const targetStudentId = Number(studentId);
+  if (!Number.isFinite(targetSchoolId) || targetSchoolId <= 0) return "";
+  if (!Number.isFinite(targetStudentId) || targetStudentId <= 0) return "";
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const nextCode = makeStudentCode();
+    try {
+      const [res] = await pool.query(
+        `UPDATE ${SCHOOL_STUDENTS_TABLE}
+         SET student_code = ?, updated_at = ?
+         WHERE id = ?
+           AND school_id = ?
+           AND (student_code IS NULL OR student_code = '')
+         LIMIT 1`,
+        [nextCode, nowSql(), targetStudentId, targetSchoolId]
+      );
+      if (Number(res && res.affectedRows || 0) > 0) return nextCode;
+      break;
+    } catch (error) {
+      const msg = String(error && error.message || "").toLowerCase();
+      const codeErr = String(error && error.code || "").toUpperCase();
+      const duplicate = codeErr === "ER_DUP_ENTRY" || msg.indexOf("duplicate") !== -1;
+      if (duplicate) continue;
+      throw error;
+    }
+  }
+
+  const [rows] = await pool.query(
+    `SELECT student_code
+     FROM ${SCHOOL_STUDENTS_TABLE}
+     WHERE id = ?
+       AND school_id = ?
+     LIMIT 1`,
+    [targetStudentId, targetSchoolId]
+  );
+  return clean(rows && rows[0] && rows[0].student_code, 20).toUpperCase();
+}
+
+async function backfillMissingSchoolStudentCodes(pool, schoolId) {
+  const targetSchoolId = Number(schoolId);
+  if (!Number.isFinite(targetSchoolId) || targetSchoolId <= 0) return;
+  const [rows] = await pool.query(
+    `SELECT id
+     FROM ${SCHOOL_STUDENTS_TABLE}
+     WHERE school_id = ?
+       AND (student_code IS NULL OR student_code = '')
+     ORDER BY id ASC
+     LIMIT 200`,
+    [targetSchoolId]
+  );
+  for (let i = 0; i < rows.length; i += 1) {
+    await assignSchoolStudentCode(pool, targetSchoolId, Number(rows[i].id));
+  }
+}
+
 function vatPercent() {
   const raw = Number(
     process.env.SCHOOLS_VAT_PERCENT ||
@@ -942,7 +999,11 @@ function parseCsv(text) {
 }
 
 function schoolStudentsCsvTemplate() {
-  return "full_name,email\nJane Doe,jane@example.com\nJohn Doe,john@example.com\n";
+  return "full_name,email\nJane Doe,\nJohn Doe,john@example.com\n";
+}
+
+function syntheticSchoolStudentEmail() {
+  return `school-student-${crypto.randomUUID().replace(/-/g, "")}@student-code.local`;
 }
 
 async function seatsUsage(db, schoolId) {
@@ -994,33 +1055,38 @@ async function addSchoolStudents(pool, input) {
         break;
       }
       const fullName = clean(rows[i] && rows[i].full_name, 180);
-      const email = normalizeEmail(rows[i] && rows[i].email);
-      if (!fullName || !email) {
-        results.errors.push(`Row ${i + 1}: full_name and valid email are required`);
+      const providedEmail = normalizeEmail(rows[i] && rows[i].email);
+      if (!fullName) {
+        results.errors.push(`Row ${i + 1}: full_name is required`);
         continue;
       }
+      const accountEmail = providedEmail || syntheticSchoolStudentEmail();
 
-      let account = await findStudentByEmail(connection, email);
+      let account = providedEmail ? await findStudentByEmail(connection, providedEmail) : null;
       let createdAccount = false;
       if (!account) {
         const tempPassword = crypto.randomBytes(8).toString("base64url") + "A9!";
         account = await createStudentAccount(connection, {
           fullName,
-          email,
+          email: accountEmail,
           password: tempPassword,
           mustResetPassword: true,
         });
         createdAccount = true;
       }
 
-      const [existingRows] = await connection.query(
-        `SELECT id, status
-         FROM ${SCHOOL_STUDENTS_TABLE}
-         WHERE school_id = ?
-           AND email = ?
-         LIMIT 1`,
-        [schoolId, email]
-      );
+      let existingRows = [];
+      if (providedEmail) {
+        const [rowsByEmail] = await connection.query(
+          `SELECT id, status
+           FROM ${SCHOOL_STUDENTS_TABLE}
+           WHERE school_id = ?
+             AND email = ?
+           LIMIT 1`,
+          [schoolId, providedEmail]
+        );
+        existingRows = rowsByEmail;
+      }
       const now = nowSql();
       if (existingRows && existingRows.length) {
         const prevStatus = clean(existingRows[0].status, 40).toLowerCase();
@@ -1035,13 +1101,15 @@ async function addSchoolStudents(pool, input) {
            LIMIT 1`,
           [fullName, Number(account && account.id || 0) || null, now, Number(existingRows[0].id)]
         );
+        const existingStudentId = Number(existingRows[0].id);
+        await assignSchoolStudentCode(connection, schoolId, existingStudentId);
         const reactivated = prevStatus !== "active";
         if (reactivated) results.reactivated += 1;
         results.updated += 1;
         results.invites.push({
-          school_student_id: Number(existingRows[0].id),
+          school_student_id: existingStudentId,
           full_name: fullName,
-          email,
+          email: providedEmail,
           account_id: Number(account && account.id || 0) || null,
           created_account: !!createdAccount,
           reactivated: !!reactivated,
@@ -1053,15 +1121,16 @@ async function addSchoolStudents(pool, input) {
         `INSERT INTO ${SCHOOL_STUDENTS_TABLE}
           (school_id, student_uuid, full_name, email, account_id, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
-        [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, email, Number(account && account.id || 0) || null, now, now]
+        [schoolId, `sst_${crypto.randomUUID().replace(/-/g, "")}`, fullName, accountEmail, Number(account && account.id || 0) || null, now, now]
       );
       const schoolStudentId = Number(insertRes && insertRes.insertId || 0);
       results.created += 1;
       if (schoolStudentId > 0) results.createdStudentIds.push(schoolStudentId);
+      if (schoolStudentId > 0) await assignSchoolStudentCode(connection, schoolId, schoolStudentId);
       results.invites.push({
         school_student_id: schoolStudentId || null,
         full_name: fullName,
-        email,
+        email: providedEmail,
         account_id: Number(account && account.id || 0) || null,
         created_account: !!createdAccount,
         reactivated: false,
@@ -1085,6 +1154,7 @@ async function addSchoolStudents(pool, input) {
 }
 
 async function listSchoolStudents(pool, schoolId, courseSlug) {
+  await backfillMissingSchoolStudentCodes(pool, schoolId);
   const [totRows] = await pool.query(
     `SELECT COUNT(*) AS total_lessons
      FROM ${LESSONS_TABLE} l

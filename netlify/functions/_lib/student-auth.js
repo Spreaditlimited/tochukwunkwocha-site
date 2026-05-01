@@ -693,7 +693,17 @@ async function requireStudentSession(pool, event) {
               a.must_reset_password,
               a.domains_auto_renew_enabled,
               a.certificate_name_confirmed_at,
-              a.certificate_name_updated_at
+              a.certificate_name_updated_at,
+              (
+                SELECT ss.student_code
+                FROM ${SCHOOL_STUDENTS_TABLE} ss
+                WHERE ss.account_id = a.id
+                  AND ss.status = 'active'
+                  AND ss.student_code IS NOT NULL
+                  AND ss.student_code <> ''
+                ORDER BY ss.id DESC
+                LIMIT 1
+              ) AS school_student_code
        FROM ${STUDENT_SESSIONS_TABLE} s
        JOIN student_accounts a ON a.id = s.account_id
        WHERE s.token_hash = ?
@@ -711,7 +721,17 @@ async function requireStudentSession(pool, event) {
               a.full_name,
               a.email,
               a.must_reset_password,
-              a.domains_auto_renew_enabled
+              a.domains_auto_renew_enabled,
+              (
+                SELECT ss.student_code
+                FROM ${SCHOOL_STUDENTS_TABLE} ss
+                WHERE ss.account_id = a.id
+                  AND ss.status = 'active'
+                  AND ss.student_code IS NOT NULL
+                  AND ss.student_code <> ''
+                ORDER BY ss.id DESC
+                LIMIT 1
+              ) AS school_student_code
        FROM ${STUDENT_SESSIONS_TABLE} s
        JOIN student_accounts a ON a.id = s.account_id
        WHERE s.token_hash = ?
@@ -741,6 +761,7 @@ async function requireStudentSession(pool, event) {
       accountUuid: row.account_uuid,
       fullName: row.full_name,
       email: row.email,
+      schoolStudentCode: clean(row.school_student_code, 20).toUpperCase(),
       mustResetPassword: Number(row.must_reset_password || 0) === 1,
       domainsAutoRenewEnabled: Number(row.domains_auto_renew_enabled || 0) === 1,
       certificateNameConfirmedAt,

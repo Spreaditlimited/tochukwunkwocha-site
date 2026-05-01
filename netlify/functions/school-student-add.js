@@ -22,8 +22,8 @@ exports.handler = async function (event) {
 
   const fullName = clean(body.full_name || body.fullName, 180);
   const email = clean(body.email, 220).toLowerCase();
-  if (!fullName || !email) {
-    return json(400, { ok: false, error: "full_name and email are required" });
+  if (!fullName) {
+    return json(400, { ok: false, error: "full_name is required" });
   }
 
   const pool = getPool();
@@ -36,7 +36,7 @@ exports.handler = async function (event) {
     const result = await addSchoolStudents(pool, {
       schoolId: session.admin.schoolId,
       courseSlug: session.admin.courseSlug,
-      rows: [{ full_name: fullName, email }],
+      rows: [{ full_name: fullName, email: email || "" }],
     });
     const createdIds = Array.isArray(result && result.createdStudentIds) ? result.createdStudentIds : [];
     for (let i = 0; i < createdIds.length; i += 1) {

@@ -25,6 +25,11 @@
     return String(value || "").trim();
   }
 
+  function isSyntheticStudentEmail(value) {
+    var email = clean(value).toLowerCase();
+    return email.indexOf("@student-code.local") !== -1;
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -184,7 +189,7 @@
         "<tr>",
         '<td class="px-4 py-3">',
         '<p class="font-semibold text-slate-900">' + escapeHtml(student.full_name || "Student") + "</p>",
-        '<p class="text-xs text-slate-500">' + escapeHtml(student.email || "") + "</p>",
+        '<p class="text-xs text-slate-500">' + escapeHtml(isSyntheticStudentEmail(student.email) ? "" : (student.email || "")) + "</p>",
         "</td>",
         '<td class="px-4 py-3">',
         '<div class="flex items-center gap-2">',
@@ -379,8 +384,8 @@
     singleAddBtn.addEventListener("click", function () {
       var fullName = clean(singleNameEl && singleNameEl.value);
       var email = clean(singleEmailEl && singleEmailEl.value).toLowerCase();
-      if (!fullName || !email) {
-        setUploadStatus("Full name and email are required.", true);
+      if (!fullName) {
+        setUploadStatus("Full name is required.", true);
         return;
       }
 
@@ -394,19 +399,11 @@
         },
         body: JSON.stringify({
           full_name: fullName,
-          email: email,
+          email: email || "",
         }),
       })
         .then(function (data) {
-          var result = data && data.result ? data.result : {};
-          setUploadStatus(
-            "Added. Created: " + String(result.created || 0) +
-              ", Updated: " + String(result.updated || 0) +
-              ", Reactivated: " + String(result.reactivated || 0) +
-              ", Invites sent: " + String(result.invites_sent || 0) +
-              (Number(result.invites_failed || 0) > 0 ? ", Invite failures: " + String(result.invites_failed || 0) : ""),
-            false
-          );
+          showToast("Student added", false);
           if (singleNameEl) singleNameEl.value = "";
           if (singleEmailEl) singleEmailEl.value = "";
           return Promise.all([loadSummary(), loadStudents()]);
