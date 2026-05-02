@@ -27,6 +27,7 @@
   var appliedCoupon = null;
   var couponPricingByProvider = { paystack: null, paypal: null };
   var basePricingByProvider = { paystack: null, paypal: null };
+  var enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
   var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
 
   var COURSE_CONFIGS = {
@@ -215,6 +216,33 @@
     });
   }
 
+  function applyEnabledPaymentMethods(methods) {
+    enabledPaymentMethods = { paystack: false, paypal: false, manual_transfer: false };
+    (Array.isArray(methods) ? methods : []).forEach(function (method) {
+      var key = String(method || "").trim().toLowerCase();
+      if (key === "paystack" || key === "paypal" || key === "manual_transfer") {
+        enabledPaymentMethods[key] = true;
+      }
+    });
+    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.paypal && !enabledPaymentMethods.manual_transfer) {
+      enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+    }
+    paymentOptions.forEach(function (el) {
+      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
+      var allowed = !!enabledPaymentMethods[provider];
+      if (!allowed) {
+        el.setAttribute("disabled", "disabled");
+        el.setAttribute("data-disabled", "true");
+      } else {
+        el.removeAttribute("disabled");
+        el.removeAttribute("data-disabled");
+      }
+      el.classList.toggle("opacity-50", !allowed);
+      el.classList.toggle("cursor-not-allowed", !allowed);
+    });
+    setActiveProvider(providerInput ? providerInput.value : firstEnabledProvider());
+  }
+
   function firstEnabledProvider() {
     var fallback = "paystack";
     for (var i = 0; i < paymentOptions.length; i += 1) {
@@ -262,6 +290,7 @@
       return;
     }
     var active = json.activeBatch;
+    applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
     activeCourseBatchKey = String(active.batchKey || "");
     activeCourseBatchStartAt = String(active.batchStartAt || "");
     var paystackMinor = Number(active.paystackAmountMinor || 0);

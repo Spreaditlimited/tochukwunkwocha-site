@@ -5,6 +5,7 @@
   var ruleForm = document.getElementById("affiliateRuleForm");
   var payoutForm = document.getElementById("affiliatePayoutRunForm");
   var payoutResult = document.getElementById("affPayoutResult");
+  var FORM_STATE_KEY = "affiliate_rule_form_state_v1";
 
   var rules = [];
   var courses = [];
@@ -34,11 +35,18 @@
 
   function renderCourseOptions() {
     if (!courseSelect) return;
+    var selected = String(courseSelect.value || "").trim();
     courseSelect.innerHTML = courses
       .map(function (item) {
         return '<option value="' + esc(item.slug) + '">' + esc(item.label || item.slug) + "</option>";
       })
       .join("");
+    if (selected) {
+      courseSelect.value = selected;
+    }
+    if (!courseSelect.value && courses.length) {
+      courseSelect.value = String(courses[0].slug || "");
+    }
   }
 
   function renderRules() {
@@ -61,7 +69,87 @@
     }).join("");
   }
 
+  function mergeCoursesWithRuleSlugs(courseList, ruleList) {
+    var merged = {};
+    (Array.isArray(courseList) ? courseList : []).forEach(function (item) {
+      var slug = String(item && item.slug || "").trim().toLowerCase();
+      if (!slug) return;
+      merged[slug] = {
+        slug: slug,
+        label: String(item && item.label || slug),
+      };
+    });
+    (Array.isArray(ruleList) ? ruleList : []).forEach(function (item) {
+      var slug = String(item && item.course_slug || "").trim().toLowerCase();
+      if (!slug) return;
+      if (!merged[slug]) {
+        merged[slug] = { slug: slug, label: slug };
+      }
+    });
+    return Object.keys(merged)
+      .map(function (slug) { return merged[slug]; })
+      .sort(function (a, b) { return a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0; });
+  }
+
+  function findRuleBySlug(slugInput) {
+    var slug = String(slugInput || "").trim().toLowerCase();
+    if (!slug) return null;
+    for (var i = 0; i < rules.length; i += 1) {
+      var item = rules[i];
+      if (String(item && item.course_slug || "").trim().toLowerCase() === slug) return item;
+    }
+    return null;
+  }
+
+  function applyRuleToForm(rule) {
+    if (!rule) return;
+    var eligibleEl = document.getElementById("affRuleEligible");
+    var typeEl = document.getElementById("affRuleType");
+    var valueEl = document.getElementById("affRuleValue");
+    var currencyEl = document.getElementById("affRuleCurrency");
+    var minOrderEl = document.getElementById("affRuleMinOrder");
+    var holdDaysEl = document.getElementById("affRuleHoldDays");
+
+    if (eligibleEl) eligibleEl.value = Number(rule.is_affiliate_eligible || 0) ? "1" : "0";
+    if (typeEl) typeEl.value = String(rule.commission_type || "percentage");
+    if (valueEl) valueEl.value = String(Number(rule.commission_value || 0));
+    if (currencyEl) currencyEl.value = String(rule.commission_currency || "NGN");
+    if (minOrderEl) minOrderEl.value = String(Number(rule.min_order_amount_minor || 0));
+    if (holdDaysEl) holdDaysEl.value = String(Number(rule.hold_days || 0));
+  }
+
+  function readFormState() {
+    try {
+      var raw = localStorage.getItem(FORM_STATE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function writeFormState() {
+    try {
+      var state = {
+        courseSlug: courseSelect ? String(courseSelect.value || "") : "",
+      };
+      localStorage.setItem(FORM_STATE_KEY, JSON.stringify(state));
+    } catch (_error) {}
+  }
+
+  function syncFormFromSelection(preferredSlug) {
+    var chosen = String(preferredSlug || (courseSelect && courseSelect.value) || "").trim().toLowerCase();
+    if (!chosen) return;
+    if (courseSelect) courseSelect.value = chosen;
+    var matchingRule = findRuleBySlug(chosen);
+    if (matchingRule) applyRuleToForm(matchingRule);
+    writeFormState();
+  }
+
   async function loadRules() {
+    var state = readFormState();
+    var preferred = String(state && state.courseSlug || "").trim().toLowerCase();
     var res = await fetch("/.netlify/functions/admin-affiliate-course-rules-list", {
       method: "GET",
       credentials: "include",
@@ -76,8 +164,9 @@
       throw new Error((json && json.error) || "Could not load affiliate rules");
     }
     rules = Array.isArray(json.rules) ? json.rules : [];
-    courses = Array.isArray(json.courses) ? json.courses : [];
+    courses = mergeCoursesWithRuleSlugs(Array.isArray(json.courses) ? json.courses : [], rules);
     renderCourseOptions();
+    syncFormFromSelection(preferred);
     renderRules();
   }
 
@@ -109,6 +198,7 @@
     }
 
     setMessage("Affiliate rule saved.", "ok");
+    writeFormState();
     await loadRules();
   }
 
@@ -151,6 +241,11 @@
       saveRule(event).catch(function (error) {
         setMessage(error.message || "Could not save affiliate rule", "error");
       });
+    });
+  }
+  if (courseSelect) {
+    courseSelect.addEventListener("change", function () {
+      syncFormFromSelection(courseSelect.value);
     });
   }
 

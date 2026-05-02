@@ -222,6 +222,38 @@
                       <label class="block text-sm font-semibold text-gray-700">Release Date (optional)</label>
                       <input id="courseReleaseAtInput" type="datetime-local" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
                     </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700">Enrollment Mode</label>
+                      <select id="courseEnrollmentModeInput" class="premium-picker mt-1 bg-white">
+                        <option value="batch">Batch based</option>
+                        <option value="immediate">Immediate access</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700">Price (NGN)</label>
+                      <input id="coursePriceNgnInput" type="number" min="0" step="1" placeholder="150000" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700">Price (GBP)</label>
+                      <input id="coursePriceGbpInput" type="number" min="0" step="1" placeholder="9900" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <p class="block text-sm font-semibold text-gray-700">Enabled Payment Methods</p>
+                      <div class="mt-2 flex flex-wrap gap-4">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                          <input id="coursePaystackEnabledInput" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600" checked />
+                          Paystack
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                          <input id="coursePaypalEnabledInput" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600" checked />
+                          PayPal
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                          <input id="courseManualEnabledInput" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600" checked />
+                          Manual Transfer
+                        </label>
+                      </div>
+                    </div>
                     <div class="sm:col-span-2">
                       <label class="block text-sm font-semibold text-gray-700">Description (optional)</label>
                       <textarea id="courseDescriptionInput" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
@@ -236,6 +268,26 @@
                   <div class="mt-3 flex flex-wrap items-center gap-2">
                     <button id="createCourseBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Create New Course</button>
                     <button id="saveCourseBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Save Course</button>
+                  </div>
+                  <div class="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Course Batches</p>
+                      <span id="courseBatchManagerHint" class="text-xs text-gray-500">Available for batch-based courses</span>
+                    </div>
+                    <div id="courseBatchRows" class="mt-3 space-y-2"></div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <input id="courseBatchLabelInput" type="text" placeholder="Batch label" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="courseBatchKeyInput" type="text" placeholder="batch-key" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="courseBatchStartInput" type="datetime-local" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="courseBatchPrefixInput" type="text" placeholder="Paystack prefix" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="courseBatchNgnInput" type="number" min="0" step="1" placeholder="Paystack amount minor" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="courseBatchGbpInput" type="number" min="0" step="1" placeholder="PayPal amount minor" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <button id="createCourseBatchBtn" type="button" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">Create Batch</button>
+                      <button id="updateCourseBatchBtn" type="button" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">Update Selected</button>
+                      <button id="activateCourseBatchBtn" type="button" class="rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800">Activate Selected</button>
+                    </div>
                   </div>
                 </div>
 
@@ -389,7 +441,7 @@
       </div>
     </div>
 
-    <script src="/assets/admin-video-library.js?v=20260425a" defer></script>
-    <script src="/assets/internal-nav.js?v=20260404e" defer></script>
+    <script src="/assets/admin-video-library.js?v=20260502b" defer></script>
+    <script src="/assets/internal-nav.js?v=20260502a" defer></script>
   </body>
 </html>

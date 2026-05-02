@@ -4,6 +4,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 
 function formatNaira(minor) {
   const amount = Math.max(0, Number(minor || 0)) / 100;
@@ -33,11 +34,23 @@ exports.handler = async function (event) {
   let couponError = "";
 
   try {
+    await ensureLearningTables(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);
-    resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
-    if (resolvedBatch && Number(resolvedBatch.paystack_amount_minor || 0) > 0) {
-      amountMinor = Number(resolvedBatch.paystack_amount_minor);
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
+      ? "immediate"
+      : "batch";
+    if (enrollmentMode === "batch") {
+      resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
+      if (resolvedBatch && Number(resolvedBatch.paystack_amount_minor || 0) > 0) {
+        amountMinor = Number(resolvedBatch.paystack_amount_minor);
+      }
+    } else {
+      const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+      if (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0) {
+        amountMinor = Math.round(courseNgnMinor);
+      }
     }
     if (couponCode) {
       const evaluated = await evaluateCouponForOrder(pool, {

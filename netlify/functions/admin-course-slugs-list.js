@@ -27,7 +27,10 @@ exports.handler = async function (event) {
       .map(function (course) {
         const slug = canonicalizeCourseSlug(clean(course && course.course_slug, 120));
         const label = clean(course && course.course_title, 220);
-        return { slug: slug, label: label || slug };
+        const enrollmentMode = String(course && course.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
+          ? "immediate"
+          : "batch";
+        return { slug: slug, label: label || slug, enrollmentMode: enrollmentMode };
       })
       .filter(function (item) { return !!item.slug; });
 
@@ -35,7 +38,7 @@ exports.handler = async function (event) {
       .map(function (cfg) {
         const slug = canonicalizeCourseSlug(clean(cfg && cfg.slug, 120));
         const label = clean(cfg && cfg.name, 220);
-        return { slug: slug, label: label || slug };
+        return { slug: slug, label: label || slug, enrollmentMode: "batch" };
       })
       .filter(function (item) { return !!item.slug; });
 

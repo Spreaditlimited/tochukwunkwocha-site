@@ -7,7 +7,7 @@ const {
 } = require("./_lib/manual-payments");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
-const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { sendEmail } = require("./_lib/email");
 const { siteBaseUrl } = require("./_lib/payments");
@@ -96,13 +96,25 @@ exports.handler = async function (event) {
     if (!learningCourse) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
     }
+    const allowedMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
+    if (allowedMethods.indexOf("manual_transfer") === -1) {
+      return json(400, { ok: false, error: "Manual transfer is not enabled for this course." });
+    }
     await ensureManualPaymentsTable(pool);
     await ensureAffiliateTables(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);
-    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
-    if (!batch) return json(500, { ok: false, error: "No active batch configured" });
-    const baseAmountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
+    const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
+      ? "immediate"
+      : "batch";
+    const batch = enrollmentMode === "batch"
+      ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
+      : null;
+    if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+    const baseAmountMinor = enrollmentMode === "immediate"
+      ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
+      : Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
     let pricing = {
       currency: "NGN",
       baseAmountMinor,
@@ -133,8 +145,8 @@ exports.handler = async function (event) {
 
     const paymentUuid = await createManualPayment(pool, {
       courseSlug,
-      batchKey: batch.batch_key,
-      batchLabel: batch.batch_label,
+      batchKey: batch ? batch.batch_key : null,
+      batchLabel: batch ? batch.batch_label : "Immediate Access",
       firstName,
       email,
       country,

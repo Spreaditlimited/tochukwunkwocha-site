@@ -20,6 +20,23 @@
   var courseDescriptionInput = document.getElementById("courseDescriptionInput");
   var courseIsPublishedInput = document.getElementById("courseIsPublishedInput");
   var courseReleaseAtInput = document.getElementById("courseReleaseAtInput");
+  var courseEnrollmentModeInput = document.getElementById("courseEnrollmentModeInput");
+  var coursePriceNgnInput = document.getElementById("coursePriceNgnInput");
+  var coursePriceGbpInput = document.getElementById("coursePriceGbpInput");
+  var coursePaystackEnabledInput = document.getElementById("coursePaystackEnabledInput");
+  var coursePaypalEnabledInput = document.getElementById("coursePaypalEnabledInput");
+  var courseManualEnabledInput = document.getElementById("courseManualEnabledInput");
+  var courseBatchRows = document.getElementById("courseBatchRows");
+  var courseBatchManagerHint = document.getElementById("courseBatchManagerHint");
+  var courseBatchLabelInput = document.getElementById("courseBatchLabelInput");
+  var courseBatchKeyInput = document.getElementById("courseBatchKeyInput");
+  var courseBatchStartInput = document.getElementById("courseBatchStartInput");
+  var courseBatchPrefixInput = document.getElementById("courseBatchPrefixInput");
+  var courseBatchNgnInput = document.getElementById("courseBatchNgnInput");
+  var courseBatchGbpInput = document.getElementById("courseBatchGbpInput");
+  var createCourseBatchBtn = document.getElementById("createCourseBatchBtn");
+  var updateCourseBatchBtn = document.getElementById("updateCourseBatchBtn");
+  var activateCourseBatchBtn = document.getElementById("activateCourseBatchBtn");
   var createCourseBtn = document.getElementById("createCourseBtn");
   var saveCourseBtn = document.getElementById("saveCourseBtn");
 
@@ -60,6 +77,7 @@
     lessonRowKeySeq: 0,
     selectedModuleId: 0,
     selectedCourseId: 0,
+    selectedCourseBatchKey: "",
   };
   var dragLessonIndex = -1;
 
@@ -340,6 +358,126 @@
     });
   }
 
+  function readBatchField(row, snakeKey, camelKey) {
+    if (!row || typeof row !== "object") return "";
+    var snake = row[snakeKey];
+    if (snake !== undefined && snake !== null && String(snake).trim() !== "") return snake;
+    var camel = row[camelKey];
+    if (camel !== undefined && camel !== null && String(camel).trim() !== "") return camel;
+    return "";
+  }
+
+  function selectedCourseSlug() {
+    if (!(state.selectedCourseId > 0)) return "";
+    var selected = state.courses.find(function (course) { return Number(course.id) === Number(state.selectedCourseId); });
+    return String(selected && selected.course_slug || "").trim().toLowerCase();
+  }
+
+  function selectedCourseBatch() {
+    var selectedKey = String(state.selectedCourseBatchKey || "").trim().toLowerCase();
+    if (!selectedKey) return null;
+    var slug = selectedCourseSlug();
+    return listBatchesForCourse(slug).find(function (row) {
+      return String(row.batch_key || row.batchKey || "").trim().toLowerCase() === selectedKey;
+    }) || null;
+  }
+
+  function hydrateCourseBatchForm(batch) {
+    if (!batch) {
+      if (courseBatchLabelInput) courseBatchLabelInput.value = "";
+      if (courseBatchKeyInput) courseBatchKeyInput.value = "";
+      if (courseBatchStartInput) courseBatchStartInput.value = "";
+      if (courseBatchPrefixInput) courseBatchPrefixInput.value = "";
+      if (courseBatchNgnInput) courseBatchNgnInput.value = "";
+      if (courseBatchGbpInput) courseBatchGbpInput.value = "";
+      return;
+    }
+    if (courseBatchLabelInput) courseBatchLabelInput.value = String(batch.batch_label || batch.batchLabel || "");
+    if (courseBatchKeyInput) courseBatchKeyInput.value = String(batch.batch_key || batch.batchKey || "");
+    if (courseBatchStartInput) courseBatchStartInput.value = toDatetimeLocalValue(batch.batch_start_at || batch.batchStartAt || "");
+    if (courseBatchPrefixInput) courseBatchPrefixInput.value = String(batch.paystack_reference_prefix || batch.paystackReferencePrefix || "");
+    if (courseBatchNgnInput) courseBatchNgnInput.value = String(Number(batch.paystack_amount_minor || batch.paystackAmountMinor || 0) || "");
+    if (courseBatchGbpInput) courseBatchGbpInput.value = String(Number(batch.paypal_amount_minor || batch.paypalAmountMinor || 0) || "");
+  }
+
+  function setCourseBatchControlsDisabled(disabled) {
+    [courseBatchLabelInput, courseBatchKeyInput, courseBatchStartInput, courseBatchPrefixInput, courseBatchNgnInput, courseBatchGbpInput, createCourseBatchBtn, updateCourseBatchBtn, activateCourseBatchBtn]
+      .forEach(function (el) {
+        if (el) el.disabled = !!disabled;
+      });
+  }
+
+  function formatMinorCurrency(minor, currency) {
+    var code = String(currency || "").toUpperCase();
+    var amount = Number(minor || 0) / 100;
+    if (!Number.isFinite(amount)) return "-";
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch (_error) {
+      return code + " " + amount.toFixed(2);
+    }
+  }
+
+  function renderCourseBatchRows() {
+    if (!courseBatchRows) return;
+    var slug = selectedCourseSlug();
+    var selectedCourse = state.courses.find(function (course) { return Number(course.id) === Number(state.selectedCourseId); }) || null;
+    var isImmediate = String(selectedCourse && selectedCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate";
+    if (!slug) {
+      courseBatchRows.innerHTML = '<p class="text-xs text-gray-500">Select a course first.</p>';
+      setCourseBatchControlsDisabled(true);
+      if (courseBatchManagerHint) courseBatchManagerHint.textContent = "Available for batch-based courses";
+      return;
+    }
+    if (isImmediate) {
+      courseBatchRows.innerHTML = '<p class="text-xs text-gray-500">Immediate course: no batches required.</p>';
+      state.selectedCourseBatchKey = "";
+      hydrateCourseBatchForm(null);
+      setCourseBatchControlsDisabled(true);
+      if (courseBatchManagerHint) courseBatchManagerHint.textContent = "Disabled for immediate-access courses";
+      return;
+    }
+    var batches = listBatchesForCourse(slug);
+    setCourseBatchControlsDisabled(false);
+    if (courseBatchManagerHint) courseBatchManagerHint.textContent = "Batches for selected course";
+    if (!batches.length) {
+      courseBatchRows.innerHTML = '<p class="text-xs text-gray-500">No batches created yet for this course.</p>';
+      return;
+    }
+
+    courseBatchRows.innerHTML = batches.map(function (row) {
+      var key = String(readBatchField(row, "batch_key", "batchKey") || "").trim().toLowerCase();
+      var label = String(readBatchField(row, "batch_label", "batchLabel") || key);
+      var active = Number(readBatchField(row, "is_active", "isActive") || 0) === 1;
+      var selected = key && key === String(state.selectedCourseBatchKey || "").trim().toLowerCase();
+      var statusLabel = String(readBatchField(row, "status", "status") || "").trim() || (active ? "active" : "closed");
+      var startAt = String(readBatchField(row, "batch_start_at", "batchStartAt") || "").trim();
+      var prefix = String(readBatchField(row, "paystack_reference_prefix", "paystackReferencePrefix") || "").trim();
+      var ngnMinor = Number(readBatchField(row, "paystack_amount_minor", "paystackAmountMinor") || 0);
+      var gbpMinor = Number(readBatchField(row, "paypal_amount_minor", "paypalAmountMinor") || 0);
+      var brevoList = String(readBatchField(row, "brevo_list_id", "brevoListId") || "").trim();
+      return '<button type="button" data-course-batch-course="' + escapeHtml(slug) + '" data-course-batch-key="' + escapeHtml(key) + '" class="w-full rounded-lg border px-3 py-3 text-left text-xs ' + (active ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200 bg-white') + ' ' + (selected ? 'ring-2 ring-brand-300' : 'hover:bg-gray-50') + '">' +
+        '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-gray-900">' + escapeHtml(label) + '</span>' +
+        (active ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ACTIVE BATCH</span>' : '<span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">' + escapeHtml(statusLabel) + "</span>") +
+        "</div>" +
+        '<div class="mt-2 grid gap-1 text-[11px] text-gray-600 sm:grid-cols-2">' +
+          '<p><span class="font-semibold">Key:</span> ' + escapeHtml(key || "-") + "</p>" +
+          '<p><span class="font-semibold">Starts:</span> ' + escapeHtml(startAt || "-") + "</p>" +
+          '<p><span class="font-semibold">Prefix:</span> ' + escapeHtml(prefix || "-") + "</p>" +
+          '<p><span class="font-semibold">Brevo List:</span> ' + escapeHtml(brevoList || "-") + "</p>" +
+          '<p><span class="font-semibold">Manual:</span> ' + escapeHtml(formatMinorCurrency(ngnMinor, "NGN")) + "</p>" +
+          '<p><span class="font-semibold">Paystack:</span> ' + escapeHtml(formatMinorCurrency(ngnMinor, "NGN")) + "</p>" +
+          '<p><span class="font-semibold">PayPal:</span> ' + escapeHtml(formatMinorCurrency(gbpMinor, "GBP")) + "</p>" +
+        "</div>" +
+      "</button>";
+    }).join("");
+  }
+
   function renderModuleDripScheduleRows(courseSlug, schedules) {
     if (!moduleDripScheduleRows) return;
     var rows = Array.isArray(schedules) ? schedules : [];
@@ -398,6 +536,30 @@
     return list;
   }
 
+  function selectedCourseEnrollmentMode() {
+    var slug = selectedModuleCourseSlug();
+    if (!slug) return "batch";
+    var matched = (state.courses || []).find(function (course) {
+      return String(course && course.course_slug || "").trim().toLowerCase() === String(slug).trim().toLowerCase();
+    });
+    return String(matched && matched.enrollment_mode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+  }
+
+  function syncModuleDripControlsForCourseMode() {
+    var isImmediate = selectedCourseEnrollmentMode() === "immediate";
+    if (moduleDripEnabledInput) {
+      if (isImmediate) moduleDripEnabledInput.checked = false;
+      moduleDripEnabledInput.disabled = isImmediate;
+    }
+    if (addModuleDripScheduleRowBtn) addModuleDripScheduleRowBtn.disabled = isImmediate;
+    if (moduleDripScheduleRows) {
+      moduleDripScheduleRows.querySelectorAll("input,select,button").forEach(function (el) {
+        el.disabled = isImmediate;
+      });
+      moduleDripScheduleRows.classList.toggle("opacity-60", isImmediate);
+    }
+  }
+
   function hydrateCourseForm(course) {
     if (!course) {
       if (courseSlugInput) courseSlugInput.value = "";
@@ -405,6 +567,12 @@
       if (courseDescriptionInput) courseDescriptionInput.value = "";
       if (courseIsPublishedInput) courseIsPublishedInput.checked = false;
       if (courseReleaseAtInput) courseReleaseAtInput.value = "";
+      if (courseEnrollmentModeInput) courseEnrollmentModeInput.value = "batch";
+      if (coursePriceNgnInput) coursePriceNgnInput.value = "";
+      if (coursePriceGbpInput) coursePriceGbpInput.value = "";
+      if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = true;
+      if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = true;
+      if (courseManualEnabledInput) courseManualEnabledInput.checked = true;
       return;
     }
     if (courseSlugInput) courseSlugInput.value = String(course.course_slug || "");
@@ -412,6 +580,20 @@
     if (courseDescriptionInput) courseDescriptionInput.value = String(course.course_description || "");
     if (courseIsPublishedInput) courseIsPublishedInput.checked = Number(course.is_published || 0) === 1;
     if (courseReleaseAtInput) courseReleaseAtInput.value = toDatetimeLocalValue(course.release_at || "");
+    if (courseEnrollmentModeInput) {
+      courseEnrollmentModeInput.value = String(course.enrollment_mode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+    }
+    if (coursePriceNgnInput) {
+      coursePriceNgnInput.value = Number.isFinite(Number(course.price_ngn_minor)) ? String(Number(course.price_ngn_minor)) : "";
+    }
+    if (coursePriceGbpInput) {
+      coursePriceGbpInput.value = Number.isFinite(Number(course.price_gbp_minor)) ? String(Number(course.price_gbp_minor)) : "";
+    }
+    var methodsRaw = String(course && course.payment_methods || "").trim().toLowerCase();
+    var enabled = methodsRaw ? methodsRaw.split(",") : ["paystack", "paypal", "manual_transfer"];
+    if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = enabled.indexOf("paystack") !== -1;
+    if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = enabled.indexOf("paypal") !== -1;
+    if (courseManualEnabledInput) courseManualEnabledInput.checked = enabled.indexOf("manual_transfer") !== -1;
   }
 
   function renderModuleSelect() {
@@ -598,6 +780,7 @@
       if (moduleIsActiveInput) moduleIsActiveInput.checked = true;
       if (moduleDripEnabledInput) moduleDripEnabledInput.checked = false;
       renderModuleDripScheduleRows(selectedModuleCourseSlug(), []);
+      syncModuleDripControlsForCourseMode();
       return;
     }
     if (moduleCourseSlugInput) moduleCourseSlugInput.value = String(mod.course_slug || "");
@@ -608,6 +791,7 @@
     if (moduleDripEnabledInput) moduleDripEnabledInput.checked = Number(mod.drip_enabled || 0) === 1;
     var schedules = state.moduleDripSchedulesByModule.get(Number(mod.id || 0)) || [];
     renderModuleDripScheduleRows(String(mod.course_slug || ""), schedules);
+    syncModuleDripControlsForCourseMode();
   }
 
   async function loadLibrary(moduleId) {
@@ -652,6 +836,7 @@
     } else {
       hydrateCourseForm(null);
     }
+    renderCourseBatchRows();
     var selectedModule = state.selectedModuleId > 0
       ? state.modules.find(function (mod) { return Number(mod.id) === state.selectedModuleId; })
       : null;
@@ -749,6 +934,9 @@
       }
       if (!(state.selectedCourseId > 0)) {
         hydrateCourseForm(null);
+        state.selectedCourseBatchKey = "";
+        hydrateCourseBatchForm(null);
+        renderCourseBatchRows();
         hydrateModuleForm(state.selectedModuleId > 0
           ? state.modules.find(function (m) { return Number(m.id) === Number(state.selectedModuleId); })
           : null);
@@ -759,6 +947,9 @@
       }
       var selected = state.courses.find(function (course) { return Number(course.id) === state.selectedCourseId; });
       hydrateCourseForm(selected || null);
+      state.selectedCourseBatchKey = "";
+      hydrateCourseBatchForm(null);
+      renderCourseBatchRows();
       if (moduleCourseSlugInput && selected) {
         moduleCourseSlugInput.value = String(selected.course_slug || "");
       }
@@ -787,6 +978,131 @@
       if (moduleCourseSlugInput) moduleCourseSlugInput.value = "";
       if (courseSlugInput) courseSlugInput.focus();
       setMessage("Enter a new course slug and title, then click Create New Course (or Save Course).", "");
+    });
+  }
+
+  if (courseEnrollmentModeInput) {
+    courseEnrollmentModeInput.addEventListener("change", function () {
+      if (state.selectedCourseId > 0) {
+        var selected = state.courses.find(function (course) { return Number(course.id) === state.selectedCourseId; });
+        if (selected) selected.enrollment_mode = String(courseEnrollmentModeInput.value || "batch").trim().toLowerCase();
+      }
+      renderCourseBatchRows();
+      syncModuleDripControlsForCourseMode();
+    });
+  }
+
+  if (courseBatchRows) {
+    courseBatchRows.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var btn = target.closest("[data-course-batch-key]");
+      if (!btn) return;
+      var batchCourseSlug = String(btn.getAttribute("data-course-batch-course") || "").trim().toLowerCase();
+      var key = String(btn.getAttribute("data-course-batch-key") || "").trim().toLowerCase();
+      if (batchCourseSlug) {
+        var selectedCourse = (state.courses || []).find(function (course) {
+          return String(course && course.course_slug || "").trim().toLowerCase() === batchCourseSlug;
+        });
+        if (selectedCourse) {
+          state.selectedCourseId = Number(selectedCourse.id || 0);
+          if (courseSelect) courseSelect.value = String(state.selectedCourseId);
+          hydrateCourseForm(selectedCourse);
+        }
+      }
+      state.selectedCourseBatchKey = key;
+      hydrateCourseBatchForm(selectedCourseBatch());
+      renderCourseBatchRows();
+    });
+  }
+
+  if (createCourseBatchBtn) {
+    createCourseBatchBtn.addEventListener("click", async function () {
+      var courseSlug = selectedCourseSlug();
+      if (!courseSlug) return setMessage("Select a course first.", "error");
+      var batchLabel = String(courseBatchLabelInput && courseBatchLabelInput.value || "").trim();
+      if (!batchLabel) return setMessage("Batch label is required.", "error");
+      createCourseBatchBtn.disabled = true;
+      setMessage("Creating batch...", "");
+      try {
+        await api("/.netlify/functions/admin-course-batches-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseSlug: courseSlug,
+            batchLabel: batchLabel,
+            batchKey: String(courseBatchKeyInput && courseBatchKeyInput.value || "").trim(),
+            batchStartAt: String(courseBatchStartInput && courseBatchStartInput.value || "").trim() || null,
+            paystackReferencePrefix: String(courseBatchPrefixInput && courseBatchPrefixInput.value || "").trim(),
+            paystackAmountMinor: Number(courseBatchNgnInput && courseBatchNgnInput.value || 0),
+            paypalAmountMinor: Number(courseBatchGbpInput && courseBatchGbpInput.value || 0),
+          }),
+        });
+        setMessage("Batch created.", "ok");
+        await loadLibrary(state.selectedModuleId);
+      } catch (error) {
+        setMessage(error.message || "Could not create batch.", "error");
+      } finally {
+        createCourseBatchBtn.disabled = false;
+      }
+    });
+  }
+
+  if (updateCourseBatchBtn) {
+    updateCourseBatchBtn.addEventListener("click", async function () {
+      var courseSlug = selectedCourseSlug();
+      var batchKey = String(state.selectedCourseBatchKey || "").trim();
+      if (!courseSlug || !batchKey) return setMessage("Select a batch first.", "error");
+      updateCourseBatchBtn.disabled = true;
+      setMessage("Updating batch...", "");
+      try {
+        await api("/.netlify/functions/admin-course-batches-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseSlug: courseSlug,
+            batchKey: batchKey,
+            batchLabel: String(courseBatchLabelInput && courseBatchLabelInput.value || "").trim(),
+            batchStartAt: String(courseBatchStartInput && courseBatchStartInput.value || "").trim() || null,
+            paystackReferencePrefix: String(courseBatchPrefixInput && courseBatchPrefixInput.value || "").trim(),
+            paystackAmountMinor: Number(courseBatchNgnInput && courseBatchNgnInput.value || 0),
+            paypalAmountMinor: Number(courseBatchGbpInput && courseBatchGbpInput.value || 0),
+          }),
+        });
+        setMessage("Batch updated.", "ok");
+        await loadLibrary(state.selectedModuleId);
+      } catch (error) {
+        setMessage(error.message || "Could not update batch.", "error");
+      } finally {
+        updateCourseBatchBtn.disabled = false;
+      }
+    });
+  }
+
+  if (activateCourseBatchBtn) {
+    activateCourseBatchBtn.addEventListener("click", async function () {
+      var courseSlug = selectedCourseSlug();
+      var batchKey = String(state.selectedCourseBatchKey || "").trim();
+      if (!courseSlug || !batchKey) return setMessage("Select a batch first.", "error");
+      activateCourseBatchBtn.disabled = true;
+      setMessage("Activating batch...", "");
+      try {
+        await api("/.netlify/functions/admin-course-batches-activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseSlug: courseSlug,
+            batchKey: batchKey,
+            batchStartAt: String(courseBatchStartInput && courseBatchStartInput.value || "").trim() || null,
+          }),
+        });
+        setMessage("Batch activated.", "ok");
+        await loadLibrary(state.selectedModuleId);
+      } catch (error) {
+        setMessage(error.message || "Could not activate batch.", "error");
+      } finally {
+        activateCourseBatchBtn.disabled = false;
+      }
     });
   }
 
@@ -1298,6 +1614,7 @@
   if (moduleCourseSlugInput) {
     moduleCourseSlugInput.addEventListener("change", function () {
       renderModuleDripScheduleRows(selectedModuleCourseSlug(), collectModuleDripSchedulesFromForm());
+      syncModuleDripControlsForCourseMode();
     });
   }
 
@@ -1358,6 +1675,24 @@
         setMessage("Course title is required.", "error");
         return;
       }
+      var ngnValue = coursePriceNgnInput ? String(coursePriceNgnInput.value || "").trim() : "";
+      var gbpValue = coursePriceGbpInput ? String(coursePriceGbpInput.value || "").trim() : "";
+      if (ngnValue !== "" && (!Number.isFinite(Number(ngnValue)) || Number(ngnValue) < 0)) {
+        setMessage("Enter a valid non-negative NGN price.", "error");
+        return;
+      }
+      if (gbpValue !== "" && (!Number.isFinite(Number(gbpValue)) || Number(gbpValue) < 0)) {
+        setMessage("Enter a valid non-negative GBP price.", "error");
+        return;
+      }
+      var paymentMethods = [];
+      if (coursePaystackEnabledInput && coursePaystackEnabledInput.checked) paymentMethods.push("paystack");
+      if (coursePaypalEnabledInput && coursePaypalEnabledInput.checked) paymentMethods.push("paypal");
+      if (courseManualEnabledInput && courseManualEnabledInput.checked) paymentMethods.push("manual_transfer");
+      if (!paymentMethods.length) {
+        setMessage("Enable at least one payment method for this course.", "error");
+        return;
+      }
       var payload = {
         id: state.selectedCourseId > 0 ? state.selectedCourseId : null,
         course_slug: slugInput,
@@ -1365,6 +1700,14 @@
         course_description: courseDescriptionInput ? String(courseDescriptionInput.value || "").trim() : "",
         is_published: courseIsPublishedInput ? Boolean(courseIsPublishedInput.checked) : false,
         release_at: courseReleaseAtInput ? String(courseReleaseAtInput.value || "").trim() : "",
+        enrollment_mode: courseEnrollmentModeInput ? String(courseEnrollmentModeInput.value || "batch").trim().toLowerCase() : "batch",
+        price_ngn_minor: ngnValue !== ""
+          ? Number(ngnValue)
+          : null,
+        price_gbp_minor: gbpValue !== ""
+          ? Number(gbpValue)
+          : null,
+        payment_methods: paymentMethods,
       };
       saveCourseBtn.disabled = true;
       setMessage("Saving course...", "");

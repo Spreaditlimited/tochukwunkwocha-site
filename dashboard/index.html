@@ -284,12 +284,36 @@
         </section>
       </div>
     </div>
+    <div id="walletFeedbackModal" class="fixed inset-0 z-[70] hidden" aria-hidden="true">
+      <div data-wallet-feedback-close class="absolute inset-0 bg-gray-900/70 backdrop-blur-sm"></div>
+      <div class="relative z-10 mx-auto flex h-full w-full max-w-2xl items-center justify-center p-4 sm:p-6">
+        <section class="max-h-[90vh] w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="walletFeedbackTitle">
+          <header class="flex items-start justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+            <div>
+              <p id="walletFeedbackEyebrow" class="text-xs font-semibold uppercase tracking-wider text-brand-600">Notice</p>
+              <h3 id="walletFeedbackTitle" class="mt-1 text-xl font-heading font-bold text-gray-900">Update</h3>
+            </div>
+            <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" data-wallet-feedback-close aria-label="Close dialog">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 6l12 12M6 18L18 6" />
+              </svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(90vh-5rem)] overflow-y-auto px-5 py-5 sm:px-6">
+            <p id="walletFeedbackMessage" class="text-sm text-gray-700"></p>
+            <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" id="walletFeedbackAcknowledgeBtn" class="btn btn-primary w-full sm:w-auto">OK</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
     <script src="https://js.paystack.co/v1/inline.js" defer></script>
     <script src="/assets/auth-back.js?v=20260405a" defer></script>
     <script src="/assets/student-device-id.js?v=20260411a" defer></script>
     <script src="/assets/password-visibility.js?v=20260410a" defer></script>
     <script src="/assets/student-sidebar.js?v=20260420a" defer></script>
     <script src="/assets/user-dashboard-shell.js?v=20260420b" defer></script>
-    <script src="/assets/installments.js?v=20260415b" defer></script>
+    <script src="/assets/installments.js?v=20260502a" defer></script>
   </body>
 </html>

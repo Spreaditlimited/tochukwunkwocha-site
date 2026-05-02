@@ -5,7 +5,7 @@ const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
-const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { ensureAffiliateTables, recordAffiliateAttribution } = require("./_lib/affiliates");
 const {
   DEFAULT_COURSE_SLUG,
@@ -35,9 +35,16 @@ function normalizeAffiliateCode(value) {
   return String(value || "").trim().slice(0, 40).toUpperCase();
 }
 
-function priceConfig({ provider, courseSlug, batch }) {
-  const ngnMinor = Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
-  const paypalMinor = Number((batch && batch.paypal_amount_minor) || getCourseDefaultPaypalMinor(courseSlug));
+function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode }) {
+  const mode = String(enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+  const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+  const courseGbpMinor = Number(learningCourse && learningCourse.price_gbp_minor);
+  const ngnMinor = mode === "immediate"
+    ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
+    : Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
+  const paypalMinor = mode === "immediate"
+    ? (Number.isFinite(courseGbpMinor) && courseGbpMinor > 0 ? Math.round(courseGbpMinor) : getCourseDefaultPaypalMinor(courseSlug))
+    : Number((batch && batch.paypal_amount_minor) || getCourseDefaultPaypalMinor(courseSlug));
   const gbp = (paypalMinor / 100).toFixed(2);
   if (provider === "paystack") {
     return { currency: "NGN", amountMinor: ngnMinor, amountDisplay: (ngnMinor / 100).toFixed(2) };
@@ -90,9 +97,18 @@ exports.handler = async function (event) {
     }
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
-    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
-    if (!batch) return json(500, { ok: false, error: "No active batch configured" });
-    const price = priceConfig({ provider, courseSlug, batch });
+    const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
+      ? "immediate"
+      : "batch";
+    const allowedMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
+    if (allowedMethods.indexOf(provider) === -1) {
+      return json(400, { ok: false, error: "Selected payment method is not available for this course." });
+    }
+    const batch = enrollmentMode === "batch"
+      ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
+      : null;
+    if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
 
     let pricing = {
       currency: price.currency,
@@ -147,8 +163,8 @@ exports.handler = async function (event) {
         pricing.couponCode || null,
         pricing.couponId,
         provider,
-        batch.batch_key,
-        batch.batch_label,
+        batch ? batch.batch_key : null,
+        batch ? batch.batch_label : null,
       ]
     );
 
@@ -168,7 +184,7 @@ exports.handler = async function (event) {
     }
 
     if (provider === "paystack") {
-      const prefix = String(batch.paystack_reference_prefix || "PTP").trim().toUpperCase();
+      const prefix = String((batch && batch.paystack_reference_prefix) || (courseConfig && courseConfig.defaultPrefix) || "PTP").trim().toUpperCase();
       const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
       const payment = await paystackInitialize({
         email,
@@ -178,8 +194,8 @@ exports.handler = async function (event) {
           order_uuid: orderUuid,
           first_name: firstName,
           course_slug: courseSlug,
-          batch_key: batch.batch_key,
-          batch_label: batch.batch_label,
+          batch_key: batch ? batch.batch_key : null,
+          batch_label: batch ? batch.batch_label : null,
         },
       });
 

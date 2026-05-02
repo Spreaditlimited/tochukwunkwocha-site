@@ -60,6 +60,7 @@
 
   let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;
   let activeCourseBatchStartAt = "";
+  let enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
@@ -423,6 +424,31 @@
     }
   }
 
+  function applyEnabledPaymentMethods(methods) {
+    enabledPaymentMethods = { paystack: false, paypal: false, manual_transfer: false };
+    (Array.isArray(methods) ? methods : []).forEach(function (method) {
+      var key = String(method || "").trim().toLowerCase();
+      if (key === "paystack" || key === "paypal" || key === "manual_transfer") enabledPaymentMethods[key] = true;
+    });
+    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.paypal && !enabledPaymentMethods.manual_transfer) {
+      enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+    }
+    paymentOptions.forEach(function (el) {
+      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
+      var allowed = !!enabledPaymentMethods[provider];
+      if (!allowed) {
+        el.setAttribute("disabled", "disabled");
+        el.setAttribute("data-disabled", "true");
+      } else {
+        el.removeAttribute("disabled");
+        el.removeAttribute("data-disabled");
+      }
+      el.classList.toggle("opacity-50", !allowed);
+      el.classList.toggle("cursor-not-allowed", !allowed);
+    });
+    setActiveProvider((providerInput && providerInput.value) || "paystack");
+  }
+
   async function loadActiveBatch() {
     try {
       const cfg = currentCourseConfig();
@@ -436,6 +462,7 @@
       if (!res.ok || !json || !json.ok || !json.activeBatch) return;
 
       const active = json.activeBatch;
+      applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
       if (active && active.batchKey) activeCourseBatchKey = String(active.batchKey);
       activeCourseBatchStartAt = String((active && active.batchStartAt) || "").trim();
       if (enrolActiveBatchEl && active) {
@@ -457,6 +484,23 @@
   }
 
   function setActiveProvider(provider) {
+    var requested = String(provider || "").trim();
+    var target = Array.prototype.find.call(paymentOptions, function (el) {
+      return String(el.getAttribute("data-provider") || "") === requested;
+    });
+    if (target && (target.hasAttribute("disabled") || target.getAttribute("data-disabled") === "true")) {
+      requested = "";
+    }
+    if (!requested) {
+      for (var i = 0; i < paymentOptions.length; i += 1) {
+        var candidate = paymentOptions[i];
+        if (!candidate.hasAttribute("disabled") && candidate.getAttribute("data-disabled") !== "true") {
+          requested = String(candidate.getAttribute("data-provider") || "paystack");
+          break;
+        }
+      }
+    }
+    provider = requested || "paystack";
     providerInput.value = provider;
     paymentOptions.forEach(function (el) {
       const isActive = el.getAttribute("data-provider") === provider;
@@ -576,6 +620,7 @@
 
   paymentOptions.forEach(function (option) {
     option.addEventListener("click", function () {
+      if (option.hasAttribute("disabled") || option.getAttribute("data-disabled") === "true") return;
       const provider = option.getAttribute("data-provider");
       if (!provider) return;
       setActiveProvider(provider);
@@ -633,7 +678,7 @@
       paymentModal.classList.add("is-success");
     } else if (status === "cancelled") {
       paymentTitle.textContent = "Payment cancelled";
-      paymentMessage.textContent = "You cancelled the payment. You can try again anytime.";
+      paymentMessage.textContent = "You cancelled the payment. You have not been enrolled in the course yet. You can try again anytime.";
       paymentModal.classList.remove("is-success");
       paymentModal.classList.add("is-error");
     } else {

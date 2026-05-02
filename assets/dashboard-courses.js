@@ -102,6 +102,7 @@
     return (found && found.name) || prettifySlug(normalized) || "this course";
   }
 
+
   function readPurchaseWelcomeNotice() {
     try {
       const raw = window.localStorage.getItem(PURCHASE_WELCOME_KEY);
@@ -307,10 +308,13 @@
     const batchStatus = normalizeSlug(item && item.batchStatus);
     const courseSlug = normalizeSlug(item && item.courseSlug);
     const source = normalizeSlug(item && item.source);
+    const enrollmentMode = normalizeSlug(item && item.enrollmentMode);
     const durationDays = Number(COURSE_DURATION_DAYS[courseSlug] || 0);
     const paidOrSubmittedAt = parseAnyDate((item && item.paidAt) || (item && item.submittedAt));
     const now = new Date();
     const hasActiveAccess = !!(accessExpiresDate && accessExpiresDate.getTime() > now.getTime());
+    const batchLabel = String(item && item.batchLabel || "").toLowerCase();
+    const isImmediate = enrollmentMode === "immediate" || batchLabel.indexOf("immediate access") !== -1;
     function passedLabel() {
       if (hasActiveAccess && startDate && startDate.getTime() <= now.getTime()) {
         return {
@@ -324,6 +328,17 @@
       };
     }
     if (!startDate) {
+      if (isImmediate) {
+        return hasActiveAccess
+          ? {
+              label: "Immediate access active",
+              css: "bg-emerald-100 text-emerald-700",
+            }
+          : {
+              label: "Access window ended",
+              css: "bg-rose-100 text-rose-700",
+            };
+      }
       if (source === "school" && hasActiveAccess) {
         return {
           label: "Access active now",
@@ -417,27 +432,13 @@
     return json;
   }
 
-  async function load() {
-    try {
-      const res = await fetch("/.netlify/functions/user-purchased-courses", {
-        method: "GET",
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-      const json = await res.json().catch(function () {
-        return null;
-      });
-      if (!res.ok || !json || !json.ok) {
-        throw new Error((json && json.error) || "Could not load courses");
-      }
-
-      const items = Array.isArray(json.items) ? json.items : [];
-      const certificateNameNeedsConfirmation = !!(json.account && json.account.certificateNameNeedsConfirmation);
+  function renderPurchasedCourses(items, account) {
+      const certificateNameNeedsConfirmation = !!(account && account.certificateNameNeedsConfirmation);
       const ownedSlugs = items.map(function (item) {
         return normalizeSlug(item.courseSlug);
       });
       if (metaEl) {
-        const who = json.account && json.account.email ? ` for ${json.account.email}` : "";
+        const who = account && account.email ? ` for ${account.email}` : "";
         const note = certificateNameNeedsConfirmation
           ? " Confirm your profile name in Dashboard Profile to enable certificate issuance."
           : "";
@@ -502,7 +503,8 @@
             const certificateProofLink = String(item.certificateProofLink || "").trim();
             const proofSubmissionUnlocked = completionPercent >= 100;
             const proofNameConfirmed = !certificateNameNeedsConfirmation;
-            const proofSubmitEnabled = proofSubmissionUnlocked && proofNameConfirmed && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
+            const needsWebsiteProof = !!certificateProofRequired;
+            const proofSubmitEnabled = needsWebsiteProof && proofSubmissionUnlocked && proofNameConfirmed && certificateProofStatus !== "approved" && certificateProofStatus !== "pending";
             const certificateProofBadge = certificateProofStatus === "approved"
               ? '<span data-certificate-proof-badge="' + escapeHtml(item.courseSlug) + '" class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Proof approved</span>'
               : certificateProofStatus === "pending"
@@ -513,14 +515,19 @@
             const certificateBlock = [
                   '<div class="mt-3 rounded-xl border border-gray-200 bg-white/70 p-3">',
                   '<div class="flex flex-wrap items-center gap-2">',
-                  '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Certificate</p>',
-                  !isSchool && certificateProofRequired ? certificateProofBadge : "",
+                  '<p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Learning Support</p>',
+                  !isSchool && needsWebsiteProof ? certificateProofBadge : "",
                   "</div>",
-                  `<p class="mt-1 text-xs text-gray-600">Complete all lessons and submit your website link to unlock certificate. Progress: ${escapeHtml(String(completedLessons))}/${escapeHtml(String(totalLessons))} (${escapeHtml(String(completionPercent))}%).</p>`,
-                  `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                  `<p class="mt-1 text-xs text-gray-600">${
+                    !isSchool && needsWebsiteProof
+                      ? "Complete all lessons and submit your website link to unlock certificate."
+                      : "Complete all lessons to unlock certificate."
+                  } Progress: ${escapeHtml(String(completedLessons))}/${escapeHtml(String(totalLessons))} (${escapeHtml(String(completionPercent))}%).</p>`,
+                  (!isSchool && needsWebsiteProof) ? `<div class="mt-2 flex flex-col gap-2 sm:flex-row">
                         <input type="url" ${isSchool ? `data-school-website-input="${escapeHtml(item.courseSlug)}"` : `data-certificate-proof-input="${escapeHtml(item.courseSlug)}"`} class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm ${!isSchool && !proofSubmitEnabled ? "bg-gray-100 text-gray-500" : ""}" placeholder="https://yourwebsite.com" value="${escapeHtml(isSchool ? (item.schoolWebsiteUrl || "") : certificateProofLink)}" ${!isSchool && !proofSubmitEnabled ? "disabled" : ""} />
                         <button type="button" ${isSchool ? `data-submit-school-website="${escapeHtml(item.courseSlug)}"` : `data-submit-certificate-proof="${escapeHtml(item.courseSlug)}" data-certificate-proof-enabled="${proofSubmitEnabled ? "1" : "0"}"`} class="inline-flex w-full items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[128px] sm:flex-none" ${!isSchool && !proofSubmitEnabled ? "disabled" : ""}>Submit Proof</button>
                       </div>`
+                  : ""
                   ,
                   isSchool
                     ? `<p data-school-website-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${websiteSubmittedAt ? "text-emerald-700" : "text-gray-500"}">${
@@ -528,7 +535,7 @@
                         ? "Submitted: " + escapeHtml(websiteSubmittedAt)
                         : "No proof submitted yet."
                     }</p>`
-                    : `<p data-certificate-proof-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${
+                    : (needsWebsiteProof ? `<p data-certificate-proof-status="${escapeHtml(item.courseSlug)}" class="mt-2 text-xs ${
                       certificateProofStatus === "approved"
                         ? "text-emerald-700"
                         : certificateProofStatus === "pending"
@@ -548,7 +555,7 @@
                             : certificateProofStatus === "rejected"
                               ? "Rejected. Submit an improved website proof link."
                               : "No proof submitted yet."
-                    }</p>`,
+                    }</p>` : ""),
                   (isSchool ? schoolCertificateUrl : individualCertificateUrl)
                     ? [
                         `<a href="${escapeHtml(isSchool ? schoolCertificateUrl : individualCertificateUrl)}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600">Download Certificate</a>`,
@@ -558,17 +565,17 @@
                       ].join("")
                     : isPending
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate becomes available after payment verification and full lesson completion.</p>'
-                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateProofStatus === "rejected"
+                    : !isSchool && needsWebsiteProof && completionPercent >= 100 && certificateProofStatus === "rejected"
                       ? '<p class="mt-1 text-xs text-rose-700">Certificate is locked. Your proof link was rejected, submit an improved website link.</p>'
-                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateNameNeedsConfirmation
+                    : !isSchool && needsWebsiteProof && completionPercent >= 100 && certificateNameNeedsConfirmation
                       ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
-                    : !isSchool && certificateProofRequired && completionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
+                    : !isSchool && needsWebsiteProof && completionPercent >= 100 && certificateProofStatus !== "pending" && certificateProofStatus !== "approved"
                       ? '<p class="mt-1 text-xs text-gray-600">Certificate is locked. Submit your website link to unlock it.</p>'
                     : completionPercent >= 100 && certificateNameNeedsConfirmation
                       ? '<p class="mt-1 text-xs text-amber-700">Certificate is ready but paused. Confirm your profile name in Dashboard Profile to issue it.</p>'
-                    : !isSchool && certificateProofRequired
+                    : !isSchool && needsWebsiteProof
                       ? ""
-                    : `<p class="mt-1 text-xs text-gray-600">Complete all lessons to unlock certificate. Progress: ${escapeHtml(String(completedLessons))}/${escapeHtml(String(totalLessons))} (${escapeHtml(String(completionPercent))}%).</p>`,
+                    : "",
                   "</div>",
                 ].join("");
             return [
@@ -602,6 +609,24 @@
           .join("");
       }
       renderDiscoverCourses(ownedSlugs);
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/.netlify/functions/user-purchased-courses", {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok) {
+        throw new Error((json && json.error) || "Could not load courses");
+      }
+
+      const items = Array.isArray(json.items) ? json.items : [];
+      renderPurchasedCourses(items, json.account || null);
     } catch (error) {
       if (metaEl) metaEl.textContent = "Could not load courses.";
       if (listEl) {

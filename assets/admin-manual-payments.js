@@ -1,6 +1,7 @@
 (function () {
   const appCard = document.getElementById("adminAppCard");
   const internalShell = document.getElementById("internalShell");
+  const batchManagerSection = document.getElementById("batchManagerSection");
 
   const courseFilter = document.getElementById("adminCourseFilter");
   const statusFilter = document.getElementById("adminStatusFilter");
@@ -96,6 +97,7 @@
   let lastBulkResendRunId = "";
   let latestBatches = [];
   let availableCourses = [];
+  let courseModeBySlug = {};
   let availableCoupons = [];
   let couponsLoadPromise = null;
   let addStudentBatchMetaByKey = {};
@@ -132,6 +134,7 @@
 
   function bootAppShell() {
     if (appCard) appCard.hidden = false;
+    if (batchManagerSection) batchManagerSection.classList.add("hidden");
     setAuthMode(false);
     setMessage("Loading...", "ok");
   }
@@ -146,6 +149,7 @@
 
   function selectedBatchKey() {
     if (!batchFilter) return "";
+    if (selectedCourseEnrollmentMode() === "immediate") return "all";
     return String(batchFilter.value || "").trim();
   }
 
@@ -153,6 +157,17 @@
     if (!courseFilter) return "prompt-to-profit";
     const value = canonicalCourseSlug(courseFilter.value);
     return value || "prompt-to-profit";
+  }
+
+  function selectedCourseEnrollmentMode() {
+    const summarySlug = selectedSummaryCourseSlug();
+    const slug = summarySlug && summarySlug !== "all" ? summarySlug : selectedCourseSlug();
+    return String(courseModeBySlug[slug] || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+  }
+
+  function selectedAddStudentCourseEnrollmentMode() {
+    const slug = selectedAddStudentCourseSlug();
+    return String(courseModeBySlug[slug] || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
   }
 
   function selectedAddStudentCourseSlug() {
@@ -168,6 +183,12 @@
       return item.slug === slug;
     });
     return String((found && found.label) || slug || "Course").trim();
+  }
+
+  function selectedUiScopedCourseSlug() {
+    const summarySlug = selectedSummaryCourseSlug();
+    if (summarySlug && summarySlug !== "all") return summarySlug;
+    return selectedCourseSlug();
   }
 
   function selectedTranscriptCourseSlug() {
@@ -271,6 +292,34 @@
   function setAddStudentDiscountVisibility() {
     if (!addStudentCouponWrap) return;
     addStudentCouponWrap.classList.toggle("hidden", !hasAddStudentDiscount());
+  }
+
+  function syncBatchUiVisibility() {
+    const hideBatchUi = selectedCourseEnrollmentMode() === "immediate";
+    if (batchFilter) {
+      const wrap = batchFilter.closest(".picker-wrap");
+      if (wrap) wrap.classList.toggle("hidden", hideBatchUi);
+      batchFilter.disabled = hideBatchUi;
+      if (hideBatchUi) batchFilter.value = "all";
+    }
+    if (summaryBatchFilter) {
+      const wrap = summaryBatchFilter.closest(".picker-wrap");
+      if (wrap) wrap.classList.toggle("hidden", hideBatchUi);
+      summaryBatchFilter.disabled = hideBatchUi;
+      if (hideBatchUi) summaryBatchFilter.value = "all";
+    }
+    if (bulkResendBtn) bulkResendBtn.classList.toggle("hidden", hideBatchUi);
+    if (activeBatchText) activeBatchText.classList.toggle("hidden", hideBatchUi);
+  }
+
+  function syncAddStudentBatchVisibility() {
+    const hideBatchUi = selectedAddStudentCourseEnrollmentMode() === "immediate";
+    if (!addStudentBatch) return;
+    const pickerWrap = addStudentBatch.closest(".picker-wrap");
+    const fieldBlock = pickerWrap && pickerWrap.parentElement;
+    if (fieldBlock) fieldBlock.classList.toggle("hidden", hideBatchUi);
+    addStudentBatch.disabled = hideBatchUi;
+    if (hideBatchUi) addStudentBatch.value = "";
   }
 
   function couponMatchesCourse(coupon, courseSlug) {
@@ -384,25 +433,35 @@
     items.forEach(function (item) {
       const slug = canonicalCourseSlug(item && item.slug);
       const label = String((item && item.label) || slug || "").trim();
+      const enrollmentMode = String(item && (item.enrollmentMode || item.enrollment_mode) || "batch").trim().toLowerCase() === "immediate"
+        ? "immediate"
+        : "batch";
       if (!slug) return;
       if (!merged.has(slug)) {
-        merged.set(slug, { slug: slug, label: label || slug });
+        merged.set(slug, { slug: slug, label: label || slug, enrollmentMode: enrollmentMode });
       }
     });
     availableCourses = Array.from(merged.values()).map(function (item) {
       return {
         slug: canonicalCourseSlug(item.slug),
         label: String(item.label || item.slug || "").trim(),
+        enrollmentMode: String(item.enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch",
       };
     }).filter(function (item) {
       return !!item.slug;
     });
     if (!availableCourses.length) availableCourses = FALLBACK_COURSES.slice();
+    courseModeBySlug = {};
+    availableCourses.forEach(function (item) {
+      courseModeBySlug[item.slug] = item.enrollmentMode || "batch";
+    });
     setCourseFilterOptions(availableCourses);
     setSummaryCourseFilterOptions(availableCourses);
     setAddStudentCourseOptions(availableCourses);
     setTranscriptCourseOptions(availableCourses);
     syncAddStudentCourseDisplay();
+    syncBatchUiVisibility();
+    syncAddStudentBatchVisibility();
     return availableCourses;
   }
 
@@ -581,8 +640,9 @@
       addStudentError.textContent = "";
       addStudentError.classList.add("hidden");
     }
-    if (addStudentCourse) addStudentCourse.value = selectedCourseSlug();
+    if (addStudentCourse) addStudentCourse.value = selectedUiScopedCourseSlug();
     syncAddStudentCourseDisplay();
+    syncAddStudentBatchVisibility();
     if (addStudentHasDiscount) addStudentHasDiscount.value = "no";
     if (addStudentCouponCode) addStudentCouponCode.value = "";
     setAddStudentDiscountVisibility();
@@ -1106,6 +1166,14 @@
 
   function renderBatchOptions(summary) {
     if (!batchFilter || !summary) return;
+    if (selectedCourseEnrollmentMode() === "immediate") {
+      batchFilter.innerHTML = '<option value="all">All enrollments</option>';
+      batchFilter.value = "all";
+      if (addStudentBatch) addStudentBatch.innerHTML = "";
+      if (activateBatchSelect) activateBatchSelect.innerHTML = "";
+      if (activeBatchText) activeBatchText.textContent = "";
+      return;
+    }
     const current = selectedBatchKey() || String(summary.batchKey || "");
     const batches = Array.isArray(summary.availableBatches) ? summary.availableBatches : latestBatches;
     const options = ['<option value="all">All batches</option>'];
@@ -1198,6 +1266,12 @@
 
   async function loadAddStudentBatches(courseSlug, preferredBatchKey) {
     if (!addStudentBatch) return;
+    const slug = canonicalCourseSlug(courseSlug || selectedAddStudentCourseSlug());
+    if (String(courseModeBySlug[slug] || "batch").trim().toLowerCase() === "immediate") {
+      addStudentBatchMetaByKey = {};
+      addStudentBatch.innerHTML = "";
+      return;
+    }
     const batches = await loadCourseBatches(courseSlug);
     addStudentBatchMetaByKey = {};
     batches.forEach(function (item) {
@@ -1301,9 +1375,16 @@
     const redirectOnAuthError = !!(options && options.redirectOnAuthError);
 
     const status = selectedStatus();
-    const requestedCourseSlug = canonicalCourseSlug((options && options.courseSlug) || selectedCourseSlug()) || selectedCourseSlug();
+    const summaryCourseScope = selectedSummaryCourseSlug();
+    const requestedCourseSlug = canonicalCourseSlug(
+      (options && options.courseSlug) ||
+      (summaryCourseScope && summaryCourseScope !== "all" ? summaryCourseScope : selectedCourseSlug())
+    ) || selectedCourseSlug();
+    const summaryBatchScope = selectedSummaryBatchKey();
     const requestedBatchKey = String(
-      (options && options.batchKey) !== undefined ? options.batchKey : selectedBatchKey()
+      (options && options.batchKey) !== undefined
+        ? options.batchKey
+        : ((summaryBatchScope && summaryBatchScope !== "all") ? summaryBatchScope : selectedBatchKey())
     ).trim();
     const requestedSummaryCourseSlugRaw = String(
       (options && options.summaryCourseSlug) !== undefined ? options.summaryCourseSlug : selectedSummaryCourseSlug()
@@ -1312,7 +1393,7 @@
       ? "all"
       : (canonicalCourseSlug(requestedSummaryCourseSlugRaw) || requestedCourseSlug);
     const requestedSummaryBatchKey = String(
-      (options && options.summaryBatchKey) !== undefined ? options.summaryBatchKey : selectedSummaryBatchKey()
+      (options && options.summaryBatchKey) !== undefined ? options.summaryBatchKey : summaryBatchScope
     ).trim() || "all";
     const search = searchInput ? searchInput.value.trim() : "";
     const qs = new URLSearchParams({
@@ -1754,6 +1835,7 @@
   if (addStudentCourse) {
     addStudentCourse.addEventListener("change", function () {
       syncAddStudentCourseDisplay();
+      syncAddStudentBatchVisibility();
       setAddStudentCouponOptions();
       loadAddStudentBatches(selectedAddStudentCourseSlug(), "").catch(function (error) {
         if (addStudentError) {
@@ -2294,6 +2376,24 @@
   if (courseFilter) {
     courseFilter.addEventListener("change", function () {
       const courseSlug = selectedCourseSlug();
+      syncBatchUiVisibility();
+      if (selectedCourseEnrollmentMode() === "immediate") {
+        renderBatchOptions({
+          availableBatches: [],
+          batchKey: "all",
+        });
+        if (summaryCourseFilter) summaryCourseFilter.value = courseSlug;
+        loadItems({
+          reconcile: false,
+          courseSlug: courseSlug,
+          batchKey: "all",
+          summaryCourseSlug: courseSlug,
+          summaryBatchKey: "all",
+        }).catch(function (error) {
+          setMessage(error.message || "Could not refresh enrollments for selected course", "error");
+        });
+        return;
+      }
       loadCourseBatches(courseSlug)
         .then(function (batches) {
           const preferredBatchKey = resolvePreferredBatchKey(batches, "");
@@ -2318,6 +2418,7 @@
 
   if (summaryCourseFilter) {
     summaryCourseFilter.addEventListener("change", function () {
+      syncBatchUiVisibility();
       if (summaryBatchFilter) summaryBatchFilter.value = "all";
       loadItems({ reconcile: false }).catch(function (error) {
         setMessage(error.message || "Could not refresh summary", "error");

@@ -34,6 +34,12 @@ exports.handler = async function (event) {
   const description = clean(body.course_description, 4000);
   const isPublished = body.is_published === true || Number(body.is_published) === 1;
   const releaseAt = clean(body.release_at, 64);
+  const enrollmentMode = clean(body.enrollment_mode, 24).toLowerCase() === "immediate" ? "immediate" : "batch";
+  const priceNgnMinorRaw = Number(body.price_ngn_minor);
+  const priceGbpMinorRaw = Number(body.price_gbp_minor);
+  const paymentMethods = Array.isArray(body.payment_methods) ? body.payment_methods : String(body.payment_methods || "");
+  const priceNgnMinor = Number.isFinite(priceNgnMinorRaw) && priceNgnMinorRaw > 0 ? Math.round(priceNgnMinorRaw) : null;
+  const priceGbpMinor = Number.isFinite(priceGbpMinorRaw) && priceGbpMinorRaw > 0 ? Math.round(priceGbpMinorRaw) : null;
 
   if (!slug) return json(400, { ok: false, error: "course_slug is required" });
   if (!title) return json(400, { ok: false, error: "course_title is required" });
@@ -46,39 +52,47 @@ exports.handler = async function (event) {
       course_slug: slug,
       course_title: title,
       course_description: description,
+      enrollment_mode: enrollmentMode,
+      price_ngn_minor: priceNgnMinor,
+      price_gbp_minor: priceGbpMinor,
+      payment_methods: paymentMethods,
       is_published: isPublished,
       release_at: releaseAt || null,
     });
-    await ensureCourseBatchesTable(pool);
-    const courseSlug = clean(course && course.course_slug, 120).toLowerCase();
-    const batches = await listCourseBatches(pool, courseSlug);
-    if (!Array.isArray(batches) || batches.length === 0) {
-      const created = await createCourseBatch(pool, {
-        courseSlug,
-        batchLabel: "Batch 1",
-        batchKey: "batch-1",
-        status: "open",
-        paystackReferencePrefix: prefixFromSlug(courseSlug),
-      });
-      if (created && created.batch_key) {
-        await activateCourseBatch(pool, {
+    if (enrollmentMode === "batch") {
+      await ensureCourseBatchesTable(pool);
+      const courseSlug = clean(course && course.course_slug, 120).toLowerCase();
+      const batches = await listCourseBatches(pool, courseSlug);
+      if (!Array.isArray(batches) || batches.length === 0) {
+        const created = await createCourseBatch(pool, {
           courseSlug,
-          batchKey: created.batch_key,
-          batchStartAt: created.batch_start_at || null,
+          batchLabel: "Batch 1",
+          batchKey: "batch-1",
+          status: "open",
+          paystackReferencePrefix: prefixFromSlug(courseSlug),
+          paystackAmountMinor: priceNgnMinor,
+          paypalAmountMinor: priceGbpMinor,
         });
-      }
-    } else {
-      const hasActive = batches.some(function (row) {
-        return Number(row && row.is_active || 0) === 1;
-      });
-      if (!hasActive) {
-        const first = batches[0];
-        if (first && first.batch_key) {
+        if (created && created.batch_key) {
           await activateCourseBatch(pool, {
             courseSlug,
-            batchKey: String(first.batch_key || ""),
-            batchStartAt: first.batch_start_at || null,
+            batchKey: created.batch_key,
+            batchStartAt: created.batch_start_at || null,
           });
+        }
+      } else {
+        const hasActive = batches.some(function (row) {
+          return Number(row && row.is_active || 0) === 1;
+        });
+        if (!hasActive) {
+          const first = batches[0];
+          if (first && first.batch_key) {
+            await activateCourseBatch(pool, {
+              courseSlug,
+              batchKey: String(first.batch_key || ""),
+              batchStartAt: first.batch_start_at || null,
+            });
+          }
         }
       }
     }

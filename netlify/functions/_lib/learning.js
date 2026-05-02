@@ -156,6 +156,20 @@ function toSqlDateTime(value) {
   return d.toISOString().slice(0, 19).replace("T", " ");
 }
 
+function normalizePaymentMethods(input) {
+  const raw = Array.isArray(input) ? input.join(",") : String(input || "");
+  const tokens = raw
+    .split(/[,\s]+/)
+    .map(function (part) { return clean(part, 40).toLowerCase(); })
+    .filter(Boolean);
+  const allowed = [];
+  if (tokens.indexOf("paystack") !== -1) allowed.push("paystack");
+  if (tokens.indexOf("paypal") !== -1) allowed.push("paypal");
+  if (tokens.indexOf("manual_transfer") !== -1 || tokens.indexOf("manual") !== -1) allowed.push("manual_transfer");
+  if (!allowed.length) return "paystack,paypal,manual_transfer";
+  return allowed.join(",");
+}
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -193,6 +207,10 @@ async function ensureLearningTables(pool) {
       course_slug VARCHAR(120) NOT NULL,
       course_title VARCHAR(220) NOT NULL,
       course_description TEXT NULL,
+      enrollment_mode VARCHAR(24) NOT NULL DEFAULT 'batch',
+      price_ngn_minor INT NULL,
+      price_gbp_minor INT NULL,
+      payment_methods VARCHAR(120) NULL,
       is_published TINYINT(1) NOT NULL DEFAULT 0,
       release_at DATETIME NULL,
       created_at DATETIME NOT NULL,
@@ -207,6 +225,10 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_slug VARCHAR(120) NOT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_title VARCHAR(220) NOT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN course_description TEXT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN enrollment_mode VARCHAR(24) NOT NULL DEFAULT 'batch'`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_ngn_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_gbp_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN payment_methods VARCHAR(120) NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN release_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
@@ -397,12 +419,15 @@ async function ensureLearningTables(pool) {
     const title = clean(cfg && cfg.name, 220) || titleizeSlug(slug) || slug;
     await pool.query(
       `INSERT INTO ${COURSES_TABLE}
-        (course_slug, course_title, course_description, is_published, release_at, created_at, updated_at)
-       VALUES (?, ?, NULL, 1, NULL, ?, ?)
+        (course_slug, course_title, course_description, enrollment_mode, price_ngn_minor, price_gbp_minor, is_published, release_at, created_at, updated_at)
+       VALUES (?, ?, NULL, 'batch', ?, ?, 1, NULL, ?, ?)
        ON DUPLICATE KEY UPDATE
         course_title = VALUES(course_title),
+        enrollment_mode = IF(COALESCE(${COURSES_TABLE}.enrollment_mode, '') = '', VALUES(enrollment_mode), ${COURSES_TABLE}.enrollment_mode),
+        price_ngn_minor = IF(${COURSES_TABLE}.price_ngn_minor IS NULL, VALUES(price_ngn_minor), ${COURSES_TABLE}.price_ngn_minor),
+        price_gbp_minor = IF(${COURSES_TABLE}.price_gbp_minor IS NULL, VALUES(price_gbp_minor), ${COURSES_TABLE}.price_gbp_minor),
         updated_at = VALUES(updated_at)`,
-      [slug, title, nowSql(), nowSql()]
+      [slug, title, 1075000, 2400, nowSql(), nowSql()]
     );
   }
 
@@ -971,6 +996,10 @@ async function listLearningCourses(pool) {
             course_slug,
             course_title,
             course_description,
+            enrollment_mode,
+            price_ngn_minor,
+            price_gbp_minor,
+            payment_methods,
             is_published,
             DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
             created_at,
@@ -1009,6 +1038,10 @@ async function findLearningCourseBySlug(pool, courseSlug) {
             course_slug,
             course_title,
             course_description,
+            enrollment_mode,
+            price_ngn_minor,
+            price_gbp_minor,
+            payment_methods,
             is_published,
             DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
             created_at,
@@ -1027,6 +1060,13 @@ async function upsertLearningCourse(pool, input) {
   const slug = clean(input && input.course_slug, 120).toLowerCase();
   const title = clean(input && input.course_title, 220) || titleizeSlug(slug) || "Course";
   const description = clean(input && input.course_description, 4000) || null;
+  const modeRaw = clean(input && input.enrollment_mode, 24).toLowerCase();
+  const enrollmentMode = modeRaw === "immediate" ? "immediate" : "batch";
+  const priceNgnMinorRaw = Number(input && input.price_ngn_minor);
+  const priceGbpMinorRaw = Number(input && input.price_gbp_minor);
+  const paymentMethods = normalizePaymentMethods(input && input.payment_methods);
+  const priceNgnMinor = Number.isFinite(priceNgnMinorRaw) && priceNgnMinorRaw > 0 ? Math.round(priceNgnMinorRaw) : null;
+  const priceGbpMinor = Number.isFinite(priceGbpMinorRaw) && priceGbpMinorRaw > 0 ? Math.round(priceGbpMinorRaw) : null;
   const isPublished = input && (input.is_published === true || Number(input.is_published) === 1) ? 1 : 0;
   const releaseAt = toSqlDateTime(input && input.release_at);
 
@@ -1037,16 +1077,20 @@ async function upsertLearningCourse(pool, input) {
   if (Number.isFinite(id) && id > 0) {
     await pool.query(
       `UPDATE ${COURSES_TABLE}
-       SET course_slug = ?, course_title = ?, course_description = ?, is_published = ?, release_at = ?, updated_at = ?
+       SET course_slug = ?, course_title = ?, course_description = ?, enrollment_mode = ?, price_ngn_minor = ?, price_gbp_minor = ?, payment_methods = ?, is_published = ?, release_at = ?, updated_at = ?
        WHERE id = ?
        LIMIT 1`,
-      [slug, title, description, isPublished, releaseAt, now, id]
+      [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, paymentMethods, isPublished, releaseAt, now, id]
     );
     const [rows] = await pool.query(
       `SELECT id,
               course_slug,
               course_title,
               course_description,
+              enrollment_mode,
+              price_ngn_minor,
+              price_gbp_minor,
+              payment_methods,
               is_published,
               DATE_FORMAT(release_at, '%Y-%m-%d %H:%i:%s') AS release_at,
               created_at,
@@ -1061,15 +1105,19 @@ async function upsertLearningCourse(pool, input) {
 
   await pool.query(
     `INSERT INTO ${COURSES_TABLE}
-      (course_slug, course_title, course_description, is_published, release_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+      (course_slug, course_title, course_description, enrollment_mode, price_ngn_minor, price_gbp_minor, payment_methods, is_published, release_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
       course_title = VALUES(course_title),
       course_description = VALUES(course_description),
+      enrollment_mode = VALUES(enrollment_mode),
+      price_ngn_minor = VALUES(price_ngn_minor),
+      price_gbp_minor = VALUES(price_gbp_minor),
+      payment_methods = VALUES(payment_methods),
       is_published = VALUES(is_published),
       release_at = VALUES(release_at),
       updated_at = VALUES(updated_at)`,
-    [slug, title, description, isPublished, releaseAt, now, now]
+    [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, paymentMethods, isPublished, releaseAt, now, now]
   );
   return findLearningCourseBySlug(pool, slug);
 }
@@ -1204,6 +1252,7 @@ module.exports = {
   isListableCourseSlug,
   findLearningCourseBySlug,
   upsertLearningCourse,
+  normalizePaymentMethods,
   upsertLesson,
   backfillLearningFromLegacyAssetColumns,
   ensureCourseSlugForeignKey,

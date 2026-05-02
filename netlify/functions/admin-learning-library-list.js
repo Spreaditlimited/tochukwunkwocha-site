@@ -4,6 +4,7 @@ const { requireAdminSession } = require("./_lib/admin-auth");
 const {
   ensureLearningTables,
   listLearningCourses,
+  COURSES_TABLE,
   VIDEO_ASSETS_TABLE,
   MODULES_TABLE,
   COURSE_MODULES_TABLE,
@@ -23,6 +24,28 @@ let hasLessonSignLanguageColumnCached = null;
 let hasLessonAccessibilityStatusColumnCached = null;
 let hasCourseModuleMappingsTableCached = null;
 const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
+
+async function safeAlter(pool, sql) {
+  try {
+    await pool.query(sql);
+  } catch (error) {
+    const msg = String((error && error.message) || "").toLowerCase();
+    if (
+      msg.indexOf("duplicate column") !== -1 ||
+      msg.indexOf("already exists") !== -1
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
+async function ensureCourseModeAndPriceColumns(pool) {
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN enrollment_mode VARCHAR(24) NOT NULL DEFAULT 'batch'`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_ngn_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_gbp_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN payment_methods VARCHAR(120) NULL`);
+}
 
 async function hasCourseModuleMappingsTable(pool) {
   if (hasCourseModuleMappingsTableCached === true) return true;
@@ -179,6 +202,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    await ensureCourseModeAndPriceColumns(pool);
     await ensureCourseBatchesTable(pool);
     const courses = await listLearningCourses(pool);
     const hasBatchKey = await hasDripBatchKeyColumn(pool);
@@ -283,6 +307,10 @@ exports.handler = async function (event) {
 
     const [courseBatches] = await pool.query(
       `SELECT course_slug, batch_key, batch_label, status, is_active,
+              paystack_reference_prefix,
+              paystack_amount_minor,
+              paypal_amount_minor,
+              brevo_list_id,
               DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
        FROM course_batches
        ORDER BY course_slug ASC, batch_start_at ASC, batch_key ASC`

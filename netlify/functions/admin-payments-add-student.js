@@ -8,6 +8,7 @@ const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { sendEmail } = require("./_lib/email");
 const { siteBaseUrl } = require("./_lib/payments");
 const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
@@ -91,13 +92,26 @@ exports.handler = async function (event) {
   const pool = getPool();
 
   try {
+    await ensureLearningTables(pool);
+    const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    if (!learningCourse) {
+      return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
+    }
+    const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
+      ? "immediate"
+      : "batch";
     await ensureManualPaymentsTable(pool);
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
     await ensureStudentAuthTables(pool);
-    const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
-    if (!batch) return json(500, { ok: false, error: "No active batch configured" });
-    const baseAmountMinor = Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
+    const batch = enrollmentMode === "batch"
+      ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
+      : null;
+    if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+    const baseAmountMinor = enrollmentMode === "immediate"
+      ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
+      : Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
     const currency = "NGN";
     const pricing = {
       baseAmountMinor,
@@ -128,46 +142,70 @@ exports.handler = async function (event) {
       pricing.couponId = Number((evaluated.coupon && evaluated.coupon.id) || 0) || null;
     }
 
-    const [existingManual] = await pool.query(
-      `SELECT id
-       FROM course_manual_payments
-       WHERE course_slug = ?
-         AND batch_key = ?
-         AND email = ?
-         AND status = 'approved'
-       ORDER BY id DESC
-       LIMIT 1`,
-      [courseSlug, batch.batch_key, email]
-    );
+    const existingManualSql = enrollmentMode === "immediate"
+      ? `SELECT id
+         FROM course_manual_payments
+         WHERE course_slug = ?
+           AND email = ?
+           AND status = 'approved'
+           AND (batch_key IS NULL OR batch_key = '')
+         ORDER BY id DESC
+         LIMIT 1`
+      : `SELECT id
+         FROM course_manual_payments
+         WHERE course_slug = ?
+           AND batch_key = ?
+           AND email = ?
+           AND status = 'approved'
+         ORDER BY id DESC
+         LIMIT 1`;
+    const existingManualParams = enrollmentMode === "immediate"
+      ? [courseSlug, email]
+      : [courseSlug, batch.batch_key, email];
+    const [existingManual] = await pool.query(existingManualSql, existingManualParams);
     if (existingManual && existingManual.length) {
       return json(409, {
         ok: false,
-        error: `This email already has an approved payment in ${batch.batch_label}.`,
+        error: enrollmentMode === "immediate"
+          ? "This email already has an approved immediate-access payment for this course."
+          : `This email already has an approved payment in ${batch.batch_label}.`,
       });
     }
 
-    const [existingOrder] = await pool.query(
-      `SELECT id
-       FROM course_orders
-       WHERE course_slug = ?
-         AND batch_key = ?
-         AND email = ?
-         AND status = 'paid'
-       ORDER BY id DESC
-       LIMIT 1`,
-      [courseSlug, batch.batch_key, email]
-    );
+    const existingOrderSql = enrollmentMode === "immediate"
+      ? `SELECT id
+         FROM course_orders
+         WHERE course_slug = ?
+           AND email = ?
+           AND status = 'paid'
+           AND (batch_key IS NULL OR batch_key = '')
+         ORDER BY id DESC
+         LIMIT 1`
+      : `SELECT id
+         FROM course_orders
+         WHERE course_slug = ?
+           AND batch_key = ?
+           AND email = ?
+           AND status = 'paid'
+         ORDER BY id DESC
+         LIMIT 1`;
+    const existingOrderParams = enrollmentMode === "immediate"
+      ? [courseSlug, email]
+      : [courseSlug, batch.batch_key, email];
+    const [existingOrder] = await pool.query(existingOrderSql, existingOrderParams);
     if (existingOrder && existingOrder.length) {
       return json(409, {
         ok: false,
-        error: `This email already has a paid order in ${batch.batch_label}.`,
+        error: enrollmentMode === "immediate"
+          ? "This email already has a paid immediate-access order for this course."
+          : `This email already has a paid order in ${batch.batch_label}.`,
       });
     }
 
     const paymentUuid = await createManualPayment(pool, {
       courseSlug,
-      batchKey: batch.batch_key,
-      batchLabel: batch.batch_label,
+      batchKey: batch ? batch.batch_key : null,
+      batchLabel: batch ? batch.batch_label : "Immediate Access",
       firstName,
       email,
       country,
@@ -183,7 +221,9 @@ exports.handler = async function (event) {
       proofPublicId,
     });
 
-    const baseNote = `Added by admin as external bank payment (${batch.batch_label})`;
+    const baseNote = enrollmentMode === "immediate"
+      ? "Added by admin as external bank payment (Immediate Access)"
+      : `Added by admin as external bank payment (${batch.batch_label})`;
     const reviewNote = adminNote
       ? `${ADMIN_ADD_MARKER} ${baseNote}. Note: ${adminNote}`
       : `${ADMIN_ADD_MARKER} ${baseNote}`;
@@ -194,26 +234,47 @@ exports.handler = async function (event) {
       reviewNote,
     });
     await pool.query(
-      `UPDATE course_manual_payments
-       SET status = 'rejected',
-           reviewed_by = 'admin',
-           review_note = ?,
-           reviewed_at = ?,
-           updated_at = ?
-       WHERE course_slug = ?
-         AND batch_key = ?
-         AND email = ?
-         AND status = 'pending_verification'
-         AND payment_uuid <> ?`,
-      [
-        `[ADMIN_ADD_STUDENT] Superseded by admin-added approved payment ${paymentUuid}.`,
-        nowSql(),
-        nowSql(),
-        courseSlug,
-        batch.batch_key,
-        email,
-        paymentUuid,
-      ]
+      enrollmentMode === "immediate"
+        ? `UPDATE course_manual_payments
+           SET status = 'rejected',
+               reviewed_by = 'admin',
+               review_note = ?,
+               reviewed_at = ?,
+               updated_at = ?
+           WHERE course_slug = ?
+             AND email = ?
+             AND status = 'pending_verification'
+             AND (batch_key IS NULL OR batch_key = '')
+             AND payment_uuid <> ?`
+        : `UPDATE course_manual_payments
+           SET status = 'rejected',
+               reviewed_by = 'admin',
+               review_note = ?,
+               reviewed_at = ?,
+               updated_at = ?
+           WHERE course_slug = ?
+             AND batch_key = ?
+             AND email = ?
+             AND status = 'pending_verification'
+             AND payment_uuid <> ?`,
+      enrollmentMode === "immediate"
+        ? [
+            `[ADMIN_ADD_STUDENT] Superseded by admin-added approved payment ${paymentUuid}.`,
+            nowSql(),
+            nowSql(),
+            courseSlug,
+            email,
+            paymentUuid,
+          ]
+        : [
+            `[ADMIN_ADD_STUDENT] Superseded by admin-added approved payment ${paymentUuid}.`,
+            nowSql(),
+            nowSql(),
+            courseSlug,
+            batch.batch_key,
+            email,
+            paymentUuid,
+          ]
     );
 
     let createdAccount = false;
@@ -256,7 +317,7 @@ exports.handler = async function (event) {
       }
     }
 
-    const synced = await syncBrevoSubscriber({ fullName: firstName, email, listId: batch.brevo_list_id || null });
+    const synced = await syncBrevoSubscriber({ fullName: firstName, email, listId: batch ? (batch.brevo_list_id || null) : null });
     if (synced.ok) {
       await markMainSynced(pool, paymentUuid);
     }
@@ -264,8 +325,8 @@ exports.handler = async function (event) {
     return json(200, {
       ok: true,
       paymentUuid,
-      batchKey: batch.batch_key,
-      batchLabel: batch.batch_label,
+      batchKey: batch ? batch.batch_key : null,
+      batchLabel: batch ? batch.batch_label : "Immediate Access",
       flodeskMainSynced: !!synced.ok,
       accountCreated: createdAccount,
       welcomeEmailSent,

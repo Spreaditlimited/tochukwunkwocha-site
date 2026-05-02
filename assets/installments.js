@@ -55,6 +55,11 @@
   const createPlanBtn = document.getElementById("walletCreatePlanBtn");
   const plansWrap = document.getElementById("walletPlans");
   const planMsg = document.getElementById("walletPlanMsg");
+  const feedbackModal = document.getElementById("walletFeedbackModal");
+  const feedbackEyebrow = document.getElementById("walletFeedbackEyebrow");
+  const feedbackTitle = document.getElementById("walletFeedbackTitle");
+  const feedbackMessage = document.getElementById("walletFeedbackMessage");
+  const feedbackAcknowledgeBtn = document.getElementById("walletFeedbackAcknowledgeBtn");
 
   let dashboard = null;
   let schoolStudentChallenge = "";
@@ -223,6 +228,28 @@
     el.classList.remove("error", "ok");
     if (type === "error") el.classList.add("error");
     if (type === "ok") el.classList.add("ok");
+  }
+
+  function openFeedbackModal(config) {
+    if (!feedbackModal || !feedbackTitle || !feedbackMessage) return;
+    const tone = String(config && config.tone || "notice").toLowerCase();
+    if (feedbackEyebrow) {
+      feedbackEyebrow.textContent = tone === "error" ? "Attention" : tone === "success" ? "Success" : "Notice";
+      feedbackEyebrow.className = "text-xs font-semibold uppercase tracking-wider " + (tone === "error" ? "text-red-600" : "text-brand-600");
+    }
+    feedbackTitle.textContent = String(config && config.title || "Update");
+    feedbackMessage.textContent = String(config && config.message || "");
+    feedbackModal.classList.remove("hidden");
+    feedbackModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (feedbackAcknowledgeBtn) feedbackAcknowledgeBtn.focus();
+  }
+
+  function closeFeedbackModal() {
+    if (!feedbackModal) return;
+    feedbackModal.classList.add("hidden");
+    feedbackModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
   }
 
   function profileFromDashboard() {
@@ -667,10 +694,18 @@
       if (error && error.code === "PASSWORD_RESET_REQUIRED") {
         try {
           await requestPasswordReset(email);
-          setMsg(authMsg, "Password reset required. We sent a reset link to your email.", "ok");
+          openFeedbackModal({
+            tone: "success",
+            title: "Reset link sent",
+            message: "Password reset is required before sign in. We have sent a reset link to your email.",
+          });
           return;
         } catch (resetError) {
-          setMsg(authMsg, resetError.message || "Password reset required. Could not send reset link.", "error");
+          openFeedbackModal({
+            tone: "error",
+            title: "Reset link not sent",
+            message: resetError.message || "Password reset is required, but we could not send your reset link right now.",
+          });
           return;
         }
       }
@@ -865,7 +900,11 @@
         window.location.href = `/.netlify/functions/installment-paystack-return?reference=${encodeURIComponent(reference)}`;
       },
       onClose: function () {
-        setMsg(planMsg, "Payment window closed.", "");
+        openFeedbackModal({
+          tone: "error",
+          title: "Payment cancelled",
+          message: "You cancelled the payment and you have not been enrolled in the course yet.",
+        });
       },
     });
     handler.openIframe();
@@ -953,12 +992,30 @@
       const email = String((signInForm && signInForm.email && signInForm.email.value) || "").trim();
       requestPasswordReset(email)
         .then(function () {
-          setMsg(authMsg, "If the account exists, a reset link has been sent.", "ok");
+          openFeedbackModal({
+            tone: "success",
+            title: "Reset link sent",
+            message: "If an account exists for this email, a password reset link has been sent.",
+          });
         })
         .catch(function (error) {
-          setMsg(authMsg, error.message || "Could not send reset link.", "error");
+          openFeedbackModal({
+            tone: "error",
+            title: "Reset request failed",
+            message: error.message || "Could not send reset link.",
+          });
         });
     });
+  }
+
+  if (feedbackModal) {
+    feedbackModal.addEventListener("click", function (event) {
+      if (event.target.closest("[data-wallet-feedback-close]")) closeFeedbackModal();
+    });
+  }
+
+  if (feedbackAcknowledgeBtn) {
+    feedbackAcknowledgeBtn.addEventListener("click", closeFeedbackModal);
   }
 
   if (courseSelect) {
@@ -1130,6 +1187,13 @@
   const payment = String(qs.get("payment") || "").trim().toLowerCase();
   if (payment === "success") setMsg(planMsg, "Installment payment successful.", "ok");
   if (payment === "failed") setMsg(planMsg, "Installment payment failed.", "error");
+  if (payment === "cancelled") {
+    openFeedbackModal({
+      tone: "error",
+      title: "Payment cancelled",
+      message: "Your payment was cancelled and you have not been enrolled in the course yet.",
+    });
+  }
   if (payment) {
     const url = new URL(window.location.href);
     url.searchParams.delete("payment");
@@ -1157,6 +1221,9 @@
   setAuthView("signin");
   enforcePlanStartAvailability();
   document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && feedbackModal && !feedbackModal.classList.contains("hidden")) {
+      closeFeedbackModal();
+    }
     if (event.key === "Escape" && certConfirmModal && !certConfirmModal.classList.contains("hidden")) {
       closeCertificateConfirmModal();
     }

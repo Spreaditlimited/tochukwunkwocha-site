@@ -4,7 +4,7 @@ const { getPool } = require("./_lib/db");
 const { requireStudentSession } = require("./_lib/user-auth");
 const { getCourseName, canonicalizeCourseSlug } = require("./_lib/course-config");
 const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
-const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
+const { MODULES_TABLE, LESSONS_TABLE, COURSES_TABLE, ensureLearningTables } = require("./_lib/learning");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 const { ensureLearningAccessOverridesTable } = require("./_lib/learning-access-overrides");
 const {
@@ -118,6 +118,36 @@ async function loadCertificateProofRequirements(pool, courseSlugs) {
   } catch (error) {
     if (!isUnknownColumnError(error)) throw error;
   }
+  return map;
+}
+
+async function loadEnrollmentModeByCourse(pool, courseSlugs) {
+  const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
+  const map = new Map();
+  slugs.forEach(function (slug) {
+    map.set(slug, "batch");
+  });
+  if (!slugs.length) return map;
+  await ensureLearningTables(pool).catch(function () {
+    return false;
+  });
+  const placeholders = slugs.map(function () {
+    return "?";
+  }).join(",");
+  try {
+    const [rows] = await pool.query(
+      `SELECT course_slug, enrollment_mode
+       FROM ${COURSES_TABLE}
+       WHERE course_slug IN (${placeholders})`,
+      slugs
+    );
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      const slug = normalizeKey(row && row.course_slug);
+      if (!slug || !map.has(slug)) return;
+      const mode = clean(row && row.enrollment_mode, 24).toLowerCase() === "immediate" ? "immediate" : "batch";
+      map.set(slug, mode);
+    });
+  } catch (_error) {}
   return map;
 }
 
@@ -756,6 +786,7 @@ exports.handler = async function (event) {
       completionEligibleCourseSlugs
     );
     const proofRequirementByCourse = await loadCertificateProofRequirements(pool, individualEligibleCourseSlugs);
+    const enrollmentModeByCourse = await loadEnrollmentModeByCourse(pool, completionEligibleCourseSlugs);
     const proofStatusByCourse = await loadCertificateProofStatusByCourse(
       pool,
       Number(session.account.id || 0),
@@ -801,6 +832,7 @@ exports.handler = async function (event) {
       const completion = completionByCourse.get(courseSlug) || null;
       const certificate = individualCertificatesByCourse.get(courseSlug) || null;
       const proofCfg = proofRequirementByCourse.get(courseSlug) || { required: false, type: "website_link" };
+      const enrollmentMode = enrollmentModeByCourse.get(courseSlug) || "batch";
       const proof = proofStatusByCourse.get(courseSlug) || { status: "missing", submittedAt: null, link: "" };
       const derivedAccessExpiresAt = isSchool
         ? addOneYearIso(item.paidAt)
@@ -827,6 +859,7 @@ exports.handler = async function (event) {
         individualCertificateUrl: !isSchool && certificate ? String(certificate.certificateUrl || "") : "",
         certificateProofRequired: !isSchool && proofCfg.required === true,
         certificateProofType: !isSchool ? String(proofCfg.type || "website_link") : "",
+        enrollmentMode: String(enrollmentMode || "batch"),
         certificateProofStatus: !isSchool ? String(proof.status || "missing") : "missing",
         certificateProofSubmittedAt: !isSchool ? proof.submittedAt : null,
         certificateProofLink: !isSchool ? String(proof.link || "") : "",

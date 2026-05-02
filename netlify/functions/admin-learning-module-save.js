@@ -285,24 +285,27 @@ exports.handler = async function (event) {
     const moduleDescription = clean(body.module_description, 4000) || null;
     const sortOrder = Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0;
     const isActive = body.is_active === false || Number(body.is_active) === 0 ? 0 : 1;
-    const dripEnabled = body.drip_enabled === true || Number(body.drip_enabled) === 1 ? 1 : 0;
+    const dripEnabledInput = body.drip_enabled === true || Number(body.drip_enabled) === 1 ? 1 : 0;
     const applyToTitleGroup = body.apply_to_title_group === true;
 
     if (!courseSlug) return json(400, { ok: false, error: "course_slug is required" });
     if (!moduleTitle) return json(400, { ok: false, error: "module_title is required" });
     const existingCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!existingCourse) return json(400, { ok: false, error: "Create this course first before adding modules." });
+    const isImmediateCourse = String(existingCourse.enrollment_mode || "").trim().toLowerCase() === "immediate";
 
     const legacyDripAt = normalizeDripDateTime(body.drip_at);
     const legacyDripBatchKey = normalizeBatchKey(body.drip_batch_key);
-    if (dripEnabled && hasInvalidDripScheduleRows(body.drip_schedules)) {
+    if (dripEnabledInput && hasInvalidDripScheduleRows(body.drip_schedules)) {
       return json(400, { ok: false, error: "Set a valid drip date/time for every selected batch that is not marked Immediate access." });
     }
-    const schedules = buildValidatedSchedules(body.drip_schedules, {
+    const schedulesInput = buildValidatedSchedules(body.drip_schedules, {
       batch_key: legacyDripBatchKey,
       access_mode: body.access_mode || "drip",
       drip_at: legacyDripAt,
     });
+    const dripEnabled = isImmediateCourse ? 0 : dripEnabledInput;
+    const schedules = isImmediateCourse ? [] : schedulesInput;
     const courseBatchKeys = await listCourseBatchKeys(pool, courseSlug);
     if (dripEnabled && courseBatchKeys.length && !schedules.length) {
       return json(400, { ok: false, error: "Add at least one batch access rule when batch access control is enabled." });
