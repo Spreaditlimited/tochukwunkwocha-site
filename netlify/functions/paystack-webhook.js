@@ -69,6 +69,13 @@ exports.handler = async function (event) {
     if (!schoolResult.ok) {
       return json(404, { ok: false, error: schoolResult.error || "School order not found" });
     }
+    if (String(schoolResult.orderKind || "") === "advanced_seat_purchase") {
+      console.info("school_advanced_purchase_confirmed", {
+        school_id: Number(schoolResult.schoolId || 0),
+        order_uuid: String(schoolResult.orderUuid || ""),
+        seat_course_slug: String(schoolResult.seatCourseSlug || ""),
+      });
+    }
     await bindSchoolReferralAfterPayment(pool, {
       schoolId: schoolResult.schoolId,
       schoolOrderUuid: schoolResult.orderUuid,

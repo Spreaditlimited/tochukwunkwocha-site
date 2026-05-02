@@ -695,6 +695,38 @@ exports.handler = async function (event) {
       }
     });
 
+    const [schoolAccessRows] = await pool.query(
+      `SELECT
+         sa.course_slug,
+         DATE_FORMAT(sa.granted_at, '%Y-%m-%d %H:%i:%s') AS granted_at
+       FROM school_students ss
+       JOIN school_accounts sc ON sc.id = ss.school_id
+       JOIN school_student_course_access sa
+         ON sa.student_id = ss.id
+        AND sa.status = 'active'
+       WHERE (LOWER(ss.email) = ? OR ss.account_id = ?)
+         AND ss.status = 'active'
+         AND sc.status = 'active'
+         AND DATE_ADD(COALESCE(sc.paid_at, sc.created_at), INTERVAL 1 YEAR) >= NOW()`,
+      [email, Number(session.account.id || 0)]
+    );
+    (schoolAccessRows || []).forEach(function (row) {
+      const schoolCourseSlug = resolveSchoolCourseSlug(row && row.course_slug);
+      upsert(
+        {
+          course_slug: schoolCourseSlug,
+          batch_key: "school",
+          batch_label: "School Access",
+          batch_start_at: null,
+          paid_at: row.granted_at || null,
+          access_expires_at: null,
+        },
+        "school_upgrade",
+        "paid",
+        null
+      );
+    });
+
     const distinctOwnedSlugs = Array.from(
       new Set(
         Array.from(map.values())

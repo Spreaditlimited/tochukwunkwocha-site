@@ -7,7 +7,8 @@ const {
   createStudentAccount,
 } = require("./student-auth");
 const { canonicalizeCourseSlug } = require("./course-config");
-const { MODULES_TABLE, LESSONS_TABLE, ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
+const { getCourseDefaultAmountMinor } = require("./course-config");
+const { MODULES_TABLE, LESSONS_TABLE, ensureLearningTables, ensureCourseSlugForeignKey, findLearningCourseBySlug } = require("./learning");
 const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
 
 const SCHOOL_ORDERS_TABLE = "school_orders";
@@ -17,12 +18,18 @@ const SCHOOL_ADMIN_SESSIONS_TABLE = "school_admin_sessions";
 const SCHOOL_STUDENTS_TABLE = "school_students";
 const SCHOOL_CERTIFICATES_TABLE = "school_certificates";
 const SCHOOL_STUDENT_CODE_RESETS_TABLE = "school_student_code_resets";
+const SCHOOL_COURSE_SEAT_BALANCES_TABLE = "school_course_seat_balances";
+const SCHOOL_SEAT_LEDGER_TABLE = "school_seat_ledger";
+const SCHOOL_STUDENT_COURSE_ACCESS_TABLE = "school_student_course_access";
 
 const SCHOOL_ADMIN_COOKIE = "tws_school_admin_session";
 const SCHOOL_ADMIN_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 
 const DEFAULT_SCHOOLS_MIN_SEATS = 50;
 const DEFAULT_SCHOOLS_PRICE_PER_STUDENT_MINOR = 850000;
+const DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS = 5;
+const DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR = 850000;
+const DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR = 5000000;
 const DEFAULT_SITE_VAT_PERCENT = 7.5;
 const STUDENT_CODE_LENGTH = 10;
 const STUDENT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -163,6 +170,91 @@ function schoolsPricingConfig() {
   };
 }
 
+function schoolsAdvancedMinSeats() {
+  const raw = Number(process.env.SCHOOLS_ADVANCED_MIN_SEATS || DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS);
+  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS;
+  return Math.trunc(raw);
+}
+
+function schoolsAdvancedPricePerStudentMinor() {
+  const raw = Number(process.env.SCHOOLS_ADVANCED_PRICE_PER_STUDENT_NGN_MINOR || DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR);
+  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR;
+  return Math.trunc(raw);
+}
+
+function schoolsAdvancedPricingConfig(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const minSeats = schoolsAdvancedMinSeats();
+  const basePricePerStudentMinorRaw = Number(source.basePricePerStudentMinor);
+  const basePricePerStudentMinor = Number.isFinite(basePricePerStudentMinorRaw) && basePricePerStudentMinorRaw > 0
+    ? Math.trunc(basePricePerStudentMinorRaw)
+    : schoolsAdvancedPricePerStudentMinor();
+  const discountPerStudentMinorRaw = Number(
+    process.env.SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_NGN_MINOR || DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR
+  );
+  const discountPerStudentMinor = Number.isFinite(discountPerStudentMinorRaw) && discountPerStudentMinorRaw > 0
+    ? Math.trunc(discountPerStudentMinorRaw)
+    : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR;
+  const pricePerStudentMinor = Math.max(0, basePricePerStudentMinor - discountPerStudentMinor);
+  const vatPct = vatPercent();
+  const vatBps = Math.round(vatPct * 100);
+  return {
+    minSeats,
+    basePricePerStudentMinor,
+    discountPerStudentMinor,
+    pricePerStudentMinor,
+    vatPercent: vatPct,
+    vatBps,
+    courseSlug: "prompt-to-production",
+  };
+}
+
+function schoolsAdvancedPricingFromConfig(seatCountInput, cfgInput) {
+  const cfg = cfgInput && typeof cfgInput === "object" ? cfgInput : schoolsAdvancedPricingConfig();
+  const seats = Math.max(0, toInt(seatCountInput, 0));
+  const pricePerSeatMinor = cfg.pricePerStudentMinor;
+  const subtotalMinor = Math.max(0, seats * pricePerSeatMinor);
+  const vatBps = cfg.vatBps;
+  const vatMinor = Math.round((subtotalMinor * vatBps) / 10000);
+  const totalMinor = subtotalMinor + vatMinor;
+  return {
+    seats,
+    seatMinimum: cfg.minSeats,
+    pricePerSeatMinor,
+    vatPercent: cfg.vatPercent,
+    vatBps,
+    subtotalMinor,
+    vatMinor,
+    totalMinor,
+    currency: "NGN",
+    courseSlug: cfg.courseSlug,
+  };
+}
+
+async function resolveAdvancedCourseBasePriceMinor(pool) {
+  const fallback = getCourseDefaultAmountMinor("prompt-to-production");
+  if (!pool || typeof pool.query !== "function") return fallback;
+  try {
+    await ensureLearningTables(pool);
+    const learningCourse = await findLearningCourseBySlug(pool, "prompt-to-production");
+    const dbPriceMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+    if (Number.isFinite(dbPriceMinor) && dbPriceMinor > 0) return Math.round(dbPriceMinor);
+    return fallback;
+  } catch (_error) {
+    return fallback;
+  }
+}
+
+async function schoolsAdvancedPricingConfigForPool(pool) {
+  const basePricePerStudentMinor = await resolveAdvancedCourseBasePriceMinor(pool);
+  return schoolsAdvancedPricingConfig({ basePricePerStudentMinor });
+}
+
+async function schoolsAdvancedPricingForPool(pool, seatCountInput) {
+  const cfg = await schoolsAdvancedPricingConfigForPool(pool);
+  return schoolsAdvancedPricingFromConfig(seatCountInput, cfg);
+}
+
 function schoolsPricing(seatCountInput) {
   const cfg = schoolsPricingConfig();
   const seats = Math.max(0, toInt(seatCountInput, 0));
@@ -279,6 +371,57 @@ async function ensureSchoolTables(pool) {
       PRIMARY KEY (id),
       UNIQUE KEY uniq_school_uuid (school_uuid),
       KEY idx_school_course (course_slug, status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHOOL_COURSE_SEAT_BALANCES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      school_id BIGINT NOT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      seats_purchased INT NOT NULL DEFAULT 0,
+      seats_consumed INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_school_course_seat_balance (school_id, course_slug),
+      KEY idx_school_course_seat_balance_school (school_id, updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHOOL_SEAT_LEDGER_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      school_id BIGINT NOT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      entry_type VARCHAR(40) NOT NULL,
+      quantity INT NOT NULL,
+      source_order_uuid VARCHAR(64) NULL,
+      idempotency_key VARCHAR(140) NULL,
+      metadata_json LONGTEXT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_school_seat_ledger_idempotency (school_id, course_slug, entry_type, idempotency_key),
+      KEY idx_school_seat_ledger_school (school_id, course_slug, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHOOL_STUDENT_COURSE_ACCESS_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      school_id BIGINT NOT NULL,
+      student_id BIGINT NOT NULL,
+      account_id BIGINT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'active',
+      granted_source VARCHAR(60) NULL,
+      granted_by_admin_id BIGINT NULL,
+      granted_at DATETIME NOT NULL,
+      revoked_at DATETIME NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_school_student_course (student_id, course_slug),
+      KEY idx_school_student_course_school (school_id, course_slug, status),
+      KEY idx_school_student_course_account (account_id, course_slug, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
@@ -409,6 +552,8 @@ async function ensureSchoolTables(pool) {
   `);
 
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN school_id BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN order_kind VARCHAR(50) NOT NULL DEFAULT 'school_enrollment'`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN seat_course_slug VARCHAR(120) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN student_code VARCHAR(20) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN account_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_url VARCHAR(1000) NULL`);
@@ -418,6 +563,9 @@ async function ensureSchoolTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_hash VARCHAR(128) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_token_expires_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ADMINS_TABLE} ADD COLUMN reset_requested_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_SEAT_LEDGER_TABLE} ADD COLUMN source_order_uuid VARCHAR(64) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_SEAT_LEDGER_TABLE} ADD COLUMN idempotency_key VARCHAR(140) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_SEAT_LEDGER_TABLE} ADD UNIQUE KEY uniq_school_seat_ledger_idempotency (school_id, course_slug, entry_type, idempotency_key)`);
 
   await ensureCourseSlugForeignKey(pool, {
     tableName: SCHOOL_ORDERS_TABLE,
@@ -428,6 +576,21 @@ async function ensureSchoolTables(pool) {
     tableName: SCHOOL_ACCOUNTS_TABLE,
     columnName: "course_slug",
     constraintName: "fk_school_accounts_learning_course_slug",
+  });
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: SCHOOL_COURSE_SEAT_BALANCES_TABLE,
+    columnName: "course_slug",
+    constraintName: "fk_school_course_seat_balances_learning_course_slug",
+  });
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: SCHOOL_SEAT_LEDGER_TABLE,
+    columnName: "course_slug",
+    constraintName: "fk_school_seat_ledger_learning_course_slug",
+  });
+  await ensureCourseSlugForeignKey(pool, {
+    tableName: SCHOOL_STUDENT_COURSE_ACCESS_TABLE,
+    columnName: "course_slug",
+    constraintName: "fk_school_student_course_access_learning_course_slug",
   });
 }
 
@@ -719,36 +882,46 @@ async function createSchoolOrder(pool, input) {
   const adminEmail = normalizeEmail(input && input.adminEmail);
   const adminPhone = clean(input && input.adminPhone, 80);
   const courseSlug = clean(input && input.courseSlug, 120).toLowerCase() || "prompt-to-profit";
+  const seatCourseSlug = clean(input && input.seatCourseSlug, 120).toLowerCase() || courseSlug;
+  const orderKind = clean(input && input.orderKind, 50).toLowerCase() || "school_enrollment";
   const provider = clean(input && input.provider, 40).toLowerCase() || "paystack";
-  const pricing = schoolsPricing(input && input.seatsRequested);
+  const pricing = orderKind === "advanced_seat_purchase"
+    ? await schoolsAdvancedPricingForPool(pool, input && input.seatsRequested)
+    : schoolsPricing(input && input.seatsRequested);
 
   if (!schoolName || !adminName || !adminEmail) {
     throw new Error("School name, admin name, and valid admin email are required");
   }
-  if (courseSlug !== "prompt-to-profit") throw new Error("Only prompt-to-profit is available for schools right now");
+  if (orderKind === "advanced_seat_purchase") {
+    if (seatCourseSlug !== "prompt-to-production") throw new Error("Invalid advanced seat course.");
+  } else if (courseSlug !== "prompt-to-profit") {
+    throw new Error("Only prompt-to-profit is available for schools right now");
+  }
   if (pricing.seats < pricing.seatMinimum) throw new Error(`Minimum seats is ${pricing.seatMinimum}`);
 
   const orderUuid = `sord_${crypto.randomUUID().replace(/-/g, "")}`;
   const now = nowSql();
-  let existingSchoolId = 0;
-  const [existingRows] = await pool.query(
-    `SELECT o.school_id
-     FROM ${SCHOOL_ORDERS_TABLE} o
-     JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = o.school_id
-     WHERE o.admin_email = ?
-       AND o.status = 'paid'
-       AND o.school_id IS NOT NULL
-       AND sc.status = 'active'
-     ORDER BY o.paid_at DESC, o.id DESC
-     LIMIT 1`,
-    [adminEmail]
-  );
-  existingSchoolId = Number(existingRows && existingRows[0] && existingRows[0].school_id || 0);
+  let existingSchoolId = Number(input && input.schoolId || 0);
+  if (!(existingSchoolId > 0)) {
+    const [existingRows] = await pool.query(
+      `SELECT o.school_id
+       FROM ${SCHOOL_ORDERS_TABLE} o
+       JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = o.school_id
+       WHERE o.admin_email = ?
+         AND o.status = 'paid'
+         AND o.school_id IS NOT NULL
+         AND sc.status = 'active'
+       ORDER BY o.paid_at DESC, o.id DESC
+       LIMIT 1`,
+      [adminEmail]
+    );
+    existingSchoolId = Number(existingRows && existingRows[0] && existingRows[0].school_id || 0);
+  }
   await pool.query(
     `INSERT INTO ${SCHOOL_ORDERS_TABLE}
       (order_uuid, school_id, school_name, admin_name, admin_email, admin_phone, course_slug, seats_requested, currency,
-       price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, provider, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+       seat_course_slug, order_kind, price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, provider, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
     [
       orderUuid,
       existingSchoolId > 0 ? existingSchoolId : null,
@@ -759,6 +932,8 @@ async function createSchoolOrder(pool, input) {
       courseSlug,
       pricing.seats,
       pricing.currency,
+      seatCourseSlug,
+      orderKind,
       pricing.pricePerSeatMinor,
       pricing.vatBps,
       pricing.subtotalMinor,
@@ -809,7 +984,7 @@ async function markSchoolOrderPaidBy(pool, input) {
     await connection.beginTransaction();
 
     const [rows] = await connection.query(
-      `SELECT id, order_uuid, school_id, school_name, admin_name, admin_email, course_slug, seats_requested,
+      `SELECT id, order_uuid, school_id, school_name, admin_name, admin_email, course_slug, seat_course_slug, order_kind, seats_requested,
               price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, status
        FROM ${SCHOOL_ORDERS_TABLE}
        WHERE ${where.join(" OR ")}
@@ -840,7 +1015,12 @@ async function markSchoolOrderPaidBy(pool, input) {
       );
     }
 
+    const orderKind = clean(order.order_kind, 50).toLowerCase() || "school_enrollment";
+    const seatCourseSlug = clean(order.seat_course_slug, 120).toLowerCase() || clean(order.course_slug, 120).toLowerCase();
     let schoolId = Number(order.school_id || 0);
+    if (!schoolId && orderKind !== "school_enrollment") {
+      throw new Error("Advanced seat purchase order is not linked to a school account.");
+    }
     if (!schoolId) {
       const schoolUuid = `sch_${crypto.randomUUID().replace(/-/g, "")}`;
       const startsAt = now;
@@ -876,7 +1056,7 @@ async function markSchoolOrderPaidBy(pool, input) {
       schoolId = Number(schoolRows && schoolRows[0] && schoolRows[0].id || 0);
       if (!schoolId) throw new Error("Could not provision school account");
       await connection.query(`UPDATE ${SCHOOL_ORDERS_TABLE} SET school_id = ?, updated_at = ? WHERE id = ?`, [schoolId, nowSql(), Number(order.id)]);
-    } else if (!alreadyPaid) {
+    } else if (!alreadyPaid && orderKind === "school_enrollment") {
       const [schoolRows] = await connection.query(
         `SELECT seats_purchased, subtotal_minor, vat_minor, total_minor
          FROM ${SCHOOL_ACCOUNTS_TABLE}
@@ -908,6 +1088,58 @@ async function markSchoolOrderPaidBy(pool, input) {
           ]
         );
       }
+    }
+
+    if (!alreadyPaid && orderKind === "advanced_seat_purchase") {
+      const nowTxn = nowSql();
+      const qty = Number(order.seats_requested || 0);
+      const [balanceRows] = await connection.query(
+        `SELECT id, seats_purchased, seats_consumed
+         FROM ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+         WHERE school_id = ?
+           AND course_slug = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [schoolId, seatCourseSlug]
+      );
+      if (Array.isArray(balanceRows) && balanceRows.length) {
+        await connection.query(
+          `UPDATE ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+           SET seats_purchased = ?, updated_at = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [Number(balanceRows[0].seats_purchased || 0) + qty, nowTxn, Number(balanceRows[0].id)]
+        );
+      } else {
+        await connection.query(
+          `INSERT INTO ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+            (school_id, course_slug, seats_purchased, seats_consumed, created_at, updated_at)
+           VALUES (?, ?, ?, 0, ?, ?)`,
+          [schoolId, seatCourseSlug, qty, nowTxn, nowTxn]
+        );
+      }
+      await connection.query(
+        `INSERT INTO ${SCHOOL_SEAT_LEDGER_TABLE}
+          (school_id, course_slug, entry_type, quantity, source_order_uuid, idempotency_key, metadata_json, created_at, updated_at)
+         VALUES (?, ?, 'purchase', ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE id = id`,
+        [
+          schoolId,
+          seatCourseSlug,
+          qty,
+          clean(order.order_uuid, 64),
+          clean(order.order_uuid, 64),
+          JSON.stringify({ order_kind: orderKind, provider_reference: providerReference || null }),
+          nowTxn,
+          nowTxn,
+        ]
+      );
+      console.info("school_advanced_seats_credited", {
+        school_id: schoolId,
+        order_uuid: clean(order.order_uuid, 80),
+        seat_course_slug: seatCourseSlug,
+        quantity: qty,
+      });
     }
 
     let admin = await findSchoolAdminByEmail(connection, order.admin_email);
@@ -945,6 +1177,8 @@ async function markSchoolOrderPaidBy(pool, input) {
       adminName: clean(order.admin_name, 180),
       tempPassword,
       courseSlug: clean(order.course_slug, 120),
+      orderKind,
+      seatCourseSlug,
     };
   } catch (error) {
     try {
@@ -1397,6 +1631,220 @@ async function schoolAnalytics(pool, schoolId, courseSlug) {
   };
 }
 
+async function getSchoolAdvancedSeatSummary(pool, schoolId) {
+  const targetSchoolId = Number(schoolId);
+  const courseSlug = "prompt-to-production";
+  const [rows] = await pool.query(
+    `SELECT seats_purchased, seats_consumed
+     FROM ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+     WHERE school_id = ?
+       AND course_slug = ?
+     LIMIT 1`,
+    [targetSchoolId, courseSlug]
+  );
+  const purchased = Number(rows && rows[0] && rows[0].seats_purchased || 0);
+  const consumed = Number(rows && rows[0] && rows[0].seats_consumed || 0);
+  return {
+    course_slug: courseSlug,
+    seats_purchased: purchased,
+    seats_used: consumed,
+    seats_available: Math.max(0, purchased - consumed),
+  };
+}
+
+async function listSchoolAdvancedUpgradeCandidates(pool, schoolId, input) {
+  const targetSchoolId = Number(schoolId);
+  const includeDisabled = !!(input && input.includeDisabled);
+  const [rows] = await pool.query(
+    `SELECT
+       ss.id,
+       ss.full_name,
+       ss.email,
+       ss.student_code,
+       ss.status,
+       acc.id AS access_id
+     FROM ${SCHOOL_STUDENTS_TABLE} ss
+     LEFT JOIN ${SCHOOL_STUDENT_COURSE_ACCESS_TABLE} acc
+       ON acc.student_id = ss.id
+      AND acc.course_slug = 'prompt-to-production'
+      AND acc.status = 'active'
+     WHERE ss.school_id = ?
+       ${includeDisabled ? "" : "AND ss.status = 'active'"}
+     ORDER BY ss.created_at DESC, ss.id DESC`,
+    [targetSchoolId]
+  );
+  return (Array.isArray(rows) ? rows : []).map(function (row) {
+    const status = clean(row.status, 40).toLowerCase() || "active";
+    const isActive = status === "active";
+    const alreadyUpgraded = Number(row.access_id || 0) > 0;
+    return {
+      id: Number(row.id),
+      full_name: clean(row.full_name, 180),
+      email: clean(row.email, 220),
+      student_code: clean(row.student_code, 20).toUpperCase(),
+      status: status || "active",
+      eligible: isActive && !alreadyUpgraded,
+      already_upgraded: alreadyUpgraded,
+      ineligible_reason: isActive ? (alreadyUpgraded ? "already_upgraded" : "") : "inactive_student",
+    };
+  });
+}
+
+async function runSchoolAdvancedUpgrade(pool, input) {
+  const schoolId = Number(input && input.schoolId);
+  const adminId = Number(input && input.adminId);
+  const mode = clean(input && input.mode, 20).toLowerCase() === "all" ? "all" : "selected";
+  const selectedStudentIds = Array.isArray(input && input.selectedStudentIds)
+    ? input.selectedStudentIds.map(function (id) { return Number(id); }).filter(function (id) { return Number.isFinite(id) && id > 0; })
+    : [];
+  const idempotencyKey = clean(input && input.idempotencyKey, 140) || `upgrade_${crypto.randomUUID().replace(/-/g, "")}`;
+
+  if (!Number.isFinite(schoolId) || schoolId <= 0) throw new Error("Invalid schoolId");
+  if (!Number.isFinite(adminId) || adminId <= 0) throw new Error("Invalid adminId");
+  if (mode === "selected" && !selectedStudentIds.length) throw new Error("selectedStudentIds is required for selected mode");
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const now = nowSql();
+    const [schoolRows] = await connection.query(
+      `SELECT id
+       FROM ${SCHOOL_ACCOUNTS_TABLE}
+       WHERE id = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [schoolId]
+    );
+    if (!Array.isArray(schoolRows) || !schoolRows.length) throw new Error("School account not found");
+
+    const [balanceRows] = await connection.query(
+      `SELECT id, seats_purchased, seats_consumed
+       FROM ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+       WHERE school_id = ?
+         AND course_slug = 'prompt-to-production'
+       LIMIT 1
+       FOR UPDATE`,
+      [schoolId]
+    );
+    const purchased = Number(balanceRows && balanceRows[0] && balanceRows[0].seats_purchased || 0);
+    const consumed = Number(balanceRows && balanceRows[0] && balanceRows[0].seats_consumed || 0);
+    let seatsAvailable = Math.max(0, purchased - consumed);
+    if (seatsAvailable <= 0) throw new Error("No advanced seats available. Buy advanced seats first.");
+
+    const selectorSql = mode === "all"
+      ? "ss.school_id = ?"
+      : `ss.school_id = ? AND ss.id IN (${selectedStudentIds.map(function () { return "?"; }).join(",")})`;
+    const selectorParams = [schoolId].concat(mode === "all" ? [] : selectedStudentIds);
+    const [studentRows] = await connection.query(
+      `SELECT ss.id, ss.account_id, ss.status, ss.full_name, ss.student_code,
+              acc.id AS access_id
+       FROM ${SCHOOL_STUDENTS_TABLE} ss
+       LEFT JOIN ${SCHOOL_STUDENT_COURSE_ACCESS_TABLE} acc
+         ON acc.student_id = ss.id
+        AND acc.course_slug = 'prompt-to-production'
+        AND acc.status = 'active'
+       WHERE ${selectorSql}
+       FOR UPDATE`,
+      selectorParams
+    );
+
+    const result = {
+      mode,
+      idempotency_key: idempotencyKey,
+      totals: { requested: 0, upgraded: 0, skipped_already_upgraded: 0, skipped_ineligible: 0, failed: 0 },
+      students: [],
+      seats: { purchased, used_before: consumed, available_before: Math.max(0, purchased - consumed), used_after: consumed, available_after: Math.max(0, purchased - consumed) },
+    };
+    const rows = Array.isArray(studentRows) ? studentRows : [];
+    result.totals.requested = rows.length;
+
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      const studentId = Number(row.id || 0);
+      const isActive = clean(row.status, 40).toLowerCase() === "active";
+      const alreadyUpgraded = Number(row.access_id || 0) > 0;
+      if (!isActive) {
+        result.totals.skipped_ineligible += 1;
+        result.students.push({ student_id: studentId, student_code: clean(row.student_code, 20).toUpperCase(), status: "skipped_ineligible", reason: "inactive_student" });
+        console.warn("school_advanced_upgrade_student_skipped", { school_id: schoolId, student_id: studentId, reason: "inactive_student" });
+        continue;
+      }
+      if (alreadyUpgraded) {
+        result.totals.skipped_already_upgraded += 1;
+        result.students.push({ student_id: studentId, student_code: clean(row.student_code, 20).toUpperCase(), status: "skipped_already_upgraded" });
+        continue;
+      }
+      if (seatsAvailable <= 0) {
+        result.totals.failed += 1;
+        result.students.push({ student_id: studentId, student_code: clean(row.student_code, 20).toUpperCase(), status: "failed", reason: "insufficient_advanced_seats" });
+        console.warn("school_advanced_upgrade_student_failed", { school_id: schoolId, student_id: studentId, reason: "insufficient_advanced_seats" });
+        continue;
+      }
+      const [insRes] = await connection.query(
+        `INSERT IGNORE INTO ${SCHOOL_STUDENT_COURSE_ACCESS_TABLE}
+          (school_id, student_id, account_id, course_slug, status, granted_source, granted_by_admin_id, granted_at, created_at, updated_at)
+         VALUES (?, ?, ?, 'prompt-to-production', 'active', 'school_dashboard_upgrade', ?, ?, ?, ?)`,
+        [schoolId, studentId, Number(row.account_id || 0) || null, adminId, now, now, now]
+      );
+      if (Number(insRes && insRes.affectedRows || 0) > 0) {
+        seatsAvailable -= 1;
+        result.totals.upgraded += 1;
+        result.students.push({ student_id: studentId, student_code: clean(row.student_code, 20).toUpperCase(), status: "upgraded" });
+      } else {
+        result.totals.skipped_already_upgraded += 1;
+        result.students.push({ student_id: studentId, student_code: clean(row.student_code, 20).toUpperCase(), status: "skipped_already_upgraded" });
+      }
+    }
+
+    const newlyConsumed = Number(result.totals.upgraded || 0);
+    if (newlyConsumed > 0) {
+      const nextConsumed = consumed + newlyConsumed;
+      if (Array.isArray(balanceRows) && balanceRows.length) {
+        await connection.query(
+          `UPDATE ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+           SET seats_consumed = ?, updated_at = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [nextConsumed, now, Number(balanceRows[0].id)]
+        );
+      } else {
+        await connection.query(
+          `INSERT INTO ${SCHOOL_COURSE_SEAT_BALANCES_TABLE}
+            (school_id, course_slug, seats_purchased, seats_consumed, created_at, updated_at)
+           VALUES (?, 'prompt-to-production', 0, ?, ?, ?)`,
+          [schoolId, newlyConsumed, now, now]
+        );
+      }
+      await connection.query(
+        `INSERT INTO ${SCHOOL_SEAT_LEDGER_TABLE}
+          (school_id, course_slug, entry_type, quantity, source_order_uuid, idempotency_key, metadata_json, created_at, updated_at)
+         VALUES (?, 'prompt-to-production', 'upgrade_consume', ?, NULL, ?, ?, ?, ?)`,
+        [schoolId, -1 * newlyConsumed, idempotencyKey, JSON.stringify({ mode, upgraded: newlyConsumed }), now, now]
+      );
+    }
+
+    const usedAfter = consumed + newlyConsumed;
+    result.seats.used_after = usedAfter;
+    result.seats.available_after = Math.max(0, purchased - usedAfter);
+
+    await connection.commit();
+    console.info("school_advanced_upgrade_completed", {
+      school_id: schoolId,
+      mode,
+      upgraded: Number(result.totals.upgraded || 0),
+      skipped_already_upgraded: Number(result.totals.skipped_already_upgraded || 0),
+      skipped_ineligible: Number(result.totals.skipped_ineligible || 0),
+      failed: Number(result.totals.failed || 0),
+    });
+    return result;
+  } catch (error) {
+    try { await connection.rollback(); } catch (_rollbackError) {}
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function getSchoolCourseAccessState(pool, input) {
   const accountId = Number(input && input.accountId);
   const email = normalizeEmail(input && input.email);
@@ -1428,6 +1876,26 @@ async function getSchoolCourseAccessState(pool, input) {
   );
   if (Array.isArray(rows) && rows.length > 0) {
     return { allowed: true, reason: "school_active" };
+  }
+
+  const [accessRows] = await pool.query(
+    `SELECT 1
+     FROM ${SCHOOL_STUDENTS_TABLE} ss
+     JOIN ${SCHOOL_ACCOUNTS_TABLE} sc ON sc.id = ss.school_id
+     JOIN ${SCHOOL_STUDENT_COURSE_ACCESS_TABLE} sa
+       ON sa.student_id = ss.id
+      AND sa.status = 'active'
+     WHERE (LOWER(ss.email) COLLATE utf8mb4_general_ci = ?${whereAccount})
+       AND ss.status = 'active'
+       AND sc.status = 'active'
+       AND sa.course_slug ${courseSlugWhereSql}
+       AND (sc.access_starts_at IS NULL OR sc.access_starts_at <= NOW())
+       AND (sc.access_expires_at IS NULL OR sc.access_expires_at >= NOW())
+     LIMIT 1`,
+    params
+  );
+  if (Array.isArray(accessRows) && accessRows.length > 0) {
+    return { allowed: true, reason: "school_course_access_active" };
   }
 
   const [futureRows] = await pool.query(
@@ -1502,11 +1970,16 @@ module.exports = {
   SCHOOL_ACCOUNTS_TABLE,
   SCHOOL_STUDENTS_TABLE,
   SCHOOL_CERTIFICATES_TABLE,
+  SCHOOL_STUDENT_COURSE_ACCESS_TABLE,
   DEFAULT_SCHOOLS_MIN_SEATS,
   DEFAULT_SCHOOLS_PRICE_PER_STUDENT_MINOR,
+  DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS,
+  DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR,
   DEFAULT_SITE_VAT_PERCENT,
   schoolsPricingConfig,
   schoolsPricing,
+  schoolsAdvancedPricingConfigForPool,
+  schoolsAdvancedPricingForPool,
   ensureSchoolTables,
   createSchoolOrder,
   markSchoolOrderPaidBy,
@@ -1526,6 +1999,9 @@ module.exports = {
   setSchoolStudentStatus,
   resetSchoolStudentCode,
   schoolAnalytics,
+  getSchoolAdvancedSeatSummary,
+  listSchoolAdvancedUpgradeCandidates,
+  runSchoolAdvancedUpgrade,
   submitSchoolStudentWebsite,
   getSchoolCourseAccessState,
   hasSchoolCourseAccess,

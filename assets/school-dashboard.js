@@ -20,6 +20,40 @@
   var singleEmailEl = document.getElementById("singleStudentEmail");
   var singleAddBtn = document.getElementById("singleStudentAddBtn");
   var logoutBtn = document.getElementById("schoolLogoutBtn");
+  var advancedSeatsPurchasedEl = document.getElementById("advancedSeatsPurchased");
+  var advancedSeatsUsedEl = document.getElementById("advancedSeatsUsed");
+  var advancedSeatsAvailableEl = document.getElementById("advancedSeatsAvailable");
+  var advancedStatusTextEl = document.getElementById("advancedStatusText");
+  var advancedCandidatesListEl = document.getElementById("advancedCandidatesList");
+  var advancedActionStatusEl = document.getElementById("advancedActionStatus");
+  var advancedSeatCountEl = document.getElementById("advancedSeatCount");
+  var advancedBuyBtn = document.getElementById("advancedBuyBtn");
+  var advancedUpgradeAllBtn = document.getElementById("advancedUpgradeAllBtn");
+  var advancedUpgradeSelectedBtn = document.getElementById("advancedUpgradeSelectedBtn");
+  var advancedPurchaseModalEl = document.getElementById("advancedPurchaseModal");
+  var advancedPurchaseModalOverlayEl = document.getElementById("advancedPurchaseModalOverlay");
+  var advancedPurchaseModalCloseBtn = document.getElementById("advancedPurchaseModalCloseBtn");
+  var advancedModalCancelBtn = document.getElementById("advancedModalCancelBtn");
+  var advancedModalContinueBtn = document.getElementById("advancedModalContinueBtn");
+  var advancedModalSeatsEl = document.getElementById("advancedModalSeats");
+  var advancedModalBasePriceEl = document.getElementById("advancedModalBasePrice");
+  var advancedModalDiscountEl = document.getElementById("advancedModalDiscount");
+  var advancedModalDiscountedPriceEl = document.getElementById("advancedModalDiscountedPrice");
+  var advancedModalTotalEl = document.getElementById("advancedModalTotal");
+  var latestAdvancedQuote = null;
+  var advancedPaymentStatusModalEl = document.getElementById("advancedPaymentStatusModal");
+  var advancedPaymentStatusModalOverlayEl = document.getElementById("advancedPaymentStatusModalOverlay");
+  var advancedPaymentStatusModalCloseBtn = document.getElementById("advancedPaymentStatusModalCloseBtn");
+  var advancedPaymentStatusModalOkBtn = document.getElementById("advancedPaymentStatusModalOkBtn");
+  var advancedPaymentStatusModalTitleEl = document.getElementById("advancedPaymentStatusModalTitle");
+  var advancedPaymentStatusModalBodyEl = document.getElementById("advancedPaymentStatusModalBody");
+  var advancedLearnMoreBtn = document.getElementById("advancedLearnMoreBtn");
+  var advancedLearnModalEl = document.getElementById("advancedLearnModal");
+  var advancedLearnModalOverlayEl = document.getElementById("advancedLearnModalOverlay");
+  var advancedLearnModalCloseBtn = document.getElementById("advancedLearnModalCloseBtn");
+  var advancedLearnModalOkBtn = document.getElementById("advancedLearnModalOkBtn");
+  var advancedLearnModalBodyEl = document.getElementById("advancedLearnModalBody");
+  var advancedLearnContentLoaded = false;
 
   function clean(value) {
     return String(value || "").trim();
@@ -37,6 +71,11 @@
       .replace(/>/g, "&gt;")
       .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function fmtNairaFromMinor(value) {
+    var num = Number(value || 0) / 100;
+    return "₦" + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtDate(value) {
@@ -272,6 +311,234 @@
     renderSummary(data);
   }
 
+  function setAdvancedStatus(text, bad) {
+    if (!advancedActionStatusEl) return;
+    advancedActionStatusEl.textContent = clean(text);
+    advancedActionStatusEl.className = "mt-2 text-sm min-h-[1.25rem] " + (bad ? "text-red-600" : "text-gray-600");
+  }
+
+  function renderAdvancedCandidates(students) {
+    if (!advancedCandidatesListEl) return;
+    if (!students.length) {
+      advancedCandidatesListEl.innerHTML = '<p class="text-gray-500">No students found.</p>';
+      return;
+    }
+    advancedCandidatesListEl.innerHTML = students.map(function (student) {
+      var disabled = !student.eligible;
+      var note = student.already_upgraded ? "Already upgraded" : (student.ineligible_reason === "inactive_student" ? "Inactive" : "");
+      return [
+        '<label class="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-gray-50">',
+        '<span class="flex items-center gap-2">',
+        '<input type="checkbox" data-advanced-student="' + String(student.id) + '"' + (disabled ? " disabled" : "") + " />",
+        '<span>',
+        '<span class="font-medium text-gray-900">' + escapeHtml(student.full_name || "Student") + "</span>",
+        '<span class="ml-2 text-xs text-gray-500">' + escapeHtml(student.student_code || "") + "</span>",
+        "</span>",
+        "</span>",
+        '<span class="text-xs ' + (disabled ? "text-gray-500" : "text-emerald-700") + '">' + escapeHtml(disabled ? note : "Eligible") + "</span>",
+        "</label>",
+      ].join("");
+    }).join("");
+  }
+
+  function selectedAdvancedStudentIds() {
+    if (!advancedCandidatesListEl) return [];
+    return Array.prototype.slice.call(advancedCandidatesListEl.querySelectorAll("input[data-advanced-student]:checked"))
+      .map(function (el) { return Number(el.getAttribute("data-advanced-student") || 0); })
+      .filter(function (id) { return id > 0; });
+  }
+
+  async function loadAdvancedSummary() {
+    var data = await api("/.netlify/functions/school-advanced-summary");
+    var advanced = data && data.advanced ? data.advanced : {};
+    if (advancedSeatsPurchasedEl) advancedSeatsPurchasedEl.textContent = String(advanced.seats_purchased || 0);
+    if (advancedSeatsUsedEl) advancedSeatsUsedEl.textContent = String(advanced.seats_used || 0);
+    if (advancedSeatsAvailableEl) advancedSeatsAvailableEl.textContent = String(advanced.seats_available || 0);
+    if (advancedStatusTextEl) {
+      advancedStatusTextEl.textContent = Number(advanced.seats_available || 0) > 0
+        ? "Advanced upgrades unlocked"
+        : "Buy Advanced Seats to unlock upgrades";
+    }
+  }
+
+  async function loadAdvancedCandidates() {
+    var data = await api("/.netlify/functions/school-advanced-upgrade-candidates");
+    renderAdvancedCandidates(Array.isArray(data.students) ? data.students : []);
+  }
+
+  async function buyAdvancedSeats() {
+    var seatCount = Number(advancedSeatCountEl && advancedSeatCountEl.value || 0);
+    var data = await api("/.netlify/functions/school-advanced-purchase-create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ seatCount: seatCount }),
+    });
+    var checkoutUrl = clean(data && data.checkoutUrl);
+    if (!checkoutUrl) throw new Error("Could not start checkout.");
+    window.location.href = checkoutUrl;
+  }
+
+  function toggleAdvancedPurchaseModal(show) {
+    if (!advancedPurchaseModalEl) return;
+    advancedPurchaseModalEl.classList.toggle("hidden", !show);
+    advancedPurchaseModalEl.setAttribute("aria-hidden", show ? "false" : "true");
+    try {
+      document.body.classList.toggle("modal-open", !!show);
+    } catch (_error) {}
+  }
+
+  function toggleAdvancedPaymentStatusModal(show) {
+    if (!advancedPaymentStatusModalEl) return;
+    advancedPaymentStatusModalEl.classList.toggle("hidden", !show);
+    advancedPaymentStatusModalEl.setAttribute("aria-hidden", show ? "false" : "true");
+    try {
+      document.body.classList.toggle("modal-open", !!show);
+    } catch (_error) {}
+  }
+
+  function toggleAdvancedLearnModal(show) {
+    if (!advancedLearnModalEl) return;
+    advancedLearnModalEl.classList.toggle("hidden", !show);
+    advancedLearnModalEl.setAttribute("aria-hidden", show ? "false" : "true");
+    try {
+      document.body.classList.toggle("modal-open", !!show);
+    } catch (_error) {}
+  }
+
+  function textFrom(root, selector) {
+    var el = root ? root.querySelector(selector) : null;
+    return clean(el && el.textContent);
+  }
+
+  function toListHtml(items) {
+    if (!items || !items.length) return "";
+    return '<ul class="space-y-2 list-disc pl-5 text-gray-700">' +
+      items.map(function (item) { return "<li>" + escapeHtml(item) + "</li>"; }).join("") +
+      "</ul>";
+  }
+
+  async function loadAdvancedLearnContentFromPublicPage() {
+    if (!advancedLearnModalBodyEl) return;
+    if (advancedLearnContentLoaded) return;
+    advancedLearnModalBodyEl.innerHTML = '<p class="text-gray-500">Loading program details…</p>';
+    try {
+      var response = await fetch("/courses/prompt-to-production/", { credentials: "same-origin" });
+      if (!response.ok) throw new Error("Could not load course page.");
+      var html = await response.text();
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, "text/html");
+
+      var title = textFrom(doc, "main h1");
+      var intro = textFrom(doc, "main h1 + p");
+      var projectHeading = textFrom(doc, "section .tw-h2");
+      var projectIntro = textFrom(doc, "section .tw-h2 + p");
+      var whoHeading = Array.prototype.slice.call(doc.querySelectorAll("h2")).map(function (h) { return clean(h.textContent); }).find(function (t) { return t.toLowerCase() === "who is this for?"; }) || "Who is this for?";
+      var whoSection = Array.prototype.slice.call(doc.querySelectorAll("section")).find(function (section) {
+        var heading = section ? section.querySelector("h2") : null;
+        return clean(heading && heading.textContent).toLowerCase() === "who is this for?";
+      });
+      var whoCards = Array.prototype.slice.call((whoSection && whoSection.querySelectorAll("article h3")) || [])
+        .map(function (h) { return clean(h.textContent); })
+        .filter(Boolean)
+        .slice(0, 6);
+      var whoDescriptions = Array.prototype.slice.call((whoSection && whoSection.querySelectorAll("article p")) || [])
+        .map(function (p) { return clean(p.textContent); })
+        .filter(Boolean)
+        .slice(0, 6);
+      var weekTitles = Array.prototype.slice.call(doc.querySelectorAll("#curriculum article h3")).map(function (h) { return clean(h.textContent); }).filter(Boolean).slice(0, 4);
+
+      var blocks = [
+        '<article class="rounded-2xl border border-brand-100 bg-brand-50 p-4">',
+        '<h4 class="text-lg font-heading font-extrabold text-brand-900">' + escapeHtml(title || "Build a real Web & Mobile App with AI") + "</h4>",
+        '<p class="mt-2 text-sm text-brand-900/90 leading-relaxed">' + escapeHtml(intro || "") + "</p>",
+        "</article>",
+        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
+        '<h5 class="text-base font-heading font-bold text-gray-900">' + escapeHtml(projectHeading || "Learn by building a real SaaS product.") + "</h5>",
+        '<p class="mt-2 text-sm text-gray-700 leading-relaxed">' + escapeHtml(projectIntro || "") + "</p>",
+        "</article>",
+        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
+        '<h5 class="text-base font-heading font-bold text-gray-900">4-Week Blueprint</h5>',
+        toListHtml(weekTitles),
+        "</article>",
+        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
+        '<h5 class="text-base font-heading font-bold text-gray-900">' + escapeHtml(whoHeading) + "</h5>",
+        '<p class="mt-2 text-sm text-gray-700">Best fit learners for this course:</p>',
+        toListHtml((function () {
+          if (whoCards.length && whoDescriptions.length) {
+            return whoCards.slice(0, 4).map(function (title, idx) {
+              var desc = whoDescriptions[idx] || "";
+              return desc ? (title + ": " + desc) : title;
+            });
+          }
+          return whoCards.slice(0, 4);
+        })()),
+        '<div class="mt-4"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100">Open Full Public Course Page</a></div>',
+        "</article>",
+      ];
+      advancedLearnModalBodyEl.innerHTML = blocks.join("");
+      advancedLearnContentLoaded = true;
+    } catch (_error) {
+      advancedLearnModalBodyEl.innerHTML = '<p class="text-red-600">Could not load course details right now. Please open the public course page directly.</p><p class="mt-3"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100">Open Public Course Page</a></p>';
+    }
+  }
+
+  function consumeAdvancedPaymentStatusFromQuery() {
+    try {
+      var url = new URL(window.location.href);
+      var state = clean(url.searchParams.get("advanced_payment")).toLowerCase();
+      if (!state) return;
+
+      if (state === "failed" || state === "cancelled" || state === "canceled") {
+        if (advancedPaymentStatusModalTitleEl) advancedPaymentStatusModalTitleEl.textContent = "Payment Cancelled";
+        if (advancedPaymentStatusModalBodyEl) {
+          advancedPaymentStatusModalBodyEl.textContent = "No payment was recorded, and no advanced seats were added.";
+        }
+        toggleAdvancedPaymentStatusModal(true);
+      } else if (state === "success") {
+        showToast("Advanced seat payment confirmed.", false);
+      }
+
+      url.searchParams.delete("advanced_payment");
+      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : "") + url.hash);
+    } catch (_error) {}
+  }
+
+  async function openAdvancedPurchaseModal() {
+    var seatCount = Number(advancedSeatCountEl && advancedSeatCountEl.value || 0);
+    var quoteData = await api("/.netlify/functions/school-advanced-pricing-config?seat_count=" + encodeURIComponent(String(seatCount > 0 ? seatCount : 0)));
+    latestAdvancedQuote = quoteData && quoteData.quote ? quoteData.quote : null;
+    var cfg = quoteData && quoteData.config ? quoteData.config : {};
+    var quote = latestAdvancedQuote || {};
+    if (advancedModalSeatsEl) advancedModalSeatsEl.textContent = String(quote.seats || seatCount || cfg.minSeats || 0);
+    if (advancedModalBasePriceEl) advancedModalBasePriceEl.textContent = fmtNairaFromMinor(cfg.basePricePerStudentMinor || quote.pricePerSeatMinor || 0);
+    if (advancedModalDiscountEl) advancedModalDiscountEl.textContent = "-" + fmtNairaFromMinor(cfg.discountPerStudentMinor || 0);
+    if (advancedModalDiscountedPriceEl) advancedModalDiscountedPriceEl.textContent = fmtNairaFromMinor(quote.pricePerSeatMinor || 0);
+    if (advancedModalTotalEl) advancedModalTotalEl.textContent = fmtNairaFromMinor(quote.totalMinor || 0);
+    toggleAdvancedPurchaseModal(true);
+  }
+
+  async function runAdvancedUpgrade(mode, selectedIds) {
+    var payload = {
+      mode: mode,
+      selectedStudentIds: Array.isArray(selectedIds) ? selectedIds : [],
+      idempotencyKey: "ui-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10),
+    };
+    var data = await api("/.netlify/functions/school-advanced-upgrade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+    });
+    var result = data && data.result ? data.result : {};
+    var totals = result.totals || {};
+    setAdvancedStatus(
+      "Upgraded: " + String(totals.upgraded || 0) +
+      ", Already upgraded: " + String(totals.skipped_already_upgraded || 0) +
+      ", Ineligible: " + String(totals.skipped_ineligible || 0) +
+      ", Failed: " + String(totals.failed || 0),
+      false
+    );
+  }
+
   async function loadStudents() {
     var data = await api("/.netlify/functions/school-students-list");
     renderStudents(Array.isArray(data.students) ? data.students : []);
@@ -436,10 +703,137 @@
     });
   }
 
+  if (advancedBuyBtn) {
+    advancedBuyBtn.addEventListener("click", function () {
+      openAdvancedPurchaseModal().catch(function (error) {
+        setAdvancedStatus(error.message || "Could not start advanced seat checkout.", true);
+      });
+    });
+  }
+
+  if (advancedPurchaseModalOverlayEl) {
+    advancedPurchaseModalOverlayEl.addEventListener("click", function () {
+      toggleAdvancedPurchaseModal(false);
+    });
+  }
+  if (advancedPurchaseModalCloseBtn) {
+    advancedPurchaseModalCloseBtn.addEventListener("click", function () {
+      toggleAdvancedPurchaseModal(false);
+    });
+  }
+  if (advancedModalCancelBtn) {
+    advancedModalCancelBtn.addEventListener("click", function () {
+      toggleAdvancedPurchaseModal(false);
+    });
+  }
+  if (advancedModalContinueBtn) {
+    advancedModalContinueBtn.addEventListener("click", function () {
+      advancedModalContinueBtn.disabled = true;
+      advancedModalContinueBtn.textContent = "Starting checkout...";
+      buyAdvancedSeats().catch(function (error) {
+        setAdvancedStatus(error.message || "Could not start advanced seat checkout.", true);
+      }).finally(function () {
+        advancedModalContinueBtn.disabled = false;
+        advancedModalContinueBtn.textContent = "Continue to Payment";
+      });
+    });
+  }
+
+  if (advancedPaymentStatusModalOverlayEl) {
+    advancedPaymentStatusModalOverlayEl.addEventListener("click", function () {
+      toggleAdvancedPaymentStatusModal(false);
+    });
+  }
+  if (advancedPaymentStatusModalCloseBtn) {
+    advancedPaymentStatusModalCloseBtn.addEventListener("click", function () {
+      toggleAdvancedPaymentStatusModal(false);
+    });
+  }
+  if (advancedPaymentStatusModalOkBtn) {
+    advancedPaymentStatusModalOkBtn.addEventListener("click", function () {
+      toggleAdvancedPaymentStatusModal(false);
+    });
+  }
+  if (advancedLearnMoreBtn) {
+    advancedLearnMoreBtn.addEventListener("click", function () {
+      toggleAdvancedLearnModal(true);
+      loadAdvancedLearnContentFromPublicPage().catch(function () {
+        return null;
+      });
+    });
+  }
+  if (advancedLearnModalOverlayEl) {
+    advancedLearnModalOverlayEl.addEventListener("click", function () {
+      toggleAdvancedLearnModal(false);
+    });
+  }
+  if (advancedLearnModalCloseBtn) {
+    advancedLearnModalCloseBtn.addEventListener("click", function () {
+      toggleAdvancedLearnModal(false);
+    });
+  }
+  if (advancedLearnModalOkBtn) {
+    advancedLearnModalOkBtn.addEventListener("click", function () {
+      toggleAdvancedLearnModal(false);
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (!advancedPurchaseModalEl) return;
+    if (advancedPurchaseModalEl.getAttribute("aria-hidden") !== "false") return;
+    if (event.key === "Escape") toggleAdvancedPurchaseModal(false);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (!advancedPaymentStatusModalEl) return;
+    if (advancedPaymentStatusModalEl.getAttribute("aria-hidden") !== "false") return;
+    if (event.key === "Escape") toggleAdvancedPaymentStatusModal(false);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (!advancedLearnModalEl) return;
+    if (advancedLearnModalEl.getAttribute("aria-hidden") !== "false") return;
+    if (event.key === "Escape") toggleAdvancedLearnModal(false);
+  });
+
+  if (advancedUpgradeAllBtn) {
+    advancedUpgradeAllBtn.addEventListener("click", function () {
+      advancedUpgradeAllBtn.disabled = true;
+      advancedUpgradeAllBtn.textContent = "Upgrading...";
+      runAdvancedUpgrade("all", []).then(function () {
+        return Promise.all([loadAdvancedSummary(), loadAdvancedCandidates(), loadSummary(), loadStudents()]);
+      }).catch(function (error) {
+        setAdvancedStatus(error.message || "Could not run upgrade.", true);
+      }).finally(function () {
+        advancedUpgradeAllBtn.disabled = false;
+        advancedUpgradeAllBtn.textContent = "Upgrade All Eligible";
+      });
+    });
+  }
+
+  if (advancedUpgradeSelectedBtn) {
+    advancedUpgradeSelectedBtn.addEventListener("click", function () {
+      var ids = selectedAdvancedStudentIds();
+      if (!ids.length) {
+        setAdvancedStatus("Select at least one eligible student.", true);
+        return;
+      }
+      advancedUpgradeSelectedBtn.disabled = true;
+      advancedUpgradeSelectedBtn.textContent = "Upgrading...";
+      runAdvancedUpgrade("selected", ids).then(function () {
+        return Promise.all([loadAdvancedSummary(), loadAdvancedCandidates(), loadSummary(), loadStudents()]);
+      }).catch(function (error) {
+        setAdvancedStatus(error.message || "Could not run selected upgrade.", true);
+      }).finally(function () {
+        advancedUpgradeSelectedBtn.disabled = false;
+        advancedUpgradeSelectedBtn.textContent = "Upgrade Selected";
+      });
+    });
+  }
+
   consumeWelcomeFromQuery();
+  consumeAdvancedPaymentStatusFromQuery();
   renderWelcomeNotice();
 
-  Promise.all([loadSummary(), loadStudents()]).catch(function (error) {
+  Promise.all([loadSummary(), loadStudents(), loadAdvancedSummary(), loadAdvancedCandidates()]).catch(function (error) {
     if (metaEl) metaEl.textContent = error.message || "Could not load school dashboard.";
   });
 })();
