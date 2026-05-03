@@ -23,3 +23,7 @@ scripts/export-prompt-to-profit-advanced-pptx.py
 .env
 .env.*
 !.env.example
+
+# Blog draft source documents (local working files)
+content/blogs/drafts/*.docx
+content/blogs/drafts/~$*.docx

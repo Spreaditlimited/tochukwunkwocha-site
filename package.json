@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
+    "build:blog": "node scripts/build-blog.js",
+    "build": "npm run build:blog",
     "db:migrate": "node scripts/db-migrate.js",
     "db:school-student-codes:backfill": "node scripts/school-student-codes-backfill.js"
   },
