@@ -57,6 +57,12 @@ a {
   text-decoration: none;
 }
 
+/* Hide reCAPTCHA v3 badge (ensure legal disclosure is shown near protected forms). */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 h1,
 h2,
 h3,

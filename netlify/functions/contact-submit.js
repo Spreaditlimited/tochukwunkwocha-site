@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { sendEmail } = require("./_lib/email");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function clean(value, maxLen) {
   return String(value || "")
@@ -39,6 +40,15 @@ exports.handler = async function (event) {
 
   if (!fullName || !email || !purpose || !message) {
     return json(400, { ok: false, error: "Full Name, Email, Purpose, and Message are required." });
+  }
+
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "contact_submit",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this submission. Please try again." });
   }
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

@@ -5,6 +5,7 @@ const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
 const { ensureSchoolScorecardTablesTochukwu, saveSchoolScorecardLead } = require("./_lib/school-scorecards-tochukwu");
 const { getSchoolNotificationRecipients } = require("./_lib/school-notification-recipients");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 const BREVO_SCHOOL_READINESS_LIST_ID = 6;
 
@@ -236,6 +237,15 @@ exports.handler = async function (event) {
 
   if (!fullName || !schoolName || !workEmail || !phone || !role || !studentPopulation) {
     return json(400, { ok: false, error: "All lead form fields are required." });
+  }
+
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "school_readiness_submit",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this submission. Please try again." });
   }
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(workEmail);

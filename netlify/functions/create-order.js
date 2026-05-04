@@ -14,6 +14,7 @@ const {
   getCourseDefaultAmountMinor,
   getCourseDefaultPaypalMinor,
 } = require("./_lib/course-config");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -82,6 +83,15 @@ exports.handler = async function (event) {
 
   if (provider !== "paystack" && provider !== "paypal") {
     return json(400, { ok: false, error: "Invalid payment provider" });
+  }
+
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "course_order_create",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this request. Please try again." });
   }
 
   const orderUuid = crypto.randomUUID();

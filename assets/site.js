@@ -781,6 +781,7 @@
         return;
       }
 
+      const recaptchaToken = await window.recaptchaHelper.getToken("course_order_create");
       const res = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -791,6 +792,7 @@
           provider,
           courseSlug: currentCourseConfig().slug,
           batchKey: activeCourseBatchKey,
+          recaptchaToken,
         }),
       });
 

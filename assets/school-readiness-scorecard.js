@@ -481,6 +481,7 @@
     computeScore();
 
     try {
+      var recaptchaToken = await window.recaptchaHelper.getToken("school_readiness_submit");
       var response = await fetch("/.netlify/functions/school-readiness-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -495,6 +496,7 @@
           score: state.score,
           bandKey: state.bandKey,
           answers: answerSummary(),
+          recaptchaToken: recaptchaToken,
         }),
       });
 

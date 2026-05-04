@@ -578,6 +578,7 @@
           throw new Error(`${selectedDomain} is no longer available. Please choose another domain.`);
         }
 
+        const recaptchaToken = await window.recaptchaHelper.getToken("domain_create_payment");
         const json = await request("/.netlify/functions/domain-create-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -595,6 +596,7 @@
             registrantPhoneCc,
             selectedServices,
             autoRenewEnabled,
+            recaptchaToken,
           }),
         });
         if (json && json.quote) {

@@ -266,6 +266,7 @@
   }
 
   async function createPayment(payload) {
+    payload.recaptchaToken = await window.recaptchaHelper.getToken("business_plan_create_payment");
     var res = await fetch("/.netlify/functions/business-plan-create-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

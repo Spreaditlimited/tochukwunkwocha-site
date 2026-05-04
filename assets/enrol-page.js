@@ -523,6 +523,7 @@
         return;
       }
 
+      var recaptchaToken = await window.recaptchaHelper.getToken("course_order_create");
       var res = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -534,6 +535,7 @@
           batchKey: activeCourseBatchKey,
           couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
           affiliateCode: affiliateCode,
+          recaptchaToken: recaptchaToken,
         }),
       });
       var json = await res.json().catch(function () { return null; });

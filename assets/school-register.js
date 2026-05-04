@@ -198,6 +198,7 @@
     btn.disabled = true;
     btn.textContent = "Preparing payment...";
     try {
+      payload.recaptchaToken = await window.recaptchaHelper.getToken("school_create_payment");
       var response = await fetch("/.netlify/functions/school-create-payment", {
         method: "POST",
         credentials: "include",

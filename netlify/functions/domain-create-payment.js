@@ -12,6 +12,7 @@ const {
   normalizeAutoRenew,
 } = require("./_lib/domains");
 const { buildDomainCheckoutQuote } = require("./_lib/domain-pricing");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -82,6 +83,14 @@ exports.handler = async function (event) {
       ok: false,
       error: "Address, city, state, country, postal code, phone, and phone country code are required for domain ownership registration.",
     });
+  }
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "domain_create_payment",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this request. Please try again." });
   }
   const registrantProfile = {
     address1: registrantAddress1,

@@ -1,6 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { ensureLeadpageTables, createLeadpageJob } = require("./_lib/leadpage-jobs");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -46,6 +47,15 @@ exports.handler = async function (event) {
 
   if (!isEmail(payload.email)) {
     return json(400, { ok: false, error: "A valid email is required" });
+  }
+
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "leadpage_submit_details",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this submission. Please try again." });
   }
 
   const pool = getPool();

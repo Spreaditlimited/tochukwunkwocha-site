@@ -223,6 +223,7 @@
       submitBtn.textContent = "Submitting...";
 
       try {
+        payload.recaptchaToken = await window.recaptchaHelper.getToken("leadpage_submit_details");
         const res = await fetch("/.netlify/functions/leadpage-submit-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

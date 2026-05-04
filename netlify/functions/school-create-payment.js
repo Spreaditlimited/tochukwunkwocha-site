@@ -5,6 +5,7 @@ const { ensureSchoolTables, createSchoolOrder } = require("./_lib/schools");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { ensureAffiliateTables, captureSchoolOrderReferral } = require("./_lib/affiliates");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function parseBody(event) {
   try {
@@ -21,6 +22,14 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    const recaptcha = await verifyRecaptchaToken({
+      token: body.recaptchaToken,
+      expectedAction: "school_create_payment",
+      remoteip: clientIpFromEvent(event),
+    });
+    if (!recaptcha.ok) {
+      return json(400, { ok: false, error: "We could not verify this request. Please try again." });
+    }
     try {
       await applyRuntimeSettings(pool);
     } catch (_error) {}

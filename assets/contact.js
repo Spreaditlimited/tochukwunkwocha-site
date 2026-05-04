@@ -41,6 +41,7 @@
 
     setBusy(true);
     try {
+      payload.recaptchaToken = await window.recaptchaHelper.getToken("contact_submit");
       var response = await fetch("/.netlify/functions/contact-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

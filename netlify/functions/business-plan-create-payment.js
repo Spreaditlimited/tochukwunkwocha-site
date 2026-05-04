@@ -8,6 +8,7 @@ const {
   setOrderPaymentInitiated,
   findLatestPaidOrderForSamePlan,
 } = require("./_lib/business-plans");
+const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -46,6 +47,15 @@ exports.handler = async function (event) {
   }
   if (!intake || !clean(intake.businessName, 220) || !clean(intake.productLine, 220)) {
     return json(400, { ok: false, error: "Business name and project/product line are required." });
+  }
+
+  const recaptcha = await verifyRecaptchaToken({
+    token: body.recaptchaToken,
+    expectedAction: "business_plan_create_payment",
+    remoteip: clientIpFromEvent(event),
+  });
+  if (!recaptcha.ok) {
+    return json(400, { ok: false, error: "We could not verify this request. Please try again." });
   }
 
   const pool = getPool();
