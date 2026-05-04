@@ -174,6 +174,49 @@
         text-decoration: underline;
       }
 
+      .browser-mockup {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        border: 1px solid #dbe4f2;
+        background: #fff;
+        box-shadow: 0 20px 45px rgba(20, 33, 61, 0.12);
+      }
+
+      .browser-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #e6edf7;
+        background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%);
+      }
+
+      .browser-dots {
+        display: flex;
+        gap: 0.4rem;
+      }
+
+      .browser-dot {
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 9999px;
+      }
+
+      .browser-url {
+        flex: 1;
+        min-width: 0;
+        padding: 0.45rem 0.75rem;
+        border-radius: 0.7rem;
+        background: #fff;
+        border: 1px solid #d7e3f6;
+        font-size: 0.78rem;
+        color: #4a5b78;
+        font-family: "Fira Code", monospace;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       @media (max-width: 640px) {
         .course-hero {
           padding-top: 64px;
@@ -564,59 +607,55 @@
 
       <section class="section reveal">
         <p class="section-label">Batch 1 Student Websites</p>
-        <h2 class="section-headline">Look at what Batch 1 students already built.</h2>
+        <h2 class="section-headline">Look at what previous students already built.</h2>
         <p class="section-intro">
-          These are real website outcomes from Batch 1 students after applying the same Prompt to Profit workflow.
+          These are real website outcomes from previous students after applying the same Prompt to Profit workflow.
         </p>
 
-        <div class="proof-stack" style="margin-top: 48px">
-          <section class="proof-project-block">
-            <div class="proof-project-grid">
-              <div class="proof-col">
-                <article class="proof-card">
-                  <div class="proof-card__media">
-                    <img src="/assets/student_web_3.png" alt="Batch 1 student website screenshot 3" loading="lazy" />
-                  </div>
-                  <div class="proof-card__body">
-                    <h3>Batch 1 Student Build</h3>
-                    <p>A clean website built by a Prompt to Profit Batch 1 student using AI-guided prompts.</p>
-                  </div>
-                </article>
+        <div style="margin-top: 48px; display: grid; gap: 48px;">
+          <div class="browser-mockup transform transition duration-500 hover:shadow-2xl">
+            <div class="browser-header">
+              <div class="browser-dots">
+                <div class="browser-dot bg-red-400"></div>
+                <div class="browser-dot bg-amber-400"></div>
+                <div class="browser-dot bg-green-400"></div>
               </div>
+              <div class="browser-url">www.loudnclearaudioservices.com.ng</div>
             </div>
-          </section>
+            <iframe
+              src="https://www.loudnclearaudioservices.com.ng"
+              title="Loud N Clear Audio Services website"
+              class="w-full h-[500px] md:h-[650px] bg-white border-0"
+              loading="lazy"
+            ></iframe>
+          </div>
+          <div class="mt-6 flex justify-center">
+            <a href="https://www.loudnclearaudioservices.com.ng" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-800 transition-colors bg-white px-6 py-3 rounded-xl shadow-sm border border-brand-100">
+              Open site in new tab
+            </a>
+          </div>
 
-          <section class="proof-project-block">
-            <div class="proof-project-grid">
-              <div class="proof-col">
-                <article class="proof-card">
-                  <div class="proof-card__media">
-                    <img src="/assets/student_web_2.png" alt="Batch 1 student website screenshot 2" loading="lazy" />
-                  </div>
-                  <div class="proof-card__body">
-                    <h3>Batch 1 Student Build</h3>
-                    <p>Another practical project showing how students move from beginner to real web delivery in days.</p>
-                  </div>
-                </article>
+          <div class="browser-mockup transform transition duration-500 hover:shadow-2xl">
+            <div class="browser-header">
+              <div class="browser-dots">
+                <div class="browser-dot bg-red-400"></div>
+                <div class="browser-dot bg-amber-400"></div>
+                <div class="browser-dot bg-green-400"></div>
               </div>
+              <div class="browser-url">olytribe.com.ng</div>
             </div>
-          </section>
-
-          <section class="proof-project-block">
-            <div class="proof-project-grid">
-              <div class="proof-col">
-                <article class="proof-card">
-                  <div class="proof-card__media">
-                    <img src="/assets/student_web_4.png" alt="Batch 1 student website screenshot 4" loading="lazy" />
-                  </div>
-                  <div class="proof-card__body">
-                    <h3>Batch 1 Student Build</h3>
-                    <p>Real output from Batch 1 students proving this training leads to polished, publish-ready websites.</p>
-                  </div>
-                </article>
-              </div>
-            </div>
-          </section>
+            <iframe
+              src="https://olytribe.com.ng"
+              title="Oly Tribe website"
+              class="w-full h-[500px] md:h-[650px] bg-white border-0"
+              loading="lazy"
+            ></iframe>
+          </div>
+          <div class="mt-6 flex justify-center">
+            <a href="https://olytribe.com.ng" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-800 transition-colors bg-white px-6 py-3 rounded-xl shadow-sm border border-brand-100">
+              Open second site in new tab
+            </a>
+          </div>
         </div>
       </section>
 

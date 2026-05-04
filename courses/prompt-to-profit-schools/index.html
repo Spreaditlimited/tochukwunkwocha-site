@@ -249,6 +249,31 @@
       .testimonial-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
       .testimonial-name { font-size: 1.1rem; font-weight: 700; color: var(--brand-dark); }
       .testimonial-role { margin-top: 4px; color: var(--muted); font-size: 0.95rem; }
+      .testimonial-showcase {
+        margin-top: 40px;
+        display: grid;
+        gap: 24px;
+        grid-template-columns: 1fr;
+      }
+      .testimonial-showcase-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        box-shadow: var(--shadow-sm);
+      }
+      .testimonial-showcase-quote {
+        margin-top: 18px;
+        color: var(--ink);
+        line-height: 1.8;
+        font-size: 1.05rem;
+      }
+      .testimonial-showcase-links {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
 
       /* Trust Section */
       .trust-grid { margin-top: 64px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: stretch; }
@@ -370,6 +395,7 @@
         .instructor-copy .btn-row { justify-content: center; }
         .section { padding: 80px 0; }
         .testimonial-panel { padding: 40px; }
+        .testimonial-showcase-card { padding: 24px; }
       }
 
       @media (max-width: 768px) {
@@ -379,6 +405,14 @@
         .btn-row .btn { width: 100%; }
         .score-nav-equal { grid-template-columns: 1fr; }
         .score-nav { flex-direction: column; gap: 16px; }
+        .testimonial-showcase-quote { font-size: 1rem; line-height: 1.75; }
+      }
+
+      @media (min-width: 961px) {
+        .testimonial-showcase {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: stretch;
+        }
       }
 
       @media (max-width: 520px) {
@@ -428,43 +462,49 @@
               <p>Find out in 3 minutes. Take the readiness scorecard to see if your school has what it takes to roll out real world AI learning in the next 30 days.</p>
               <div class="cta-row">
                 <button type="button" data-start-scorecard class="btn btn-outline">Start the Scorecard</button>
-                <a href="#how-it-works" class="btn btn-outline">How it works</a>
+                <a href="#parents-testimonials" class="btn btn-outline">Learn More</a>
               </div>
             </div>
           </section>
 
-          <section class="section">
-            <div class="wrap-sm">
-              <div class="testimonial-panel">
-                <div class="testimonial-content-wrapper">
-                  <div class="testimonial-eyebrow">Parent Testimonial</div>
-                  <h2 style="margin-top: 12px; font-size: 2rem;">What parents are seeing</h2>
-                  <div class="testimonial-body">
-                    <p>
-                      “Your Prompt to Profit class was truly excellent. Your teaching style is clear, practical, and very effective.
-                      I initially registered for my two sons who are in secondary school, but since they had exams that week, I attended the class so I could guide them afterward.
-                      Thanks to your training, they built their websites in just a few days without any prior knowledge of HTML and CSS, and they are already live.”
-                    </p>
-                    <div class="testimonial-links">
-                      <a href="https://awesomeinterior6776.netlify.app/" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Visit Student Site 1</a>
-                      <a href="https://faithfultech.netlify.app/" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Visit Student Site 2</a>
-                    </div>
-                    <p style="margin-top: 24px;">
-                      “I have also referred some parents using your Facebook link, and one of them has already paid for the next class.
-                      We have enrolled in the advanced class coming up in May.
-                      Honestly, I got great value for the money spent, which is why I am confident about continuing.
-                      We are all excited, especially their father, who strongly supports them attending the next class.
-                      Thank you so much, Tochukwu. Keep up the great work.”
-                    </p>
-                  </div>
-                  <div class="testimonial-footer">
+          <section id="parents-testimonials" class="section">
+            <div class="wrap">
+              <div class="text-center">
+                <p class="section-label">Parent Testimonial</p>
+                <h2>What parents are seeing</h2>
+              </div>
+              <div class="testimonial-showcase">
+                <article class="testimonial-showcase-card">
+                  <div class="testimonial-footer" style="margin-top: 0;">
                     <img src="/assets/anuri.JPG" alt="Anuri Okongwu" class="testimonial-avatar" />
                     <div>
                       <div class="testimonial-name">Anuri Okongwu</div>
-                      <div class="testimonial-role">Parent</div>
+                      <div class="testimonial-role">Parent of secondary school students</div>
                     </div>
                   </div>
-                </div>
+                  <p class="testimonial-showcase-quote">
+                    “Your Prompt to Profit class was truly excellent. Your teaching style is clear, practical, and very effective.
+                    I initially registered for my two sons who are in secondary school, but since they had exams that week, I attended the class so I could guide them afterward.
+                    Thanks to your training, they built their websites in just a few days without any prior knowledge of HTML and CSS, and they are already live.
+                    Honestly, I got great value for the money spent, which is why I am confident about continuing.”
+                  </p>
+                </article>
+
+                <article class="testimonial-showcase-card">
+                  <div class="testimonial-footer" style="margin-top: 0;">
+                    <img src="/assets/marquis.jpeg" alt="Marquis Festus" class="testimonial-avatar" />
+                    <div>
+                      <div class="testimonial-name">Marquis Festus</div>
+                      <div class="testimonial-role">Father of an 8-year old</div>
+                    </div>
+                  </div>
+                  <p class="testimonial-showcase-quote">
+                    “My daughter is 8 years old. Last month, she built a landing page for her dream fashion business.
+                    She built it using what she picked up from Nkwocha Tochukwu's Prompt to Profit class — a course designed to teach complete beginners how to build landing pages and websites using ChatGPT. No coding. No prior experience.
+                    She followed along and by the end, she had a live page for a business she made up — with a name, a description, and a call to action.
+                    The proof that a course works is not in the certificate. It is in what the student builds when the class ends.”
+                  </p>
+                </article>
               </div>
             </div>
           </section>
@@ -473,7 +513,7 @@
             <div class="wrap">
               <div class="text-center">
                 <h2>What <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="inline-ptp-logo inline-ptp-logo--heading" /> is all about</h2>
-                <p class="lead-text">This is a practical learning system where beginners use AI to build real websites step by step. For schools, that means students are not just exposed to AI theory. They learn by creating.</p>
+                <p class="lead-text">This is a practical learning system where beginners use AI to build simple websites and games step by step. For schools, that means students are not just exposed to AI theory. They learn by creating.</p>
               </div>
               <div class="trust-grid">
                 <article class="trust-main">
@@ -500,6 +540,50 @@
                     <p id="trustOutputLabel" class="trust-stat-label">Students are already publishing live websites after training.</p>
                   </div>
                 </aside>
+              </div>
+            </div>
+          </section>
+
+          <section id="curriculum" class="section section-alt">
+            <div class="wrap-sm text-center">
+              <p class="section-label">How We Do It</p>
+              <h2>A one-week plan made for young creators.</h2>
+              <p class="lead-text">
+                We move fast, but we keep everything simple and fun. Kids can pause, replay, and ask questions during our live calls.
+              </p>
+            </div>
+
+            <div class="wrap-sm">
+              <div class="curriculum-stack" style="margin-top: 40px">
+                <article class="day-card">
+                  <p class="day-label">Day 1 • Recorded Video</p>
+                  <h3>Getting over the fear of AI</h3>
+                  <p>We kick things off together. Your child will learn what AI can do, how to give clear instructions, and we will build fun games and a real business website live in class so they see results immediately.</p>
+                </article>
+
+                <article class="day-card">
+                  <p class="day-label">Day 2 • Recorded Video</p>
+                  <h3>The absolute basics of websites</h3>
+                  <p>They will learn the building blocks of websites in a super simple way. Then we use AI to help them build their first simple webpage.</p>
+                </article>
+
+                <article class="day-card">
+                  <p class="day-label">Day 3 • Recorded Video</p>
+                  <h3>Building their first real project</h3>
+                  <p>Now ideas become real projects. They will use AI to build a useful webpage around something they love, like sports, music, books, or science.</p>
+                </article>
+
+                <article class="day-card">
+                  <p class="day-label">Day 4 • Recorded Video</p>
+                  <h3>Making it look great and going live</h3>
+                  <p>We add colors, improve layout, and make their page look amazing on phone and laptop. Then we publish it online so they can proudly share it.</p>
+                </article>
+
+                <article class="day-card">
+                  <p class="day-label">Day 5 • Recorded Video</p>
+                  <h3>Fixing mistakes and building what’s next</h3>
+                  <p>We fix any bugs, celebrate what they built, and show them the next exciting things they can create with AI.</p>
+                </article>
               </div>
             </div>
           </section>
