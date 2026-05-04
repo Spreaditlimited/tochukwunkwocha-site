@@ -274,6 +274,37 @@
         flex-wrap: wrap;
         gap: 10px;
       }
+      .browser-mockup {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        border: 1px solid #dbe4f2;
+        background: #fff;
+        box-shadow: 0 20px 45px rgba(20, 33, 61, 0.12);
+      }
+      .browser-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #e6edf7;
+        background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%);
+      }
+      .browser-dots { display: flex; gap: 0.4rem; }
+      .browser-dot { width: 0.6rem; height: 0.6rem; border-radius: 9999px; }
+      .browser-url {
+        flex: 1;
+        min-width: 0;
+        padding: 0.45rem 0.75rem;
+        border-radius: 0.7rem;
+        background: #fff;
+        border: 1px solid #d7e3f6;
+        font-size: 0.78rem;
+        color: #4a5b78;
+        font-family: "Fira Code", monospace;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       /* Trust Section */
       .trust-grid { margin-top: 64px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: stretch; }
@@ -505,6 +536,75 @@
                     The proof that a course works is not in the certificate. It is in what the student builds when the class ends.”
                   </p>
                 </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="section section-alt">
+            <div class="wrap text-center">
+              <p class="section-label">Some Student's Websites</p>
+              <h2>Some Student's Websites</h2>
+              <p class="lead-text">Built by young students following the Prompt to Profit workflow and instructions. Students learn how to command AI to build real websites.</p>
+            </div>
+            <div class="wrap" style="margin-top: 40px; display: grid; gap: 48px;">
+              <div class="browser-mockup">
+                <div class="browser-header">
+                  <div class="browser-dots">
+                    <div class="browser-dot" style="background:#f87171;"></div>
+                    <div class="browser-dot" style="background:#fbbf24;"></div>
+                    <div class="browser-dot" style="background:#34d399;"></div>
+                  </div>
+                  <div class="browser-url">themancavenaija.com</div>
+                </div>
+                <iframe
+                  src="https://themancavenaija.com/"
+                  title="The Man Cave Naija website"
+                  style="width:100%; height:650px; border:0; background:#fff;"
+                  loading="lazy"
+                ></iframe>
+              </div>
+
+              <div class="browser-mockup">
+                <div class="browser-header">
+                  <div class="browser-dots">
+                    <div class="browser-dot" style="background:#f87171;"></div>
+                    <div class="browser-dot" style="background:#fbbf24;"></div>
+                    <div class="browser-dot" style="background:#34d399;"></div>
+                  </div>
+                  <div class="browser-url">awesomeinterior6776.netlify.app</div>
+                </div>
+                <iframe
+                  src="https://awesomeinterior6776.netlify.app"
+                  title="Awesome Interior student website"
+                  style="width:100%; height:650px; border:0; background:#fff;"
+                  loading="lazy"
+                ></iframe>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="wrap text-center">
+              <p class="section-label">Simple Games Students Build</p>
+              <h2>Simple Games Students Build</h2>
+              <p class="lead-text">Your students, even 7 and 8 year olds will learn how to work with AI to build and improve simple web games.</p>
+            </div>
+            <div class="wrap" style="margin-top: 40px;">
+              <div class="browser-mockup">
+                <div class="browser-header">
+                  <div class="browser-dots">
+                    <div class="browser-dot" style="background:#f87171;"></div>
+                    <div class="browser-dot" style="background:#fbbf24;"></div>
+                    <div class="browser-dot" style="background:#34d399;"></div>
+                  </div>
+                  <div class="browser-url">kachigamearcade.netlify.app</div>
+                </div>
+                <iframe
+                  src="https://kachigamearcade.netlify.app"
+                  title="Kachi Game Arcade"
+                  style="width:100%; height:650px; border:0; background:#fff;"
+                  loading="lazy"
+                ></iframe>
               </div>
             </div>
           </section>
