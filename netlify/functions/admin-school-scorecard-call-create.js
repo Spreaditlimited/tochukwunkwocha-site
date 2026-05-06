@@ -5,6 +5,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { sendEmail } = require("./_lib/email");
 const { createZoomMeeting } = require("./_lib/zoom");
+const { getSchoolNotificationRecipients } = require("./_lib/school-notification-recipients");
 const {
   SCHOOL_CALL_BOOKINGS_TABLE,
   ensureSchoolCallTablesTochukwu,
@@ -218,6 +219,18 @@ exports.handler = async function (event) {
       zoomJoinUrl ? `<p><strong>Zoom link:</strong> <a href="${zoomJoinUrl}">Join Meeting</a></p>` : "",
       "<p>Regards,<br/>Tochukwu Tech and AI Academy</p>",
     ].join("");
+    const adminSubject = `School Call Booked - ${schoolName}`;
+    const adminText = [
+      "New school call booking",
+      `Name: ${fullName}`,
+      `School: ${schoolName}`,
+      `Email: ${workEmail}`,
+      `Phone: ${phone}`,
+      `Role: ${role}`,
+      `Student population: ${studentPopulation}`,
+      `Time: ${slotHuman} (WAT)`,
+      zoomJoinUrl ? `Zoom join link: ${zoomJoinUrl}` : "",
+    ].filter(Boolean).join("\n");
 
     try {
       await sendEmail({
@@ -227,6 +240,20 @@ exports.handler = async function (event) {
         text: userHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
       });
     } catch (_error) {}
+
+    const adminRecipients = getSchoolNotificationRecipients();
+    await Promise.all(
+      adminRecipients.map(function (to) {
+        return sendEmail({
+          to,
+          subject: adminSubject,
+          text: adminText,
+          html: adminText.replace(/\n/g, "<br/>"),
+        }).catch(function () {
+          return null;
+        });
+      })
+    );
 
     return json(200, {
       ok: true,

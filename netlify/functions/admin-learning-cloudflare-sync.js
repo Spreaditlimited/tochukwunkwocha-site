@@ -2,7 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { ensureLearningTables, upsertVideoAsset, clean } = require("./_lib/learning");
+const { ensureLearningTables, upsertVideoAsset, clean, VIDEO_ASSETS_TABLE } = require("./_lib/learning");
 
 function getCloudflareConfig() {
   const accountId = clean(process.env.CLOUDFLARE_ACCOUNT_ID, 120);
@@ -34,6 +34,16 @@ async function cfFetch(pathname, config) {
   return payload;
 }
 
+async function ensureVideoSourceDeletedColumn(pool) {
+  try {
+    await pool.query(`ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN source_deleted_at DATETIME NULL`);
+  } catch (error) {
+    const msg = String((error && error.message) || "").toLowerCase();
+    if (msg.indexOf("duplicate column") !== -1 || msg.indexOf("already exists") !== -1) return;
+    throw error;
+  }
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -56,13 +66,16 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    await ensureVideoSourceDeletedColumn(pool);
     const config = getCloudflareConfig();
 
     let page = 1;
     let totalPages = 1;
     let totalFetched = 0;
     let insertedOrUpdated = 0;
+    let markedDeleted = 0;
     const samples = [];
+    const syncedUids = new Set();
 
     while (page <= totalPages && page <= maxPages) {
       const payload = await cfFetch(
@@ -87,6 +100,7 @@ exports.handler = async function (event) {
           source_payload_json: row || null,
         };
         if (!mapped.video_uid) continue;
+        syncedUids.add(mapped.video_uid);
         const saved = await upsertVideoAsset(pool, mapped);
         if (saved) {
           insertedOrUpdated += 1;
@@ -96,10 +110,37 @@ exports.handler = async function (event) {
       page += 1;
     }
 
+    if (syncedUids.size > 0) {
+      const placeholders = Array.from(syncedUids).map(function () { return "?"; }).join(", ");
+      const params = [new Date()];
+      const provider = "cloudflare_stream";
+      let pruneSql = `UPDATE ${VIDEO_ASSETS_TABLE}
+         SET source_deleted_at = ?
+       WHERE provider = ?`;
+      params.push(provider);
+      if (placeholders) {
+        pruneSql += ` AND video_uid NOT IN (${placeholders})`;
+        Array.from(syncedUids).forEach(function (uid) {
+          params.push(uid);
+        });
+      }
+      pruneSql += ` AND source_deleted_at IS NULL`;
+      try {
+        const [pruneRes] = await pool.query(pruneSql, params);
+        markedDeleted = Number(pruneRes && pruneRes.affectedRows || 0);
+      } catch (pruneError) {
+        const pruneMsg = String((pruneError && pruneError.message) || "").toLowerCase();
+        if (pruneMsg.indexOf("unknown column") === -1 || pruneMsg.indexOf("source_deleted_at") === -1) {
+          throw pruneError;
+        }
+      }
+    }
+
     return json(200, {
       ok: true,
       fetched: totalFetched,
       upserted: insertedOrUpdated,
+      marked_deleted: markedDeleted,
       scannedPages: page - 1,
       maxPages,
       samples,

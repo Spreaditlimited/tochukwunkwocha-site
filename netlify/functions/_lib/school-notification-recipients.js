@@ -18,13 +18,14 @@ function parseEmailList(raw) {
 }
 
 function getSchoolNotificationRecipients() {
-  const fallback = "support@tochukwunkwocha.com";
+  const fallbackList = ["support@tochukwunkwocha.com", "partnerships@tochukwunkwocha.com"];
   const configured =
     clean(process.env.SCHOOL_NOTIFICATION_EMAILS, 5000) ||
     clean(process.env.SCHOOL_ALERT_EMAILS, 5000) ||
     clean(process.env.SCHOOL_CALL_ALERT_EMAILS, 5000);
+  const fallback = fallbackList.join(",");
   const emails = parseEmailList(configured || fallback);
-  if (!emails.length) return [fallback];
+  if (!emails.length) return fallbackList;
   return Array.from(new Set(emails));
 }
 

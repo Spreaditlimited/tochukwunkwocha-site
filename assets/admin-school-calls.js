@@ -1,6 +1,8 @@
 (function () {
   var rowsEl = document.getElementById("schoolCallsRows");
   var messageEl = document.getElementById("schoolCallsMessage");
+  var resendBtn = document.getElementById("schoolCallResendBtn");
+  var resendHoursInput = document.getElementById("schoolCallResendHours");
 
   var modalEl = document.getElementById("schoolCallModal");
   var modalForm = document.getElementById("schoolCallModalForm");
@@ -418,6 +420,28 @@
     setMessage("Loaded " + String(bookings.length) + " booking(s).", false);
   }
 
+  async function resendRecentNotifications() {
+    var lookbackHours = Number(clean(resendHoursInput && resendHoursInput.value, 10) || 72);
+    if (!Number.isFinite(lookbackHours) || lookbackHours < 1) lookbackHours = 72;
+    setMessage("Resending booking emails for recent calls...", false);
+    var result = await api("/.netlify/functions/admin-school-call-notifications-resend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        lookbackHours: lookbackHours,
+        limit: 120,
+        sendLead: true,
+        sendAdmins: true,
+      }),
+    });
+    var msg =
+      "Resend complete. Scanned " + String(result.scanned || 0) +
+      ", lead emails sent " + String(result.leadSent || 0) +
+      ", admin emails sent " + String(result.adminSent || 0) +
+      ", failures " + String(result.failureCount || 0) + ".";
+    setMessage(msg, Number(result.failureCount || 0) > 0);
+  }
+
   if (modalEl) {
     modalEl.querySelectorAll("[data-school-call-modal-close]").forEach(function (el) {
       el.addEventListener("click", closeModal);
@@ -456,6 +480,22 @@
       closeModal();
     }
   });
+
+  if (resendBtn) {
+    resendBtn.addEventListener("click", function () {
+      var original = clean(resendBtn.textContent, 80) || "Resend Recent Emails";
+      resendBtn.disabled = true;
+      resendBtn.textContent = "Resending...";
+      resendRecentNotifications()
+        .catch(function (error) {
+          setMessage(error.message || "Could not resend recent call emails.", true);
+        })
+        .finally(function () {
+          resendBtn.disabled = false;
+          resendBtn.textContent = original;
+        });
+    });
+  }
 
   load().catch(function (error) {
     setMessage(error.message || "Could not load school calls", true);

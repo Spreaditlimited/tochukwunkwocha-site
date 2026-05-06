@@ -1803,7 +1803,11 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ maxPages: maxPages }),
         });
-        setMessage("Sync complete. Fetched " + res.fetched + " and upserted " + res.upserted + " assets.", "ok");
+        var markedDeleted = Number(res && res.marked_deleted || 0);
+        setMessage(
+          "Sync complete. Fetched " + res.fetched + ", upserted " + res.upserted + ", and removed " + markedDeleted + " deleted Cloudflare asset(s) from selection.",
+          "ok"
+        );
         showToast("Cloudflare sync completed.", "ok");
         await loadLibrary(state.selectedModuleId);
       } catch (error) {

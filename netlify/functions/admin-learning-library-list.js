@@ -23,6 +23,7 @@ let hasLessonAudioDescriptionColumnCached = null;
 let hasLessonSignLanguageColumnCached = null;
 let hasLessonAccessibilityStatusColumnCached = null;
 let hasCourseModuleMappingsTableCached = null;
+let hasVideoSourceDeletedAtColumnCached = null;
 const LEGACY_IMMEDIATE_DRIP_SENTINEL = "1970-01-01 00:00:00";
 
 async function safeAlter(pool, sql) {
@@ -120,6 +121,22 @@ async function hasTableColumn(pool, tableName, columnName) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
+async function ensureVideoSourceDeletedColumn(pool) {
+  try {
+    await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN source_deleted_at DATETIME NULL`);
+  } catch (_error) {}
+}
+
+async function hasVideoSourceDeletedAtColumn(pool) {
+  if (hasVideoSourceDeletedAtColumnCached === true) return true;
+  try {
+    hasVideoSourceDeletedAtColumnCached = await hasTableColumn(pool, VIDEO_ASSETS_TABLE, "source_deleted_at");
+  } catch (_error) {
+    hasVideoSourceDeletedAtColumnCached = false;
+  }
+  return hasVideoSourceDeletedAtColumnCached;
+}
+
 async function hasModuleBatchAccessModeColumn(pool) {
   if (hasModuleBatchAccessModeColumnCached === true) return true;
   try {
@@ -202,6 +219,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureLearningTables(pool);
+    await ensureVideoSourceDeletedColumn(pool);
     await ensureCourseModeAndPriceColumns(pool);
     await ensureCourseBatchesTable(pool);
     const courses = await listLearningCourses(pool);
@@ -215,6 +233,7 @@ exports.handler = async function (event) {
     const hasAccessibilityStatus = await hasLessonAccessibilityStatusColumn(pool);
     const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
     const hasBatchAccessMode = await hasModuleBatchAccessModeColumn(pool);
+    const hasSourceDeletedAt = await hasVideoSourceDeletedAtColumn(pool);
     const dripBatchKeySelect = hasBatchKey ? "m.drip_batch_key" : "NULL AS drip_batch_key";
     const dripOffsetSecondsSelect = hasOffset ? "m.drip_offset_seconds" : "NULL AS drip_offset_seconds";
     const missingCaptionsSelect = hasCaptions
@@ -301,6 +320,7 @@ exports.handler = async function (event) {
          source_created_at,
          updated_at
        FROM ${VIDEO_ASSETS_TABLE}
+       ${hasSourceDeletedAt ? "WHERE source_deleted_at IS NULL" : ""}
        ORDER BY updated_at DESC
        LIMIT 1000`
     );

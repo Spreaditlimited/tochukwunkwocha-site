@@ -265,6 +265,7 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN duration_seconds DECIMAL(10,2) NULL`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN ready_to_stream TINYINT(1) NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN source_created_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN source_deleted_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN source_payload_json LONGTEXT NULL`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
   await safeAlter(pool, `ALTER TABLE ${VIDEO_ASSETS_TABLE} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
@@ -827,6 +828,7 @@ async function upsertVideoAsset(pool, input) {
       duration_seconds = VALUES(duration_seconds),
       ready_to_stream = VALUES(ready_to_stream),
       source_created_at = VALUES(source_created_at),
+      source_deleted_at = NULL,
       source_payload_json = VALUES(source_payload_json),
       updated_at = VALUES(updated_at)`,
     [
