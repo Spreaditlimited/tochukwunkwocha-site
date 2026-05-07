@@ -24,6 +24,12 @@ exports.handler = async function (event) {
   const batchKey = String(body.batchKey || "").trim();
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
   if (!batchKey) return json(400, { ok: false, error: "batchKey is required" });
+  if (courseSlug === "prompt-to-profit-holiday") {
+    return json(400, {
+      ok: false,
+      error: "Activate is disabled for Prompt to Profit Holiday. Keep multiple batches open instead.",
+    });
+  }
 
   const pool = getPool();
   try {

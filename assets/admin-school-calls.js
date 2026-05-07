@@ -3,6 +3,8 @@
   var messageEl = document.getElementById("schoolCallsMessage");
   var resendBtn = document.getElementById("schoolCallResendBtn");
   var resendHoursInput = document.getElementById("schoolCallResendHours");
+  var upcomingTabBtn = document.getElementById("schoolCallsUpcomingTab");
+  var pastTabBtn = document.getElementById("schoolCallsPastTab");
 
   var modalEl = document.getElementById("schoolCallModal");
   var modalForm = document.getElementById("schoolCallModalForm");
@@ -26,6 +28,7 @@
   var cancelNoteInput = document.getElementById("schoolCallCancelNote");
 
   var currentRows = [];
+  var currentTab = "upcoming";
   var pendingAction = null;
 
   function clean(value, max) {
@@ -129,6 +132,52 @@
     var d = new Date(raw);
     if (!Number.isFinite(d.getTime())) return "";
     return d.toISOString();
+  }
+
+  function parseIsoMs(value) {
+    var raw = clean(value);
+    if (!raw) return NaN;
+    var ms = new Date(raw).getTime();
+    return Number.isFinite(ms) ? ms : NaN;
+  }
+
+  function isPastCall(row) {
+    var slotMs = parseIsoMs(row && row.slotStartIso);
+    if (!Number.isFinite(slotMs)) return false;
+    return slotMs < Date.now();
+  }
+
+  function tabRows(items, tab) {
+    var list = Array.isArray(items) ? items.slice() : [];
+    var wanted = clean(tab, 30).toLowerCase() === "past" ? "past" : "upcoming";
+    list = list.filter(function (row) {
+      return wanted === "past" ? isPastCall(row) : !isPastCall(row);
+    });
+    list.sort(function (a, b) {
+      var aMs = parseIsoMs(a && a.slotStartIso);
+      var bMs = parseIsoMs(b && b.slotStartIso);
+      if (!Number.isFinite(aMs) && !Number.isFinite(bMs)) return 0;
+      if (!Number.isFinite(aMs)) return 1;
+      if (!Number.isFinite(bMs)) return -1;
+      return wanted === "past" ? (bMs - aMs) : (aMs - bMs);
+    });
+    return list;
+  }
+
+  function renderTabState() {
+    var isPast = currentTab === "past";
+    if (upcomingTabBtn) {
+      upcomingTabBtn.classList.toggle("bg-white", !isPast);
+      upcomingTabBtn.classList.toggle("text-brand-700", !isPast);
+      upcomingTabBtn.classList.toggle("shadow-sm", !isPast);
+      upcomingTabBtn.classList.toggle("text-gray-600", isPast);
+    }
+    if (pastTabBtn) {
+      pastTabBtn.classList.toggle("bg-white", isPast);
+      pastTabBtn.classList.toggle("text-brand-700", isPast);
+      pastTabBtn.classList.toggle("shadow-sm", isPast);
+      pastTabBtn.classList.toggle("text-gray-600", !isPast);
+    }
   }
 
   async function api(url, init) {
@@ -416,8 +465,10 @@
     var data = await api("/.netlify/functions/admin-school-calls-list");
     var bookings = Array.isArray(data.bookings) ? data.bookings : [];
     currentRows = bookings;
-    renderRows(bookings);
-    setMessage("Loaded " + String(bookings.length) + " booking(s).", false);
+    var visible = tabRows(bookings, currentTab);
+    renderRows(visible);
+    renderTabState();
+    setMessage("Loaded " + String(visible.length) + " " + (currentTab === "past" ? "past" : "upcoming") + " booking(s).", false);
   }
 
   async function resendRecentNotifications() {
@@ -494,6 +545,24 @@
           resendBtn.disabled = false;
           resendBtn.textContent = original;
         });
+    });
+  }
+
+  if (upcomingTabBtn) {
+    upcomingTabBtn.addEventListener("click", function () {
+      currentTab = "upcoming";
+      renderTabState();
+      renderRows(tabRows(currentRows, currentTab));
+      setMessage("Showing upcoming calls.", false);
+    });
+  }
+
+  if (pastTabBtn) {
+    pastTabBtn.addEventListener("click", function () {
+      currentTab = "past";
+      renderTabState();
+      renderRows(tabRows(currentRows, currentTab));
+      setMessage("Showing past calls.", false);
     });
   }
 

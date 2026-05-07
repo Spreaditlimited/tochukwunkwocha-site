@@ -37,6 +37,9 @@
   const summaryStudentsEl = document.getElementById("paymentsSummaryStudents");
   const summaryTotalEl = document.getElementById("paymentsSummaryTotal");
   const summarySourcesEl = document.getElementById("paymentsSummarySources");
+  const holidayWaitlistSectionEl = document.getElementById("holidayWaitlistSection");
+  const holidayWaitlistMessageEl = document.getElementById("holidayWaitlistMessage");
+  const holidayWaitlistRowsEl = document.getElementById("holidayWaitlistRows");
   const reviewModal = document.getElementById("reviewModal");
   const reviewModalEyebrow = document.getElementById("reviewModalEyebrow");
   const reviewModalTitle = document.getElementById("reviewModalTitle");
@@ -103,11 +106,13 @@
   let addStudentBatchMetaByKey = {};
   const COURSE_DEFAULTS = {
     "prompt-to-profit": { prefix: "PTP", amountMinor: 1075000, paypalAmountMinor: 2400 },
+    "prompt-to-profit-holiday": { prefix: "PTPH", amountMinor: 1075000, paypalAmountMinor: 2400 },
     "prompt-to-production": { prefix: "PTPROD", amountMinor: 25000000, paypalAmountMinor: 2400 },
     "prompt-to-profit-schools": { prefix: "PTPS", amountMinor: 1075000, paypalAmountMinor: 2400 },
   };
   const FALLBACK_COURSES = [
     { slug: "prompt-to-profit", label: "Prompt To Profit" },
+    { slug: "prompt-to-profit-holiday", label: "Prompt to Profit Holiday" },
     { slug: "prompt-to-production", label: "Prompt to Profit Advanced" },
     { slug: "prompt-to-profit-schools", label: "Prompt to Profit for Schools" },
   ];
@@ -159,6 +164,11 @@
     return value || "prompt-to-profit";
   }
 
+  function selectedCourseSlugRaw() {
+    if (!courseFilter) return "";
+    return canonicalCourseSlug(courseFilter.value);
+  }
+
   function selectedCourseEnrollmentMode() {
     const summarySlug = selectedSummaryCourseSlug();
     const slug = summarySlug && summarySlug !== "all" ? summarySlug : selectedCourseSlug();
@@ -208,6 +218,7 @@
     if (!summaryCourseFilter) return selectedCourseSlug();
     const value = canonicalCourseSlug(summaryCourseFilter.value);
     if (value === "all") return value;
+    if (value === "prompt-to-profit-holiday") return value;
     if (availableCourses.some(function (item) { return item.slug === value; })) return value;
     return selectedCourseSlug();
   }
@@ -215,7 +226,10 @@
   function setCourseFilterOptions(items) {
     if (!courseFilter) return;
     const current = selectedCourseSlug();
-    const list = Array.isArray(items) && items.length ? items : FALLBACK_COURSES;
+    const list = Array.isArray(items) && items.length ? items.slice() : FALLBACK_COURSES.slice();
+    if (!list.some(function (item) { return canonicalCourseSlug(item && item.slug) === "prompt-to-profit-holiday"; })) {
+      list.push({ slug: "prompt-to-profit-holiday", label: "Prompt to Profit Holiday" });
+    }
     courseFilter.innerHTML = list
       .map(function (item) {
         const slug = canonicalCourseSlug(item.slug);
@@ -233,7 +247,10 @@
   function setSummaryCourseFilterOptions(items) {
     if (!summaryCourseFilter) return;
     const current = selectedSummaryCourseSlug();
-    const list = Array.isArray(items) && items.length ? items : [];
+    const list = Array.isArray(items) && items.length ? items.slice() : FALLBACK_COURSES.slice();
+    if (!list.some(function (item) { return canonicalCourseSlug(item && item.slug) === "prompt-to-profit-holiday"; })) {
+      list.push({ slug: "prompt-to-profit-holiday", label: "Prompt to Profit Holiday" });
+    }
     const options = ['<option value="all">All courses</option>'].concat(
       list.map(function (item) {
         const slug = canonicalCourseSlug(item.slug);
@@ -243,7 +260,7 @@
       }).filter(Boolean)
     );
     summaryCourseFilter.innerHTML = options.join("");
-    if (current === "all" || list.some(function (item) { return item.slug === current; })) {
+    if (current === "all" || list.some(function (item) { return canonicalCourseSlug(item.slug) === current; })) {
       summaryCourseFilter.value = current;
     }
   }
@@ -531,6 +548,82 @@
     else messageEl.classList.add("hidden");
     if (type === "error") messageEl.classList.add("is-error");
     if (type === "ok") messageEl.classList.add("is-ok");
+  }
+
+  function setHolidayWaitlistMessage(text, isError) {
+    if (!holidayWaitlistMessageEl) return;
+    holidayWaitlistMessageEl.textContent = String(text || "").trim();
+    holidayWaitlistMessageEl.className = "text-sm " + (isError ? "text-red-600" : "text-gray-500");
+  }
+
+  function isHolidayCourseSelected() {
+    return selectedCourseSlugRaw() === "prompt-to-profit-holiday" || selectedSummaryCourseSlug() === "prompt-to-profit-holiday";
+  }
+
+  function syncHolidayWaitlistVisibility() {
+    if (!holidayWaitlistSectionEl) return false;
+    const visible = isHolidayCourseSelected();
+    holidayWaitlistSectionEl.classList.toggle("hidden", !visible);
+    return visible;
+  }
+
+  function formatWaitlistDate(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "-";
+    const date = new Date(raw);
+    if (!Number.isFinite(date.getTime())) return "-";
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Africa/Lagos",
+      }).format(date);
+    } catch (_error) {
+      return "-";
+    }
+  }
+
+  function renderHolidayWaitlist(items) {
+    if (!holidayWaitlistRowsEl) return;
+    if (!Array.isArray(items) || !items.length) {
+      holidayWaitlistRowsEl.innerHTML = '<tr><td colspan="4" class="px-3 py-5 text-sm text-gray-500">No waitlist entries found.</td></tr>';
+      return;
+    }
+    holidayWaitlistRowsEl.innerHTML = items.map(function (row) {
+      const name = escapeHtml(String(row && row.fullName || "").trim() || "-");
+      const email = escapeHtml(String(row && row.email || "").trim() || "-");
+      const phone = escapeHtml(String(row && row.phone || "").trim() || "-");
+      const updated = escapeHtml(formatWaitlistDate(row && (row.modifiedAt || row.createdAt)));
+      return [
+        "<tr>",
+        '<td class="px-3 py-3 text-sm text-gray-900">' + name + "</td>",
+        '<td class="px-3 py-3 text-sm text-gray-700">' + email + "</td>",
+        '<td class="px-3 py-3 text-sm text-gray-700">' + phone + "</td>",
+        '<td class="px-3 py-3 text-sm text-gray-600">' + updated + "</td>",
+        "</tr>",
+      ].join("");
+    }).join("");
+  }
+
+  async function loadHolidayWaitlist() {
+    if (!holidayWaitlistRowsEl) return;
+    if (!syncHolidayWaitlistVisibility()) return;
+    setHolidayWaitlistMessage("Loading waitlist...", false);
+    const res = await fetch("/.netlify/functions/admin-holiday-waitlist-list?list_id=10&limit=500", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (res.status === 401) {
+      throw new Error("Your admin session expired.");
+    }
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not load holiday waitlist.");
+    }
+    const items = Array.isArray(json.contacts) ? json.contacts : [];
+    renderHolidayWaitlist(items);
+    setHolidayWaitlistMessage("Loaded " + String(items.length) + " waiting entr" + (items.length === 1 ? "y." : "ies."), false);
   }
 
   function openReviewModal(payload) {
@@ -1548,7 +1641,10 @@
 
   if (refreshBtn) {
     refreshBtn.addEventListener("click", function () {
-      loadItems({ reconcile: false }).catch(function (error) {
+      Promise.all([
+        loadItems({ reconcile: false }),
+        (isHolidayCourseSelected() ? loadHolidayWaitlist() : Promise.resolve()).catch(function () { return null; }),
+      ]).catch(function (error) {
         setMessage(error.message || "Could not refresh", "error");
       });
     });
@@ -2376,6 +2472,7 @@
   if (courseFilter) {
     courseFilter.addEventListener("change", function () {
       const courseSlug = selectedCourseSlug();
+      syncHolidayWaitlistVisibility();
       syncBatchUiVisibility();
       if (selectedCourseEnrollmentMode() === "immediate") {
         renderBatchOptions({
@@ -2391,6 +2488,12 @@
           summaryBatchKey: "all",
         }).catch(function (error) {
           setMessage(error.message || "Could not refresh enrollments for selected course", "error");
+        }).finally(function () {
+          if (isHolidayCourseSelected()) {
+            loadHolidayWaitlist().catch(function (error) {
+              setHolidayWaitlistMessage(error.message || "Could not load holiday waitlist.", true);
+            });
+          }
         });
         return;
       }
@@ -2412,16 +2515,30 @@
         })
         .catch(function (error) {
           setMessage(error.message || "Could not refresh batches for selected course", "error");
+        })
+        .finally(function () {
+          if (isHolidayCourseSelected()) {
+            loadHolidayWaitlist().catch(function (error) {
+              setHolidayWaitlistMessage(error.message || "Could not load holiday waitlist.", true);
+            });
+          }
         });
     });
   }
 
   if (summaryCourseFilter) {
     summaryCourseFilter.addEventListener("change", function () {
+      syncHolidayWaitlistVisibility();
       syncBatchUiVisibility();
       if (summaryBatchFilter) summaryBatchFilter.value = "all";
       loadItems({ reconcile: false }).catch(function (error) {
         setMessage(error.message || "Could not refresh summary", "error");
+      }).finally(function () {
+        if (isHolidayCourseSelected()) {
+          loadHolidayWaitlist().catch(function (error) {
+            setHolidayWaitlistMessage(error.message || "Could not load holiday waitlist.", true);
+          });
+        }
       });
     });
   }
@@ -2688,6 +2805,7 @@
   });
 
   bootAppShell();
+  syncHolidayWaitlistVisibility();
   Promise.resolve()
     .then(function () {
       const courseSlug = selectedCourseSlug();
@@ -2702,6 +2820,10 @@
         summaryCourseSlug: selectedSummaryCourseSlug(),
         summaryBatchKey: selectedSummaryBatchKey() || "all",
       }).then(function () {
+        return (isHolidayCourseSelected() ? loadHolidayWaitlist() : Promise.resolve()).catch(function (error) {
+          setHolidayWaitlistMessage(error.message || "Could not load holiday waitlist.", true);
+          return null;
+        }).then(function () {
         // Hydrate secondary controls in the background after first paint.
         return loadAvailableCourses()
           .then(function () {
@@ -2717,6 +2839,7 @@
           .catch(function () {
             return [];
           });
+        });
       });
     })
     .catch(function (error) {

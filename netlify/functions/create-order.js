@@ -4,6 +4,7 @@ const { getPool } = require("./_lib/db");
 const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { ensureAffiliateTables, recordAffiliateAttribution } = require("./_lib/affiliates");
@@ -34,6 +35,9 @@ function normalizeCountry(value) {
 
 function normalizeAffiliateCode(value) {
   return String(value || "").trim().slice(0, 40).toUpperCase();
+}
+function requiresExplicitBatchSelection(courseSlug) {
+  return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
 function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode }) {
@@ -118,6 +122,16 @@ exports.handler = async function (event) {
       ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
       : null;
     if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    if (enrollmentMode === "batch" && requiresExplicitBatchSelection(courseSlug)) {
+      const requestedBatchKey = String(body.batchKey || "").trim();
+      if (!requestedBatchKey) {
+        return json(400, { ok: false, error: "Please choose a batch before continuing." });
+      }
+      if (String(batch.batch_key || "").toLowerCase() !== requestedBatchKey.toLowerCase()) {
+        return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
+      }
+      await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+    }
     const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
 
     let pricing = {

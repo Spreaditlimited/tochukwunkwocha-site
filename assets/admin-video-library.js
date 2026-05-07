@@ -37,6 +37,7 @@
   var createCourseBatchBtn = document.getElementById("createCourseBatchBtn");
   var updateCourseBatchBtn = document.getElementById("updateCourseBatchBtn");
   var activateCourseBatchBtn = document.getElementById("activateCourseBatchBtn");
+  var deleteCourseBatchBtn = document.getElementById("deleteCourseBatchBtn");
   var createCourseBtn = document.getElementById("createCourseBtn");
   var saveCourseBtn = document.getElementById("saveCourseBtn");
 
@@ -401,10 +402,14 @@
   }
 
   function setCourseBatchControlsDisabled(disabled) {
-    [courseBatchLabelInput, courseBatchKeyInput, courseBatchStartInput, courseBatchPrefixInput, courseBatchNgnInput, courseBatchGbpInput, createCourseBatchBtn, updateCourseBatchBtn, activateCourseBatchBtn]
+    [courseBatchLabelInput, courseBatchKeyInput, courseBatchStartInput, courseBatchPrefixInput, courseBatchNgnInput, courseBatchGbpInput, createCourseBatchBtn, updateCourseBatchBtn, activateCourseBatchBtn, deleteCourseBatchBtn]
       .forEach(function (el) {
         if (el) el.disabled = !!disabled;
       });
+  }
+
+  function isHolidayCourseSlug(slug) {
+    return String(slug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
   }
 
   function formatMinorCurrency(minor, currency) {
@@ -444,7 +449,16 @@
     }
     var batches = listBatchesForCourse(slug);
     setCourseBatchControlsDisabled(false);
-    if (courseBatchManagerHint) courseBatchManagerHint.textContent = "Batches for selected course";
+    if (courseBatchManagerHint) {
+      courseBatchManagerHint.textContent = isHolidayCourseSlug(slug)
+        ? "Holiday multi-batch mode: keep batches open; Activate is disabled"
+        : "Batches for selected course";
+    }
+    if (activateCourseBatchBtn) {
+      var hideActivate = isHolidayCourseSlug(slug);
+      activateCourseBatchBtn.disabled = hideActivate;
+      activateCourseBatchBtn.classList.toggle("hidden", hideActivate);
+    }
     if (!batches.length) {
       courseBatchRows.innerHTML = '<p class="text-xs text-gray-500">No batches created yet for this course.</p>';
       return;
@@ -454,6 +468,7 @@
       var key = String(readBatchField(row, "batch_key", "batchKey") || "").trim().toLowerCase();
       var label = String(readBatchField(row, "batch_label", "batchLabel") || key);
       var active = Number(readBatchField(row, "is_active", "isActive") || 0) === 1;
+      var isHoliday = isHolidayCourseSlug(slug);
       var selected = key && key === String(state.selectedCourseBatchKey || "").trim().toLowerCase();
       var statusLabel = String(readBatchField(row, "status", "status") || "").trim() || (active ? "active" : "closed");
       var startAt = String(readBatchField(row, "batch_start_at", "batchStartAt") || "").trim();
@@ -461,9 +476,9 @@
       var ngnMinor = Number(readBatchField(row, "paystack_amount_minor", "paystackAmountMinor") || 0);
       var gbpMinor = Number(readBatchField(row, "paypal_amount_minor", "paypalAmountMinor") || 0);
       var brevoList = String(readBatchField(row, "brevo_list_id", "brevoListId") || "").trim();
-      return '<button type="button" data-course-batch-course="' + escapeHtml(slug) + '" data-course-batch-key="' + escapeHtml(key) + '" class="w-full rounded-lg border px-3 py-3 text-left text-xs ' + (active ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200 bg-white') + ' ' + (selected ? 'ring-2 ring-brand-300' : 'hover:bg-gray-50') + '">' +
+      return '<button type="button" data-course-batch-course="' + escapeHtml(slug) + '" data-course-batch-key="' + escapeHtml(key) + '" class="w-full rounded-lg border px-3 py-3 text-left text-xs ' + ((active && !isHoliday) ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200 bg-white') + ' ' + (selected ? 'ring-2 ring-brand-300' : 'hover:bg-gray-50') + '">' +
         '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-gray-900">' + escapeHtml(label) + '</span>' +
-        (active ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ACTIVE BATCH</span>' : '<span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">' + escapeHtml(statusLabel) + "</span>") +
+        ((active && !isHoliday) ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ACTIVE BATCH</span>' : '<span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">' + escapeHtml(statusLabel) + "</span>") +
         "</div>" +
         '<div class="mt-2 grid gap-1 text-[11px] text-gray-600 sm:grid-cols-2">' +
           '<p><span class="font-semibold">Key:</span> ' + escapeHtml(key || "-") + "</p>" +
@@ -1082,6 +1097,9 @@
   if (activateCourseBatchBtn) {
     activateCourseBatchBtn.addEventListener("click", async function () {
       var courseSlug = selectedCourseSlug();
+      if (isHolidayCourseSlug(courseSlug)) {
+        return setMessage("Activate is disabled for Prompt to Profit Holiday. Keep multiple batches open instead.", "error");
+      }
       var batchKey = String(state.selectedCourseBatchKey || "").trim();
       if (!courseSlug || !batchKey) return setMessage("Select a batch first.", "error");
       activateCourseBatchBtn.disabled = true;
@@ -1102,6 +1120,41 @@
         setMessage(error.message || "Could not activate batch.", "error");
       } finally {
         activateCourseBatchBtn.disabled = false;
+      }
+    });
+  }
+
+  if (deleteCourseBatchBtn) {
+    deleteCourseBatchBtn.addEventListener("click", async function () {
+      var courseSlug = selectedCourseSlug();
+      var batchKey = String(state.selectedCourseBatchKey || "").trim();
+      if (!courseSlug || !batchKey) return setMessage("Select a batch first.", "error");
+      var selected = selectedCourseBatch();
+      var batchLabel = String(selected && (selected.batch_label || selected.batchLabel) || batchKey).trim();
+      var confirmed = await requestActionConfirm({
+        title: "Delete Batch?",
+        message: "This will permanently delete " + batchLabel + ". Active or referenced batches cannot be deleted.",
+      });
+      if (!confirmed) return;
+      deleteCourseBatchBtn.disabled = true;
+      setMessage("Deleting batch...", "");
+      try {
+        await api("/.netlify/functions/admin-course-batches-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseSlug: courseSlug,
+            batchKey: batchKey,
+          }),
+        });
+        state.selectedCourseBatchKey = "";
+        hydrateCourseBatchForm(null);
+        setMessage("Batch deleted.", "ok");
+        await loadLibrary(state.selectedModuleId);
+      } catch (error) {
+        setMessage(error.message || "Could not delete batch.", "error");
+      } finally {
+        deleteCourseBatchBtn.disabled = false;
       }
     });
   }

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VIP Waitlist | Prompt to Profit for Kids</title>
+    <meta
+      name="description"
+      content="Join the VIP Waitlist for the Prompt to Profit holiday bootcamp. We'll remind you the moment enrollment opens so you can secure your child's spot."
+    />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#f0f5fa',
+                100: '#e1ebf6',
+                200: '#c8dced',
+                300: '#a2c4e0',
+                400: '#75a5d0',
+                500: '#5286bf',
+                600: '#3f6ba4',
+                700: '#345585',
+                800: '#2d476e',
+                900: '#0a1930', /* Deep Navy */
+              }
+            },
+            boxShadow: {
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+              'float': '0 20px 40px -5px rgba(0,0,0,0.1)',
+            },
+            animation: {
+              'float-slow': 'float 6s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .tw-btn-primary {
+          @apply inline-flex items-center justify-center rounded-2xl bg-brand-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-500 hover:shadow-xl hover:shadow-brand-500/40 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+        }
+      }
+    </style>
+    <style>
+      main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+      .site-footer { margin-top: 0 !important; }
+      .waitlist-main {
+        padding-bottom: 7rem;
+      }
+      .waitlist-shell {
+        padding-top: 1.5rem;
+        padding-bottom: 2.5rem;
+      }
+      @media (max-width: 767px) {
+        .waitlist-main {
+          padding-top: 1.25rem !important;
+          padding-bottom: 5.5rem !important;
+        }
+        .waitlist-shell {
+          padding-top: 1.25rem;
+          padding-bottom: 3rem;
+        }
+      }
+      @media (min-width: 1024px) {
+        .waitlist-main {
+          padding-bottom: 10rem !important;
+        }
+        .waitlist-shell {
+          padding-top: 1rem;
+          padding-bottom: 3.5rem;
+        }
+      }
+      
+      /* Subtle grid background for modern tech feel */
+      .bg-tech-grid {
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      
+      .form-input {
+        transition: all 0.2s ease-in-out;
+      }
+      .form-input:focus {
+        transform: translateY(-2px);
+      }
+      .thankyou-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.24s ease;
+      }
+      .thankyou-modal[aria-hidden="false"] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .thankyou-modal__backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(8, 18, 40, 0.64);
+        backdrop-filter: blur(8px);
+      }
+      .thankyou-modal__panel {
+        position: relative;
+        width: min(34rem, 100%);
+        border-radius: 1.5rem;
+        border: 1px solid #dbe4f2;
+        background: #fff;
+        box-shadow: 0 30px 80px -24px rgba(5, 16, 44, 0.45);
+        overflow: hidden;
+      }
+      .thankyou-modal__hero {
+        background: radial-gradient(circle at 20% 20%, #4d7fbd, #1f3f6b 65%, #102644);
+        padding: 1.25rem 1.5rem;
+        color: #fff;
+      }
+      .thankyou-modal__body {
+        padding: 1.4rem 1.5rem 1.5rem;
+      }
+      .thankyou-modal__close {
+        border: 0;
+        border-radius: 0.75rem;
+        background: #3f6ba4;
+        color: #fff;
+        font-weight: 700;
+        padding: 0.72rem 1.1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body class="bg-white font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-children/">Kids</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="waitlist-main flex-1 w-full bg-brand-900 relative flex items-start justify-center pt-20 pb-24 lg:pt-28 lg:pb-32 overflow-hidden border-b border-brand-800">
+      
+      <!-- Background Effects -->
+      <div class="absolute inset-0 bg-tech-grid opacity-20 pointer-events-none"></div>
+      <div class="absolute -left-40 top-0 w-[500px] h-[500px] bg-brand-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+      <div class="absolute -right-40 bottom-0 w-[500px] h-[500px] bg-amber-500 rounded-full blur-[150px] opacity-10 pointer-events-none"></div>
+
+      <div class="waitlist-shell mx-auto w-[var(--container)] relative z-10">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center max-w-7xl mx-auto">
+          
+          <!-- Left Content -->
+          <div class="lg:col-span-6 text-center lg:text-left mb-12 lg:mb-0 reveal">
+            <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-400 mb-6 backdrop-blur-sm">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              VIP Holiday Waitlist
+            </div>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold text-white leading-tight tracking-tight mb-6">
+              Don't let them miss the next cohort.
+            </h1>
+            <p class="text-lg sm:text-xl text-brand-100 font-light leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
+              Our holiday cohorts sell out fast. Join the VIP waitlist today and we will notify you the exact moment enrollment opens so you can secure their spot for just N10,750.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 mt-10">
+              <div class="flex -space-x-4">
+                <img class="w-12 h-12 rounded-full border-2 border-brand-900 object-cover" src="/assets/anuri.jpg" alt="Parent" onerror="this.src='https://ui-avatars.com/api/?name=Anuri&background=345585&color=fff'" />
+                <img class="w-12 h-12 rounded-full border-2 border-brand-900 object-cover" src="/assets/marquis.jpeg" alt="Parent" onerror="this.src='https://ui-avatars.com/api/?name=Marquis&background=5286bf&color=fff'" />
+                <img class="w-12 h-12 rounded-full border-2 border-brand-900 object-cover" src="/assets/buchi.JPG" alt="Parent" onerror="this.src='https://ui-avatars.com/api/?name=Buchi&background=75a5d0&color=fff'" />
+                <div class="w-12 h-12 rounded-full border-2 border-brand-900 bg-brand-800 flex items-center justify-center text-xs font-bold text-white">+250</div>
+              </div>
+              <p class="text-sm font-medium text-brand-200 text-left">
+                Join 250+ proactive parents <br/>preparing for the holidays.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Form Card -->
+          <div class="lg:col-span-6 reveal" style="animation-delay: 0.2s;">
+            <div class="bg-white rounded-[2rem] p-8 sm:p-10 shadow-2xl relative border border-gray-100 max-w-md mx-auto w-full">
+              
+              <!-- Decorative element -->
+              <div class="absolute -top-6 -right-6 bg-white p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-float-slow border border-gray-100">
+                <div class="bg-amber-100 w-10 h-10 rounded-full flex items-center justify-center text-xl">⏰</div>
+              </div>
+
+              <div class="mb-8">
+                <h2 class="text-2xl font-heading font-extrabold text-brand-900 mb-2">Get Notified First</h2>
+                <p class="text-gray-500 text-sm">Enter your details below to lock in priority access.</p>
+              </div>
+
+              <form id="holidayWaitlistForm" action="#" method="POST" class="space-y-5" novalidate>
+                
+                <div class="space-y-2">
+                  <label for="fullName" class="block text-sm font-bold text-gray-700">Parent's Full Name</label>
+                  <input 
+                    type="text" 
+                    id="fullName" 
+                    name="fullName" 
+                    class="form-input w-full px-5 py-4 rounded-xl border border-gray-200 bg-gray-50 text-brand-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none" 
+                    placeholder="e.g. Jane Doe" 
+                    required 
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <label for="email" class="block text-sm font-bold text-gray-700">Email Address</label>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="form-input w-full px-5 py-4 rounded-xl border border-gray-200 bg-gray-50 text-brand-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none" 
+                    placeholder="e.g. jane@example.com" 
+                    required 
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <label for="phone" class="block text-sm font-bold text-gray-700">Phone Number (WhatsApp)</label>
+                  <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone" 
+                    class="form-input w-full px-5 py-4 rounded-xl border border-gray-200 bg-gray-50 text-brand-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none" 
+                    placeholder="e.g. +234 800 000 0000" 
+                    required 
+                  />
+                </div>
+
+                <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+
+                <button type="submit" class="tw-btn-primary w-full mt-4 text-lg py-5 group">
+                  <svg class="w-5 h-5 mr-2 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                  <span data-submit-label>Remind me</span>
+                </button>
+                <p id="holidayWaitlistStatus" class="text-sm text-center text-gray-500"></p>
+
+                <p class="text-xs text-center text-gray-400 mt-4 flex items-center justify-center gap-1">
+                  <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                  Your details are 100% secure. No spam.
+                </p>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <div id="holidayThankYouModal" class="thankyou-modal" aria-hidden="true">
+      <button type="button" class="thankyou-modal__backdrop" aria-label="Close message" data-thankyou-close></button>
+      <section class="thankyou-modal__panel" role="dialog" aria-modal="true" aria-labelledby="holidayThankYouTitle">
+        <div class="thankyou-modal__hero">
+          <p class="text-xs font-bold uppercase tracking-widest text-amber-300">VIP Waitlist Confirmed</p>
+          <h3 id="holidayThankYouTitle" class="text-2xl font-heading font-extrabold mt-2">You are in.</h3>
+        </div>
+        <div class="thankyou-modal__body">
+          <p class="text-gray-700 leading-relaxed">
+            Thank you for joining the Prompt to Profit Holiday VIP waitlist. We will notify you the moment enrollment opens so you can secure your child's slot quickly.
+          </p>
+          <p class="text-sm text-brand-700 mt-3">
+            Keep your phone and email close for priority updates.
+          </p>
+          <div class="mt-6 flex justify-end">
+            <button type="button" class="thankyou-modal__close" data-thankyou-close>Great, thank you</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+        </div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/blog/">Blog</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="/assets/site.js"></script>
+    <script src="/assets/recaptcha.js"></script>
+    <script src="/assets/holiday-waitlist.js"></script>
+  </body>
+</html>

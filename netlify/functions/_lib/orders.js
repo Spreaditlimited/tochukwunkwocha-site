@@ -8,6 +8,7 @@ const { ensureCourseOrdersBatchColumns } = require("./course-orders");
 const { recordCouponRedemption } = require("./coupons");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug } = require("./course-config");
 const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./affiliates");
+const { assertBatchHasCapacity } = require("./batch-capacity");
 
 function parseCookieValue(cookieHeader, key) {
   const raw = String(cookieHeader || "");
@@ -66,33 +67,63 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     params.push(providerOrderId);
   }
 
-  const [rows] = await pool.query(
-    `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, discount_minor, coupon_id, meta_purchase_sent
-     FROM course_orders
-     WHERE ${where.join(" OR ")}
-     ORDER BY id DESC
-     LIMIT 1`,
-    params
-  );
-
-  if (!rows || !rows.length) {
-    return { ok: false, error: "Order not found" };
-  }
-
-  const order = rows[0];
-
-  if (String(order.status) !== "paid") {
-    await pool.query(
-      `UPDATE course_orders
-       SET status = 'paid',
-           provider = COALESCE(?, provider),
-           provider_reference = COALESCE(?, provider_reference),
-           provider_order_id = COALESCE(?, provider_order_id),
-           paid_at = ?,
-           updated_at = ?
-       WHERE id = ?`,
-      [provider || null, providerReference || null, providerOrderId || null, nowSql(), nowSql(), order.id]
+  const conn = await pool.getConnection();
+  let order;
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.query(
+      `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, discount_minor, coupon_id, meta_purchase_sent
+       FROM course_orders
+       WHERE ${where.join(" OR ")}
+       ORDER BY id DESC
+       LIMIT 1
+       FOR UPDATE`,
+      params
     );
+
+    if (!rows || !rows.length) {
+      await conn.rollback();
+      return { ok: false, error: "Order not found" };
+    }
+
+    order = rows[0];
+
+    if (String(order.status) !== "paid") {
+      if (order.batch_key) {
+        await conn.query(
+          `SELECT id
+           FROM course_batches
+           WHERE course_slug = ?
+             AND batch_key = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [order.course_slug, order.batch_key]
+        );
+        await assertBatchHasCapacity(conn, {
+          courseSlug: order.course_slug,
+          batchKey: order.batch_key,
+        });
+      }
+
+      await conn.query(
+        `UPDATE course_orders
+         SET status = 'paid',
+             provider = COALESCE(?, provider),
+             provider_reference = COALESCE(?, provider_reference),
+             provider_order_id = COALESCE(?, provider_order_id),
+             paid_at = ?,
+             updated_at = ?
+         WHERE id = ?`,
+        [provider || null, providerReference || null, providerOrderId || null, nowSql(), nowSql(), order.id]
+      );
+    }
+    await conn.commit();
+  } catch (error) {
+    try { await conn.rollback(); } catch (_error) {}
+    if (error && error.message) return { ok: false, error: error.message };
+    return { ok: false, error: "Could not mark order as paid" };
+  } finally {
+    conn.release();
   }
 
   if (!order.flodesk_synced) {

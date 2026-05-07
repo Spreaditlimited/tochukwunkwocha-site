@@ -15,6 +15,7 @@ const { sendMetaPurchase } = require("./_lib/meta");
 const { resolveCourseBatch } = require("./_lib/batch-store");
 const { recordCouponRedemption } = require("./_lib/coupons");
 const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./_lib/affiliates");
+const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 
 function withTimeout(promise, timeoutMs) {
   const ms = Math.max(200, Number(timeoutMs) || 2000);
@@ -58,12 +59,44 @@ exports.handler = async function (event) {
     const payment = await findManualPaymentByUuid(pool, paymentUuid);
     if (!payment) return json(404, { ok: false, error: "Manual payment not found" });
 
-    await reviewManualPayment(pool, {
-      paymentUuid,
-      nextStatus,
-      reviewedBy: "admin",
-      reviewNote,
-    });
+    if (nextStatus === STATUS_APPROVED && payment.batch_key) {
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        await conn.query(
+          `SELECT id
+           FROM course_batches
+           WHERE course_slug = ?
+             AND batch_key = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [payment.course_slug, payment.batch_key]
+        );
+        await assertBatchHasCapacity(conn, {
+          courseSlug: payment.course_slug,
+          batchKey: payment.batch_key,
+        });
+        await reviewManualPayment(conn, {
+          paymentUuid,
+          nextStatus,
+          reviewedBy: "admin",
+          reviewNote,
+        });
+        await conn.commit();
+      } catch (error) {
+        try { await conn.rollback(); } catch (_error) {}
+        return json(400, { ok: false, error: error.message || "Batch is full." });
+      } finally {
+        conn.release();
+      }
+    } else {
+      await reviewManualPayment(pool, {
+        paymentUuid,
+        nextStatus,
+        reviewedBy: "admin",
+        reviewNote,
+      });
+    }
 
     let flodeskSyncedMain = !!payment.flodesk_main_synced;
 

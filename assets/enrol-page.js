@@ -19,10 +19,16 @@
   var applyCouponBtn = document.getElementById("applyCouponBtn");
   var couponStatusEl = document.getElementById("couponStatus");
   var couponSummaryEl = document.getElementById("couponSummary");
+  var holidayBatchPickerWrap = document.getElementById("holidayBatchPickerWrap");
+  var holidayBatchSelect = document.getElementById("holidayBatchSelect");
+  var holidayBatchMeta = document.getElementById("holidayBatchMeta");
+  var holidayWaitlistTableWrap = document.getElementById("holidayWaitlistTableWrap");
+  var holidayWaitlistRows = document.getElementById("holidayWaitlistRows");
 
   var courseSlug = String(form.getAttribute("data-course-slug") || "prompt-to-profit").trim();
   var activeCourseBatchKey = "";
   var activeCourseBatchStartAt = "";
+  var holidayBatchMap = {};
   var manualConfigLoadedKey = "";
   var appliedCoupon = null;
   var couponPricingByProvider = { paystack: null, paypal: null };
@@ -34,7 +40,7 @@
     "prompt-to-profit": {
       name: "Prompt to Profit",
       intro:
-        "Pay now to reserve your spot. Your learning account will be created immediately, and once classes begin, you will have access to both the live and recorded lessons.",
+        "Secure your child's spot today. We will set up their student account immediately, giving them full access to all live sessions and recorded lessons the moment the holiday bootcamp begins.",
     },
     "prompt-to-production": {
       name: "Prompt to Profit Advanced",
@@ -204,6 +210,49 @@
     introEl.textContent = schedule ? intro + " " + schedule : intro;
   }
 
+  function isHolidayMultiBatchCourse() {
+    return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
+  }
+
+  function applyHolidayBatchSelection(batchKey) {
+    var chosen = batchKey ? holidayBatchMap[batchKey] : null;
+    activeCourseBatchKey = chosen ? String(chosen.batchKey || "") : "";
+    activeCourseBatchStartAt = chosen ? String(chosen.batchStartAt || "") : "";
+    var paystackMinor = chosen ? Number(chosen.paystackAmountMinor || 0) : 0;
+    var paypalMinor = chosen ? Number(chosen.paypalAmountMinor || 0) : 0;
+    basePricingByProvider.paystack = {
+      currency: "NGN",
+      baseAmountMinor: paystackMinor,
+      discountMinor: 0,
+      finalAmountMinor: paystackMinor,
+    };
+    basePricingByProvider.paypal = {
+      currency: "GBP",
+      baseAmountMinor: paypalMinor,
+      discountMinor: 0,
+      finalAmountMinor: paypalMinor,
+    };
+    if (holidayBatchMeta) {
+      if (!chosen) {
+        holidayBatchMeta.textContent = "Select one of the available holiday batches.";
+      } else {
+        var seatsText = String(Math.max(0, Number(chosen.remainingSeats || 0))) + " seats left";
+        var startAtText = "";
+        var parsedStart = parseBatchStart(chosen.batchStartAt);
+        if (parsedStart) {
+          startAtText = " • Starts " + formatDayTime(parsedStart, "Africa/Lagos") + " WAT";
+        }
+        holidayBatchMeta.textContent = seatsText + startAtText;
+      }
+    }
+    updatePaymentOptionMetas();
+    updateIntro();
+    manualConfigLoadedKey = "";
+    if (providerInput && providerInput.value === "manual_transfer" && chosen) {
+      ensureManualConfigLoaded().catch(function () { return null; });
+    }
+  }
+
   function isOptionDisabled(optionEl) {
     if (!optionEl) return false;
     if (optionEl.hasAttribute("disabled")) return true;
@@ -273,7 +322,98 @@
     if (isManual) ensureManualConfigLoaded().catch(function () { return null; });
   }
 
+  async function loadHolidayBatches() {
+    var res = await fetch("/.netlify/functions/course-open-batches?course_slug=" + encodeURIComponent(courseSlug), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    var json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok || !Array.isArray(json.batches)) {
+      if (batchEl) {
+        batchEl.innerHTML = [
+          '<span class="status-pill status-pending_verification">',
+          "Holiday Batches: Unavailable",
+          "</span>",
+        ].join("");
+      }
+      return;
+    }
+    applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
+    var allBatches = Array.isArray(json.batches) ? json.batches : [];
+    var batches = allBatches.filter(function (item) { return !item.isFull; });
+    var fullBatches = allBatches.filter(function (item) { return !!item.isFull; });
+    holidayBatchMap = {};
+    batches.forEach(function (item) {
+      var key = String(item.batchKey || "").trim();
+      if (!key) return;
+      holidayBatchMap[key] = item;
+    });
+    if (batchEl) {
+      batchEl.innerHTML = [
+        '<span class="status-pill status-approved">',
+        "Open Holiday Batches: " + String(batches.length),
+        "</span>",
+      ].join("");
+    }
+    if (holidayBatchPickerWrap) holidayBatchPickerWrap.classList.remove("hidden");
+    if (holidayBatchSelect) {
+      var options = ['<option value="">Select a batch</option>'];
+      batches.forEach(function (item) {
+        var startText = "";
+        var parsedStart = parseBatchStart(item.batchStartAt);
+        if (parsedStart) {
+          startText = " • Starts " + formatDayTime(parsedStart, "Africa/Lagos") + " WAT";
+        }
+        options.push(
+          '<option value="' +
+            String(item.batchKey || "") +
+            '">' +
+            String(item.batchLabel || item.batchKey || "Batch") +
+            " (" +
+            String(Math.max(0, Number(item.remainingSeats || 0))) +
+            " seats left)" +
+            startText +
+            "</option>"
+        );
+      });
+      holidayBatchSelect.innerHTML = options.join("");
+      holidayBatchSelect.value = batches.length ? String(batches[0].batchKey || "") : "";
+      applyHolidayBatchSelection(holidayBatchSelect.value);
+    }
+    if (holidayWaitlistTableWrap && holidayWaitlistRows) {
+      if (!fullBatches.length) {
+        holidayWaitlistTableWrap.classList.add("hidden");
+        holidayWaitlistRows.innerHTML = "";
+      } else {
+        holidayWaitlistRows.innerHTML = fullBatches.map(function (item) {
+          var startText = "-";
+          var parsed = parseBatchStart(item.batchStartAt);
+          if (parsed) startText = formatDayTime(parsed, "Africa/Lagos");
+          var batchKey = String(item.batchKey || "").trim();
+          var waitlistHref = "/join-holiday-waitlist/?batch=" + encodeURIComponent(batchKey);
+          return [
+            "<tr>",
+            '<td class="py-1 pr-3 font-semibold">' + String(item.batchLabel || batchKey || "Batch") + "</td>",
+            '<td class="py-1 pr-3">' + startText + "</td>",
+            '<td class="py-1 pr-3"><span class="inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">Full</span></td>',
+            '<td class="py-1 text-right"><a href="' + waitlistHref + '" class="inline-flex rounded-md border border-amber-300 bg-white px-2.5 py-1 font-semibold text-amber-800 hover:bg-amber-100">Join Waitlist</a></td>',
+            "</tr>",
+          ].join("");
+        }).join("");
+        holidayWaitlistTableWrap.classList.remove("hidden");
+      }
+    }
+    if (!batches.length && submitBtn) {
+      submitBtn.disabled = true;
+      setError("All holiday batches are currently full. Join the waitlist below.");
+    }
+  }
+
   async function loadActiveBatch() {
+    if (isHolidayMultiBatchCourse()) {
+      await loadHolidayBatches();
+      return;
+    }
     var res = await fetch("/.netlify/functions/course-active-batch?course_slug=" + encodeURIComponent(courseSlug), {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -397,6 +537,10 @@
   async function applyCoupon() {
     var provider = providerInput ? providerInput.value : "paypal";
     var code = String((couponCodeInput && couponCodeInput.value) || "").trim();
+    if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
+      setCouponStatus("Please choose a batch first.", "error");
+      return;
+    }
     if (!code) {
       clearAppliedCoupon("");
       setCouponStatus("Enter a coupon code.", "error");
@@ -487,6 +631,10 @@
       setError("Please enter your full name and email address.");
       return;
     }
+    if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
+      setError("Please choose a holiday batch before continuing.");
+      return;
+    }
 
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -555,8 +703,14 @@
 
   updateIntro();
   setActiveProvider((providerInput && providerInput.value) || "paystack");
+  if (holidayBatchSelect) {
+    holidayBatchSelect.addEventListener("change", function () {
+      applyHolidayBatchSelection(String(holidayBatchSelect.value || ""));
+    });
+  }
   loadActiveBatch()
     .then(function () {
+      if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) return null;
       return ensureManualConfigLoaded();
     })
     .catch(function () { return null; });

@@ -31,6 +31,14 @@ const COURSE_CONFIGS = {
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "AIEBO",
   },
+  "prompt-to-profit-holiday": {
+    slug: "prompt-to-profit-holiday",
+    name: "Prompt to Profit Holiday",
+    landingPath: "/courses/prompt-to-profit-holiday",
+    defaultBatchKey: "ptph-batch-1",
+    defaultBatchLabel: "Batch 1",
+    defaultPrefix: "PTPH",
+  },
 };
 
 const DEFAULT_COURSE_SLUG = "prompt-to-profit";

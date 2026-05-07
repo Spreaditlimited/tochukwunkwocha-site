@@ -6,6 +6,7 @@ const {
   createManualPayment,
 } = require("./_lib/manual-payments");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
@@ -57,6 +58,10 @@ function buildWelcomeEmail({ fullName, email, tempPassword, resetLink }) {
     safeLink,
   ].join("\n");
   return { html, text };
+}
+
+function requiresExplicitBatchSelection(courseSlug) {
+  return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
 exports.handler = async function (event) {
@@ -111,6 +116,16 @@ exports.handler = async function (event) {
       ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
       : null;
     if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    if (enrollmentMode === "batch" && requiresExplicitBatchSelection(courseSlug)) {
+      const requestedBatchKey = String(body.batchKey || "").trim();
+      if (!requestedBatchKey) {
+        return json(400, { ok: false, error: "Please choose a batch before submitting payment proof." });
+      }
+      if (String(batch.batch_key || "").toLowerCase() !== requestedBatchKey.toLowerCase()) {
+        return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
+      }
+      await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+    }
     const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
     const baseAmountMinor = enrollmentMode === "immediate"
       ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))

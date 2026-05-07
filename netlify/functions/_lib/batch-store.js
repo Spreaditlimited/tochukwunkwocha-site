@@ -117,6 +117,7 @@ async function ensureCourseBatchesTable(pool) {
       paystack_amount_minor INT NOT NULL,
       paypal_amount_minor INT NOT NULL DEFAULT 2400,
       brevo_list_id VARCHAR(64) NULL,
+      seat_limit INT NULL,
       batch_start_at DATETIME NULL,
       activated_at DATETIME NULL,
       created_at DATETIME NOT NULL,
@@ -131,6 +132,7 @@ async function ensureCourseBatchesTable(pool) {
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN batch_start_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN paypal_amount_minor INT NOT NULL DEFAULT 2400`);
   await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN brevo_list_id VARCHAR(64) NULL`);
+  await safeAlter(pool, `ALTER TABLE course_batches ADD COLUMN seat_limit INT NULL`);
 
   const now = nowSql();
   const configs = listCourseConfigs();
@@ -216,6 +218,7 @@ async function listCourseBatches(pool, courseSlug) {
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             brevo_list_id,
+            seat_limit,
             activated_at,
             created_at,
             updated_at
@@ -243,6 +246,7 @@ async function getCourseBatchByKey(pool, courseSlug, batchKey) {
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             brevo_list_id,
+            seat_limit,
             activated_at,
             created_at,
             updated_at
@@ -269,6 +273,7 @@ async function getActiveCourseBatch(pool, courseSlug) {
             paypal_amount_minor,
             DATE_FORMAT(batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
             brevo_list_id,
+            seat_limit,
             activated_at,
             created_at,
             updated_at
@@ -436,6 +441,14 @@ async function updateCourseBatch(pool, input) {
   const brevoListId = input && Object.prototype.hasOwnProperty.call(input, "brevoListId")
     ? String(input.brevoListId || "").trim().slice(0, 64)
     : String(target.brevo_list_id || "").trim().slice(0, 64);
+  const seatLimitRaw =
+    input && Object.prototype.hasOwnProperty.call(input, "seatLimit")
+      ? Number(input.seatLimit)
+      : Number(target.seat_limit || 0);
+  const seatLimit =
+    Number.isFinite(seatLimitRaw) && seatLimitRaw > 0
+      ? Math.round(seatLimitRaw)
+      : null;
 
   if (!batchLabel) throw new Error("Batch label is required");
   if (!Number.isFinite(paystackAmountMinorRaw) || paystackAmountMinorRaw <= 0) {
@@ -453,6 +466,7 @@ async function updateCourseBatch(pool, input) {
          paystack_amount_minor = ?,
          paypal_amount_minor = ?,
          brevo_list_id = ?,
+         seat_limit = ?,
          batch_start_at = ?,
          updated_at = ?
      WHERE course_slug = ?
@@ -463,6 +477,7 @@ async function updateCourseBatch(pool, input) {
       Math.round(paystackAmountMinorRaw),
       Math.round(paypalAmountMinorRaw),
       brevoListId || null,
+      seatLimit,
       batchStartAt,
       now,
       courseSlug,
@@ -471,6 +486,65 @@ async function updateCourseBatch(pool, input) {
   );
 
   return getCourseBatchByKey(pool, courseSlug, batchKey);
+}
+
+async function deleteCourseBatch(pool, input) {
+  const courseSlug = normalizeCourseSlug(input && input.courseSlug, DEFAULT_COURSE_SLUG);
+  const batchKey = normalizeBatchKey(input && input.batchKey);
+  if (!batchKey) throw new Error("batchKey is required");
+
+  await ensureCourseBatchesTable(pool);
+  const target = await getCourseBatchByKey(pool, courseSlug, batchKey);
+  if (!target) throw new Error("Batch not found");
+  if (Number(target.is_active || 0) === 1) {
+    throw new Error("Cannot delete the active batch. Activate another batch first.");
+  }
+
+  const [[orderCountRow]] = await pool.query(
+    `SELECT COUNT(*) AS total
+     FROM course_orders
+     WHERE course_slug = ?
+       AND batch_key = ?`,
+    [courseSlug, batchKey]
+  );
+  const orderCount = Number(orderCountRow && orderCountRow.total || 0);
+  if (orderCount > 0) {
+    throw new Error("Cannot delete batch with existing course orders.");
+  }
+
+  const [[manualCountRow]] = await pool.query(
+    `SELECT COUNT(*) AS total
+     FROM course_manual_payments
+     WHERE course_slug = ?
+       AND batch_key = ?`,
+    [courseSlug, batchKey]
+  );
+  const manualCount = Number(manualCountRow && manualCountRow.total || 0);
+  if (manualCount > 0) {
+    throw new Error("Cannot delete batch with existing manual payments.");
+  }
+
+  const [[dripCountRow]] = await pool.query(
+    `SELECT COUNT(*) AS total
+     FROM tochukwu_learning_module_batch_drips d
+     INNER JOIN tochukwu_learning_modules m ON m.id = d.module_id
+     WHERE m.course_slug = ?
+       AND d.batch_key = ?`,
+    [courseSlug, batchKey]
+  );
+  const dripCount = Number(dripCountRow && dripCountRow.total || 0);
+  if (dripCount > 0) {
+    throw new Error("Cannot delete batch while module drip rules still reference it.");
+  }
+
+  const [result] = await pool.query(
+    `DELETE FROM course_batches
+     WHERE course_slug = ?
+       AND batch_key = ?
+     LIMIT 1`,
+    [courseSlug, batchKey]
+  );
+  return Number(result && result.affectedRows || 0) > 0;
 }
 
 module.exports = {
@@ -485,4 +559,5 @@ module.exports = {
   createCourseBatch,
   activateCourseBatch,
   updateCourseBatch,
+  deleteCourseBatch,
 };
