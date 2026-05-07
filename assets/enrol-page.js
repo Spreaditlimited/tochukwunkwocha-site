@@ -214,6 +214,45 @@
     return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
   }
 
+  function setElementVisible(el, visible) {
+    if (!el) return;
+    el.hidden = !visible;
+    el.classList.toggle("hidden", !visible);
+  }
+
+  function normalizeBooleanFlag(value) {
+    if (value === true) return true;
+    if (value === false) return false;
+    if (typeof value === "number") return value === 1;
+    var text = String(value || "").trim().toLowerCase();
+    if (!text) return false;
+    if (text === "true" || text === "1" || text === "yes") return true;
+    if (text === "false" || text === "0" || text === "no") return false;
+    return false;
+  }
+
+  function normalizePositiveInt(value) {
+    var parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return Math.round(parsed);
+  }
+
+  function normalizeNonNegativeInt(value) {
+    var parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return Math.round(parsed);
+  }
+
+  function isBatchFull(item) {
+    if (!item || typeof item !== "object") return false;
+    var seatLimit = normalizePositiveInt(item.seatLimit);
+    var remainingSeats = normalizeNonNegativeInt(item.remainingSeats);
+    if (seatLimit !== null && remainingSeats !== null) {
+      return remainingSeats <= 0;
+    }
+    return normalizeBooleanFlag(item.isFull);
+  }
+
   function applyHolidayBatchSelection(batchKey) {
     var chosen = batchKey ? holidayBatchMap[batchKey] : null;
     activeCourseBatchKey = chosen ? String(chosen.batchKey || "") : "";
@@ -340,8 +379,8 @@
     }
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
     var allBatches = Array.isArray(json.batches) ? json.batches : [];
-    var batches = allBatches.filter(function (item) { return !item.isFull; });
-    var fullBatches = allBatches.filter(function (item) { return !!item.isFull; });
+    var fullBatches = allBatches.filter(function (item) { return isBatchFull(item); });
+    var batches = allBatches.filter(function (item) { return !isBatchFull(item); });
     holidayBatchMap = {};
     batches.forEach(function (item) {
       var key = String(item.batchKey || "").trim();
@@ -355,7 +394,7 @@
         "</span>",
       ].join("");
     }
-    if (holidayBatchPickerWrap) holidayBatchPickerWrap.classList.remove("hidden");
+    setElementVisible(holidayBatchPickerWrap, true);
     if (holidayBatchSelect) {
       var options = ['<option value="">Select a batch</option>'];
       batches.forEach(function (item) {
@@ -381,10 +420,16 @@
       applyHolidayBatchSelection(holidayBatchSelect.value);
     }
     if (holidayWaitlistTableWrap && holidayWaitlistRows) {
+      var waitlistCopyEl = document.getElementById("holidayWaitlistCopy");
       if (!fullBatches.length) {
-        holidayWaitlistTableWrap.classList.add("hidden");
+        setElementVisible(holidayWaitlistTableWrap, false);
         holidayWaitlistRows.innerHTML = "";
       } else {
+        if (waitlistCopyEl) {
+          waitlistCopyEl.textContent = !batches.length
+            ? "All holiday batches are currently full. Join a waitlist below to get priority when a seat opens."
+            : "Only the batches listed below are full. Join a waitlist to get priority when a seat opens.";
+        }
         holidayWaitlistRows.innerHTML = fullBatches.map(function (item) {
           var startText = "-";
           var parsed = parseBatchStart(item.batchStartAt);
@@ -400,7 +445,7 @@
             "</tr>",
           ].join("");
         }).join("");
-        holidayWaitlistTableWrap.classList.remove("hidden");
+        setElementVisible(holidayWaitlistTableWrap, true);
       }
     }
     if (!batches.length && submitBtn) {

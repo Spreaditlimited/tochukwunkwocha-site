@@ -34,6 +34,18 @@ async function countEnrolledForBatch(db, courseSlug, batchKey) {
   return Number(rows && rows[0] && rows[0].enrolled_count ? rows[0].enrolled_count : 0);
 }
 
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed);
+}
+
+function parseNonNegativeInt(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return Math.round(parsed);
+}
+
 async function getBatchCapacity(db, { courseSlug, batchKey }) {
   const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
   const key = normalizeBatchKey(batchKey);
@@ -43,16 +55,16 @@ async function getBatchCapacity(db, { courseSlug, batchKey }) {
   const batch = await getCourseBatchByKey(db, slug, key);
   if (!batch) return null;
 
-  const seatLimitRaw = Number(batch.seat_limit || 0);
-  const seatLimit = Number.isFinite(seatLimitRaw) && seatLimitRaw > 0 ? Math.round(seatLimitRaw) : null;
-  const enrolledCount = await countEnrolledForBatch(db, slug, key);
+  const seatLimit = parsePositiveInt(batch.seat_limit);
+  const enrolledCount = parseNonNegativeInt(await countEnrolledForBatch(db, slug, key));
   const remainingSeats = seatLimit === null ? null : Math.max(0, seatLimit - enrolledCount);
+  const isFull = seatLimit !== null && remainingSeats <= 0;
   return {
     batch,
     seatLimit,
     enrolledCount,
     remainingSeats,
-    isFull: seatLimit !== null && remainingSeats <= 0,
+    isFull,
   };
 }
 

@@ -5,6 +5,15 @@ const { listCourseBatches } = require("./_lib/batch-store");
 const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 
+function normalizeBooleanFlag(value) {
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === "number") return value === 1;
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return false;
+  return text === "true" || text === "1" || text === "yes";
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -34,7 +43,7 @@ exports.handler = async function (event) {
         seatLimit: cap.seatLimit,
         enrolledCount: cap.enrolledCount,
         remainingSeats: cap.remainingSeats,
-        isFull: cap.isFull,
+        isFull: normalizeBooleanFlag(cap.isFull),
       });
     }
     return json(200, { ok: true, courseSlug, enabledPaymentMethods, batches: capacities });

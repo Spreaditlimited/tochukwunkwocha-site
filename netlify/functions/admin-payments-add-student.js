@@ -6,7 +6,9 @@ const { requireAdminSession } = require("./_lib/admin-auth");
 const { ensureManualPaymentsTable, createManualPayment, reviewManualPayment, markMainSynced, STATUS_APPROVED } = require("./_lib/manual-payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
+const { sendMetaPurchase } = require("./_lib/meta");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { sendEmail } = require("./_lib/email");
@@ -108,6 +110,9 @@ exports.handler = async function (event) {
       ? await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey })
       : null;
     if (enrollmentMode === "batch" && !batch) return json(500, { ok: false, error: "No active batch configured" });
+    if (enrollmentMode === "batch" && batch && batch.batch_key) {
+      await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+    }
     const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
     const baseAmountMinor = enrollmentMode === "immediate"
       ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
@@ -321,6 +326,27 @@ exports.handler = async function (event) {
     if (synced.ok) {
       await markMainSynced(pool, paymentUuid);
     }
+    try {
+      const sent = await sendMetaPurchase({
+        eventId: `ptp_${paymentUuid}`,
+        email,
+        fullName: firstName,
+        value: Number(pricing.finalAmountMinor || 0) / 100,
+        currency: currency || "NGN",
+        contentName: courseSlug || "Course",
+        contentIds: [courseSlug || "course"],
+      });
+      if (sent && sent.ok) {
+        await pool.query(
+          `UPDATE course_manual_payments
+           SET meta_purchase_sent = 1,
+               meta_purchase_sent_at = ?,
+               updated_at = ?
+           WHERE payment_uuid = ?`,
+          [nowSql(), nowSql(), paymentUuid]
+        );
+      }
+    } catch (_error) {}
 
     return json(200, {
       ok: true,
