@@ -5,10 +5,12 @@
   var ruleForm = document.getElementById("affiliateRuleForm");
   var payoutForm = document.getElementById("affiliatePayoutRunForm");
   var payoutResult = document.getElementById("affPayoutResult");
+  var auditRows = document.getElementById("affAuditRows");
   var FORM_STATE_KEY = "affiliate_rule_form_state_v1";
 
   var rules = [];
   var courses = [];
+  var audit = [];
 
   function esc(value) {
     return String(value || "")
@@ -64,6 +66,43 @@
         "<td class='py-2 pr-3'>" + esc(item.commission_value) + "</td>",
         "<td class='py-2 pr-3'>" + esc(item.commission_currency) + "</td>",
         "<td class='py-2 pr-3'>" + esc(item.hold_days) + "</td>",
+        "</tr>",
+      ].join("");
+    }).join("");
+  }
+
+  function safeDate(value) {
+    if (!value) return "-";
+    var d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString();
+  }
+
+  function renderAudit() {
+    if (!auditRows) return;
+    if (!Array.isArray(audit) || !audit.length) {
+      auditRows.innerHTML = '<tr><td colspan="5" class="py-3 text-gray-500">No affiliate audit entries yet.</td></tr>';
+      return;
+    }
+    auditRows.innerHTML = audit.map(function (item) {
+      var metadata = item && item.metadata && typeof item.metadata === "object" ? item.metadata : {};
+      var reason = String(metadata.reason || metadata.rejectionReason || metadata.attributionStatus || "").trim();
+      var targetType = String(item && item.targetType || "").trim();
+      var targetId = String(item && item.targetId || "").trim();
+      var target = [targetType, targetId].filter(Boolean).join(": ");
+      var details = [
+        metadata.courseSlug ? ("course=" + String(metadata.courseSlug)) : "",
+        metadata.affiliateCodeResolved ? ("aff=" + String(metadata.affiliateCodeResolved)) : "",
+        metadata.affiliateCode ? ("aff=" + String(metadata.affiliateCode)) : "",
+        Number(metadata.commissionAmountMinor || 0) > 0 ? ("commission_minor=" + String(Number(metadata.commissionAmountMinor || 0))) : "",
+      ].filter(Boolean).join(" | ");
+      return [
+        "<tr class='border-b border-gray-100'>",
+        "<td class='py-2 pr-3'>" + esc(safeDate(item && item.createdAt)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(item && item.eventType) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(target || "-") + "</td>",
+        "<td class='py-2 pr-3'>" + esc(reason || "-") + "</td>",
+        "<td class='py-2 pr-3'>" + esc(details || "-") + "</td>",
         "</tr>",
       ].join("");
     }).join("");
@@ -164,10 +203,12 @@
       throw new Error((json && json.error) || "Could not load affiliate rules");
     }
     rules = Array.isArray(json.rules) ? json.rules : [];
+    audit = Array.isArray(json.audit) ? json.audit : [];
     courses = mergeCoursesWithRuleSlugs(Array.isArray(json.courses) ? json.courses : [], rules);
     renderCourseOptions();
     syncFormFromSelection(preferred);
     renderRules();
+    renderAudit();
   }
 
   async function saveRule(event) {

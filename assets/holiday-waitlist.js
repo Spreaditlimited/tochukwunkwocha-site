@@ -57,10 +57,12 @@
       email: clean(form.email && form.email.value, 190),
       phone: clean(form.phone && form.phone.value, 80),
       website: clean(form.website && form.website.value, 120),
+      whatsappOptIn: !!(form.whatsappOptIn && form.whatsappOptIn.checked),
+      optInTextVersion: "holiday_waitlist_v1",
     };
 
-    if (!payload.fullName || !payload.email || !payload.phone) {
-      setStatus("Please complete name, email, and phone.", "error");
+    if (!payload.fullName || !payload.email || !payload.phone || !payload.whatsappOptIn) {
+      setStatus("Please complete name, email, phone, and WhatsApp consent.", "error");
       return;
     }
 
@@ -90,4 +92,3 @@
     }
   });
 })();
-

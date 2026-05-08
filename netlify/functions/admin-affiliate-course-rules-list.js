@@ -2,7 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { listLearningCourses } = require("./_lib/learning");
-const { listAffiliateCourseRules, ensureAffiliateTables } = require("./_lib/affiliates");
+const { listAffiliateCourseRules, listRecentAffiliateAudit, ensureAffiliateTables } = require("./_lib/affiliates");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -17,6 +17,7 @@ exports.handler = async function (event) {
   try {
     await ensureAffiliateTables(pool);
     const rules = await listAffiliateCourseRules(pool);
+    const audit = await listRecentAffiliateAudit(pool, 120);
     const learningCourses = await listLearningCourses(pool).catch(function () {
       return [];
     });
@@ -26,7 +27,7 @@ exports.handler = async function (event) {
         label: clean(row && row.course_title, 220),
       };
     });
-    return json(200, { ok: true, rules, courses });
+    return json(200, { ok: true, rules, courses, audit });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load affiliate rules" });
   }

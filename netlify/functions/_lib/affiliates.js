@@ -274,6 +274,28 @@ function plusDaysSqlDate(days) {
   return new Date(Date.now() + Math.max(0, Number(days) || 0) * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 }
 
+async function recordAffiliateAudit(pool, input) {
+  try {
+    await pool.query(
+      `INSERT INTO ${AFFILIATE_AUDIT_TABLE}
+        (event_uuid, event_type, actor_type, actor_id, target_type, target_id, metadata_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `afa_${crypto.randomUUID().replace(/-/g, "")}`,
+        clean(input && input.eventType, 80) || "unknown",
+        clean(input && input.actorType, 40) || "system",
+        clean(input && input.actorId, 120) || null,
+        clean(input && input.targetType, 60) || null,
+        clean(input && input.targetId, 120) || null,
+        JSON.stringify(input && input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
+        nowSql(),
+      ]
+    );
+  } catch (_error) {
+    return;
+  }
+}
+
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
@@ -807,6 +829,16 @@ async function recordAffiliateAttribution(pool, input) {
   const headers = input && input.requestHeaders ? input.requestHeaders : {};
 
   if (!orderUuid || !courseSlug || !buyerEmail) {
+    await recordAffiliateAudit(pool, {
+      eventType: "attribution_rejected",
+      targetType: "order",
+      targetId: orderUuid || null,
+      metadata: {
+        courseSlug,
+        buyerEmail,
+        reason: "missing_inputs",
+      },
+    });
     return { ok: false, status: "invalid", reason: "Missing order attribution inputs" };
   }
 
@@ -968,6 +1000,23 @@ async function recordAffiliateAttribution(pool, input) {
     );
   }
 
+  await recordAffiliateAudit(pool, {
+    eventType: attributionStatus === "accepted" ? "attribution_accepted" : "attribution_rejected",
+    targetType: "order",
+    targetId: orderUuid,
+    metadata: {
+      courseSlug,
+      buyerEmail,
+      affiliateCodeInput: affiliateCode || null,
+      affiliateCodeResolved: affiliateProfile ? clean(affiliateProfile.affiliate_code, 40) : null,
+      affiliateProfileId: affiliateProfile ? Number(affiliateProfile.id) : null,
+      status: attributionStatus,
+      reason: rejectionReason || null,
+      riskScore: toInt(risk.score, 0),
+      riskFlags: Array.isArray(risk.flags) ? risk.flags : [],
+    },
+  });
+
   return {
     ok: attributionStatus === "accepted",
     status: attributionStatus,
@@ -982,7 +1031,15 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
   if (!affiliateEnabled()) return { ok: false, skipped: true, reason: "disabled" };
 
   const orderUuid = clean(input && input.orderUuid, 64);
-  if (!orderUuid) return { ok: false, error: "Missing order uuid" };
+  if (!orderUuid) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: null,
+      metadata: { reason: "missing_order_uuid" },
+    });
+    return { ok: false, error: "Missing order uuid" };
+  }
 
   const [existing] = await pool.query(
     `SELECT id
@@ -992,6 +1049,12 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
     [orderUuid]
   );
   if (Array.isArray(existing) && existing.length) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_exists",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "already_exists" },
+    });
     return { ok: true, alreadyExists: true };
   }
 
@@ -1013,13 +1076,33 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
     [orderUuid]
   );
   const attribution = Array.isArray(rows) && rows.length ? rows[0] : null;
-  if (!attribution) return { ok: false, skipped: true, reason: "attribution_missing" };
+  if (!attribution) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "attribution_missing" },
+    });
+    return { ok: false, skipped: true, reason: "attribution_missing" };
+  }
 
   if (String(attribution.attribution_status || "") !== "accepted") {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "attribution_not_accepted", attributionStatus: clean(attribution.attribution_status, 40) },
+    });
     return { ok: false, skipped: true, reason: "attribution_not_accepted" };
   }
 
   if (!Number(attribution.affiliate_profile_id || 0)) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "affiliate_profile_missing" },
+    });
     return { ok: false, skipped: true, reason: "affiliate_profile_missing" };
   }
 
@@ -1032,6 +1115,15 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
   );
   const profile = Array.isArray(profileRows) && profileRows.length ? profileRows[0] : null;
   if (!profile || String(profile.eligibility_status || "") !== "eligible" || String(profile.status || "") !== "active") {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: {
+        reason: "affiliate_not_eligible",
+        affiliateProfileId: Number(attribution.affiliate_profile_id || 0),
+      },
+    });
     return { ok: false, skipped: true, reason: "affiliate_not_eligible" };
   }
 
@@ -1046,11 +1138,26 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
        LIMIT 1`,
       [nowSql(), Number(profile.id)]
     );
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: {
+        reason: "affiliate_not_eligible_school_student",
+        affiliateProfileId: Number(profile.id || 0),
+      },
+    });
     return { ok: false, skipped: true, reason: "affiliate_not_eligible" };
   }
 
   const rule = await resolveCourseRule(pool, attribution.course_slug, nowSql());
   if (!rule || Number(rule.is_affiliate_eligible || 0) !== 1) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "course_not_eligible", courseSlug: clean(attribution.course_slug, 120) },
+    });
     return { ok: false, skipped: true, reason: "course_not_eligible" };
   }
 
@@ -1065,12 +1172,24 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
   })();
 
   if (riskScore >= 90 || riskFlags.indexOf("self_referral_same_email") !== -1 || riskFlags.indexOf("self_referral_same_account") !== -1) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "high_risk", riskScore, riskFlags },
+    });
     return { ok: false, skipped: true, reason: "high_risk" };
   }
 
   const orderAmountMinor = toMinor(attribution.order_amount_minor);
   const commissionAmountMinor = computeCommissionAmountMinor(orderAmountMinor, rule);
   if (commissionAmountMinor <= 0) {
+    await recordAffiliateAudit(pool, {
+      eventType: "commission_skipped",
+      targetType: "order",
+      targetId: orderUuid,
+      metadata: { reason: "zero_commission", orderAmountMinor },
+    });
     return { ok: false, skipped: true, reason: "zero_commission" };
   }
 
@@ -1104,6 +1223,21 @@ async function createAffiliateCommissionForPaidOrder(pool, input) {
       now,
     ]
   );
+
+  await recordAffiliateAudit(pool, {
+    eventType: "commission_created",
+    targetType: "order",
+    targetId: orderUuid,
+    metadata: {
+      courseSlug: clean(attribution.course_slug, 120),
+      affiliateProfileId: Number(attribution.affiliate_profile_id || 0),
+      affiliateCode: clean(attribution.affiliate_code, 40),
+      commissionAmountMinor,
+      currency: clean(rule.commission_currency || attribution.buyer_currency || "NGN", 10).toUpperCase(),
+      holdDays,
+      payableAt,
+    },
+  });
 
   return { ok: true, amountMinor: commissionAmountMinor, payableAt };
 }
@@ -2125,6 +2259,36 @@ async function listAffiliateCourseRules(pool) {
   return Array.isArray(rows) ? rows : [];
 }
 
+async function listRecentAffiliateAudit(pool, limitInput) {
+  await ensureAffiliateTables(pool);
+  const limit = Math.max(1, Math.min(toInt(limitInput, 100), 500));
+  const [rows] = await pool.query(
+    `SELECT id, event_type, actor_type, actor_id, target_type, target_id, metadata_json, created_at
+     FROM ${AFFILIATE_AUDIT_TABLE}
+     ORDER BY id DESC
+     LIMIT ?`,
+    [limit]
+  );
+  return (Array.isArray(rows) ? rows : []).map(function (row) {
+    let metadata = {};
+    try {
+      metadata = JSON.parse(String(row.metadata_json || "{}")) || {};
+    } catch (_error) {
+      metadata = {};
+    }
+    return {
+      id: Number(row.id || 0),
+      eventType: clean(row.event_type, 80),
+      actorType: clean(row.actor_type, 40),
+      actorId: clean(row.actor_id, 120),
+      targetType: clean(row.target_type, 60),
+      targetId: clean(row.target_id, 120),
+      metadata,
+      createdAt: row.created_at || null,
+    };
+  });
+}
+
 async function upsertAffiliateCourseRule(pool, input) {
   await ensureAffiliateTables(pool);
   const courseSlug = normalizeCourse(input && input.courseSlug);
@@ -2385,6 +2549,7 @@ module.exports = {
   saveAffiliatePayoutAccount,
   runAffiliatePayoutBatch,
   listAffiliateCourseRules,
+  listRecentAffiliateAudit,
   upsertAffiliateCourseRule,
   listAffiliatePayoutBanks,
   sendAffiliatePayoutChangeOtp,

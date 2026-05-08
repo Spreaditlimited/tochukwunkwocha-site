@@ -25,7 +25,7 @@ async function brevoRequest(path, payload) {
   }
 }
 
-async function syncBrevoSubscriber({ fullName, email, listId }) {
+async function syncBrevoSubscriber({ fullName, email, listId, phone, attributes }) {
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) return { ok: false, error: "Missing email" };
   const listIdNum = Number(listId || 0);
@@ -34,9 +34,19 @@ async function syncBrevoSubscriber({ fullName, email, listId }) {
   }
   const payload = {
     email: cleanEmail,
-    attributes: {
+    attributes: Object.assign(
+      {
       FIRSTNAME: String(fullName || "").trim(),
-    },
+      },
+      phone
+        ? {
+            SMS: String(phone).trim(),
+            WHATSAPP: String(phone).trim(),
+            PHONE: String(phone).trim(),
+          }
+        : {},
+      attributes && typeof attributes === "object" ? attributes : {}
+    ),
     listIds: [listIdNum],
     updateEnabled: true,
     emailBlacklisted: false,

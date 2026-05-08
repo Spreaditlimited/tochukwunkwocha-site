@@ -75,3 +75,6 @@
 
 [functions."school-call-reminder-cron"]
   schedule = "*/10 * * * *"
+
+[functions."whatsapp-send-cron"]
+  schedule = "*/10 * * * *"
