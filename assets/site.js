@@ -5,6 +5,7 @@
 
   const META_PIXEL_ID = "197692536710001";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
+  const AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
   const PURCHASE_WELCOME_KEY = "recent_course_purchase_notice_v1";
   const PURCHASE_WELCOME_DURATION_MS = 60 * 1000;
   const WHATSAPP_CHAT_URL = "https://wa.me/447881194138?text=Hi%20Tochukwu%2C%20I%20have%20a%20question%20about%20your%20courses.";
@@ -56,6 +57,25 @@
           "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
       }
     );
+  }
+
+  function resolveAffiliateCode() {
+    var fromQuery = "";
+    try {
+      var search = new URLSearchParams(window.location.search || "");
+      fromQuery = String(search.get("ref") || search.get("affiliate") || "").trim().toUpperCase();
+    } catch (_error) {
+      fromQuery = "";
+    }
+    if (fromQuery) {
+      try { window.localStorage.setItem(AFFILIATE_REF_KEY, fromQuery); } catch (_error) {}
+      return fromQuery;
+    }
+    try {
+      return String(window.localStorage.getItem(AFFILIATE_REF_KEY) || "").trim().toUpperCase();
+    } catch (_error) {
+      return "";
+    }
   }
 
   let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;
@@ -732,6 +752,7 @@
     const email = form.email.value.trim();
     const country = form.country.value.trim();
     const provider = providerInput.value;
+    const affiliateCode = resolveAffiliateCode();
 
     if (!firstName || !email) {
       errorEl.textContent = "Please enter your full name and email address.";
@@ -762,6 +783,7 @@
             country,
             courseSlug: currentCourseConfig().slug,
             batchKey: activeCourseBatchKey,
+            affiliateCode: affiliateCode,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -792,6 +814,7 @@
           provider,
           courseSlug: currentCourseConfig().slug,
           batchKey: activeCourseBatchKey,
+          affiliateCode: affiliateCode,
           recaptchaToken,
         }),
       });
