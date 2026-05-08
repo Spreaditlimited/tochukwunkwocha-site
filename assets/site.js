@@ -78,9 +78,28 @@
     }
   }
 
+  function appendAffiliateCodeToEnrolLinks(affiliateCode) {
+    var code = String(affiliateCode || "").trim().toUpperCase();
+    if (!code) return;
+    var anchors = document.querySelectorAll('a[href^="/enrol-"]');
+    anchors.forEach(function (anchor) {
+      var href = String(anchor.getAttribute("href") || "").trim();
+      if (!href) return;
+      try {
+        var url = new URL(href, window.location.origin);
+        if (!url.searchParams.get("ref")) url.searchParams.set("ref", code);
+        anchor.setAttribute("href", url.pathname + url.search + url.hash);
+      } catch (_error) {
+        return;
+      }
+    });
+  }
+
   let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;
   let activeCourseBatchStartAt = "";
   let enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+  var initialAffiliateCode = resolveAffiliateCode();
+  appendAffiliateCodeToEnrolLinks(initialAffiliateCode);
 
   function initMetaPixel() {
     if (!META_PIXEL_ID || window.fbq) return;
