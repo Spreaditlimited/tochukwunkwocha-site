@@ -4,6 +4,7 @@
   var linkInput = document.getElementById("affiliateLinkInput");
   var copyBtn = document.getElementById("affiliateCopyLinkBtn");
   var copyMsg = document.getElementById("affiliateCopyMsg");
+  var directLinksRows = document.getElementById("affiliateDirectLinksRows");
   var pendingEl = document.getElementById("affPending");
   var approvedEl = document.getElementById("affApproved");
   var paidEl = document.getElementById("affPaid");
@@ -269,6 +270,7 @@
     var payouts = affiliate.payouts || [];
     var policy = affiliate.policy || {};
     var eligibleCourses = affiliate.eligibleCourses || [];
+    var directCourseLinks = affiliate.directCourseLinks || [];
 
     if (metaEl) metaEl.textContent = "Affiliate code: " + String(profile.affiliateCode || "--");
     if (linkInput) linkInput.value = String(profile.affiliateLink || "");
@@ -326,6 +328,25 @@
         schoolTieNoteEl.textContent = "";
       }
     }
+
+    renderRows(
+      directCourseLinks,
+      directLinksRows,
+      function (item) {
+        var slug = String(item && item.courseSlug || "").trim();
+        var url = String(item && item.link || "").trim();
+        var label = humanizeCourseSlug(slug);
+        return [
+          "<tr class='border-b border-gray-100'>",
+          "<td class='py-2 pr-3'>" + String(label || slug) + "</td>",
+          "<td class='py-2 pr-3 break-all'><a class='text-brand-700 hover:text-brand-600 underline' href='" + url + "' target='_blank' rel='noopener'>" + url + "</a></td>",
+          "<td class='py-2 pr-3'><button type='button' class='inline-flex items-center justify-center rounded-md bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100' data-copy-direct-link='" + url + "'>Copy</button></td>",
+          "</tr>",
+        ].join("");
+      },
+      "No direct course links are currently available.",
+      3
+    );
 
     renderRows(
       eligibleCourses,
@@ -483,6 +504,22 @@
       if (!value) return;
       navigator.clipboard.writeText(value).then(function () {
         if (copyMsg) copyMsg.textContent = "Affiliate link copied.";
+      }).catch(function () {
+        if (copyMsg) copyMsg.textContent = "Could not copy. Please copy manually.";
+      });
+    });
+  }
+
+  if (directLinksRows) {
+    directLinksRows.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!target || !target.closest) return;
+      var btn = target.closest("[data-copy-direct-link]");
+      if (!btn) return;
+      var value = String(btn.getAttribute("data-copy-direct-link") || "");
+      if (!value) return;
+      navigator.clipboard.writeText(value).then(function () {
+        if (copyMsg) copyMsg.textContent = "Direct course affiliate link copied.";
       }).catch(function () {
         if (copyMsg) copyMsg.textContent = "Could not copy. Please copy manually.";
       });

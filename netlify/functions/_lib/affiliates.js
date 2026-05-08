@@ -2251,7 +2251,8 @@ async function getAffiliateDashboard(pool, accountId) {
   );
 
   const baseUrl = affiliateBaseUrl();
-  const link = baseUrl ? `${baseUrl}/courses/?ref=${encodeURIComponent(clean(profile.affiliate_code, 40))}` : `/?ref=${encodeURIComponent(clean(profile.affiliate_code, 40))}`;
+  const affiliateCode = encodeURIComponent(clean(profile.affiliate_code, 40));
+  const link = baseUrl ? `${baseUrl}/courses/?ref=${affiliateCode}` : `/?ref=${affiliateCode}`;
   const payoutCurrency = clean(profile.payout_currency, 10) || "NGN";
   const minPayout = minPayoutMinor(payoutCurrency);
   const defaultHold = defaultHoldDays();
@@ -2348,6 +2349,17 @@ async function getAffiliateDashboard(pool, accountId) {
         projectedMinSeats: slug === "prompt-to-profit-schools" ? schoolMinSeats : 0,
       };
     }),
+    directCourseLinks: (Array.isArray(ruleRows) ? ruleRows : []).map(function (row) {
+      const slug = clean(row.course_slug, 120).toLowerCase();
+      if (!slug) return null;
+      const href = baseUrl
+        ? `${baseUrl}/courses/${slug}/?ref=${affiliateCode}`
+        : `/courses/${slug}/?ref=${affiliateCode}`;
+      return {
+        courseSlug: slug,
+        link: href,
+      };
+    }).filter(Boolean),
   };
 }
 
