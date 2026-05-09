@@ -115,6 +115,8 @@ exports.handler = async function (event) {
     metaLeadSent = Boolean(metaRes && metaRes.ok);
   } catch (_error) {}
 
+  let whatsappQueued = false;
+  let whatsappQueueError = "";
   try {
     const pool = getPool();
     await ensureWhatsAppWaitlistTables(pool);
@@ -137,8 +139,10 @@ exports.handler = async function (event) {
       }),
       dueAtSql: nowSql(),
     });
+    whatsappQueued = true;
   } catch (error) {
-    console.error("holiday_waitlist_whatsapp_queue_error", error && error.message ? error.message : error);
+    whatsappQueueError = clean(error && error.message ? error.message : "Queue enqueue failed", 300);
+    console.error("holiday_waitlist_whatsapp_queue_error", whatsappQueueError);
   }
 
   const brevo = await syncBrevoSubscriber({
@@ -158,6 +162,9 @@ exports.handler = async function (event) {
   return json(200, {
     ok: true,
     message: "You are on the VIP waitlist.",
+    whatsappQueued,
+    whatsappQueueError,
+    normalizedPhone: phoneE164,
     meta: {
       eventId: metaEventId,
       leadSent: metaLeadSent,
