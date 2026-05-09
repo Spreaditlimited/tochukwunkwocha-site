@@ -144,7 +144,6 @@ exports.handler = async function (event) {
   const brevo = await syncBrevoSubscriber({
     fullName,
     email,
-    phone: phoneE164,
     listId: BREVO_HOLIDAY_WAITLIST_LIST_ID,
     attributes: {
       WA_OPT_IN: "1",
