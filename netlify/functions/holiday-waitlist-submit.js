@@ -66,7 +66,20 @@ exports.handler = async function (event) {
     remoteip: clientIpFromEvent(event),
   });
   if (!recaptcha.ok) {
-    return json(400, { ok: false, error: "We could not verify this submission. Please try again." });
+    console.warn("holiday_waitlist_recaptcha_failed", {
+      reason: recaptcha.reason || "unknown",
+      action: recaptcha.action || "",
+      score: Number.isFinite(recaptcha.score) ? recaptcha.score : null,
+    });
+    let errorMessage = "We could not verify this submission. Please try again.";
+    if (recaptcha.reason === "action_mismatch") {
+      errorMessage = "Security verification mismatch. Please refresh and submit again.";
+    } else if (recaptcha.reason === "score_too_low") {
+      errorMessage = "Submission flagged as suspicious. Please retry in a moment.";
+    } else if (recaptcha.reason === "verify_unreachable") {
+      errorMessage = "Security verification is temporarily unavailable. Please try again.";
+    }
+    return json(400, { ok: false, error: errorMessage, reason: recaptcha.reason || "verify_failed" });
   }
 
   const reqMeta = requestContextToMetaData({ headers: event.headers });
