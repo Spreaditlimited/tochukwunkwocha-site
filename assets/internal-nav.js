@@ -51,6 +51,99 @@
     return window.matchMedia("(min-width: 768px)").matches;
   }
 
+  function ensureMobileOverflowGuards() {
+    if (document.getElementById("internal-mobile-overflow-guards")) return;
+    var style = document.createElement("style");
+    style.id = "internal-mobile-overflow-guards";
+    // iOS/WebKit can shift the visual viewport when an off-canvas fixed sidebar
+    // is hidden with transforms. Keep sidebar strictly off-canvas via `left`
+    // and ensure the main shell never contributes horizontal overflow.
+    style.textContent = [
+      "@media (max-width: 1023px) {",
+      "  html, body { max-width: 100%; overflow-x: hidden; }",
+      "  body { position: relative; }",
+      "  section.flex { overflow-x: hidden; }",
+      "  #mobile-menu-toggle ~ aside { position: fixed !important; top: 0 !important; bottom: 0 !important; z-index: 50 !important; width: 18rem !important; }",
+      "  section.flex > .flex-1 { min-width: 0; width: 100%; }",
+      "  #internalToolsCard > .flex-1 { min-width: 0; width: 100%; }",
+      "  #mobile-menu-toggle ~ aside { left: -18rem !important; transform: none !important; transition: left 0.3s ease-in-out !important; }",
+      "  #mobile-menu-toggle:checked ~ aside { left: 0 !important; }",
+      "}"
+    ].join("\n");
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function applyMobileShellLayout() {
+    var isMobile = !isDesktop();
+    var root = document.documentElement;
+    var body = document.body;
+    var toolsCard = document.getElementById("internalToolsCard");
+    var loginCard = document.getElementById("internalLoginCard");
+    var mainPanels = Array.prototype.slice.call(document.querySelectorAll("#internalToolsCard > .flex-1"));
+    var scrollHost = document.querySelector("#internalToolsCard main");
+
+    if (!body) return;
+
+    if (isMobile) {
+      ensureMobileOverflowGuards();
+      if (root) {
+        root.style.overflowX = "hidden";
+      }
+      body.style.position = "relative";
+      body.style.minHeight = "100dvh";
+      body.style.height = "100dvh";
+      body.style.overflowX = "hidden";
+      body.style.overflowY = "hidden";
+      if (toolsCard) {
+        toolsCard.style.minHeight = "100dvh";
+        toolsCard.style.height = "100dvh";
+        toolsCard.style.overflowX = "hidden";
+      }
+      if (loginCard) {
+        loginCard.style.minHeight = "100dvh";
+        loginCard.style.height = "100dvh";
+      }
+      mainPanels.forEach(function (panel) {
+        panel.style.minWidth = "0";
+        panel.style.overflowX = "hidden";
+      });
+      if (scrollHost) {
+        scrollHost.style.minWidth = "0";
+        scrollHost.style.overflowX = "hidden";
+      }
+      if (window.scrollX !== 0) {
+        window.scrollTo(0, window.scrollY || 0);
+      }
+      return;
+    }
+
+    if (root) {
+      root.style.overflowX = "";
+    }
+    body.style.position = "";
+    body.style.minHeight = "";
+    body.style.height = "";
+    body.style.overflowX = "";
+    body.style.overflowY = "";
+    if (toolsCard) {
+      toolsCard.style.minHeight = "";
+      toolsCard.style.height = "";
+      toolsCard.style.overflowX = "";
+    }
+    if (loginCard) {
+      loginCard.style.minHeight = "";
+      loginCard.style.height = "";
+    }
+    mainPanels.forEach(function (panel) {
+      panel.style.minWidth = "";
+      panel.style.overflowX = "";
+    });
+    if (scrollHost) {
+      scrollHost.style.minWidth = "";
+      scrollHost.style.overflowX = "";
+    }
+  }
+
   function readCollapsedPref() {
     try {
       return localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === "1";
@@ -226,6 +319,9 @@
       return pages.map(function (x) { return normalizePath(x); }).filter(Boolean);
     }).catch(function () { return null; });
   }
+
+  applyMobileShellLayout();
+  window.addEventListener("resize", applyMobileShellLayout);
 
   var sidebars = Array.prototype.slice.call(document.querySelectorAll("aside")).filter(function (aside) {
     return !!aside.querySelector('a[href^="/internal/"]');
