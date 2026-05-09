@@ -40,7 +40,7 @@
     "prompt-to-profit": {
       name: "Prompt to Profit",
       intro:
-        "Secure your child's spot today. We will set up their student account immediately, giving them full access to all live sessions and recorded lessons the moment the holiday bootcamp begins.",
+        "Lock in your seat today. We will set up the learning account instantly, giving you (or your child) full access to every live class and video module as soon as the bootcamp kicks off.",
     },
     "prompt-to-production": {
       name: "Prompt to Profit Advanced",

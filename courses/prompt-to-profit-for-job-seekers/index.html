@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt to Profit | Build a Portfolio That Gets You Hired</title>
+    <meta
+      name="description"
+      content="Bypass the ATS black hole. Learn how to command AI to build real, functional websites and digital tools in 5 days, and hand employers proof of execution."
+    />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: { preflight: false },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#f0f5fa', 100: '#e1ebf6', 200: '#c8dced', 300: '#a2c4e0',
+                400: '#75a5d0', 500: '#5286bf', 600: '#3f6ba4', 700: '#345585',
+                800: '#2d476e', 900: '#0a1930', 
+              }
+            },
+            boxShadow: {
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+              'float': '0 20px 40px -5px rgba(0,0,0,0.1)',
+            },
+            animation: { 'float-slow': 'float 6s ease-in-out infinite' },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .tw-section-label { @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-6 shadow-sm; }
+        .tw-h2 { @apply text-3xl font-heading font-extrabold tracking-tight text-brand-900 sm:text-4xl lg:text-5xl leading-tight; }
+        .tw-btn-primary { @apply inline-flex items-center justify-center rounded-2xl bg-brand-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-500 hover:shadow-xl hover:shadow-brand-500/40 hover:-translate-y-1; }
+        .tw-btn-outline { @apply inline-flex items-center justify-center rounded-2xl bg-white px-8 py-4 text-base font-bold text-brand-900 shadow-sm ring-1 ring-inset ring-brand-200 transition-all hover:bg-brand-50 hover:-translate-y-1; }
+        .faq-wrap { @apply space-y-4; }
+        .faq-item { @apply rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm transition-all hover:border-brand-300 hover:shadow-md; }
+        .faq-question { @apply flex w-full items-center justify-between text-left font-heading font-bold text-brand-900 text-lg sm:text-xl focus:outline-none cursor-pointer bg-transparent border-0 p-0; }
+        .faq-answer p { @apply mt-4 text-gray-600 leading-relaxed pr-8 text-base; }
+      }
+    </style>
+    <style>
+      main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+      .site-footer { margin-top: 0 !important; }
+      .course-hero { padding-top: 64px; }
+      @media (min-width: 1024px) { .course-hero { padding-top: 96px; } }
+      .bg-tech-grid {
+        background-image: linear-gradient(to right, rgba(52, 85, 133, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(52, 85, 133, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      .browser-mockup {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+        background: white;
+      }
+      .browser-header { background: #f3f4f6; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px; }
+      .browser-dots { display: flex; gap: 6px; }
+      .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
+      .case-study-box { border-left: 4px solid #f59e0b; padding-left: 20px; margin-top: 24px; }
+      .testimonial-grid {
+        margin-top: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .testimonial-grid .testimonial-card {
+        flex: 1 1 auto;
+      }
+      @media (min-width: 1024px) {
+        .testimonial-grid {
+          flex-direction: row;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding-bottom: 6px;
+          padding-left: 40px;
+          padding-right: 40px;
+          margin-left: -40px;
+          margin-right: -40px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          -webkit-mask-image: linear-gradient(to right, transparent, black 48px, black calc(100% - 48px), transparent);
+          mask-image: linear-gradient(to right, transparent, black 48px, black calc(100% - 48px), transparent);
+        }
+        .testimonial-grid::-webkit-scrollbar { display: none; }
+        .testimonial-grid .testimonial-card {
+          flex: 0 0 360px;
+          max-width: 360px;
+          scroll-snap-align: start;
+        }
+      }
+      .testimonial-body {
+        line-height: 1.65;
+      }
+      .testimonial-body.testimonial-body--clamped {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 5;
+        overflow: hidden;
+      }
+      .testimonial-toggle {
+        margin-top: 10px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #22345f;
+        cursor: pointer;
+      }
+      .testimonial-toggle:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body class="public-page--prompt-to-profit-adults bg-white font-sans antialiased min-h-screen flex flex-col text-gray-900">
+    
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="logo" href="/">
+          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+        </a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-children/">Kids</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full">
+      
+      <section class="course-hero relative overflow-hidden bg-brand-900 pb-20 lg:pb-32 reveal border-b border-brand-800">
+        <div class="absolute inset-0 bg-[url('/assets/grid.svg')] bg-center opacity-[0.03]"></div>
+        <div class="mx-auto w-[var(--container)] relative z-10">
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+            <div class="text-center sm:text-left pt-8 lg:pt-0">
+              <span class="inline-block px-4 py-1 rounded-full bg-white/10 border border-white/20 text-amber-400 font-bold text-xs uppercase tracking-widest mb-6">The Traditional CV is Dead</span>
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.8rem] leading-[1.1]">
+                Skip the resume pile. Build a portfolio that proves you can do the job.
+              </h1>
+              <p class="mt-6 text-lg sm:text-xl leading-relaxed text-brand-100 font-light">
+                Stop sending out 100 CVs a week just to get ignored. In 5 days, learn how to command <strong class="text-white font-bold">AI</strong> to build sophisticated, business-critical digital tools. Hand employers <strong class="text-white font-bold">proof of execution</strong>, not just potential.
+              </p>
+              <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+                <a class="tw-btn-primary" href="/enrol-prompt-to-profit/">Start Your Portfolio (N10,750)</a>
+              </div>
+            </div>
+            <div class="mt-16 lg:mt-0 relative hidden sm:block">
+              <div class="relative w-full max-w-lg mx-auto lg:ml-auto">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-[2.5rem] blur-lg opacity-40 animate-pulse"></div>
+                <img src="/assets/adult-tech-professional.jpg" alt="A confident professional" onerror="this.src='https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'" class="relative rounded-[2rem] shadow-float border-4 border-white/10 object-cover aspect-[4/3] w-full bg-brand-800" />
+                <div class="absolute -bottom-6 -left-8 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-4 animate-float-slow border border-gray-100">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg">✓</div>
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Portfolio Proof</p>
+                    <p class="text-sm font-bold text-brand-900">Live Tools Built</p>
+                  </div>
+                </div>
+                <div class="absolute top-10 -right-6 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-lg flex items-center gap-3 animate-float-slow border border-white/20" style="animation-delay: 2s;">
+                  <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-extrabold">AI</div>
+                  <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Hiring Signal</p>
+                    <p class="text-sm font-semibold text-brand-900">Execution Ready</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-brand-50 bg-tech-grid py-24 reveal border-b border-brand-100">
+        <div class="mx-auto w-[var(--container)]">
+          <div class="text-center max-w-3xl mx-auto mb-16">
+            <p class="tw-section-label !bg-white">Why This Works</p>
+            <h2 class="tw-h2 mb-6">Don't tell them you solve problems. Show them.</h2>
+            <p class="text-lg text-gray-600">
+              Employers are not looking for typists or basic data-entry staff anymore. They want <strong>Systems Thinkers</strong> who can leverage technology to save them time and make them money. Look at the kind of tools you will be able to build and bring to an interview after just 5 days of AI Fluency.
+            </p>
+          </div>
+
+          <div class="lg:grid lg:grid-cols-12 gap-12 items-center mb-24">
+            <div class="lg:col-span-5 mb-8 lg:mb-0">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-100 text-brand-600 text-2xl mb-6">📈</div>
+              <h3 class="text-2xl font-heading font-extrabold text-brand-900 mb-4">Tool 1: The Revenue Generator</h3>
+              <p class="text-gray-600 leading-relaxed"><strong>The Problem:</strong> A local B2B service company (cleaning, landscaping, consulting) is losing clients because it takes them 48 hours to manually calculate quotes and email them to leads.</p>
+              <p class="text-gray-600 leading-relaxed mt-4"><strong>The Solution:</strong> You use AI to build a dynamic, self-service quoting engine. Leads input their needs, and the tool instantly generates a tiered pricing proposal.</p>
+              
+              <div class="case-study-box">
+                <p class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1">What the Hiring Manager Sees:</p>
+                <p class="text-brand-900 font-medium italic">"This candidate understands lead generation, customer friction, and revenue operations. If they can build this for an interview, imagine what they will do when we hire them."</p>
+              </div>
+            </div>
+            <div class="lg:col-span-7">
+              <div class="browser-mockup">
+                <div class="browser-header">
+                  <div class="browser-dots"><div class="browser-dot bg-red-400"></div><div class="browser-dot bg-amber-400"></div><div class="browser-dot bg-green-400"></div></div>
+                  <div class="browser-url text-xs text-gray-400">dynamic-proposal-engine.app</div>
+                </div>
+                <iframe src="https://generate-quote-demo.netlify.app" class="w-full h-[500px] border-0" loading="lazy"></iframe>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:grid lg:grid-cols-12 gap-12 items-center">
+            <div class="lg:col-span-7 order-2 lg:order-1 mt-8 lg:mt-0">
+              <div class="browser-mockup">
+                <div class="browser-header">
+                  <div class="browser-dots"><div class="browser-dot bg-red-400"></div><div class="browser-dot bg-amber-400"></div><div class="browser-dot bg-green-400"></div></div>
+                  <div class="browser-url text-xs text-gray-400">operations-shift-planner.app</div>
+                </div>
+                <iframe src="https://capacity-planner-demo.netlify.app" class="w-full h-[500px] border-0" loading="lazy"></iframe>
+              </div>
+            </div>
+            <div class="lg:col-span-5 order-1 lg:order-2">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 text-2xl mb-6">⚙️</div>
+              <h3 class="text-2xl font-heading font-extrabold text-brand-900 mb-4">Tool 2: The Operations Optimizer</h3>
+              <p class="text-gray-600 leading-relaxed"><strong>The Problem:</strong> A retail or operations manager is blowing their budget by overstaffing on slow days, and losing customers by understaffing on busy days.</p>
+              <p class="text-gray-600 leading-relaxed mt-4"><strong>The Solution:</strong> You use AI to construct a "Capacity Planner." The manager inputs expected foot traffic and transaction times, and the tool instantly calculates exactly how many staff members are needed hour-by-hour.</p>
+              
+              <div class="case-study-box !border-emerald-500">
+                <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">What the Hiring Manager Sees:</p>
+                <p class="text-brand-900 font-medium italic">"This candidate thinks like a manager. They understand resource allocation, cost optimization, and operational efficiency. They aren't just looking for a paycheck; they solve business bottlenecks."</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="curriculum" class="bg-white py-24 reveal">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-16">
+            <p class="tw-section-label">The 5-Day Framework</p>
+            <h2 class="tw-h2 mb-6">From blank screen to live portfolio.</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+              You do not need a computer science degree. We bypass the coding syntax entirely and focus on Prompt Engineering, Systems Design, and Execution.
+            </p>
+          </div>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+             <article class="bg-brand-50 p-8 rounded-3xl shadow-sm border border-brand-100">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 1 • Live Class</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">The AI Director Mindset</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">Learn how to structure complex prompts and watch a live demonstration of building a business asset in minutes.</p>
+            </article>
+            <article class="bg-brand-50 p-8 rounded-3xl shadow-sm border border-brand-100">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 2 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Architecting Solutions</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">Map out business logic that solves real problems without writing the code yourself.</p>
+            </article>
+            <article class="bg-brand-50 p-8 rounded-3xl shadow-sm border border-brand-100">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 3 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Executing the Prototype</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">Command the AI to build a fully functional web prototype tailored to your specific career goals.</p>
+            </article>
+            <article class="bg-brand-50 p-8 rounded-3xl shadow-sm border border-brand-100">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 4 • Recorded Video</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Refinement & Deployment</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">Learn "Diagnostic Dialogue" to fix bugs, polish the UI, and deploy the project live to the internet.</p>
+            </article>
+            <article class="bg-brand-50 p-8 rounded-3xl shadow-sm border border-brand-100 sm:col-span-2 lg:col-span-2">
+              <p class="text-brand-600 font-bold tracking-wide text-xs mb-3 uppercase">Day 5 • Live Class</p>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Leveraging Your Portfolio</h3>
+              <p class="text-gray-600 text-sm leading-relaxed">We discuss exactly how to present these links to hiring managers, bypass the ATS, and completely change the dynamic of your next job interview.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal testimonials-section" style="margin-top: 60px; padding: 40px; background-color: #fafbfc; border-radius: 12px;">
+        <p class="section-label">Student Testimonials</p>
+        <h2 class="section-headline">What our students are saying</h2>
+
+        <div class="testimonial-grid">
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/anuri.jpg" alt="Photo of Anuri Okongwu" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Anuri Okongwu</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Parent & Student Advocate</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Your Prompt to Profit class was so good. Your teaching ability is topnotch. I actually registered the course for my 2 boys in secondary school but because they were writing an exam last week, I had to attend the class, so that I would be their instructor.
+              My two boys - one in JS1 and the other in SS1 have now built their own websites by following the steps in the course. Their dad was so happy that he enrolled them for the advanced course.
+              I have referred 2 parents with your Facebook link, one has already paid yesterday for the next class.
+              I actually got value for the money spent, reason why I am registering for the advance class.
+              Thanks so much.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/ekpere.JPG" alt="Photo of Ekpereamaka Blessings" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Ekpereamaka Blessings</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Honestly I want to say a big thank you to our outstanding coach @⁨Tochukwu Nkwocha⁩. It's been an amazing week with the prompt to profit rehearsal. I just built a website for my company for $100 and my boss was impressed. I had more offers from his two friends but Electricity wahala in Nigeria is really frustrating.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/michelle.png" alt="Photo of Michelle Emoghware" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Michelle Emoghware</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;I signed up for a 5 day AI prompt class and I built a beautiful, professional looking website using the knowledge gained on Day 1. My biggest take away was how to literally discuss the problems I was having with AI and prompt a solution. I cannot recommend this course highly enough. It is also unbelievably affordable.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/emeka.JPG" alt="Photo of Emeka Nwankwo" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Emeka Nwankwo</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;I am super excited mhen!!! You were conducting &quot;AI Deliverance&quot; for some of us yesterday. Thank you....thank you ......thank you....&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/chinenye.JPG" alt="Photo of Charity Chinedu-Ogbu" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Charity Chinedu-Ogbu</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Thank you Uncle T. Yesterday&rsquo;s class was more than exceptional. When you double clicked the HTML file in the folder and the site came up, it first looked like magic. BTW: You are such an amazing teacher with a full dose of patience.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/audu.jpg" alt="Photo of Audu Ameh Emmanuel" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Audu Ameh Emmanuel</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;Thank you so very much Sir, that was a very powerful and insightful opening session. Indeed, ANYTHING IS POSSIBLE, and what an awesome time to be alive.&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/O-Key-Smart%20Tutors.jpg" alt="Photo of O-Smart-Key Tutors" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">O-Smart-Key Tutors</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;I took your Prompt to Profit course, and I was truly impressed by how simple and practical you made everything. It was easy to follow and highly valuable. I&rsquo;d confidently rate it 100%!&rdquo;
+            </p>
+          </article>
+
+          <article class="testimonial-card" style="background: #fff; padding: 24px; border: 1px solid #e1e7f0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div class="testimonial-header" style="display: flex; align-items: center; gap: 16px;">
+              <img src="/assets/Akinwunmi%20Shola.jpg" alt="Photo of Akinwunmi Shola" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="testimonial-meta">
+                <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0;">Akinwunmi Shola</h3>
+                <p style="font-size: 0.9rem; color: #718096; margin: 0;">Beginner Student</p>
+              </div>
+            </div>
+            <p class="testimonial-body" style="margin-top: 16px; font-size: 1rem; color: #333; font-style: italic;">
+              &ldquo;An amazing instructor when it comes to artificial intelligence. keep it up,&rdquo;
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="py-24 bg-brand-900 reveal overflow-hidden relative">
+        <div class="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-[0.05] pointer-events-none"></div>
+        <div class="absolute -right-40 -top-40 w-[500px] h-[500px] bg-amber-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+        
+        <div class="mx-auto w-[var(--container)] relative z-10 text-center max-w-3xl">
+          <h2 class="text-4xl sm:text-5xl font-heading font-extrabold text-white leading-tight mb-6">Equip yourself with the ultimate unfair advantage.</h2>
+          <p class="text-brand-200 text-lg sm:text-xl font-light leading-relaxed mb-10">
+            You can spend the next month sending out 100 more CVs and hoping a robot picks your name. Or, you can spend 5 days building digital assets that prove you are the exact problem-solver they need to hire.
+          </p>
+          <a class="tw-btn-primary !bg-amber-500 hover:!bg-amber-400 !text-brand-900 !px-12 !py-5 !text-lg" href="/enrol-prompt-to-profit/">Join the Cohort for just N10,750</a>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+        </div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/blog/">Blog</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+      </div>
+    </footer>
+    <script>
+      (function initTestimonialClamp() {
+        var testimonials = document.querySelectorAll(".testimonial-body");
+        testimonials.forEach(function (body) {
+          body.classList.add("testimonial-body--clamped");
+          if (body.scrollHeight <= body.clientHeight + 1) {
+            body.classList.remove("testimonial-body--clamped");
+            return;
+          }
+
+          var toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "testimonial-toggle";
+          toggle.textContent = "Read more";
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.addEventListener("click", function () {
+            var expanded = body.classList.toggle("testimonial-body--clamped") === false;
+            toggle.textContent = expanded ? "Show less" : "Read more";
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+          });
+
+          body.insertAdjacentElement("afterend", toggle);
+        });
+      })();
+    </script>
+    <script src="/assets/site.js"></script>
+  </body>
+</html>
