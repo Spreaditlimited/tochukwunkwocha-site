@@ -66,6 +66,9 @@ const SETTINGS_DEFINITIONS = [
   { key: "BREVO_LEADPAGE_LIST_ID", category: "Email/CRM", secret: false },
   { key: "BREVO_LEADPAGE_FOLLOWUP_EMAIL_COUNT", category: "Email/CRM", secret: false },
   { key: "BREVO_FREE_TIER_DAILY_SEND_LIMIT", category: "Email/CRM", secret: false },
+  { key: "HOLIDAY_WAITLIST_WHATSAPP_WORKFLOW", category: "WhatsApp", secret: false },
+  { key: "N8N_HOLIDAY_WAITLIST_WEBHOOK_URL", category: "WhatsApp", secret: false },
+  { key: "N8N_HOLIDAY_WAITLIST_WEBHOOK_SECRET", category: "WhatsApp", secret: true },
 
   { key: "LEADPAGE_AUTOMATION_ENABLED", category: "Leadpage AI", secret: false },
   { key: "LEADPAGE_AUTOMATION_ALLOW_MOCK", category: "Leadpage AI", secret: false },

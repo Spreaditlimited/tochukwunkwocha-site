@@ -3,7 +3,9 @@ const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaLead, requestContextToMetaData } = require("./_lib/meta");
 const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 const { getPool, nowSql } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { normalizePhoneE164 } = require("./_lib/whatsapp");
+const { callN8nWebhook } = require("./_lib/n8n");
 const {
   ensureWhatsAppWaitlistTables,
   upsertWaitlistContact,
@@ -31,8 +33,16 @@ function firstHeader(headers, names) {
   return "";
 }
 
+function whatsappWorkflowMode() {
+  const mode = clean(process.env.HOLIDAY_WAITLIST_WHATSAPP_WORKFLOW, 40).toLowerCase();
+  return mode === "n8n" ? "n8n" : "local";
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
+  try {
+    await applyRuntimeSettings(getPool());
+  } catch (_error) {}
 
   let body = {};
   try {
@@ -115,34 +125,59 @@ exports.handler = async function (event) {
     metaLeadSent = Boolean(metaRes && metaRes.ok);
   } catch (_error) {}
 
+  const workflowMode = whatsappWorkflowMode();
   let whatsappQueued = false;
   let whatsappQueueError = "";
-  try {
-    const pool = getPool();
-    await ensureWhatsAppWaitlistTables(pool);
-    await upsertWaitlistContact(pool, {
-      email,
-      fullName,
-      phoneE164,
-      optInVersion: optInTextVersion,
-      optInSourceUrl: eventSourceUrl,
-      optInIp: reqMetaIp,
-      optInUserAgent: reqMetaUserAgent,
-    });
-    await enqueueTemplateMessage(pool, {
-      phoneE164,
-      templateName: clean(process.env.META_WA_WAITLIST_WELCOME_TEMPLATE, 120) || "waitlist_welcome_marketing",
-      templateLanguage: clean(process.env.META_WA_WAITLIST_TEMPLATE_LANG, 20) || "en",
-      templateParamsJson: JSON.stringify({
+  if (workflowMode === "n8n") {
+    const n8nResult = await callN8nWebhook({
+      webhookUrl: clean(process.env.N8N_HOLIDAY_WAITLIST_WEBHOOK_URL, 2000),
+      secret: clean(process.env.N8N_HOLIDAY_WAITLIST_WEBHOOK_SECRET, 300),
+      payload: {
+        source: "holiday_waitlist_submit",
+        submittedAt: new Date().toISOString(),
         fullName,
         email,
-      }),
-      dueAtSql: nowSql(),
+        phone: phoneE164,
+        whatsappOptIn: true,
+        optInTextVersion,
+        eventSourceUrl,
+        clientIpAddress: reqMetaIp,
+        clientUserAgent: reqMetaUserAgent,
+      },
     });
-    whatsappQueued = true;
-  } catch (error) {
-    whatsappQueueError = clean(error && error.message ? error.message : "Queue enqueue failed", 300);
-    console.error("holiday_waitlist_whatsapp_queue_error", whatsappQueueError);
+    whatsappQueued = Boolean(n8nResult && n8nResult.ok);
+    if (!whatsappQueued) {
+      whatsappQueueError = clean((n8nResult && n8nResult.error) || "n8n webhook failed", 300);
+      console.error("holiday_waitlist_whatsapp_n8n_error", whatsappQueueError);
+    }
+  } else {
+    try {
+      const pool = getPool();
+      await ensureWhatsAppWaitlistTables(pool);
+      await upsertWaitlistContact(pool, {
+        email,
+        fullName,
+        phoneE164,
+        optInVersion: optInTextVersion,
+        optInSourceUrl: eventSourceUrl,
+        optInIp: reqMetaIp,
+        optInUserAgent: reqMetaUserAgent,
+      });
+      await enqueueTemplateMessage(pool, {
+        phoneE164,
+        templateName: clean(process.env.META_WA_WAITLIST_WELCOME_TEMPLATE, 120) || "waitlist_welcome_marketing",
+        templateLanguage: clean(process.env.META_WA_WAITLIST_TEMPLATE_LANG, 20) || "en",
+        templateParamsJson: JSON.stringify({
+          fullName,
+          email,
+        }),
+        dueAtSql: nowSql(),
+      });
+      whatsappQueued = true;
+    } catch (error) {
+      whatsappQueueError = clean(error && error.message ? error.message : "Queue enqueue failed", 300);
+      console.error("holiday_waitlist_whatsapp_queue_error", whatsappQueueError);
+    }
   }
 
   const brevo = await syncBrevoSubscriber({
@@ -162,6 +197,7 @@ exports.handler = async function (event) {
   return json(200, {
     ok: true,
     message: "You are on the VIP waitlist.",
+    whatsappWorkflow: workflowMode,
     whatsappQueued,
     whatsappQueueError,
     normalizedPhone: phoneE164,
