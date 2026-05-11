@@ -291,10 +291,11 @@
                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Phone</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Last Updated</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="holidayWaitlistRows" class="divide-y divide-gray-200 bg-white">
-                      <tr><td colspan="4" class="px-3 py-5 text-sm text-gray-500">Loading...</td></tr>
+                      <tr><td colspan="5" class="px-3 py-5 text-sm text-gray-500">Loading...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -598,6 +599,29 @@
               <button type="submit" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors" id="updateEmailConfirmBtn">Save Email</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div class="review-modal" id="waitlistDeleteModal" aria-hidden="true">
+        <button type="button" class="review-modal__backdrop" data-waitlist-delete-close aria-label="Close"></button>
+        <div class="review-modal__panel" role="dialog" aria-modal="true" aria-labelledby="waitlistDeleteTitle">
+          <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" data-waitlist-delete-close aria-label="Close dialog">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+          <div class="mb-6">
+            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-1">Holiday Waitlist</p>
+            <h3 class="text-2xl font-heading font-bold text-gray-900" id="waitlistDeleteTitle">Delete waitlist entry</h3>
+            <p class="mt-2 text-sm text-gray-600" id="waitlistDeleteDesc">This action will remove this record and related queued WhatsApp jobs.</p>
+          </div>
+
+          <p class="text-sm text-red-600 mb-4 hidden" id="waitlistDeleteError" role="alert"></p>
+
+          <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-waitlist-delete-close>Cancel</button>
+            <button type="button" class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-500 transition-colors" id="waitlistDeleteConfirmBtn">Delete entry</button>
+          </div>
         </div>
       </div>
 

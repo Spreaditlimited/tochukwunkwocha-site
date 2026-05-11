@@ -62,6 +62,10 @@
   const updateEmailInput = document.getElementById("updateEmailInput");
   const updateEmailError = document.getElementById("updateEmailError");
   const updateEmailConfirmBtn = document.getElementById("updateEmailConfirmBtn");
+  const waitlistDeleteModal = document.getElementById("waitlistDeleteModal");
+  const waitlistDeleteDesc = document.getElementById("waitlistDeleteDesc");
+  const waitlistDeleteError = document.getElementById("waitlistDeleteError");
+  const waitlistDeleteConfirmBtn = document.getElementById("waitlistDeleteConfirmBtn");
   const addStudentModal = document.getElementById("addStudentModal");
   const addStudentForm = document.getElementById("addStudentForm");
   const addStudentCourse = document.getElementById("addStudentCourse");
@@ -97,6 +101,7 @@
   let pendingReviewAction = null;
   let pendingMetaSendAction = null;
   let pendingEmailUpdateAction = null;
+  let pendingWaitlistDeleteAction = null;
   let lastBulkResendRunId = "";
   let latestBatches = [];
   let availableCourses = [];
@@ -586,23 +591,43 @@
   function renderHolidayWaitlist(items) {
     if (!holidayWaitlistRowsEl) return;
     if (!Array.isArray(items) || !items.length) {
-      holidayWaitlistRowsEl.innerHTML = '<tr><td colspan="4" class="px-3 py-5 text-sm text-gray-500">No waitlist entries found.</td></tr>';
+      holidayWaitlistRowsEl.innerHTML = '<tr><td colspan="5" class="px-3 py-5 text-sm text-gray-500">No waitlist entries found.</td></tr>';
       return;
     }
     holidayWaitlistRowsEl.innerHTML = items.map(function (row) {
+      const id = Number(row && row.id);
+      const safeId = Number.isFinite(id) && id > 0 ? id : 0;
       const name = escapeHtml(String(row && row.fullName || "").trim() || "-");
       const email = escapeHtml(String(row && row.email || "").trim() || "-");
       const phone = escapeHtml(String(row && row.phone || "").trim() || "-");
       const updated = escapeHtml(formatWaitlistDate(row && (row.modifiedAt || row.createdAt)));
       return [
-        "<tr>",
+        '<tr data-waitlist-id="' + String(safeId) + '" data-waitlist-email="' + email + '">',
         '<td class="px-3 py-3 text-sm text-gray-900">' + name + "</td>",
         '<td class="px-3 py-3 text-sm text-gray-700">' + email + "</td>",
         '<td class="px-3 py-3 text-sm text-gray-700">' + phone + "</td>",
         '<td class="px-3 py-3 text-sm text-gray-600">' + updated + "</td>",
+        '<td class="px-3 py-3 text-right"><button type="button" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50" data-waitlist-delete="' + String(safeId) + '"' + (safeId ? "" : " disabled") + ">Delete</button></td>",
         "</tr>",
       ].join("");
     }).join("");
+  }
+
+  async function deleteHolidayWaitlistRecord(waitlistId) {
+    const safeId = Number(waitlistId);
+    if (!Number.isFinite(safeId) || safeId <= 0) throw new Error("Invalid waitlist record.");
+    const res = await fetch("/.netlify/functions/admin-holiday-waitlist-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: safeId }),
+    });
+    if (res.status === 401) throw new Error("Your admin session expired.");
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) {
+      throw new Error((json && json.error) || "Could not delete waitlist record.");
+    }
+    return json;
   }
 
   async function loadHolidayWaitlist() {
@@ -725,6 +750,34 @@
       updateEmailError.classList.add("hidden");
     }
     if (updateEmailForm) updateEmailForm.reset();
+  }
+
+  function openWaitlistDeleteModal(payload) {
+    pendingWaitlistDeleteAction = payload || null;
+    if (!waitlistDeleteModal) return;
+    const email = String((payload && payload.email) || "").trim();
+    if (waitlistDeleteDesc) {
+      waitlistDeleteDesc.textContent = email
+        ? "Delete waitlist record for " + email + "? This also removes related queued WhatsApp jobs."
+        : "Delete this waitlist record? This also removes related queued WhatsApp jobs.";
+    }
+    if (waitlistDeleteError) {
+      waitlistDeleteError.textContent = "";
+      waitlistDeleteError.classList.add("hidden");
+    }
+    waitlistDeleteModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeWaitlistDeleteModal() {
+    pendingWaitlistDeleteAction = null;
+    if (!waitlistDeleteModal) return;
+    waitlistDeleteModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (waitlistDeleteError) {
+      waitlistDeleteError.textContent = "";
+      waitlistDeleteError.classList.add("hidden");
+    }
   }
 
   function openAddStudentModal() {
@@ -2636,6 +2689,18 @@
     });
   }
 
+  if (holidayWaitlistRowsEl) {
+    holidayWaitlistRowsEl.addEventListener("click", function (event) {
+      const btn = event.target.closest("button[data-waitlist-delete]");
+      if (!btn || !holidayWaitlistRowsEl.contains(btn)) return;
+      const id = Number(btn.getAttribute("data-waitlist-delete") || 0);
+      const row = btn.closest("tr");
+      const email = row ? String(row.getAttribute("data-waitlist-email") || "").trim() : "";
+      if (!Number.isFinite(id) || id <= 0) return;
+      openWaitlistDeleteModal({ id: id, email: email });
+    });
+  }
+
   if (reviewModal) {
     reviewModal.querySelectorAll("[data-review-close]").forEach(function (el) {
       el.addEventListener("click", closeReviewModal);
@@ -2780,6 +2845,43 @@
     });
   }
 
+  if (waitlistDeleteModal) {
+    waitlistDeleteModal.querySelectorAll("[data-waitlist-delete-close]").forEach(function (el) {
+      el.addEventListener("click", closeWaitlistDeleteModal);
+    });
+  }
+
+  if (waitlistDeleteConfirmBtn) {
+    waitlistDeleteConfirmBtn.addEventListener("click", function () {
+      if (!pendingWaitlistDeleteAction || !pendingWaitlistDeleteAction.id) return;
+      const id = Number(pendingWaitlistDeleteAction.id);
+      if (!Number.isFinite(id) || id <= 0) return;
+      if (waitlistDeleteError) {
+        waitlistDeleteError.textContent = "";
+        waitlistDeleteError.classList.add("hidden");
+      }
+      waitlistDeleteConfirmBtn.disabled = true;
+      waitlistDeleteConfirmBtn.textContent = "Deleting...";
+      deleteHolidayWaitlistRecord(id)
+        .then(function () {
+          closeWaitlistDeleteModal();
+          setHolidayWaitlistMessage("Waitlist entry deleted.", false);
+          return loadHolidayWaitlist();
+        })
+        .catch(function (error) {
+          const msg = error.message || "Could not delete waitlist record.";
+          if (waitlistDeleteError) {
+            waitlistDeleteError.textContent = msg;
+            waitlistDeleteError.classList.remove("hidden");
+          }
+        })
+        .finally(function () {
+          waitlistDeleteConfirmBtn.disabled = false;
+          waitlistDeleteConfirmBtn.textContent = "Delete entry";
+        });
+    });
+  }
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && reviewModal && reviewModal.getAttribute("aria-hidden") === "false") {
       closeReviewModal();
@@ -2801,6 +2903,9 @@
     }
     if (event.key === "Escape" && updateEmailModal && updateEmailModal.getAttribute("aria-hidden") === "false") {
       closeUpdateEmailModal();
+    }
+    if (event.key === "Escape" && waitlistDeleteModal && waitlistDeleteModal.getAttribute("aria-hidden") === "false") {
+      closeWaitlistDeleteModal();
     }
   });
 

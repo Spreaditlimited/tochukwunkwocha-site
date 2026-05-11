@@ -17,7 +17,7 @@ async function fetchWaitlistContactsFromDb({ limit, offset }) {
   await ensureWhatsAppWaitlistTables(pool);
 
   const [rows] = await pool.query(
-    `SELECT email, full_name, phone_e164, opted_in,
+    `SELECT id, email, full_name, phone_e164, opted_in,
             DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
             DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
      FROM ${WA_WAITLIST_CONTACTS_TABLE}
@@ -52,6 +52,7 @@ exports.handler = async function (event) {
       total: Number(result.total || contacts.length || 0),
       contacts: contacts.map(function (item) {
         return {
+          id: Number(item && item.id) || 0,
           email: clean(item && item.email, 190).toLowerCase(),
           fullName: clean(item && item.full_name, 180),
           phone: clean(item && item.phone_e164, 80),
