@@ -1,6 +1,23 @@
 const VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 
+function recaptchaLocalBypassEnabled() {
+  const explicit = String(process.env.RECAPTCHA_DISABLE_LOCAL || "").trim().toLowerCase();
+  if (explicit === "1" || explicit === "true" || explicit === "yes") return true;
+  const base = String(process.env.SITE_BASE_URL || "").trim().toLowerCase();
+  return base.indexOf("localhost") !== -1 || base.indexOf("127.0.0.1") !== -1 || base.indexOf("[::1]") !== -1;
+}
+
+function isLocalRequest(input) {
+  const payload = input && typeof input === "object" ? input : {};
+  const headers = payload.headers && typeof payload.headers === "object" ? payload.headers : {};
+  const host = String(headers.host || headers.Host || headers["x-forwarded-host"] || headers["X-Forwarded-Host"] || "").toLowerCase();
+  const origin = String(headers.origin || headers.Origin || headers.referer || headers.Referer || "").toLowerCase();
+  const raw = `${host} ${origin}`;
+  return raw.indexOf("localhost") !== -1 || raw.indexOf("127.0.0.1") !== -1 || raw.indexOf("[::1]") !== -1;
+}
+
 function recaptchaEnabled() {
+  if (recaptchaLocalBypassEnabled()) return false;
   return Boolean(String(process.env.RECAPTCHA_SITE_KEY || "").trim() && String(process.env.RECAPTCHA_SECRET_KEY || "").trim());
 }
 
@@ -36,6 +53,9 @@ async function verifyRecaptchaToken(input) {
   const payload = input && typeof input === "object" ? input : {};
   const token = String(payload.token || "").trim();
   const expectedAction = String(payload.expectedAction || "").trim();
+  if (recaptchaLocalBypassEnabled() || isLocalRequest(payload)) {
+    return { ok: true, skipped: true, reason: "local_development" };
+  }
   if (!recaptchaEnabled()) {
     return { ok: true, skipped: true, reason: "recaptcha_not_configured" };
   }
@@ -81,7 +101,8 @@ async function verifyRecaptchaToken(input) {
 
 module.exports = {
   recaptchaEnabled,
+  recaptchaLocalBypassEnabled,
+  isLocalRequest,
   verifyRecaptchaToken,
   clientIpFromEvent,
 };
-

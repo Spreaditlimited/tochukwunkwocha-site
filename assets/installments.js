@@ -31,6 +31,8 @@
   const profileForm = document.getElementById("walletProfileForm");
   const profileCard = profileForm ? profileForm.closest(".bg-gray-50") : null;
   const profileFullNameInput = document.getElementById("walletProfileFullName");
+  const profilePhoneInput = document.getElementById("walletProfilePhone");
+  const profileWhatsappOptInInput = document.getElementById("walletProfileWhatsappOptIn");
   const profileSaveBtn = document.getElementById("walletProfileSaveBtn");
   const profileMsg = document.getElementById("walletProfileMsg");
   const certWarnBanner = document.getElementById("walletCertWarnBanner");
@@ -285,6 +287,12 @@
     if (profileFullNameInput && !profileFullNameInput.matches(":focus")) {
       profileFullNameInput.value = String(account.fullName || "");
     }
+    if (profilePhoneInput && !profilePhoneInput.matches(":focus")) {
+      profilePhoneInput.value = String(account.phone || "");
+    }
+    if (profileWhatsappOptInInput) {
+      profileWhatsappOptInInput.checked = account.whatsappOptedIn === true;
+    }
 
     const needs = account.certificateNameNeedsConfirmation === true;
     const confirmedAt = String(account.certificateNameConfirmedAt || "");
@@ -321,9 +329,24 @@
       profileFullNameInput.classList.toggle("bg-gray-100", isLocked);
     }
     if (profileSaveBtn) {
-      profileSaveBtn.disabled = isLocked;
-      profileSaveBtn.textContent = isLocked ? "Name Locked" : "Save Name";
+      profileSaveBtn.disabled = false;
+      profileSaveBtn.textContent = isLocked ? "Save WhatsApp Details" : "Save Profile";
     }
+  }
+
+  function maybeFocusWhatsAppProfile() {
+    const wantsWhatsAppUpdate = String(qs.get("update") || "").trim().toLowerCase() === "whatsapp";
+    const hash = String(window.location.hash || "").trim().toLowerCase();
+    if (!wantsWhatsAppUpdate && hash !== "#profile") return;
+    if (!profileCard) return;
+    setTimeout(function () {
+      profileCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (wantsWhatsAppUpdate && profileActionMsg) {
+        setMsg(profileActionMsg, "Add your WhatsApp number and consent preference, then save your profile.", "");
+      }
+      const target = wantsWhatsAppUpdate ? profilePhoneInput : profileFullNameInput;
+      if (target) target.focus();
+    }, 250);
   }
 
   function openCertificateConfirmModal() {
@@ -545,6 +568,7 @@
       }
       setWalletState(true);
       renderProfile();
+      maybeFocusWhatsAppProfile();
       renderPlans();
       setMsg(planMsg, "", "");
     } catch (_error) {
@@ -559,8 +583,14 @@
 
   async function updateProfileName() {
     const fullName = String((profileFullNameInput && profileFullNameInput.value) || "").trim();
+    const phone = String((profilePhoneInput && profilePhoneInput.value) || "").trim();
+    const whatsappOptedIn = !!(profileWhatsappOptInInput && profileWhatsappOptInInput.checked);
     if (!fullName) {
       setMsg(profileActionMsg, "Enter your full name.", "error");
+      return;
+    }
+    if (whatsappOptedIn && !phone) {
+      setMsg(profileActionMsg, "Enter your WhatsApp phone number to opt in.", "error");
       return;
     }
     if (!profileSaveBtn) return;
@@ -570,18 +600,18 @@
       const json = await api("/.netlify/functions/user-profile-update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName }),
+        body: JSON.stringify({ fullName, phone, whatsappOptedIn }),
       });
       if (!dashboard) dashboard = {};
       dashboard.account = Object.assign({}, dashboard.account || {}, json.profile || {});
       if (accountName && json.profile) accountName.textContent = String(json.profile.fullName || fullName);
       renderProfile();
-      setMsg(profileActionMsg, "Name updated. Reconfirm certificate name before issuance.", "ok");
+      setMsg(profileActionMsg, "Profile updated.", "ok");
     } catch (error) {
       setMsg(profileActionMsg, error.message || "Could not update profile name.", "error");
     } finally {
       profileSaveBtn.disabled = false;
-      profileSaveBtn.textContent = "Save Name";
+      profileSaveBtn.textContent = "Save Profile";
       renderProfile();
     }
   }

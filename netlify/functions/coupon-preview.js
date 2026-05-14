@@ -1,27 +1,35 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
   getCourseDefaultAmountMinor,
-  getCourseDefaultPaypalMinor,
 } = require("./_lib/course-config");
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
 
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
-  if (raw === "paystack" || raw === "paypal") return raw;
-  return "paypal";
+  if (raw === "paystack") return raw;
+  return "paystack";
 }
 
 function priceConfig({ provider, courseSlug, batch }) {
-  const ngnMinor = Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
-  const paypalMinor = Number((batch && batch.paypal_amount_minor) || getCourseDefaultPaypalMinor(courseSlug));
-  if (provider === "paystack") {
-    return { currency: "NGN", amountMinor: ngnMinor };
+  const rawMinor = Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
+  if (provider !== "paystack") {
+    throw new Error("Only Paystack coupon preview is supported.");
   }
-  return { currency: "GBP", amountMinor: paypalMinor };
+  const courseMinor = Math.max(0, Number(rawMinor || 0));
+  const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
+  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  const vatMinor = Math.round((courseMinor * vatPercent) / 100);
+  const priceMinor = courseMinor + vatMinor;
+  const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
+  const amountMinor = applicableAtPrice > 200000
+    ? (priceMinor + 200000)
+    : Math.ceil(((priceMinor + (priceMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
+  return { currency: "NGN", amountMinor };
 }
 
 exports.handler = async function (event) {
@@ -43,6 +51,7 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    await applyRuntimeSettings(pool);
     await ensureCourseBatchesTable(pool);
     await ensureCouponsTables(pool);
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
@@ -67,4 +76,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not apply coupon" });
   }
 };
-

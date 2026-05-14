@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureBatchSeatLimitColumn, getBatchCapacity } = require("./_lib/batch-capacity");
 const { listCourseBatches } = require("./_lib/batch-store");
 const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./_lib/course-config");
@@ -24,9 +25,12 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    await applyRuntimeSettings(pool);
     await ensureBatchSeatLimitColumn(pool);
     await ensureLearningTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    const vatPercent = Number(process.env.SITE_VAT_PERCENT);
+    const safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
     const enabledPaymentMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
     const rows = await listCourseBatches(pool, courseSlug);
     const open = (rows || []).filter((item) => String(item.status || "").toLowerCase() === "open");
@@ -46,7 +50,18 @@ exports.handler = async function (event) {
         isFull: normalizeBooleanFlag(cap.isFull),
       });
     }
-    return json(200, { ok: true, courseSlug, enabledPaymentMethods, batches: capacities });
+    return json(200, {
+      ok: true,
+      courseSlug,
+      enabledPaymentMethods,
+      coursePricing: {
+        priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
+        vatPercent: safeVatPercent,
+        paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
+        paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
+      },
+      batches: capacities,
+    });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load open batches" });
   }

@@ -26,6 +26,13 @@ async function ensureCertificateNameColumns(pool) {
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_updated_at DATETIME NULL`);
 }
 
+async function ensureStudentWhatsAppColumns(pool) {
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN phone_e164 VARCHAR(20) NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_in TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_in_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_out_at DATETIME NULL`);
+}
+
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -187,6 +194,10 @@ async function ensureStudentAuthTables(pool) {
       password_salt VARCHAR(255) NOT NULL,
       must_reset_password TINYINT(1) NOT NULL DEFAULT 0,
       domains_auto_renew_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      phone_e164 VARCHAR(20) NULL,
+      whatsapp_opted_in TINYINT(1) NOT NULL DEFAULT 0,
+      whatsapp_opted_in_at DATETIME NULL,
+      whatsapp_opted_out_at DATETIME NULL,
       certificate_name_confirmed_at DATETIME NULL,
       certificate_name_updated_at DATETIME NULL,
       reset_token_hash VARCHAR(128) NULL,
@@ -208,6 +219,10 @@ async function ensureStudentAuthTables(pool) {
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN reset_requested_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_confirmed_at DATETIME NULL`);
   await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN certificate_name_updated_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN phone_e164 VARCHAR(20) NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_in TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_in_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE student_accounts ADD COLUMN whatsapp_opted_out_at DATETIME NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${STUDENT_SESSIONS_TABLE} (
@@ -690,6 +705,10 @@ async function requireStudentSession(pool, event) {
               a.account_uuid,
               a.full_name,
               a.email,
+              a.phone_e164,
+              a.whatsapp_opted_in,
+              a.whatsapp_opted_in_at,
+              a.whatsapp_opted_out_at,
               a.must_reset_password,
               a.domains_auto_renew_enabled,
               a.certificate_name_confirmed_at,
@@ -720,6 +739,10 @@ async function requireStudentSession(pool, event) {
               a.account_uuid,
               a.full_name,
               a.email,
+              NULL AS phone_e164,
+              0 AS whatsapp_opted_in,
+              NULL AS whatsapp_opted_in_at,
+              NULL AS whatsapp_opted_out_at,
               a.must_reset_password,
               a.domains_auto_renew_enabled,
               (
@@ -761,6 +784,10 @@ async function requireStudentSession(pool, event) {
       accountUuid: row.account_uuid,
       fullName: row.full_name,
       email: row.email,
+      phone: clean(row.phone_e164, 20),
+      whatsappOptedIn: Number(row.whatsapp_opted_in || 0) === 1,
+      whatsappOptedInAt: row.whatsapp_opted_in_at ? new Date(row.whatsapp_opted_in_at).toISOString() : null,
+      whatsappOptedOutAt: row.whatsapp_opted_out_at ? new Date(row.whatsapp_opted_out_at).toISOString() : null,
       schoolStudentCode: clean(row.school_student_code, 20).toUpperCase(),
       mustResetPassword: Number(row.must_reset_password || 0) === 1,
       domainsAutoRenewEnabled: Number(row.domains_auto_renew_enabled || 0) === 1,
@@ -775,14 +802,17 @@ async function requireStudentSession(pool, event) {
 async function updateStudentProfileName(pool, input) {
   const accountId = Number(input && input.accountId);
   const fullName = clean(input && input.fullName, 180);
+  const phoneE164 = clean(input && input.phoneE164, 20);
+  const whatsappOptedIn = input && input.whatsappOptedIn === true;
   if (!Number.isFinite(accountId) || accountId <= 0) throw new Error("Invalid account id");
   if (!fullName) throw new Error("Full name is required");
 
   await ensureCertificateNameColumns(pool);
+  await ensureStudentWhatsAppColumns(pool);
   let existingRows = [];
   try {
     const [rows] = await pool.query(
-      `SELECT certificate_name_confirmed_at
+      `SELECT full_name, certificate_name_confirmed_at
        FROM student_accounts
        WHERE id = ?
        LIMIT 1`,
@@ -794,19 +824,41 @@ async function updateStudentProfileName(pool, input) {
     throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
   }
   const existing = existingRows && existingRows.length ? existingRows[0] : null;
-  if (existing && existing.certificate_name_confirmed_at) {
+  const nameChanged = clean(existing && existing.full_name, 180) !== fullName;
+  if (nameChanged && existing && existing.certificate_name_confirmed_at) {
     throw new Error("Certificate name has been confirmed and locked. Name changes are no longer allowed.");
   }
 
   const now = nowSql();
   try {
-    await pool.query(
-      `UPDATE student_accounts
-       SET full_name = ?, certificate_name_confirmed_at = NULL, certificate_name_updated_at = ?, updated_at = ?
-       WHERE id = ?
-       LIMIT 1`,
-      [fullName, now, now, accountId]
-    );
+    if (nameChanged) {
+      await pool.query(
+        `UPDATE student_accounts
+         SET full_name = ?,
+             phone_e164 = ?,
+             whatsapp_opted_in = ?,
+             whatsapp_opted_in_at = CASE WHEN ? = 1 THEN ? ELSE whatsapp_opted_in_at END,
+             whatsapp_opted_out_at = CASE WHEN ? = 1 THEN NULL ELSE ? END,
+             certificate_name_confirmed_at = NULL,
+             certificate_name_updated_at = ?,
+             updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [fullName, phoneE164 || null, whatsappOptedIn ? 1 : 0, whatsappOptedIn ? 1 : 0, now, whatsappOptedIn ? 1 : 0, whatsappOptedIn ? null : now, now, now, accountId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE student_accounts
+         SET phone_e164 = ?,
+             whatsapp_opted_in = ?,
+             whatsapp_opted_in_at = CASE WHEN ? = 1 THEN ? ELSE whatsapp_opted_in_at END,
+             whatsapp_opted_out_at = CASE WHEN ? = 1 THEN NULL ELSE ? END,
+             updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [phoneE164 || null, whatsappOptedIn ? 1 : 0, whatsappOptedIn ? 1 : 0, now, whatsappOptedIn ? 1 : 0, whatsappOptedIn ? null : now, now, accountId]
+      );
+    }
   } catch (error) {
     if (!isUnknownColumnError(error)) throw error;
     throw new Error("Profile schema update is pending. Please run database migrations, then try again.");
@@ -824,7 +876,7 @@ async function updateStudentProfileName(pool, input) {
   }
 
   const [rows] = await pool.query(
-    `SELECT id, account_uuid, full_name, email, certificate_name_confirmed_at, certificate_name_updated_at
+    `SELECT id, account_uuid, full_name, email, phone_e164, whatsapp_opted_in, whatsapp_opted_in_at, whatsapp_opted_out_at, certificate_name_confirmed_at, certificate_name_updated_at
      FROM student_accounts
      WHERE id = ?
      LIMIT 1`,
@@ -837,6 +889,14 @@ async function updateStudentProfileName(pool, input) {
     accountUuid: String(row.account_uuid || ""),
     fullName: String(row.full_name || ""),
     email: String(row.email || ""),
+    phone: clean(row.phone_e164, 20),
+    whatsappOptedIn: Number(row.whatsapp_opted_in || 0) === 1,
+    whatsappOptedInAt: row.whatsapp_opted_in_at
+      ? new Date(row.whatsapp_opted_in_at).toISOString()
+      : null,
+    whatsappOptedOutAt: row.whatsapp_opted_out_at
+      ? new Date(row.whatsapp_opted_out_at).toISOString()
+      : null,
     certificateNameConfirmedAt: row.certificate_name_confirmed_at
       ? new Date(row.certificate_name_confirmed_at).toISOString()
       : null,

@@ -11,6 +11,7 @@ const {
   upsertWaitlistContact,
   enqueueTemplateMessage,
 } = require("./_lib/whatsapp-waitlist");
+const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 
 const BREVO_HOLIDAY_WAITLIST_LIST_ID = 10;
 
@@ -128,6 +129,20 @@ exports.handler = async function (event) {
   const workflowMode = whatsappWorkflowMode();
   let whatsappQueued = false;
   let whatsappQueueError = "";
+  try {
+    await upsertWhatsAppContact(getPool(), {
+      email,
+      fullName,
+      phoneE164,
+      courseSlug: "prompt-to-profit-holiday",
+      source: "holiday_waitlist",
+      optedIn: true,
+      optInVersion: optInTextVersion,
+      optInSourceUrl: eventSourceUrl,
+    });
+  } catch (error) {
+    console.error("holiday_waitlist_global_whatsapp_upsert_failed", error && error.message ? error.message : error);
+  }
   if (workflowMode === "n8n") {
     const n8nResult = await callN8nWebhook({
       webhookUrl: clean(process.env.N8N_HOLIDAY_WAITLIST_WEBHOOK_URL, 2000),

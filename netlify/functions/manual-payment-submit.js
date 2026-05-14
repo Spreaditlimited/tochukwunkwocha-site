@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const {
   ensureManualPaymentsTable,
   createManualPayment,
@@ -24,6 +25,7 @@ const {
   ensureAffiliateTables,
   recordAffiliateAttribution,
 } = require("./_lib/affiliates");
+const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -64,6 +66,20 @@ function requiresExplicitBatchSelection(courseSlug) {
   return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
+function vatPercentFromSettings() {
+  const raw = Number(process.env.SITE_VAT_PERCENT);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 7.5;
+}
+
+function manualPaymentAmountMinor(courseSlug, learningCourse) {
+  const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+  const courseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
+    ? Math.round(courseNgnMinor)
+    : getCourseDefaultAmountMinor(courseSlug);
+  const vatMinor = Math.round((courseMinor * vatPercentFromSettings()) / 100);
+  return courseMinor + vatMinor;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -76,6 +92,9 @@ exports.handler = async function (event) {
 
   const firstName = String(body.firstName || "").trim().slice(0, 160);
   const email = normalizeEmail(body.email);
+  const phone = String(body.phone || "").trim().slice(0, 40);
+  const whatsappOptIn = body.whatsappOptIn === true;
+  const optInTextVersion = String(body.optInTextVersion || "enrollment_whatsapp_v1").trim().slice(0, 80);
   const country = String(body.country || "").trim().slice(0, 120);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
   const couponCode = normalizeCouponCode(body.couponCode);
@@ -85,8 +104,8 @@ exports.handler = async function (event) {
   const currency = "NGN";
   const affiliateCode = String(body.affiliateCode || body.affiliate_code || "").trim().toUpperCase().slice(0, 40);
 
-  if (!firstName || !email) {
-    return json(400, { ok: false, error: "Full Name and valid email are required" });
+  if (!firstName || !email || !phone) {
+    return json(400, { ok: false, error: "Full Name, valid email, and WhatsApp phone number are required" });
   }
 
   if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
@@ -96,6 +115,7 @@ exports.handler = async function (event) {
   const pool = getPool();
 
   try {
+    await applyRuntimeSettings(pool);
     await ensureLearningTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!learningCourse) {
@@ -126,10 +146,7 @@ exports.handler = async function (event) {
       }
       await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
     }
-    const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-    const baseAmountMinor = enrollmentMode === "immediate"
-      ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
-      : Number(batch.paystack_amount_minor || getCourseDefaultAmountMinor(courseSlug));
+    const baseAmountMinor = manualPaymentAmountMinor(courseSlug, learningCourse);
     let pricing = {
       currency: "NGN",
       baseAmountMinor,
@@ -164,6 +181,7 @@ exports.handler = async function (event) {
       batchLabel: batch ? batch.batch_label : "Immediate Access",
       firstName,
       email,
+      phone,
       country,
       currency,
       amountMinor: pricing.finalAmountMinor,
@@ -189,6 +207,20 @@ exports.handler = async function (event) {
         requestHeaders: event && event.headers ? event.headers : {},
       }).catch(function () {
         return null;
+      });
+    }
+
+    if (whatsappOptIn) {
+      await upsertWhatsAppContact(pool, {
+        email,
+        fullName: firstName,
+        phone,
+        courseSlug,
+        source: "manual_enrollment",
+        optedIn: true,
+        optInVersion: optInTextVersion,
+      }).catch(function (error) {
+        console.error("manual_whatsapp_contact_upsert_failed", error && error.message ? error.message : error);
       });
     }
 

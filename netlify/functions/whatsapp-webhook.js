@@ -6,6 +6,10 @@ const {
   markOptedOutByPhone,
   clean,
 } = require("./_lib/whatsapp-waitlist");
+const {
+  ensureWhatsAppMarketingTables,
+  markWhatsAppOptedOut,
+} = require("./_lib/whatsapp-marketing");
 
 function plain(statusCode, body) {
   return {
@@ -43,6 +47,7 @@ async function processInboundMessages(pool, value) {
     });
     if (from && (normalized === "STOP" || normalized === "UNSUBSCRIBE")) {
       await markOptedOutByPhone(pool, from);
+      await markWhatsAppOptedOut(pool, from);
       await saveWebhookEvent(pool, {
         phoneE164: from,
         eventType: "opt_out",
@@ -85,6 +90,7 @@ exports.handler = async function (event) {
   try {
     const pool = getPool();
     await ensureWhatsAppWaitlistTables(pool);
+    await ensureWhatsAppMarketingTables(pool);
     const entries = Array.isArray(payload && payload.entry) ? payload.entry : [];
     for (const entry of entries) {
       const changes = Array.isArray(entry && entry.changes) ? entry.changes : [];

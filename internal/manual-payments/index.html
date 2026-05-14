@@ -301,6 +301,79 @@
                 </div>
               </section>
 
+              <section id="whatsappCampaignSection" class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm ring-1 ring-gray-900/5 p-5 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-brand-600">WhatsApp Marketing</p>
+                    <h3 class="mt-1 text-lg font-heading font-bold text-gray-900">Send Message To Opted-In Students</h3>
+                    <p class="mt-1 text-sm text-gray-500">Uses the existing holiday waitlist n8n WhatsApp workflow. Only opted-in contacts are included.</p>
+                  </div>
+                  <p id="whatsappCampaignStatus" class="text-sm text-gray-500">Loading audience...</p>
+                </div>
+                <form id="whatsappCampaignForm" class="mt-4 grid grid-cols-1 gap-4" novalidate>
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label for="whatsappCampaignCourse" class="block text-sm font-semibold text-gray-900">Audience</label>
+                      <div class="picker-wrap mt-2 w-full">
+                        <select id="whatsappCampaignCourse" class="picker-select w-full" aria-label="WhatsApp campaign audience">
+                          <option value="all">All opted-in students</option>
+                          <option value="prompt-to-profit">Prompt to Profit</option>
+                          <option value="prompt-to-profit-holiday">Prompt to Profit Holiday</option>
+                          <option value="prompt-to-production">Prompt to Profit Advanced</option>
+                          <option value="ai-for-everyday-business-owners">AI for Everyday Business Owners</option>
+                        </select>
+                        <span class="picker-wrap__icon" aria-hidden="true">
+                          <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label for="whatsappCampaignName" class="block text-sm font-semibold text-gray-900">Campaign Name</label>
+                      <input id="whatsappCampaignName" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800" placeholder="e.g. May course reminder" />
+                    </div>
+                    <div>
+                      <label for="whatsappCampaignTestPhone" class="block text-sm font-semibold text-gray-900">Test Phone</label>
+                      <input id="whatsappCampaignTestPhone" type="tel" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800" placeholder="+2348012345678" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label for="whatsappCampaignTemplate" class="block text-sm font-semibold text-gray-900">Approved Template</label>
+                      <div class="picker-wrap mt-2 w-full">
+                        <select id="whatsappCampaignTemplate" class="picker-select w-full" aria-label="WhatsApp approved template">
+                          <option value="holiday_waitlist_welcome">Holiday waitlist welcome</option>
+                        </select>
+                        <span class="picker-wrap__icon" aria-hidden="true">
+                          <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label for="whatsappCampaignLanguage" class="block text-sm font-semibold text-gray-900">Language</label>
+                      <input id="whatsappCampaignLanguage" class="mt-2 w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700" value="en" readonly />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-900">Variable {{1}}</label>
+                      <p class="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">Student full name</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="block text-sm font-semibold text-gray-900">Template Preview</p>
+                    <div id="whatsappCampaignTemplatePreview" class="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-700">
+                      Hi {{1}}, thanks for joining the Prompt to Profit Holiday VIP waitlist. As requested, we will keep you updated as the holiday approaches so you can secure your child’s spot. Meanwhile, how old is your child?
+                    </div>
+                  </div>
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p id="whatsappCampaignAudience" class="text-sm text-gray-600">0 opted-in contacts</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                      <button type="button" id="whatsappCampaignRefreshBtn" class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Refresh Audience</button>
+                      <button type="button" id="whatsappCampaignTestBtn" class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Send Test</button>
+                      <button type="submit" id="whatsappCampaignSendBtn" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500">Send Campaign</button>
+                    </div>
+                  </div>
+                </form>
+              </section>
+
               <section id="batchManagerSection" class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm ring-1 ring-gray-900/5 p-5 sm:p-6">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                   <div>
@@ -483,6 +556,7 @@
                           <tr>
                             <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payer</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">WhatsApp</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Course</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Provider</th>
@@ -888,7 +962,7 @@
 
     </div>
 
-    <script src="/assets/admin-manual-payments.js?v=20260507b" defer></script>
+    <script src="/assets/admin-manual-payments.js?v=20260514a" defer></script>
     <script src="/assets/internal-nav.js?v=20260509e" defer></script>
   </body>
 </html>

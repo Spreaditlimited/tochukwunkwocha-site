@@ -164,9 +164,8 @@ function normalizePaymentMethods(input) {
     .filter(Boolean);
   const allowed = [];
   if (tokens.indexOf("paystack") !== -1) allowed.push("paystack");
-  if (tokens.indexOf("paypal") !== -1) allowed.push("paypal");
   if (tokens.indexOf("manual_transfer") !== -1 || tokens.indexOf("manual") !== -1) allowed.push("manual_transfer");
-  if (!allowed.length) return "paystack,paypal,manual_transfer";
+  if (!allowed.length) return "paystack,manual_transfer";
   return allowed.join(",");
 }
 
@@ -210,6 +209,11 @@ async function ensureLearningTables(pool) {
       enrollment_mode VARCHAR(24) NOT NULL DEFAULT 'batch',
       price_ngn_minor INT NULL,
       price_gbp_minor INT NULL,
+      price_usd_minor INT NULL,
+      vat_bps INT NULL,
+      paystack_fee_bps INT NULL,
+      paystack_fee_fixed_minor_ngn INT NULL,
+      paystack_fee_fixed_minor_usd INT NULL,
       payment_methods VARCHAR(120) NULL,
       is_published TINYINT(1) NOT NULL DEFAULT 0,
       release_at DATETIME NULL,
@@ -228,6 +232,11 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN enrollment_mode VARCHAR(24) NOT NULL DEFAULT 'batch'`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_ngn_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_gbp_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_usd_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN vat_bps INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN paystack_fee_bps INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN paystack_fee_fixed_minor_ngn INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN paystack_fee_fixed_minor_usd INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN payment_methods VARCHAR(120) NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN release_at DATETIME NULL`);

@@ -10,6 +10,21 @@ const STATUS_PENDING = "pending_verification";
 const STATUS_APPROVED = "approved";
 const STATUS_REJECTED = "rejected";
 
+function isMissingPhoneColumnError(error) {
+  const code = String(error && error.code || "").toUpperCase();
+  const message = String(error && error.message || "").toLowerCase();
+  return message.indexOf("phone") !== -1 && (code === "ER_BAD_FIELD_ERROR" || message.indexOf("unknown column") !== -1);
+}
+
+async function queryQueueWithPhoneFallback(pool, sql, params) {
+  try {
+    return await pool.query(sql, params);
+  } catch (error) {
+    if (!isMissingPhoneColumnError(error)) throw error;
+    return pool.query(sql.replace(/\n\s*phone AS phone,/g, ""), params);
+  }
+}
+
 function buildPaymentUuid() {
   return `mp_${crypto.randomUUID().replace(/-/g, "")}`;
 }
@@ -29,6 +44,7 @@ async function ensureManualPaymentsTable(pool) {
       course_slug VARCHAR(120) NOT NULL,
       first_name VARCHAR(160) NOT NULL,
       email VARCHAR(190) NOT NULL,
+      phone VARCHAR(40) NULL,
       country VARCHAR(120) NULL,
       currency VARCHAR(12) NOT NULL DEFAULT 'NGN',
       amount_minor INT NOT NULL,
@@ -109,6 +125,11 @@ async function ensureManualPaymentsTable(pool) {
   } catch (_error) {
     // no-op
   }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN phone VARCHAR(40) NULL`);
+  } catch (_error) {
+    // no-op
+  }
   await pool.query(
     `UPDATE course_manual_payments
      SET base_amount_minor = amount_minor
@@ -150,8 +171,8 @@ async function createManualPayment(pool, input) {
 
   await pool.query(
     `INSERT INTO course_manual_payments
-     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       paymentUuid,
       input.courseSlug,
@@ -159,6 +180,7 @@ async function createManualPayment(pool, input) {
       input.batchLabel || null,
       input.firstName,
       input.email,
+      input.phone || null,
       input.country || null,
       input.currency,
       input.amountMinor,
@@ -174,7 +196,37 @@ async function createManualPayment(pool, input) {
       now,
       now,
     ]
-  );
+  ).catch(async function (error) {
+    const msg = String(error && error.message || "").toLowerCase();
+    if (msg.indexOf("unknown column") === -1 || msg.indexOf("phone") === -1) throw error;
+    await pool.query(
+      `INSERT INTO course_manual_payments
+       (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        paymentUuid,
+        input.courseSlug,
+        input.batchKey || null,
+        input.batchLabel || null,
+        input.firstName,
+        input.email,
+        input.country || null,
+        input.currency,
+        input.amountMinor,
+        input.baseAmountMinor !== undefined && input.baseAmountMinor !== null ? input.baseAmountMinor : input.amountMinor,
+        input.discountMinor !== undefined && input.discountMinor !== null ? input.discountMinor : 0,
+        input.finalAmountMinor !== undefined && input.finalAmountMinor !== null ? input.finalAmountMinor : input.amountMinor,
+        input.couponCode || null,
+        input.couponId || null,
+        input.transferReference || null,
+        input.proofUrl,
+        input.proofPublicId || null,
+        STATUS_PENDING,
+        now,
+        now,
+      ]
+    );
+  });
 
   return paymentUuid;
 }
@@ -328,6 +380,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
            batch_label AS batch_label,
            first_name AS first_name,
            email AS email,
+           phone AS phone,
            country AS country,
            currency AS currency,
            amount_minor AS amount_minor,
@@ -371,7 +424,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
   manualSql += " ORDER BY created_at DESC LIMIT ?";
   manualParams.push(safeLimit);
 
-  const manualPromise = pool.query(manualSql, manualParams);
+  const manualPromise = queryQueueWithPhoneFallback(pool, manualSql, manualParams);
   let orderPromise = Promise.resolve([[]]);
   const includeApprovedOrders = desiredStatus === "all" || desiredStatus === STATUS_APPROVED || !desiredStatus;
   if (includeApprovedOrders) {
@@ -382,6 +435,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
              batch_label AS batch_label,
              first_name AS first_name,
              email AS email,
+             phone AS phone,
              country AS country,
              currency AS currency,
              amount_minor AS amount_minor,
@@ -407,7 +461,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
     }
     orderSql += " ORDER BY created_at DESC LIMIT ?";
     orderParams.push(safeLimit);
-    orderPromise = pool.query(orderSql, orderParams);
+    orderPromise = queryQueueWithPhoneFallback(pool, orderSql, orderParams);
   }
   const [[manualRows], [orderRowsRaw]] = await Promise.all([manualPromise, orderPromise]);
   const orderRows = orderRowsRaw || [];
@@ -421,6 +475,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       batch_label: row.batch_label,
       first_name: row.first_name,
       email: row.email,
+      phone: row.phone,
       country: row.country,
       currency: row.currency,
       amount_minor: row.amount_minor,
@@ -455,6 +510,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       batch_label: row.batch_label,
       first_name: row.first_name,
       email: row.email,
+      phone: row.phone,
       country: row.country,
       currency: row.currency,
       amount_minor: row.amount_minor,

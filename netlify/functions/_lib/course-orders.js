@@ -31,6 +31,7 @@ async function ensureCourseOrdersBatchColumns(pool) {
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN final_amount_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN coupon_code VARCHAR(40) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN coupon_id BIGINT NULL`);
+  await safeAlter(pool, `ALTER TABLE course_orders ADD COLUMN phone VARCHAR(40) NULL`);
   await safeAlter(pool, `ALTER TABLE course_orders ADD KEY idx_course_orders_coupon_id (coupon_id)`);
   await pool.query(
     `UPDATE course_orders

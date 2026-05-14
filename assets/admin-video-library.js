@@ -26,6 +26,10 @@
   var coursePaystackEnabledInput = document.getElementById("coursePaystackEnabledInput");
   var coursePaypalEnabledInput = document.getElementById("coursePaypalEnabledInput");
   var courseManualEnabledInput = document.getElementById("courseManualEnabledInput");
+  if (coursePaypalEnabledInput) {
+    coursePaypalEnabledInput.checked = false;
+    coursePaypalEnabledInput.disabled = true;
+  }
   var courseBatchRows = document.getElementById("courseBatchRows");
   var courseBatchManagerHint = document.getElementById("courseBatchManagerHint");
   var courseBatchLabelInput = document.getElementById("courseBatchLabelInput");
@@ -586,7 +590,7 @@
       if (coursePriceNgnInput) coursePriceNgnInput.value = "";
       if (coursePriceGbpInput) coursePriceGbpInput.value = "";
       if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = true;
-      if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = true;
+      if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
       if (courseManualEnabledInput) courseManualEnabledInput.checked = true;
       return;
     }
@@ -605,9 +609,9 @@
       coursePriceGbpInput.value = Number.isFinite(Number(course.price_gbp_minor)) ? String(Number(course.price_gbp_minor)) : "";
     }
     var methodsRaw = String(course && course.payment_methods || "").trim().toLowerCase();
-    var enabled = methodsRaw ? methodsRaw.split(",") : ["paystack", "paypal", "manual_transfer"];
+    var enabled = methodsRaw ? methodsRaw.split(",") : ["paystack", "manual_transfer"];
     if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = enabled.indexOf("paystack") !== -1;
-    if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = enabled.indexOf("paypal") !== -1;
+    if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
     if (courseManualEnabledInput) courseManualEnabledInput.checked = enabled.indexOf("manual_transfer") !== -1;
   }
 
@@ -1740,7 +1744,6 @@
       }
       var paymentMethods = [];
       if (coursePaystackEnabledInput && coursePaystackEnabledInput.checked) paymentMethods.push("paystack");
-      if (coursePaypalEnabledInput && coursePaypalEnabledInput.checked) paymentMethods.push("paypal");
       if (courseManualEnabledInput && courseManualEnabledInput.checked) paymentMethods.push("manual_transfer");
       if (!paymentMethods.length) {
         setMessage("Enable at least one payment method for this course.", "error");

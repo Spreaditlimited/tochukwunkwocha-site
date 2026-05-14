@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor, getCourseDefaultPaypalMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
@@ -8,9 +9,8 @@ function normalizePaymentMethods(input) {
   const parts = raw.split(",").map(function (v) { return String(v || "").trim().toLowerCase(); }).filter(Boolean);
   const out = [];
   if (parts.indexOf("paystack") !== -1) out.push("paystack");
-  if (parts.indexOf("paypal") !== -1) out.push("paypal");
   if (parts.indexOf("manual_transfer") !== -1) out.push("manual_transfer");
-  if (!out.length) return ["paystack", "paypal", "manual_transfer"];
+  if (!out.length) return ["paystack", "manual_transfer"];
   return out;
 }
 
@@ -25,9 +25,12 @@ exports.handler = async function (event) {
 
   const pool = getPool();
   try {
+    await applyRuntimeSettings(pool);
     await ensureLearningTables(pool);
     await ensureCourseBatchesTable(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
+    const vatPercent = Number(process.env.SITE_VAT_PERCENT);
+    const safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
     const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
       ? "immediate"
       : "batch";
@@ -46,6 +49,12 @@ exports.handler = async function (event) {
         ok: true,
         courseSlug,
         enabledPaymentMethods,
+        coursePricing: {
+          priceNgnMinor: Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : 0,
+          vatPercent: safeVatPercent,
+          paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
+          paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
+        },
         activeBatch: {
           batchKey: null,
           batchLabel: "Immediate Access",
@@ -63,6 +72,12 @@ exports.handler = async function (event) {
       ok: true,
       courseSlug,
       enabledPaymentMethods,
+      coursePricing: {
+        priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
+        vatPercent: safeVatPercent,
+        paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
+        paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
+      },
       activeBatch: active
         ? {
             batchKey: active.batch_key,

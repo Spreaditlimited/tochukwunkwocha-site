@@ -15,6 +15,11 @@
   var paystackOptionMeta = document.getElementById("paystackOptionMeta");
   var manualOptionMeta = document.getElementById("manualOptionMeta");
   var paypalOptionMeta = document.getElementById("paypalOptionMeta");
+  var paystackBreakdown = document.getElementById("paystackBreakdown");
+  var breakdownCoursePrice = document.getElementById("breakdownCoursePrice");
+  var breakdownVat = document.getElementById("breakdownVat");
+  var breakdownPaystackFee = document.getElementById("breakdownPaystackFee");
+  var breakdownTotal = document.getElementById("breakdownTotal");
   var couponCodeInput = document.getElementById("couponCodeInput");
   var applyCouponBtn = document.getElementById("applyCouponBtn");
   var couponStatusEl = document.getElementById("couponStatus");
@@ -28,12 +33,13 @@
   var courseSlug = String(form.getAttribute("data-course-slug") || "prompt-to-profit").trim();
   var activeCourseBatchKey = "";
   var activeCourseBatchStartAt = "";
+  var activeCoursePricing = null;
   var holidayBatchMap = {};
   var manualConfigLoadedKey = "";
   var appliedCoupon = null;
-  var couponPricingByProvider = { paystack: null, paypal: null };
-  var basePricingByProvider = { paystack: null, paypal: null };
-  var enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+  var couponPricingByProvider = { paystack: null };
+  var basePricingByProvider = { paystack: null };
+  var enabledPaymentMethods = { paystack: true, manual_transfer: true };
   var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
 
   var COURSE_CONFIGS = {
@@ -121,7 +127,7 @@
 
   function renderCouponSummary() {
     if (!couponSummaryEl) return;
-    var provider = providerInput ? providerInput.value : "paypal";
+    var provider = providerInput ? providerInput.value : "paystack";
     var pricing = null;
     if (provider === "manual_transfer") {
       pricing = couponPricingByProvider.paystack;
@@ -141,11 +147,83 @@
     couponSummaryEl.classList.remove("hidden");
   }
 
+  function paystackBreakdownForTotal(totalMinor, currency) {
+    var cur = String(currency || "NGN").toUpperCase();
+    var total = Math.max(0, Number(totalMinor || 0));
+    if (cur !== "NGN") {
+      return {
+        courseMinor: total,
+        vatMinor: 0,
+        paystackFeeMinor: 0,
+        totalMinor: total,
+        currency: cur,
+      };
+    }
+    var configuredCourseMinor = Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0);
+    var vatPercent = Number(activeCoursePricing && activeCoursePricing.vatPercent || 7.5);
+    var safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
+    var courseMinor = configuredCourseMinor > 0 ? Math.round(configuredCourseMinor) : 0;
+    var vatMinor = Math.round((courseMinor * safeVatPercent) / 100);
+    var targetMinor = courseMinor + vatMinor;
+
+    function paystackFeeOnFinal(finalMinor) {
+      var safeFinal = Math.max(0, Number(finalMinor || 0));
+      var pctMinor = Math.round(safeFinal * 0.015);
+      var fixedMinor = safeFinal < 250000 ? 0 : 10000;
+      var feeMinor = pctMinor + fixedMinor;
+      return Math.min(feeMinor, 200000);
+    }
+
+    // Paystack pass-fee formula (NGN): when uncapped -> ((Price + Flat)/(1 - Decimal Fee)) + 0.01
+    var applicableAtPrice = Math.round(targetMinor * 0.015) + (targetMinor < 250000 ? 0 : 10000);
+    var computedTotalMinor = applicableAtPrice > 200000
+      ? (targetMinor + 200000)
+      : Math.ceil(((targetMinor + (targetMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
+    var paystackFeeMinor = paystackFeeOnFinal(computedTotalMinor);
+
+    if (courseMinor <= 0) {
+      var fallbackVatRate = 0.075;
+      vatMinor = Math.round((total * fallbackVatRate) / (1 + fallbackVatRate));
+      courseMinor = Math.max(0, total - vatMinor);
+      computedTotalMinor = total;
+      paystackFeeMinor = paystackFeeOnFinal(total);
+    }
+    return {
+      courseMinor: courseMinor,
+      vatMinor: vatMinor,
+      paystackFeeMinor: paystackFeeMinor,
+      totalMinor: courseMinor > 0 ? computedTotalMinor : total,
+      currency: "NGN",
+    };
+  }
+
+  function renderPaystackBreakdown() {
+    if (!paystackBreakdown) return;
+    var provider = providerInput ? providerInput.value : "paystack";
+    if (provider !== "paystack") {
+      paystackBreakdown.classList.add("hidden");
+      return;
+    }
+    var pricing = couponPricingByProvider.paystack || basePricingByProvider.paystack;
+    if (!pricing || !Number.isFinite(Number(pricing.finalAmountMinor))) {
+      paystackBreakdown.classList.add("hidden");
+      return;
+    }
+    var breakdown = paystackBreakdownForTotal(pricing.finalAmountMinor, pricing.currency || "NGN");
+    if (breakdownCoursePrice) breakdownCoursePrice.textContent = formatCurrencyMinor(breakdown.currency, breakdown.courseMinor);
+    if (breakdownVat) breakdownVat.textContent = formatCurrencyMinor(breakdown.currency, breakdown.vatMinor);
+    if (breakdownPaystackFee) breakdownPaystackFee.textContent = formatCurrencyMinor(breakdown.currency, breakdown.paystackFeeMinor);
+    if (breakdownTotal) breakdownTotal.textContent = formatCurrencyMinor(breakdown.currency, breakdown.totalMinor);
+    paystackBreakdown.hidden = false;
+    paystackBreakdown.classList.remove("hidden");
+  }
+
   function clearAppliedCoupon(message) {
     appliedCoupon = null;
-    couponPricingByProvider = { paystack: null, paypal: null };
+    couponPricingByProvider = { paystack: null };
     renderCouponSummary();
     updatePaymentOptionMetas();
+    renderPaystackBreakdown();
     if (message) setCouponStatus(message, "info");
     if (providerInput && providerInput.value === "manual_transfer") {
       ensureManualConfigLoaded().catch(function () { return null; });
@@ -154,18 +232,15 @@
 
   function updatePaymentOptionMetas() {
     var paystackPricing = couponPricingByProvider.paystack || basePricingByProvider.paystack;
-    var paypalPricing = couponPricingByProvider.paypal || basePricingByProvider.paypal;
     var paystackOption = findOption("paystack");
     if (paystackOptionMeta && !isOptionDisabled(paystackOption)) {
+      var paystackBreakdown = paystackPricing ? paystackBreakdownForTotal(paystackPricing.finalAmountMinor, paystackPricing.currency || "NGN") : null;
       paystackOptionMeta.textContent = paystackPricing
-        ? "Pay in full (" + formatCurrencyMinor("NGN", paystackPricing.finalAmountMinor) + ")"
+        ? "Pay in full (" + formatCurrencyMinor("NGN", paystackBreakdown ? paystackBreakdown.totalMinor : paystackPricing.finalAmountMinor) + ")"
         : "Pay in full";
     }
-    if (paypalOptionMeta) {
-      paypalOptionMeta.textContent = paypalPricing
-        ? "Pay online (" + formatCurrencyMinor("GBP", paypalPricing.finalAmountMinor) + ")"
-        : "International checkout (PayPal)";
-    }
+    if (paypalOptionMeta) paypalOptionMeta.textContent = "Unavailable";
+    renderPaystackBreakdown();
   }
 
   function parseBatchStart(value) {
@@ -258,18 +333,11 @@
     activeCourseBatchKey = chosen ? String(chosen.batchKey || "") : "";
     activeCourseBatchStartAt = chosen ? String(chosen.batchStartAt || "") : "";
     var paystackMinor = chosen ? Number(chosen.paystackAmountMinor || 0) : 0;
-    var paypalMinor = chosen ? Number(chosen.paypalAmountMinor || 0) : 0;
     basePricingByProvider.paystack = {
       currency: "NGN",
       baseAmountMinor: paystackMinor,
       discountMinor: 0,
       finalAmountMinor: paystackMinor,
-    };
-    basePricingByProvider.paypal = {
-      currency: "GBP",
-      baseAmountMinor: paypalMinor,
-      discountMinor: 0,
-      finalAmountMinor: paypalMinor,
     };
     if (holidayBatchMeta) {
       if (!chosen) {
@@ -305,15 +373,15 @@
   }
 
   function applyEnabledPaymentMethods(methods) {
-    enabledPaymentMethods = { paystack: false, paypal: false, manual_transfer: false };
+    enabledPaymentMethods = { paystack: false, manual_transfer: false };
     (Array.isArray(methods) ? methods : []).forEach(function (method) {
       var key = String(method || "").trim().toLowerCase();
-      if (key === "paystack" || key === "paypal" || key === "manual_transfer") {
+      if (key === "paystack" || key === "manual_transfer") {
         enabledPaymentMethods[key] = true;
       }
     });
-    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.paypal && !enabledPaymentMethods.manual_transfer) {
-      enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.manual_transfer) {
+      enabledPaymentMethods = { paystack: true, manual_transfer: true };
     }
     paymentOptions.forEach(function (el) {
       var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
@@ -355,9 +423,18 @@
       el.setAttribute("aria-checked", active ? "true" : "false");
     });
     var isManual = provider === "manual_transfer";
-    if (manualTransferBlock) manualTransferBlock.hidden = !isManual;
+    if (manualTransferBlock) {
+      manualTransferBlock.hidden = !isManual;
+      manualTransferBlock.classList.toggle("hidden", !isManual);
+    }
+    if (paystackBreakdown) {
+      var showPaystackBreakdown = !isManual;
+      paystackBreakdown.hidden = !showPaystackBreakdown;
+      paystackBreakdown.classList.toggle("hidden", !showPaystackBreakdown);
+    }
     if (submitBtn) submitBtn.textContent = isManual ? "Upload proof and confirm" : "Proceed to Payment";
     renderCouponSummary();
+    renderPaystackBreakdown();
     if (isManual) ensureManualConfigLoaded().catch(function () { return null; });
   }
 
@@ -378,6 +455,7 @@
       return;
     }
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
+    activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     var allBatches = Array.isArray(json.batches) ? json.batches : [];
     var fullBatches = allBatches.filter(function (item) { return isBatchFull(item); });
     var batches = allBatches.filter(function (item) { return !isBatchFull(item); });
@@ -475,22 +553,16 @@
       return;
     }
     var active = json.activeBatch;
+    activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
     activeCourseBatchKey = String(active.batchKey || "");
     activeCourseBatchStartAt = String(active.batchStartAt || "");
     var paystackMinor = Number(active.paystackAmountMinor || 0);
-    var paypalMinor = Number(active.paypalAmountMinor || 0);
     basePricingByProvider.paystack = {
       currency: "NGN",
       baseAmountMinor: paystackMinor,
       discountMinor: 0,
       finalAmountMinor: paystackMinor,
-    };
-    basePricingByProvider.paypal = {
-      currency: "GBP",
-      baseAmountMinor: paypalMinor,
-      discountMinor: 0,
-      finalAmountMinor: paypalMinor,
     };
     if (batchEl) {
       batchEl.innerHTML = [
@@ -527,13 +599,20 @@
     }
     var amountLabel = String(details.amountLabel || "N10,750").trim();
     if (manualBankDetails) {
-      manualBankDetails.innerHTML = [
+      var manualDetailRows = [
         '<p class="manual-transfer__title">Bank details</p>',
         "<p><strong>Bank:</strong> " + String(details.bankName || "-") + "</p>",
         "<p><strong>Account name:</strong> " + String(details.accountName || "-") + "</p>",
         "<p><strong>Account number:</strong> " + String(details.accountNumber || "-") + "</p>",
-        "<p><strong>Amount:</strong> " + amountLabel + "</p>",
-      ].join("");
+      ];
+      if (details.coursePriceLabel) {
+        manualDetailRows.push("<p><strong>Course price:</strong> " + String(details.coursePriceLabel || "-") + "</p>");
+      }
+      if (details.vatLabel) {
+        manualDetailRows.push("<p><strong>VAT:</strong> " + String(details.vatLabel || "-") + "</p>");
+      }
+      manualDetailRows.push("<p><strong>Amount:</strong> " + amountLabel + "</p>");
+      manualBankDetails.innerHTML = manualDetailRows.join("");
     }
     if (manualOptionMeta) manualOptionMeta.textContent = "Transfer " + amountLabel + " and upload proof";
   }
@@ -580,7 +659,7 @@
   });
 
   async function applyCoupon() {
-    var provider = providerInput ? providerInput.value : "paypal";
+    var provider = providerInput ? providerInput.value : "paystack";
     var code = String((couponCodeInput && couponCodeInput.value) || "").trim();
     if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
       setCouponStatus("Please choose a batch first.", "error");
@@ -615,32 +694,23 @@
       }
 
       var previewPaystack = await fetchCouponForProvider("paystack");
-      var previewPaypal = await fetchCouponForProvider("paypal");
-      if (!previewPaystack.ok && !previewPaypal.ok) {
+      if (!previewPaystack.ok) {
         throw new Error(
-          (previewPaypal.json && previewPaypal.json.error) ||
-            (previewPaystack.json && previewPaystack.json.error) ||
-            "Could not apply coupon."
+          (previewPaystack.json && previewPaystack.json.error) || "Could not apply coupon."
         );
       }
       couponPricingByProvider = {
         paystack: previewPaystack.ok ? previewPaystack.json.pricing : null,
-        paypal: previewPaypal.ok ? previewPaypal.json.pricing : null,
       };
-      var winner = previewPaypal.ok ? previewPaypal.json : previewPaystack.json;
+      var winner = previewPaystack.json;
       appliedCoupon = {
         code: String((winner.coupon && winner.coupon.code) || code).toUpperCase(),
       };
       if (couponCodeInput) couponCodeInput.value = appliedCoupon.code;
       updatePaymentOptionMetas();
       renderCouponSummary();
-      if (previewPaystack.ok && previewPaypal.ok) {
-        setCouponStatus("Coupon applied successfully.", "ok");
-      } else if (previewPaystack.ok) {
-        setCouponStatus("Coupon applied for NGN checkout only.", "info");
-      } else {
-        setCouponStatus("Coupon applied for GBP checkout only.", "info");
-      }
+      renderPaystackBreakdown();
+      setCouponStatus("Coupon applied successfully.", "ok");
       if (provider === "manual_transfer") {
         manualConfigLoadedKey = "";
         await ensureManualConfigLoaded();
@@ -669,11 +739,17 @@
 
     var firstName = String(form.firstName.value || "").trim();
     var email = String(form.email.value || "").trim();
+    var phone = String((form.phone && form.phone.value) || "").trim();
+    var whatsappOptIn = !!(form.whatsappOptIn && form.whatsappOptIn.checked);
     var country = "";
     var provider = providerInput ? providerInput.value : "paystack";
     var affiliateCode = resolveAffiliateCode();
-    if (!firstName || !email) {
-      setError("Please enter your full name and email address.");
+    if (!firstName || !email || !phone) {
+      setError("Please enter your full name, phone number, and email address.");
+      return;
+    }
+    if (form.whatsappOptIn && !whatsappOptIn) {
+      setError("Please accept WhatsApp updates consent before continuing.");
       return;
     }
     if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
@@ -697,6 +773,9 @@
           body: JSON.stringify({
             firstName: firstName,
             email: email,
+            phone: phone,
+            whatsappOptIn: whatsappOptIn,
+            optInTextVersion: "enrollment_whatsapp_v1",
             courseSlug: courseSlug,
             batchKey: activeCourseBatchKey,
             couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
@@ -723,6 +802,9 @@
         body: JSON.stringify({
           firstName: firstName,
           email: email,
+          phone: phone,
+          whatsappOptIn: whatsappOptIn,
+          optInTextVersion: "enrollment_whatsapp_v1",
           provider: provider,
           courseSlug: courseSlug,
           batchKey: activeCourseBatchKey,

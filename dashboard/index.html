@@ -201,8 +201,17 @@
                   <input id="walletProfileFullName" name="fullName" class="tw-input" required />
                   <p class="text-xs mt-2 text-gray-500">Certificates are issued with this exact name.</p>
                 </div>
+                <div>
+                  <label class="tw-label" for="walletProfilePhone">WhatsApp Phone Number</label>
+                  <input id="walletProfilePhone" name="phone" type="tel" class="tw-input" autocomplete="tel" placeholder="e.g. +2348012345678" />
+                  <p class="text-xs mt-2 text-gray-500">Use international format so course updates reach you correctly.</p>
+                </div>
+                <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+                  <input id="walletProfileWhatsappOptIn" name="whatsappOptIn" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                  <span>I agree to receive course updates, reminders, and offers on WhatsApp from Tochukwu Tech. Reply STOP anytime to opt out.</span>
+                </label>
                 <div class="flex flex-col sm:flex-row gap-2">
-                  <button type="submit" id="walletProfileSaveBtn" class="btn btn-primary w-full sm:w-auto">Save Name</button>
+                  <button type="submit" id="walletProfileSaveBtn" class="btn btn-primary w-full sm:w-auto">Save Profile</button>
                   <button type="button" id="walletConfirmCertificateNameBtn" class="btn btn-outline w-full sm:w-auto">Confirm Certificate Name</button>
                 </div>
               </form>
@@ -314,6 +323,6 @@
     <script src="/assets/password-visibility.js?v=20260410a" defer></script>
     <script src="/assets/student-sidebar.js?v=20260420a" defer></script>
     <script src="/assets/user-dashboard-shell.js?v=20260420b" defer></script>
-    <script src="/assets/installments.js?v=20260502a" defer></script>
+    <script src="/assets/installments.js?v=20260514a" defer></script>
   </body>
 </html>

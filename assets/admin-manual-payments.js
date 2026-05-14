@@ -40,6 +40,18 @@
   const holidayWaitlistSectionEl = document.getElementById("holidayWaitlistSection");
   const holidayWaitlistMessageEl = document.getElementById("holidayWaitlistMessage");
   const holidayWaitlistRowsEl = document.getElementById("holidayWaitlistRows");
+  const whatsappCampaignStatusEl = document.getElementById("whatsappCampaignStatus");
+  const whatsappCampaignForm = document.getElementById("whatsappCampaignForm");
+  const whatsappCampaignCourse = document.getElementById("whatsappCampaignCourse");
+  const whatsappCampaignName = document.getElementById("whatsappCampaignName");
+  const whatsappCampaignTestPhone = document.getElementById("whatsappCampaignTestPhone");
+  const whatsappCampaignTemplate = document.getElementById("whatsappCampaignTemplate");
+  const whatsappCampaignLanguage = document.getElementById("whatsappCampaignLanguage");
+  const whatsappCampaignTemplatePreview = document.getElementById("whatsappCampaignTemplatePreview");
+  const whatsappCampaignAudience = document.getElementById("whatsappCampaignAudience");
+  const whatsappCampaignRefreshBtn = document.getElementById("whatsappCampaignRefreshBtn");
+  const whatsappCampaignTestBtn = document.getElementById("whatsappCampaignTestBtn");
+  const whatsappCampaignSendBtn = document.getElementById("whatsappCampaignSendBtn");
   const reviewModal = document.getElementById("reviewModal");
   const reviewModalEyebrow = document.getElementById("reviewModalEyebrow");
   const reviewModalTitle = document.getElementById("reviewModalTitle");
@@ -559,6 +571,75 @@
     if (!holidayWaitlistMessageEl) return;
     holidayWaitlistMessageEl.textContent = String(text || "").trim();
     holidayWaitlistMessageEl.className = "text-sm " + (isError ? "text-red-600" : "text-gray-500");
+  }
+
+  function setWhatsAppCampaignStatus(text, type) {
+    if (!whatsappCampaignStatusEl) return;
+    whatsappCampaignStatusEl.textContent = String(text || "").trim();
+    whatsappCampaignStatusEl.className = "text-sm " + (type === "error" ? "text-red-600" : type === "ok" ? "text-emerald-700" : "text-gray-500");
+  }
+
+  async function loadWhatsAppAudience() {
+    if (!whatsappCampaignAudience) return;
+    const qs = new URLSearchParams({
+      course_slug: whatsappCampaignCourse ? whatsappCampaignCourse.value : "all",
+      opted: "in",
+      limit: "1000",
+    });
+    setWhatsAppCampaignStatus("Loading audience...", "");
+    const res = await fetch("/.netlify/functions/admin-whatsapp-contacts-list?" + qs.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (res.status === 401) throw new Error("Your admin session expired.");
+    const json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not load WhatsApp audience.");
+    const count = Array.isArray(json.contacts) ? json.contacts.length : 0;
+    whatsappCampaignAudience.textContent = String(count) + " opted-in contact" + (count === 1 ? "" : "s");
+    setWhatsAppCampaignStatus("Audience ready.", "ok");
+  }
+
+  async function sendWhatsAppCampaign(sendTest) {
+    const templateName = String((whatsappCampaignTemplate && whatsappCampaignTemplate.value) || "holiday_waitlist_welcome").trim();
+    const templateLanguage = String((whatsappCampaignLanguage && whatsappCampaignLanguage.value) || "en").trim();
+    const templatePreview = String((whatsappCampaignTemplatePreview && whatsappCampaignTemplatePreview.textContent) || "").replace(/\s+/g, " ").trim();
+    const campaignName = String((whatsappCampaignName && whatsappCampaignName.value) || "").trim() || "WhatsApp Campaign";
+    const testPhone = String((whatsappCampaignTestPhone && whatsappCampaignTestPhone.value) || "").trim();
+    if (!templateName) throw new Error("Choose an approved WhatsApp template.");
+    if (sendTest && !testPhone) throw new Error("Enter a test phone number.");
+    const btn = sendTest ? whatsappCampaignTestBtn : whatsappCampaignSendBtn;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = sendTest ? "Sending test..." : "Sending...";
+    }
+    try {
+      const res = await fetch("/.netlify/functions/admin-whatsapp-campaign-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          campaignName,
+          templateName,
+          templateLanguage,
+          templatePreview,
+          variableMode: "recipient_full_name",
+          courseSlug: whatsappCampaignCourse ? whatsappCampaignCourse.value : "all",
+          sendTest: !!sendTest,
+          testPhone,
+        }),
+      });
+      if (res.status === 401) throw new Error("Your admin session expired.");
+      const json = await res.json().catch(function () { return null; });
+      if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not send WhatsApp campaign.");
+      setWhatsAppCampaignStatus("Sent to n8n: " + String(json.recipientCount || 0) + " recipient" + (Number(json.recipientCount || 0) === 1 ? "" : "s") + ".", "ok");
+      await loadWhatsAppAudience().catch(function () { return null; });
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = sendTest ? "Send Test" : "Send Campaign";
+      }
+    }
   }
 
   function isHolidayCourseSelected() {
@@ -1146,6 +1227,7 @@
     const providerLabel = String(item.provider_label || "").trim() || "Manual";
     const canReview = status === "pending_verification" && source === "manual";
     const payer = `${escapeHtml(item.first_name || "")}<br /><small>${escapeHtml(item.email || "")}</small>`;
+    const phone = String(item.phone || "").trim() || "-";
     const amount = fmtMoney(item.amount_minor, item.currency);
     const capiSent = Number(item.meta_purchase_sent || 0) === 1;
     const capiPill = capiSent
@@ -1193,6 +1275,7 @@
       <tr data-payment-uuid="${escapeHtml(item.payment_uuid)}">
         <td>${escapeHtml(fmtDate(item.created_at))}</td>
         <td>${payer}</td>
+        <td>${escapeHtml(phone)}</td>
         <td>${escapeHtml(item.course_slug || "")}</td>
         <td>${escapeHtml(item.batch_label || "-")}</td>
         <td><span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">${escapeHtml(providerLabel)}</span></td>
@@ -1600,11 +1683,14 @@
     if (rowsEl) {
       rowsEl.innerHTML = items.length
         ? items.map(rowMarkup).join("")
-        : '<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
+        : '<tr><td colspan="11" class="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>';
     }
     await loadTranscriptRequests().catch(function (error) {
       renderTranscriptRequests([]);
       setMessage(error.message || "Could not load transcript requests", "error");
+    });
+    await loadWhatsAppAudience().catch(function (error) {
+      setWhatsAppCampaignStatus(error.message || "Could not load WhatsApp audience.", "error");
     });
 
     if (appCard) appCard.hidden = false;
@@ -2879,6 +2965,40 @@
           waitlistDeleteConfirmBtn.disabled = false;
           waitlistDeleteConfirmBtn.textContent = "Delete entry";
         });
+    });
+  }
+
+  if (whatsappCampaignRefreshBtn) {
+    whatsappCampaignRefreshBtn.addEventListener("click", function () {
+      loadWhatsAppAudience().catch(function (error) {
+        setWhatsAppCampaignStatus(error.message || "Could not refresh WhatsApp audience.", "error");
+      });
+    });
+  }
+
+  if (whatsappCampaignCourse) {
+    whatsappCampaignCourse.addEventListener("change", function () {
+      loadWhatsAppAudience().catch(function (error) {
+        setWhatsAppCampaignStatus(error.message || "Could not refresh WhatsApp audience.", "error");
+      });
+    });
+  }
+
+  if (whatsappCampaignTestBtn) {
+    whatsappCampaignTestBtn.addEventListener("click", function () {
+      sendWhatsAppCampaign(true).catch(function (error) {
+        setWhatsAppCampaignStatus(error.message || "Could not send test WhatsApp message.", "error");
+      });
+    });
+  }
+
+  if (whatsappCampaignForm) {
+    whatsappCampaignForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!window.confirm("Send this WhatsApp campaign to the selected opted-in audience via n8n?")) return;
+      sendWhatsAppCampaign(false).catch(function (error) {
+        setWhatsAppCampaignStatus(error.message || "Could not send WhatsApp campaign.", "error");
+      });
     });
   }
 

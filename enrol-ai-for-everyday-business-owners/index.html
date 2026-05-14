@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260514a" />
     
     <style>
       /* Layout Container - Fixes the edge-touching issue */
@@ -348,6 +348,24 @@
               </div>
 
               <div>
+                <label for="enrolPhone" class="form-label">WhatsApp phone number</label>
+                <input id="enrolPhone" name="phone" type="tel" class="form-input" autocomplete="tel" placeholder="e.g. +2348012345678" required />
+              </div>
+
+              <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  id="whatsappOptIn"
+                  name="whatsappOptIn"
+                  class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                  required
+                />
+                <span>
+                  I agree to receive waitlist updates on WhatsApp from Tochukwu Tech. Reply STOP anytime to opt out.
+                </span>
+              </label>
+
+              <div>
                 <label for="couponCodeInput" class="form-label">Coupon code (optional)</label>
                 <div class="flex items-center gap-2">
                   <input id="couponCodeInput" name="couponCode" type="text" class="form-input mb-0" placeholder="Enter coupon code if available" />
@@ -366,16 +384,22 @@
                     <span class="payment-option__title">Paystack</span>
                     <span class="payment-option__meta" id="paystackOptionMeta">Pay in full</span>
                   </button>
-                  <button type="button" class="payment-option" data-provider="paypal" role="radio" aria-checked="false">
-                    <span class="payment-option__title">PayPal</span>
-                    <span class="payment-option__meta" id="paypalOptionMeta">International checkout (PayPal)</span>
-                  </button>
                   <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">
                     <span class="payment-option__title">Manual bank transfer</span>
                     <span class="payment-option__meta" id="manualOptionMeta">Transfer and upload proof</span>
                   </button>
                 </div>
               </div>
+
+              <section id="paystackBreakdown" class="manual-transfer mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50 hidden" hidden>
+                <div class="manual-transfer__bank mb-4" id="paystackBreakdownDetails">
+                  <p class="manual-transfer__title font-bold text-sm text-gray-900">Payment information</p>
+                  <p><strong>Actual course price:</strong> <span id="breakdownCoursePrice">-</span></p>
+                  <p><strong>VAT:</strong> <span id="breakdownVat">-</span></p>
+                  <p><strong>Paystack processing fee:</strong> <span id="breakdownPaystackFee">-</span></p>
+                  <p><strong>Total (Customer pays):</strong> <span id="breakdownTotal">-</span></p>
+                </div>
+              </section>
 
               <section id="manualTransferBlock" class="manual-transfer mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50" hidden>
                 <div class="manual-transfer__bank mb-4" id="manualBankDetails">
@@ -435,6 +459,6 @@
 
     <script src="/assets/site.js" defer></script>
     <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/enrol-page.js?v=20260417b" defer></script>
+    <script src="/assets/enrol-page.js?v=20260514c" defer></script>
   </body>
 </html>

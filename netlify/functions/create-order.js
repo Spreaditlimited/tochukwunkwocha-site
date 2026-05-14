@@ -1,19 +1,20 @@
 const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { paystackInitialize, paypalCreateOrder } = require("./_lib/payments");
+const { applyRuntimeSettings } = require("./_lib/runtime-settings");
+const { paystackInitialize } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 const { evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { ensureAffiliateTables, recordAffiliateAttribution } = require("./_lib/affiliates");
+const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
   getCourseConfig,
   getCourseDefaultAmountMinor,
-  getCourseDefaultPaypalMinor,
 } = require("./_lib/course-config");
 const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
 
@@ -25,12 +26,16 @@ function normalizeEmail(value) {
 
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
-  if (raw === "paystack" || raw === "paypal") return raw;
-  return "paypal";
+  if (raw === "paystack") return raw;
+  return "paystack";
 }
 
 function normalizeCountry(value) {
   return String(value || "").trim().slice(0, 120);
+}
+
+function normalizePhone(value) {
+  return String(value || "").trim().slice(0, 40);
 }
 
 function normalizeAffiliateCode(value) {
@@ -43,18 +48,21 @@ function requiresExplicitBatchSelection(courseSlug) {
 function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode }) {
   const mode = String(enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const courseGbpMinor = Number(learningCourse && learningCourse.price_gbp_minor);
-  const ngnMinor = mode === "immediate"
+  const courseMinor = mode === "immediate"
     ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
-    : Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
-  const paypalMinor = mode === "immediate"
-    ? (Number.isFinite(courseGbpMinor) && courseGbpMinor > 0 ? Math.round(courseGbpMinor) : getCourseDefaultPaypalMinor(courseSlug))
-    : Number((batch && batch.paypal_amount_minor) || getCourseDefaultPaypalMinor(courseSlug));
-  const gbp = (paypalMinor / 100).toFixed(2);
-  if (provider === "paystack") {
-    return { currency: "NGN", amountMinor: ngnMinor, amountDisplay: (ngnMinor / 100).toFixed(2) };
-  }
-  return { currency: "GBP", amountMinor: paypalMinor, amountDisplay: gbp };
+    : (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
+      ? Math.round(courseNgnMinor)
+      : Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug)));
+  if (provider !== "paystack") throw new Error("Only Paystack is supported.");
+  const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
+  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
+  const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
+  const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
+  const amountMinor = applicableAtPrice > 200000
+    ? (priceMinor + 200000)
+    : Math.ceil(((priceMinor + (priceMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
+  return { currency: "NGN", amountMinor: amountMinor, amountDisplay: (amountMinor / 100).toFixed(2) };
 }
 
 exports.handler = async function (event) {
@@ -69,6 +77,9 @@ exports.handler = async function (event) {
 
   const firstName = String(body.firstName || "").trim().slice(0, 120);
   const email = normalizeEmail(body.email);
+  const phone = normalizePhone(body.phone);
+  const whatsappOptIn = body.whatsappOptIn === true;
+  const optInTextVersion = String(body.optInTextVersion || "enrollment_whatsapp_v1").trim().slice(0, 80);
   const country = normalizeCountry(body.country);
   const provider = normalizeProvider(body.provider);
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
@@ -81,26 +92,38 @@ exports.handler = async function (event) {
       (event.queryStringParameters && event.queryStringParameters.affiliate)
   );
   const courseConfig = getCourseConfig(courseSlug);
-  if (!firstName || !email) {
-    return json(400, { ok: false, error: "Full Name and valid email are required" });
+  if (!firstName || !email || !phone) {
+    return json(400, { ok: false, error: "Full Name, valid email, and WhatsApp phone number are required" });
   }
 
-  if (provider !== "paystack" && provider !== "paypal") {
+  if (provider !== "paystack") {
     return json(400, { ok: false, error: "Invalid payment provider" });
   }
+
+  const pool = getPool();
+
+  try {
+    await applyRuntimeSettings(pool);
+  } catch (_error) {}
 
   const recaptcha = await verifyRecaptchaToken({
     token: body.recaptchaToken,
     expectedAction: "course_order_create",
     remoteip: clientIpFromEvent(event),
+    headers: event.headers || {},
   });
   if (!recaptcha.ok) {
+    console.warn("course_order_recaptcha_failed", {
+      reason: recaptcha.reason || "unknown",
+      action: recaptcha.action || "",
+      score: Number(recaptcha.score || 0),
+      courseSlug,
+      provider,
+    });
     return json(400, { ok: false, error: "We could not verify this request. Please try again." });
   }
 
   const orderUuid = crypto.randomUUID();
-
-  const pool = getPool();
 
   try {
     await ensureLearningTables(pool);
@@ -164,33 +187,56 @@ exports.handler = async function (event) {
       };
     }
 
-    const amountDisplay =
-      price.currency === "NGN"
-        ? (pricing.finalAmountMinor / 100).toFixed(2)
-        : (pricing.finalAmountMinor / 100).toFixed(2);
-
-    await pool.query(
-      `INSERT INTO course_orders
-       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      [
-        orderUuid,
-        courseSlug,
-        firstName,
-        email,
-        country || null,
-        pricing.currency,
-        pricing.finalAmountMinor,
-        pricing.baseAmountMinor,
-        pricing.discountMinor,
-        pricing.finalAmountMinor,
-        pricing.couponCode || null,
-        pricing.couponId,
-        provider,
-        batch ? batch.batch_key : null,
-        batch ? batch.batch_label : null,
-      ]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO course_orders
+         (order_uuid, course_slug, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        [
+          orderUuid,
+          courseSlug,
+          firstName,
+          email,
+          phone || null,
+          country || null,
+          pricing.currency,
+          pricing.finalAmountMinor,
+          pricing.baseAmountMinor,
+          pricing.discountMinor,
+          pricing.finalAmountMinor,
+          pricing.couponCode || null,
+          pricing.couponId,
+          provider,
+          batch ? batch.batch_key : null,
+          batch ? batch.batch_label : null,
+        ]
+      );
+    } catch (insertError) {
+      const msg = String(insertError && insertError.message || "").toLowerCase();
+      if (msg.indexOf("unknown column") === -1 || msg.indexOf("phone") === -1) throw insertError;
+      await pool.query(
+        `INSERT INTO course_orders
+         (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        [
+          orderUuid,
+          courseSlug,
+          firstName,
+          email,
+          country || null,
+          pricing.currency,
+          pricing.finalAmountMinor,
+          pricing.baseAmountMinor,
+          pricing.discountMinor,
+          pricing.finalAmountMinor,
+          pricing.couponCode || null,
+          pricing.couponId,
+          provider,
+          batch ? batch.batch_key : null,
+          batch ? batch.batch_label : null,
+        ]
+      );
+    }
 
     if (affiliateCode) {
       await recordAffiliateAttribution(pool, {
@@ -207,50 +253,40 @@ exports.handler = async function (event) {
       });
     }
 
-    if (provider === "paystack") {
-      const prefix = String((batch && batch.paystack_reference_prefix) || (courseConfig && courseConfig.defaultPrefix) || "PTP").trim().toUpperCase();
-      const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
-      const payment = await paystackInitialize({
+    if (whatsappOptIn) {
+      await upsertWhatsAppContact(pool, {
         email,
-        amountMinor: pricing.finalAmountMinor,
-        reference,
-        metadata: {
-          order_uuid: orderUuid,
-          first_name: firstName,
-          course_slug: courseSlug,
-          batch_key: batch ? batch.batch_key : null,
-          batch_label: batch ? batch.batch_label : null,
-        },
-      });
-
-      await pool.query(
-        `UPDATE course_orders
-         SET provider_reference = ?
-         WHERE order_uuid = ?`,
-        [payment.providerReference, orderUuid]
-      );
-
-      return json(200, {
-        ok: true,
-        orderUuid,
-        provider,
-        checkoutUrl: payment.checkoutUrl,
+        fullName: firstName,
+        phone,
+        courseSlug,
+        source: "paystack_enrollment",
+        optedIn: true,
+        optInVersion: optInTextVersion,
+      }).catch(function (error) {
+        console.error("paystack_whatsapp_contact_upsert_failed", error && error.message ? error.message : error);
       });
     }
 
-      const payment = await paypalCreateOrder({
-      amount: amountDisplay,
-      currency: pricing.currency,
-      customId: orderUuid,
-      description: `${String((courseConfig && courseConfig.name) || "Course")} pre-enrolment`,
-      cancelPath: String((courseConfig && courseConfig.landingPath) || "/courses/prompt-to-profit"),
+    const prefix = String((batch && batch.paystack_reference_prefix) || (courseConfig && courseConfig.defaultPrefix) || "PTP").trim().toUpperCase();
+    const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
+    const payment = await paystackInitialize({
+      email,
+      amountMinor: pricing.finalAmountMinor,
+      reference,
+      metadata: {
+        order_uuid: orderUuid,
+        first_name: firstName,
+        course_slug: courseSlug,
+        batch_key: batch ? batch.batch_key : null,
+        batch_label: batch ? batch.batch_label : null,
+      },
     });
 
     await pool.query(
       `UPDATE course_orders
-       SET provider_order_id = ?
+       SET provider_reference = ?
        WHERE order_uuid = ?`,
-      [payment.orderId, orderUuid]
+      [payment.providerReference, orderUuid]
     );
 
     return json(200, {

@@ -12,6 +12,27 @@ function formatNaira(minor) {
   return `N${new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 }).format(rounded)}`;
 }
 
+function vatPercentFromSettings() {
+  const raw = Number(process.env.SITE_VAT_PERCENT);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 7.5;
+}
+
+function manualPaymentPricing(courseSlug, learningCourse) {
+  const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
+  const courseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
+    ? Math.round(courseNgnMinor)
+    : getCourseDefaultAmountMinor(courseSlug);
+  const vatPercent = vatPercentFromSettings();
+  const vatMinor = Math.round((courseMinor * vatPercent) / 100);
+  return {
+    currency: "NGN",
+    courseMinor,
+    vatPercent,
+    vatMinor,
+    totalMinor: courseMinor + vatMinor,
+  };
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -27,7 +48,8 @@ exports.handler = async function (event) {
   const accountName = String(process.env.MANUAL_BANK_ACCOUNT_NAME || "").trim();
   const accountNumber = String(process.env.MANUAL_BANK_ACCOUNT_NUMBER || "").trim();
   const note = String(process.env.MANUAL_BANK_NOTE || "").trim();
-  let amountMinor = getCourseDefaultAmountMinor(courseSlug);
+  let breakdown = manualPaymentPricing(courseSlug, null);
+  let amountMinor = breakdown.totalMinor;
   let resolvedBatch = null;
   let pricing = null;
   let coupon = null;
@@ -43,15 +65,9 @@ exports.handler = async function (event) {
       : "batch";
     if (enrollmentMode === "batch") {
       resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
-      if (resolvedBatch && Number(resolvedBatch.paystack_amount_minor || 0) > 0) {
-        amountMinor = Number(resolvedBatch.paystack_amount_minor);
-      }
-    } else {
-      const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-      if (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0) {
-        amountMinor = Math.round(courseNgnMinor);
-      }
     }
+    breakdown = manualPaymentPricing(courseSlug, learningCourse);
+    amountMinor = breakdown.totalMinor;
     if (couponCode) {
       const evaluated = await evaluateCouponForOrder(pool, {
         couponCode,
@@ -84,6 +100,11 @@ exports.handler = async function (event) {
       currency: "NGN",
       amountMinor: Math.round(amountMinor),
       amountLabel: formatNaira(amountMinor),
+      coursePriceMinor: breakdown.courseMinor,
+      coursePriceLabel: formatNaira(breakdown.courseMinor),
+      vatPercent: breakdown.vatPercent,
+      vatMinor: breakdown.vatMinor,
+      vatLabel: formatNaira(breakdown.vatMinor),
       pricing,
       couponError: couponError || null,
       coupon: coupon
