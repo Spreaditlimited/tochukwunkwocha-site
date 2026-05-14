@@ -291,7 +291,7 @@
       profilePhoneInput.value = String(account.phone || "");
     }
     if (profileWhatsappOptInInput) {
-      profileWhatsappOptInInput.checked = account.whatsappOptedIn === true;
+      profileWhatsappOptInInput.checked = account.whatsappOptedOutAt ? false : true;
     }
 
     const needs = account.certificateNameNeedsConfirmation === true;
