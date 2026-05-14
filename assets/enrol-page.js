@@ -748,10 +748,6 @@
       setError("Please enter your full name, phone number, and email address.");
       return;
     }
-    if (form.whatsappOptIn && !whatsappOptIn) {
-      setError("Please accept WhatsApp updates consent before continuing.");
-      return;
-    }
     if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
       setError("Please choose a holiday batch before continuing.");
       return;
