@@ -261,11 +261,18 @@
 
   function renderSubmissionHtml(row) {
     var answers = Array.isArray(row && row.buildAnswers) ? row.buildAnswers : [];
-    var answersHtml = answers.length
-      ? answers.map(function (a, idx) {
+    var scoredAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") !== 0; });
+    var submittedAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") === 0; });
+    var answersHtml = scoredAnswers.length
+      ? scoredAnswers.map(function (a, idx) {
         return '<div class="rounded-lg border border-gray-200 bg-white p-3"><p class="text-xs font-semibold text-gray-500">Q' + String(idx + 1) + '</p><p class="mt-1 text-sm font-semibold text-gray-900">' + escapeHtml(a.question || "-") + '</p><p class="mt-1 text-sm text-gray-700">' + escapeHtml(a.answer || "-") + '</p><p class="mt-1 text-xs text-gray-500">Score: ' + escapeHtml(String(Number(a.score || 0))) + '</p></div>';
       }).join("")
       : '<p class="text-sm text-gray-500">No submission answers found for this call.</p>';
+    var submittedHtml = submittedAnswers.length
+      ? submittedAnswers.map(function (a) {
+        return '<div class="rounded-lg border border-gray-200 bg-white p-3"><p class="text-xs font-semibold text-gray-500">' + escapeHtml(clean(a.question).replace(/^Submitted - /, "") || "Submitted field") + '</p><p class="mt-1 text-sm whitespace-pre-wrap text-gray-800">' + escapeHtml(a.answer || "-") + '</p></div>';
+      }).join("")
+      : '<p class="text-sm text-gray-500">No explicit submitted field snapshot for this call.</p>';
 
     return [
       '<div class="space-y-3">',
@@ -279,7 +286,8 @@
       '<p><span class="font-semibold">Band:</span> ' + escapeHtml(row.buildBandKey || "-") + '</p>',
       '<p><span class="font-semibold">Headline:</span> ' + escapeHtml(row.buildHeadline || "-") + '</p>',
       "</div>",
-      '<div class="space-y-2">' + answersHtml + "</div>",
+      '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted Details</p><div class="space-y-2">' + submittedHtml + "</div></div>",
+      '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Scoring Answers</p><div class="space-y-2">' + answersHtml + "</div></div>",
       "</div>",
     ].join("");
   }

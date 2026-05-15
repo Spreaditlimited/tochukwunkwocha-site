@@ -123,11 +123,18 @@
 
   function renderSubmissionHtml(row) {
     var answers = Array.isArray(row && row.answers) ? row.answers : [];
-    var answerHtml = answers.length
-      ? answers.map(function (a, idx) {
+    var scoredAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") !== 0; });
+    var submittedAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") === 0; });
+    var answerHtml = scoredAnswers.length
+      ? scoredAnswers.map(function (a, idx) {
         return '<div class="rounded-lg border border-gray-200 bg-white p-3"><p class="text-xs font-semibold text-gray-500">Q' + String(idx + 1) + '</p><p class="mt-1 text-sm font-semibold text-gray-900">' + escapeHtml(a.question || "-") + '</p><p class="mt-1 text-sm text-gray-700">' + escapeHtml(a.answer || "-") + '</p><p class="mt-1 text-xs text-gray-500">Score: ' + escapeHtml(String(Number(a.score || 0))) + "</p></div>";
       }).join("")
       : '<p class="text-sm text-gray-500">No captured answers.</p>';
+    var submittedHtml = submittedAnswers.length
+      ? submittedAnswers.map(function (a) {
+        return '<div class="rounded-lg border border-gray-200 bg-white p-3"><p class="text-xs font-semibold text-gray-500">' + escapeHtml(clean(a.question).replace(/^Submitted - /, "") || "Submitted field") + '</p><p class="mt-1 text-sm whitespace-pre-wrap text-gray-800">' + escapeHtml(a.answer || "-") + "</p></div>";
+      }).join("")
+      : '<p class="text-sm text-gray-500">No explicit submitted field snapshot for this lead.</p>';
     return [
       '<div class="space-y-3">',
       '<div class="rounded-lg border border-gray-200 bg-white p-3">',
@@ -140,7 +147,8 @@
       '<p><span class="font-semibold">Score:</span> ' + escapeHtml(String(Number(row.score || 0))) + '/100</p>',
       '<p><span class="font-semibold">Band:</span> ' + escapeHtml(row.bandKey || "-") + '</p>',
       "</div>",
-      '<div class="space-y-2">' + answerHtml + "</div>",
+      '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted Details</p><div class="space-y-2">' + submittedHtml + "</div></div>",
+      '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Scoring Answers</p><div class="space-y-2">' + answerHtml + "</div></div>",
       "</div>",
     ].join("");
   }

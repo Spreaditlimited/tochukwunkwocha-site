@@ -25,6 +25,10 @@ function clean(value, max) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max || 400);
 }
 
+function cleanText(value, max) {
+  return String(value || "").trim().slice(0, max || 4000);
+}
+
 function normalizeEmail(value) {
   const email = clean(value, 220).toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
@@ -103,6 +107,57 @@ function computeBuildFormScore(body) {
   return { score, isHardDQ, normalizedAnswers: answers };
 }
 
+function optionLabel(value, optionsMap) {
+  const key = clean(value, 120);
+  if (!key) return "-";
+  return optionsMap[key] || key;
+}
+
+function explicitSubmissionAnswers(body) {
+  const currentProcessLabel = optionLabel(body.currentProcess, {
+    chaos: "Spreadsheets & WhatsApp (Chaos)",
+    combo: "A combination of unlinked tools",
+    paper: "Mostly paper / manual entry",
+    existing: "We use existing software, but it's limiting",
+    none: "No process currently (Exploring new idea)",
+  });
+  const complexityLabel = optionLabel(body.complexity, {
+    simple: "Focused systems",
+    medium: "Medium complexity workflow",
+    dq_marketplace: "Mass consumer apps",
+    dq_fintech: "Heavy infrastructure",
+  });
+  const budgetLabel = optionLabel(body.budget, {
+    "0": "Under ₦500k",
+    "5": "₦500k – ₦1m",
+    "15": "₦1m – ₦3m",
+    "18": "₦3m – ₦5m",
+    "20": "₦5m+",
+  });
+  const decisionLabel = optionLabel(body.decision, {
+    "10": "Yes",
+    "5": "Partially",
+    "0": "No",
+  });
+  const timelineLabel = optionLabel(body.timeline, {
+    dq_immediate: "Need in 7 days",
+    "10": "Start immediately (30 Days)",
+    "5": "1 – 3 months",
+    dq_exploring: "Still exploring ideas",
+  });
+
+  return [
+    { question: "Submitted - Build description", answer: cleanText(body.buildDesc, 4000) || "-", score: 0 },
+    { question: "Submitted - Problem description", answer: cleanText(body.problemDesc, 6000) || "-", score: 0 },
+    { question: "Submitted - Current process", answer: currentProcessLabel, score: 0 },
+    { question: "Submitted - Project complexity", answer: complexityLabel, score: 0 },
+    { question: "Submitted - Budget range", answer: budgetLabel, score: 0 },
+    { question: "Submitted - Decision maker", answer: decisionLabel, score: 0 },
+    { question: "Submitted - Timeline", answer: timelineLabel, score: 0 },
+    { question: "Submitted - Website", answer: cleanText(body.website || body.websiteUrl, 500) || "-", score: 0 },
+  ];
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
   let body;
@@ -122,6 +177,7 @@ exports.handler = async function (event) {
   let score = 0;
   let normalizedAnswers = [];
   let hardDq = false;
+  let submittedSnapshot = [];
   if (Array.isArray(body.answers) && body.answers.length === QUESTIONS.length) {
     const answersResult = computeScore(body.answers);
     if (!answersResult.ok) return json(400, { ok: false, error: answersResult.error });
@@ -132,6 +188,7 @@ exports.handler = async function (event) {
     score = Number(alt.score || 0);
     normalizedAnswers = alt.normalizedAnswers;
     hardDq = alt.isHardDQ;
+    submittedSnapshot = explicitSubmissionAnswers(body);
   }
   if (hardDq && score > 49) score = 49;
   const band = bandFor(score);
@@ -153,7 +210,7 @@ exports.handler = async function (event) {
       bandKey: band.key,
       headline: band.headline,
       nextStep: band.nextStep,
-      answers: normalizedAnswers,
+      answers: normalizedAnswers.concat(submittedSnapshot),
       sourcePath: "/build-scorecard/",
       followUpRequired: band.followUpRequired,
     });
@@ -161,6 +218,9 @@ exports.handler = async function (event) {
     const answersText = normalizedAnswers
       .map(function (entry, index) { return `Q${index + 1}: ${entry.question}\nAnswer: ${entry.answer} (${entry.score})`; })
       .join("\n\n");
+    const submittedText = submittedSnapshot
+      .map(function (entry) { return `${entry.question.replace(/^Submitted - /, "")}: ${entry.answer}`; })
+      .join("\n");
     await sendEmail({
       to: SUPPORT_EMAIL,
       subject: `Build Scorecard Submission — ${businessName} (${score}/100, ${band.key})`,
@@ -176,6 +236,7 @@ exports.handler = async function (event) {
         `Band: ${band.key}`,
         `Follow-up required: ${band.followUpRequired ? "yes" : "no"}`,
         "",
+        submittedText ? "Submitted details:\n" + submittedText + "\n" : "",
         answersText,
       ].join("\n"),
     }).catch(function () { return null; });
