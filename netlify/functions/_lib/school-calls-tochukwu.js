@@ -33,6 +33,9 @@ async function ensureSchoolCallTablesTochukwu(pool) {
       phone VARCHAR(80) NULL,
       role_title VARCHAR(140) NULL,
       student_population VARCHAR(60) NULL,
+      lead_source_type VARCHAR(40) NOT NULL DEFAULT 'school',
+      lead_source_path VARCHAR(255) NULL,
+      source_lead_uuid VARCHAR(64) NULL,
       timezone_label VARCHAR(80) NOT NULL DEFAULT 'Africa/Lagos',
       slot_start_utc DATETIME NULL,
       slot_end_utc DATETIME NULL,
@@ -66,6 +69,9 @@ async function ensureSchoolCallTablesTochukwu(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN cancel_reason VARCHAR(255) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN reschedule_note VARCHAR(255) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN assigned_owner VARCHAR(180) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN lead_source_type VARCHAR(40) NOT NULL DEFAULT 'school'`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN lead_source_path VARCHAR(255) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN source_lead_uuid VARCHAR(64) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN call_outcome_status VARCHAR(40) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN outcome_feedback TEXT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_CALL_BOOKINGS_TABLE} ADD COLUMN next_follow_up_at DATETIME NULL`);
@@ -218,6 +224,9 @@ function toPublicBookingRow(row) {
     phone: clean(row.phone, 80),
     role: clean(row.role_title, 140),
     studentPopulation: clean(row.student_population, 60),
+    leadSourceType: clean(row.lead_source_type, 40) || "school",
+    leadSourcePath: clean(row.lead_source_path, 255),
+    sourceLeadUuid: clean(row.source_lead_uuid, 64),
     timezone: clean(row.timezone_label, 80) || SCHOOL_CALL_TIMEZONE,
     status: clean(row.status, 40),
     slotStartIso: slotStartIso,

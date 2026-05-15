@@ -26,6 +26,8 @@
   var cancelBtn = document.getElementById("cancelBtn");
 
   var manageToken = "";
+  var bookingSource = "";
+  var buildAccessToken = "";
   var slotsByDate = {};
   var slotDateKeys = [];
 
@@ -40,6 +42,14 @@
   function getManageTokenFromUrl() {
     var params = new URLSearchParams(window.location.search || "");
     return String(params.get("manage") || "").trim();
+  }
+  function getSourceFromUrl() {
+    var params = new URLSearchParams(window.location.search || "");
+    return String(params.get("source") || "").trim().toLowerCase();
+  }
+  function getBuildAccessFromUrl() {
+    var params = new URLSearchParams(window.location.search || "");
+    return String(params.get("build_access") || "").trim();
   }
 
   function toWATDateKey(iso) {
@@ -246,7 +256,11 @@
       rescheduleTimeEmpty.textContent = "Loading available times...";
     }
 
-    var data = await fetchJson("/.netlify/functions/school-call-slots");
+    var slotsUrl = "/.netlify/functions/school-call-slots";
+    if (bookingSource === "build") {
+      slotsUrl += "?source=build&build_access=" + encodeURIComponent(buildAccessToken);
+    }
+    var data = await fetchJson(slotsUrl);
     var slots = Array.isArray(data.slots) ? data.slots : [];
 
     rebuildSlots(slots);
@@ -349,6 +363,8 @@
         slotStartIso: String((bookForm.slotStartIso && bookForm.slotStartIso.value) || "").trim(),
         timezone: "Africa/Lagos",
         website: String((bookForm.website && bookForm.website.value) || "").trim(),
+        sourceType: bookingSource === "build" ? "build" : "school",
+        buildAccessToken: bookingSource === "build" ? buildAccessToken : "",
       };
 
       if (
@@ -461,6 +477,14 @@
 
   function boot() {
     manageToken = getManageTokenFromUrl();
+    bookingSource = getSourceFromUrl();
+    buildAccessToken = getBuildAccessFromUrl();
+    if (!manageToken && bookingSource === "build" && !buildAccessToken) {
+      if (bookPanel) bookPanel.hidden = true;
+      if (managePanel) managePanel.hidden = true;
+      setStatus(bookStatus, "Build booking access is restricted to qualified scorecard submissions.", "error");
+      return;
+    }
 
     loadSlots()
       .then(function () {

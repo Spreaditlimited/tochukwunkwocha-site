@@ -9,6 +9,8 @@ const ALL_INTERNAL_PAGE_PATHS = [
   "/internal/schools/",
   "/internal/school-calls/",
   "/internal/school-scorecards/",
+  "/internal/build-calls/",
+  "/internal/build-scorecards/",
   "/internal/settings/",
 ];
 

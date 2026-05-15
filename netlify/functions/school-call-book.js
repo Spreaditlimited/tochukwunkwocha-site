@@ -17,6 +17,11 @@ const {
   buildCandidateSlots,
   SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
+const {
+  ensureBuildScorecardTablesTochukwu,
+  verifyBuildBookingAccessToken,
+  markBuildBookingAccessUsed,
+} = require("./_lib/build-scorecards-tochukwu");
 
 function escapeHtml(value) {
   return String(value || "")
@@ -64,17 +69,20 @@ exports.handler = async function (event) {
 
   if (clean(body.website, 120)) return json(200, { ok: true });
 
-  const fullName = clean(body.fullName, 180);
-  const schoolName = clean(body.schoolName, 220);
-  const workEmail = normalizeEmail(body.workEmail);
-  const phone = clean(body.phone, 80);
-  const role = clean(body.role, 140);
-  const studentPopulation = clean(body.studentPopulation, 60);
+  const sourceType = clean(body.sourceType, 40).toLowerCase() === "build" ? "build" : "school";
+  const buildAccessToken = clean(body.buildAccessToken, 260);
+  let fullName = clean(body.fullName, 180);
+  let schoolName = clean(body.schoolName, 220);
+  let workEmail = normalizeEmail(body.workEmail);
+  let phone = clean(body.phone, 80);
+  let role = clean(body.role, 140);
+  let studentPopulation = clean(body.studentPopulation, 60);
+  let sourceLeadUuid = "";
   const timezone = SCHOOL_CALL_TIMEZONE;
   const slotStartIso = clean(body.slotStartIso, 64);
 
   const slotStartDate = new Date(slotStartIso);
-  if (!fullName || !schoolName || !workEmail || !phone || !role || !studentPopulation || !slotStartIso) {
+  if ((sourceType !== "build" && (!fullName || !schoolName || !workEmail || !phone || !role || !studentPopulation)) || !slotStartIso) {
     return json(400, { ok: false, error: "Please complete all required fields." });
   }
   if (!Number.isFinite(slotStartDate.getTime())) {
@@ -98,14 +106,23 @@ exports.handler = async function (event) {
     } catch (_error) {}
 
     await ensureSchoolCallTablesTochukwu(pool);
+    if (sourceType === "build") {
+      await ensureBuildScorecardTablesTochukwu(pool);
+      const access = await verifyBuildBookingAccessToken(pool, buildAccessToken);
+      if (!access.ok) return json(403, { ok: false, error: access.error || "Build booking access denied" });
+      sourceLeadUuid = clean(access.access && access.access.leadUuid, 64);
+      if (!fullName || !schoolName || !workEmail || !phone || !role || !studentPopulation) {
+        return json(400, { ok: false, error: "Please complete all required fields." });
+      }
+    }
 
     const createdAt = nowSql();
     try {
       await pool.query(
         `INSERT INTO ${SCHOOL_CALL_BOOKINGS_TABLE}
-         (booking_uuid, manage_token, full_name, school_name, work_email, phone, role_title, student_population, timezone_label,
+         (booking_uuid, manage_token, full_name, school_name, work_email, phone, role_title, student_population, lead_source_type, lead_source_path, source_lead_uuid, timezone_label,
           slot_start_utc, slot_end_utc, duration_minutes, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 30, 'booked', ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 30, 'booked', ?, ?)`,
         [
           bookingUuid,
           manageToken,
@@ -115,6 +132,9 @@ exports.handler = async function (event) {
           phone,
           role,
           studentPopulation,
+          sourceType,
+          sourceType === "build" ? "/build-scorecard/" : "/schools/book-call/",
+          sourceLeadUuid || null,
           timezone,
           sqlFromIso(slotStartDate.toISOString()),
           sqlFromIso(slotEndDate.toISOString()),
@@ -158,6 +178,12 @@ exports.handler = async function (event) {
        WHERE booking_uuid = ?`,
       [zoomMeetingId, zoomJoinUrl, zoomStartUrl, nowSql(), bookingUuid]
     );
+    if (sourceType === "build") {
+      const access = await verifyBuildBookingAccessToken(pool, buildAccessToken);
+      if (access.ok && access.access && access.access.id) {
+        await markBuildBookingAccessUsed(pool, access.access.id);
+      }
+    }
 
     const base = siteBaseUrl();
     const manageUrl = `${base}/schools/book-call/?manage=${encodeURIComponent(manageToken)}`;
@@ -204,11 +230,13 @@ exports.handler = async function (event) {
       `Manage link: ${manageUrl}`,
     ].join("\n");
 
-    try {
-      await sendEmail({ to: workEmail, subject: userSubject, html: userHtml, text: userText });
-    } catch (_error) {}
+    if (sourceType !== "build") {
+      try {
+        await sendEmail({ to: workEmail, subject: userSubject, html: userHtml, text: userText });
+      } catch (_error) {}
+    }
 
-    const adminRecipients = getSchoolNotificationRecipients();
+    const adminRecipients = sourceType === "build" ? ["support@tochukwunkwocha.com"] : getSchoolNotificationRecipients();
     await Promise.all(
       adminRecipients.map(function (to) {
         return sendEmail({

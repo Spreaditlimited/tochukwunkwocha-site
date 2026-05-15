@@ -7,9 +7,13 @@ const {
   fetchActiveBookedSlotMap,
   SCHOOL_CALL_TIMEZONE,
 } = require("./_lib/school-calls-tochukwu");
+const { ensureBuildScorecardTablesTochukwu, verifyBuildBookingAccessToken } = require("./_lib/build-scorecards-tochukwu");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
+  const query = event.queryStringParameters || {};
+  const source = String(query.source || "").trim().toLowerCase();
+  const buildAccess = String(query.build_access || "").trim();
 
   const pool = getPool();
   try {
@@ -18,6 +22,11 @@ exports.handler = async function (event) {
     } catch (_error) {}
 
     await ensureSchoolCallTablesTochukwu(pool);
+    if (source === "build") {
+      await ensureBuildScorecardTablesTochukwu(pool);
+      const access = await verifyBuildBookingAccessToken(pool, buildAccess);
+      if (!access.ok) return json(403, { ok: false, error: access.error || "Build booking access denied" });
+    }
 
     const candidates = buildCandidateSlots({ days: 21, durationMinutes: 30 });
     const booked = await fetchActiveBookedSlotMap(pool);

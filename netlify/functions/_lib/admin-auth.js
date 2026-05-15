@@ -159,6 +159,8 @@ function inferredPageForFunction(functionName) {
   if (fn.startsWith("admin-schools") || fn.startsWith("admin-school-update")) return "/internal/schools/";
   if (fn.startsWith("admin-school-call")) return "/internal/school-calls/";
   if (fn.startsWith("admin-school-scorecard")) return "/internal/school-scorecards/";
+  if (fn.startsWith("admin-build-call")) return "/internal/build-calls/";
+  if (fn.startsWith("admin-build-scorecard")) return "/internal/build-scorecards/";
   if (fn.startsWith("admin-tochukwu-settings") || fn.startsWith("admin-admin-accounts") || fn.startsWith("admin-send-test-email")) return "/internal/settings/";
 
   return "";

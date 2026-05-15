@@ -22,6 +22,8 @@ exports.handler = async function (event) {
 
     await ensureSchoolCallTablesTochukwu(pool);
 
+    const source = String((event.queryStringParameters && event.queryStringParameters.source) || "").trim().toLowerCase();
+    const where = source === "build" ? "WHERE lead_source_type = 'build'" : source === "school" ? "WHERE lead_source_type <> 'build'" : "";
     const [rows] = await pool.query(
       `SELECT
          id,
@@ -33,6 +35,9 @@ exports.handler = async function (event) {
          phone,
          role_title,
          student_population,
+         lead_source_type,
+         lead_source_path,
+         source_lead_uuid,
          timezone_label,
          DATE_FORMAT(slot_start_utc, '%Y-%m-%d %H:%i:%s') AS slot_start_utc,
          DATE_FORMAT(slot_end_utc, '%Y-%m-%d %H:%i:%s') AS slot_end_utc,
@@ -53,6 +58,7 @@ exports.handler = async function (event) {
          DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
          DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
        FROM ${SCHOOL_CALL_BOOKINGS_TABLE}
+       ${where}
        ORDER BY COALESCE(slot_start_utc, created_at) DESC, id DESC
        LIMIT 300`
     );

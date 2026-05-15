@@ -222,6 +222,8 @@
       "/internal/schools/": "Schools",
       "/internal/school-calls/": "School Calls",
       "/internal/school-scorecards/": "School Scorecards",
+      "/internal/build-calls/": "Build Calls",
+      "/internal/build-scorecards/": "Build Scorecards",
       "/internal/settings/": "Settings",
     };
     return map[String(path || "").trim()] || String(path || "");

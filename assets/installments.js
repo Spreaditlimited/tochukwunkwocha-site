@@ -62,6 +62,7 @@
   const feedbackTitle = document.getElementById("walletFeedbackTitle");
   const feedbackMessage = document.getElementById("walletFeedbackMessage");
   const feedbackAcknowledgeBtn = document.getElementById("walletFeedbackAcknowledgeBtn");
+  let toastWrap = null;
 
   let dashboard = null;
   let schoolStudentChallenge = "";
@@ -230,6 +231,42 @@
     el.classList.remove("error", "ok");
     if (type === "error") el.classList.add("error");
     if (type === "ok") el.classList.add("ok");
+  }
+
+  function ensureToastWrap() {
+    if (toastWrap && document.body.contains(toastWrap)) return toastWrap;
+    toastWrap = document.createElement("div");
+    toastWrap.className = "fixed top-4 right-4 z-[90] flex w-[min(92vw,24rem)] flex-col gap-2";
+    document.body.appendChild(toastWrap);
+    return toastWrap;
+  }
+
+  function showToast(text, type) {
+    var wrap = ensureToastWrap();
+    var tone = String(type || "ok").toLowerCase();
+    var classes = "rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur transition-all duration-300";
+    if (tone === "error") {
+      classes += " border-red-200 bg-red-50/95 text-red-800";
+    } else {
+      classes += " border-emerald-200 bg-emerald-50/95 text-emerald-800";
+    }
+
+    var toast = document.createElement("div");
+    toast.className = classes + " opacity-0 translate-y-[-6px]";
+    toast.textContent = String(text || "");
+    wrap.appendChild(toast);
+
+    requestAnimationFrame(function () {
+      toast.classList.remove("opacity-0", "translate-y-[-6px]");
+      toast.classList.add("opacity-100", "translate-y-0");
+    });
+
+    window.setTimeout(function () {
+      toast.classList.add("opacity-0", "translate-y-[-6px]");
+      window.setTimeout(function () {
+        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 240);
+    }, 2800);
   }
 
   function openFeedbackModal(config) {
@@ -607,8 +644,10 @@
       if (accountName && json.profile) accountName.textContent = String(json.profile.fullName || fullName);
       renderProfile();
       setMsg(profileActionMsg, "Profile updated.", "ok");
+      showToast("Profile updated successfully.", "ok");
     } catch (error) {
       setMsg(profileActionMsg, error.message || "Could not update profile name.", "error");
+      showToast(error.message || "Could not update your profile.", "error");
     } finally {
       profileSaveBtn.disabled = false;
       profileSaveBtn.textContent = "Save Profile";
