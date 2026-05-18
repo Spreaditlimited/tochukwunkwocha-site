@@ -4,50 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prompt to Profit Advanced | Build Web + Mobile Apps with AI</title>
-    <meta
-      name="description"
-      content="Master VS Code, GitHub, Supabase, and AI coding assistants to build, debug, and deploy a full-stack web and mobile application."
-    />
-    <link rel="canonical" href="https://tochukwunkwocha.com/courses/prompt-to-production/" />
-    <meta property="og:type" content="website" />
-    <meta property="fb:app_id" content="1321030133272444" />
-    <meta property="og:site_name" content="Tochukwu Tech and AI Academy" />
-    <meta property="og:title" content="Prompt to Profit Advanced | Build Web + Mobile Apps with AI" />
-    <meta
-      property="og:description"
-      content="Master VS Code, GitHub, Supabase, and AI coding assistants to build, debug, and deploy a full-stack web and mobile application."
-    />
-    <meta property="og:url" content="https://tochukwunkwocha.com/courses/prompt-to-production/" />
-    <meta property="og:image" content="https://tochukwunkwocha.com/assets/og.png" />
-    <meta property="og:image:alt" content="Tochukwu Tech and AI Academy website preview" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Prompt to Profit Advanced | Build Web + Mobile Apps with AI" />
-    <meta
-      name="twitter:description"
-      content="Master VS Code, GitHub, Supabase, and AI coding assistants to build, debug, and deploy a full-stack web and mobile application."
-    />
-    <meta name="twitter:image" content="https://tochukwunkwocha.com/assets/og.png" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Course",
-        "name": "Prompt to Profit Advanced",
-        "description": "An advanced AI app-building course teaching practical workflow, debugging, and deployment using VS Code and AI coding assistants.",
-        "provider": {
-          "@type": "Organization",
-          "name": "Tochukwu Tech and AI Academy",
-          "url": "https://tochukwunkwocha.com/"
-        },
-        "url": "https://tochukwunkwocha.com/courses/prompt-to-production/"
-      }
-    </script>
+    <meta name="description" content="A 4-week practical program to help you build custom web and mobile apps for your business or career using AI." />
+    
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
     
     <link rel="stylesheet" href="/assets/styles.css" />
 
@@ -76,6 +38,7 @@
                 700: '#345585',
                 800: '#2d476e',
                 900: '#0a1930', /* Deep Navy */
+                gold: '#fbbf24', 
               }
             }
           }
@@ -115,106 +78,56 @@
         .tw-btn-outline {
           @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-4 text-sm font-bold text-brand-900 shadow-sm ring-1 ring-inset ring-brand-200 transition-all hover:bg-brand-50 hover:ring-brand-300 hover:shadow hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
         }
-        .tw-btn-download {
-          @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm sm:text-base font-bold text-brand-700 shadow-sm ring-1 ring-inset ring-brand-200 transition-all hover:bg-brand-50 hover:text-brand-600 hover:shadow hover:-translate-y-0.5;
-        }
         
-        .faq-wrap { @apply space-y-4; }
-        .faq-item { @apply rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md; }
-        .faq-question { @apply flex w-full items-center text-left font-heading font-bold text-brand-900 text-lg focus:outline-none cursor-pointer bg-transparent; }
-        .faq-answer p { @apply mt-4 text-gray-600 leading-relaxed pr-8; }
+        /* New Premium Styles */
+        .glass-card { @apply bg-white/5 backdrop-blur-md border border-white/10; }
+        .premium-shadow { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); }
+        .hero-bg { background: radial-gradient(circle at top right, #1e3a8a 0%, #0a1930 50%); }
       }
     </style>
     <style>
       main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
       .site-footer { margin-top: 0 !important; }
-      .production-hero {
-        padding-top: 64px;
-        background: #000 !important;
-        border-bottom-color: #27272a !important;
+      .ptp-shell-wide {
+        width: var(--container);
+        margin: 0 auto;
       }
-      .production-hero::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
-        pointer-events: none;
-        z-index: 0;
+      .testimonial-body {
+        line-height: 1.65;
       }
-      .production-hero .tw-btn-primary,
-      .production-hero .tw-btn-outline {
-        min-width: 250px;
-        height: 56px;
-        border-radius: 14px;
-        padding: 14px 22px;
-        font-size: 0.98rem;
+      .testimonial-body.testimonial-body--clamped {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 5;
+        overflow: hidden;
+      }
+      .testimonial-toggle {
+        margin-top: 10px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font-size: 0.92rem;
         font-weight: 700;
-        border: 1px solid rgba(255, 255, 255, 0.72);
-        color: #fff;
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: none;
-        transform: none;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        color: #22345f;
+        cursor: pointer;
       }
-      .production-hero .tw-btn-primary:hover,
-      .production-hero .tw-btn-primary:focus-visible,
-      .production-hero .tw-btn-outline:hover,
-      .production-hero .tw-btn-outline:focus-visible {
-        color: #fff;
-        border-color: rgba(255, 255, 255, 0.95);
-        background: rgba(255, 255, 255, 0.18);
-        transform: translateY(-1px);
+      .testimonial-toggle:hover {
+        text-decoration: underline;
       }
-      .hero-label-lockup {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0 0 24px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 8px 16px;
-        border-radius: 99px;
+      #faq h3[role="button"] {
+        justify-content: space-between;
+        gap: 16px;
       }
-      .hero-label-logo {
-        width: min(160px, 45vw);
-        height: auto;
+      #faq h3[role="button"]::after {
+        content: "+";
+        font-size: 1.25rem;
+        line-height: 1;
+        color: #3f6ba4;
+        transition: transform 0.2s ease, color 0.2s ease;
       }
-      .hero-label-advanced {
-        font-family: "Manrope", sans-serif;
-        font-size: 0.95rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #75a5d0;
-      }
-      @media (max-width: 640px) {
-        .hero-label-lockup {
-          margin: 0 auto 20px;
-        }
-        .hero-label-advanced {
-          font-size: 0.82rem;
-          letter-spacing: 0.1em;
-        }
-      }
-      @media (min-width: 1024px) {
-        .production-hero {
-          padding-top: 96px;
-        }
-      }
-      .ptp-logo-inline {
-        height: 1.28em;
-        vertical-align: -0.2em;
-        margin: 0 0.1em;
-      }
-      
-      /* Subtle grid background for modern tech feel */
-      .bg-tech-grid {
-        background-image: linear-gradient(to right, rgba(52, 85, 133, 0.05) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(52, 85, 133, 0.05) 1px, transparent 1px);
-        background-size: 24px 24px;
+      #faq h3[role="button"][aria-expanded="true"]::after {
+        content: "−";
+        color: #0a1930;
       }
     </style>
   </head>
@@ -229,7 +142,7 @@
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-<a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/build/">Build</a>
           <a href="/services/domain-registration/">Domains</a>
           <div class="nav-dropdown">
@@ -245,275 +158,255 @@
 
     <main class="flex-1 w-full">
       
-      <section class="production-hero relative overflow-hidden bg-brand-900 pb-20 lg:pb-32 reveal border-b border-brand-800">
-        
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
-            
-            <div class="lg:col-span-7 text-center sm:text-left">
-              <div class="hero-label-lockup">
-                <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-label-logo" />
-                <span class="text-white/30">|</span>
-                <span class="hero-label-advanced">Advanced</span>
+      <section class="hero-bg relative overflow-hidden pt-24 pb-20 lg:pt-32 lg:pb-40 reveal border-b border-brand-800">
+        <div class="ptp-shell-wide relative z-10 text-center lg:text-left">
+          <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-4 py-1.5 text-xs font-bold text-brand-gold mb-6 uppercase tracking-widest">
+                <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
+                First Cohort: May 30th
               </div>
-              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[4rem] leading-[1.1]">
-                Build a real Web & Mobile App with AI
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-[4rem] leading-[1.1] mb-6">
+                Stop just chatting with AI. <span class="text-brand-gold">Start building with it.</span>
               </h1>
-              <p class="mt-6 text-lg sm:text-xl leading-relaxed text-brand-100 max-w-2xl mx-auto sm:mx-0 font-light">
-                Stop generating static text. Step into the code editor. Master VS Code, GitHub, Supabase, and Expo to build, deploy, and launch your first full-stack startup: <strong>PocketBudget</strong>.
+              <p class="text-lg sm:text-xl leading-relaxed text-brand-100 max-w-2xl mb-10 font-light mx-auto lg:mx-0">
+                I will show you how to move beyond basic prompts. Over 4 weeks, I will guide you to build, automate, and launch real web and mobile apps that solve business problems, no technical background needed.
               </p>
-              <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
-                <a class="tw-btn-primary text-lg px-8" href="/enrol-prompt-to-production/">Enrol in the 4-Week Program</a>
-                <a class="tw-btn-outline text-lg px-8" href="/dashboard/?course_slug=prompt-to-production">Pay in Installments</a>
+              <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <a class="tw-btn-primary !bg-brand-gold !text-brand-900 text-lg px-8 py-4 hover:!bg-yellow-400" href="/enrol-prompt-to-production/">Enrol in the 4-Week Program</a>
+                <a class="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/5 px-8 py-4 text-lg font-bold text-white backdrop-blur hover:bg-white/10 transition" href="/dashboard/?course_slug=prompt-to-production">Open Installment Plan</a>
               </div>
             </div>
-
-            <aside class="mt-16 lg:mt-0 lg:col-span-5 relative hidden md:block">
-              <div class="rounded-xl bg-[#0d1117] shadow-2xl ring-1 ring-white/10 overflow-hidden text-left flex flex-col transform transition hover:scale-[1.02] duration-500">
-                <div class="h-10 bg-[#161b22] flex items-center px-4 gap-2 border-b border-white/5">
-                  <div class="h-3 w-3 rounded-full bg-[#ff5f56]"></div>
-                  <div class="h-3 w-3 rounded-full bg-[#ffbd2e]"></div>
-                  <div class="h-3 w-3 rounded-full bg-[#27c93f]"></div>
-                  <span class="ml-4 text-xs text-gray-400 font-mono">supabaseClient.js — PocketBudget</span>
-                </div>
-                <div class="p-6 font-mono text-sm text-gray-300 leading-relaxed overflow-x-auto">
-                  <p><span class="text-[#ff7b72]">import</span> { createClient } <span class="text-[#ff7b72]">from</span> <span class="text-[#a5d6ff]">'@supabase/supabase-js'</span></p>
-                  <br>
-                  <p><span class="text-[#8b949e]">// 1. Initialize cloud database</span></p>
-                  <p><span class="text-[#ff7b72]">const</span> supabaseUrl = process.env.<span class="text-[#79c0ff]">NEXT_PUBLIC_SUPABASE_URL</span></p>
-                  <p><span class="text-[#ff7b72]">const</span> supabaseKey = process.env.<span class="text-[#79c0ff]">NEXT_PUBLIC_SUPABASE_ANON_KEY</span></p>
-                  <br>
-                  <p><span class="text-[#ff7b72]">export const</span> supabase = <span class="text-[#d2a8ff]">createClient</span>(supabaseUrl, supabaseKey)</p>
-                  <br>
-                  <p><span class="text-[#8b949e]">// 2. Enforce Row Level Security (RLS)</span></p>
-                  <p><span class="text-[#ff7b72]">const</span> { data, error } = <span class="text-[#ff7b72]">await</span> supabase</p>
-                  <p class="ml-4">.<span class="text-[#d2a8ff]">from</span>(<span class="text-[#a5d6ff]">'expenses'</span>)</p>
-                  <p class="ml-4">.<span class="text-[#d2a8ff]">select</span>(<span class="text-[#a5d6ff]">'*'</span>)</p>
-                  <p class="mt-4 text-[#27c93f] animate-pulse">█</p>
+            
+            <div class="mt-16 lg:mt-0 relative hidden sm:block">
+              <div class="glass-card rounded-3xl p-4 premium-shadow transform rotate-2 hover:rotate-0 transition duration-500">
+                <div class="bg-[#0a1930] rounded-2xl overflow-hidden border border-white/10">
+                  <div class="p-6 border-b border-white/5 flex justify-between items-center bg-black/20">
+                    <img src="/assets/PocketBudget%20Logo_reversebkgrd.png" alt="PocketBudget Logo" class="h-6 object-contain rounded" />
+                    <div class="flex gap-2"><div class="w-3 h-3 rounded-full bg-brand-500"></div><div class="w-3 h-3 rounded-full bg-brand-gold"></div></div>
+                  </div>
+                  <div class="p-8 space-y-4 bg-gradient-to-b from-[#0a1930] to-black">
+                    <div class="inline-flex w-fit bg-white/10 rounded-lg border border-white/10 items-center px-3 py-2">
+                      <p class="text-xs font-semibold uppercase tracking-wider text-brand-100">Wallet and Expense Tracker</p>
+                    </div>
+                    <div class="h-28 w-full bg-gradient-to-br from-brand-700 to-brand-500 rounded-xl flex flex-col items-center justify-center text-white font-bold text-3xl shadow-inner shadow-black/50">
+                      <span class="text-xs font-normal text-brand-100 mb-1 uppercase tracking-wider">Total Balance</span>
+                      ₦1,240,000.00
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div class="h-16 bg-white/5 rounded-lg border border-white/10 flex items-center gap-3 px-4">
+                        <div class="w-8 h-8 rounded bg-green-500/20 flex items-center justify-center text-green-300 font-bold">+</div>
+                        <div>
+                          <p class="text-[10px] uppercase tracking-wider text-brand-100">Credits</p>
+                          <p class="text-sm font-semibold text-white">₦420,000</p>
+                        </div>
+                      </div>
+                      <div class="h-16 bg-white/5 rounded-lg border border-white/10 flex items-center gap-3 px-4">
+                        <div class="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center text-red-300 font-bold">-</div>
+                        <div>
+                          <p class="text-[10px] uppercase tracking-wider text-brand-100">Spend</p>
+                          <p class="text-sm font-semibold text-white">₦185,500</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </aside>
-            
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="bg-brand-50 bg-tech-grid border-b border-brand-100 py-20 reveal">
+      <section class="py-24 bg-brand-50 border-b border-brand-100 reveal">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="text-center max-w-3xl mx-auto mb-16">
-            <p class="tw-section-label">The Project</p>
-            <h2 class="tw-h2 mb-6">Learn by building a real SaaS product.</h2>
-            <p class="text-lg leading-relaxed text-brand-800">
-              We don't teach abstract theory. Over 4 weeks, you will build and launch <strong>PocketBudget</strong>—a secure, cloud-connected expense tracker with a real database and payment integrations.
-            </p>
+          <div class="text-center mb-16">
+            <p class="tw-section-label">Who I Built This For</p>
+            <h2 class="tw-h2">You don't need to be a "Tech Person."</h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">I designed this program for ordinary people who want extraordinary results. If you fit into any of these categories, this course is your next step.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <article class="bg-white rounded-2xl p-8 shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
-              <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-6 text-brand-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition">
+              <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
               </div>
-              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Cloud Database (Supabase)</h3>
-              <p class="text-gray-600 leading-relaxed text-sm">Set up secure user authentication and a Postgres database. Learn to protect user data with Row Level Security (RLS).</p>
-            </article>
-            
-            <article class="bg-white rounded-2xl p-8 shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
-              <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-6 text-brand-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-              </div>
-              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Cross-Platform Sync</h3>
-              <p class="text-gray-600 leading-relaxed text-sm">Build a web app (Next.js) and a mobile app (Expo/React Native) that talk to the exact same backend in real-time.</p>
-            </article>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-4">The Job Seeker</h3>
+              <p class="text-gray-600 leading-relaxed mb-6 text-sm">Stop submitting CVs that look like everyone else's. I will show you how to send employers a link to a live app you built yourself. Let your work do the talking and end the interview before it starts.</p>
+            </div>
 
-            <article class="bg-white rounded-2xl p-8 shadow-sm border border-brand-100 hover:shadow-md transition-shadow">
-              <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mb-6 text-brand-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition">
+              <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
               </div>
-              <h3 class="text-xl font-heading font-bold text-brand-900 mb-3">Live Funding & Deployment</h3>
-              <p class="text-gray-600 leading-relaxed text-sm">Integrate Paystack for live web wallet funding. Deploy to Vercel and compile binaries for the iOS and Google Play stores.</p>
-            </article>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-4">The Career Professional</h3>
+              <p class="text-gray-600 leading-relaxed mb-6 text-sm">Are you tired of being just another staff member? Become indispensable. When your boss needs a system to track sales or staff, I will teach you how to build the exact automated tool they need.</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-brand-100 hover:shadow-md transition">
+              <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              </div>
+              <h3 class="text-xl font-heading font-bold text-brand-900 mb-4">The Business Owner</h3>
+              <p class="text-gray-600 leading-relaxed mb-6 text-sm">Stop managing your business with chaotic WhatsApp chats and lost Excel sheets. I will help you build your own custom dashboard to track your money, customers, and operations in one place.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="curriculum" class="bg-white py-24 reveal">
+      <section class="py-24 bg-white border-b border-brand-100 reveal overflow-hidden">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="lg:grid lg:grid-cols-12 gap-16 items-center">
+            
+            <div class="lg:col-span-5 mb-12 lg:mb-0 relative">
+              <div class="absolute -inset-4 bg-gradient-to-r from-brand-600 to-brand-400 rounded-[2.5rem] opacity-20 blur-lg"></div>
+              <img src="/assets/tochukwu.jpg" alt="Tochukwu Nkwocha" class="relative rounded-3xl shadow-2xl object-cover w-full h-[500px] border-4 border-white" />
+              <div class="absolute -bottom-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-brand-100 flex items-center gap-4">
+                <div class="bg-brand-100 text-brand-600 p-3 rounded-full">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Students Trained</p>
+                  <p class="text-2xl font-heading font-extrabold text-brand-900">350+ in 3 months</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg:col-span-7">
+              <p class="tw-section-label">Your Instructor</p>
+              <h2 class="text-4xl font-heading font-extrabold text-brand-900 mb-6">Hi, I'm Tochukwu Nkwocha. <br/><span class="text-brand-600 text-3xl">I don't just teach this. I live it.</span></h2>
+              <p class="text-lg text-gray-600 leading-relaxed mb-6">
+                My mission is simple: to empower ordinary people to create highly useful digital tools using Artificial Intelligence. I currently work as a Digital Marketing Executive for a top tech consulting firm in the UK, but my real passion is building.
+              </p>
+              <p class="text-lg text-gray-600 leading-relaxed mb-10">
+                I spent years building digital products long before AI became accessible. My early platforms, like <a href="https://www.sureimports.com" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; font-weight: 700;">Sureimports</a> and <a href="https://play.google.com/store/apps/details?id=com.effiko.effikoapp.effikoapp&amp;hl=en_GB" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; font-weight: 700;">Effiko</a>, taught me how to build tools people actually use, with <a href="https://play.google.com/store/apps/details?id=com.effiko.effikoapp.effikoapp&amp;hl=en_GB" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; font-weight: 700;">Effiko</a> crossing 10,000+ app downloads and 500,000+ yearly Google impressions.<br /><br />
+                Today, I use AI to build even faster. I built <a href="https://linescout.sureimports.com" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; font-weight: 700;">LineScout</a> and the world-class learning platform on this very website entirely by working with AI.<br /><br />
+                This course isn't theory. It is my exact, real-world blueprint showing you how to use AI to turn your ideas into working apps simpler and faster than ever before.
+              </p>
+
+              <div class="grid grid-cols-2 gap-6 pt-6 border-t border-brand-100">
+                <div>
+                  <h4 class="text-3xl font-heading font-extrabold text-brand-900">40k+</h4>
+                  <p class="text-sm text-gray-500 font-medium">Global Users on My Platforms</p>
+                </div>
+                <div>
+                  <h4 class="text-3xl font-heading font-extrabold text-brand-900">500k+</h4>
+                  <p class="text-sm text-gray-500 font-medium">Yearly Organic Impressions</p>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-brand-900 py-24 reveal text-white relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <img src="/assets/PocketBudget%20Logo_reversebkgrd.png" alt="PocketBudget Logo" class="mx-auto mb-8 rounded shadow-lg" />
+          <h2 class="tw-h2 text-white mb-6">The App We Will Build Together</h2>
+          <p class="text-xl text-brand-200 leading-relaxed mb-10 font-light">
+            We don't do boring textbook exercises. Over 4 weeks, you will watch me build, and you will build alongside me, a complete, functional web and mobile application called <strong>PocketBudget™</strong>. It is a secure wallet and expense tracker that handles real data, just like the fintech apps you use every day.
+          </p>
+        </div>
+      </section>
+
+      <section id="curriculum" class="bg-brand-50 py-24 reveal">
         <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div class="mb-16 text-center">
-            <p class="tw-section-label">4-Week Blueprint</p>
-            <h2 class="tw-h2 mb-6">Your path to production.</h2>
+            <p class="tw-section-label">The Blueprint</p>
+            <h2 class="tw-h2 mb-6">4 Weeks to Launch</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              We guide you step-by-step from installing your first code editor to submitting your finished app to the app stores.
+              I will guide you step-by-step through the exact process of bringing an idea out of your head and into the real world.
             </p>
-            <div class="mt-8">
-              <a class="tw-btn-download" href="https://res.cloudinary.com/djprcwnsz/image/upload/fl_attachment:Prompt_to_Profit_Advanced_Curriculum/v1776844204/tochukwunkwocha-site/manual-payments/km4fap0zsrns5nrlzxpd.pdf">
-                <svg class="h-5 w-5 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v11m0 0l4-4m-4 4l-4-4M4 17h16v4H4z" /></svg>
-                <span>Download Curriculum PDF</span>
-              </a>
-            </div>
           </div>
 
-          <div class="relative border-l-2 border-brand-100 ml-4 md:ml-0 space-y-12 pb-8">
+          <div class="relative border-l-2 border-brand-200 ml-4 md:ml-0 space-y-12 pb-8">
             
             <article class="relative pl-8 md:pl-12">
-              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-500 ring-4 ring-white"></div>
+              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-600 ring-4 ring-brand-50"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-2 uppercase">Week 1</p>
-              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">System Setup & Tools Integration</h3>
-              <p class="text-gray-600 leading-relaxed mb-4 text-sm md:text-base">
-                Install professional tools and learn the difference between Git and GitHub. Create the master folders for PocketBudget, initialize your local environment, and set up your Supabase cloud database.
+              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Preparing Your Digital Workshop</h3>
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
+                I will show you how to set up your computer to work like a professional builder's studio. We will organize your project files and create the "Brain" of your app, the secure vault where all user information and data will be safely stored.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">VS Code</span>
-                <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">Codex AI</span>
-                <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">Node.js</span>
-                <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">Git/GitHub</span>
-              </div>
             </article>
 
             <article class="relative pl-8 md:pl-12">
-              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-500 ring-4 ring-white"></div>
+              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-600 ring-4 ring-brand-50"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-2 uppercase">Week 2</p>
-              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Web App Build & Wallet Funding</h3>
-              <p class="text-gray-600 leading-relaxed mb-4 text-sm md:text-base">
-                Prompt Codex to generate your Next.js frontend. Write database tables, enforce Row Level Security, and build an interactive dashboard. Integrate Paystack securely on the web to fund user wallets.
+              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Building the Web Dashboard & Payments</h3>
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
+                This week, we build the beautiful interface people will see on their computers. I will teach you how to create a secure login system and connect a live payment gateway so your app can actually receive money and fund wallets automatically.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Supabase SQL</span>
-                <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">React/Next.js</span>
-                <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Paystack API</span>
-              </div>
             </article>
 
             <article class="relative pl-8 md:pl-12">
-              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-500 ring-4 ring-white"></div>
+              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-600 ring-4 ring-brand-50"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-2 uppercase">Week 3</p>
-              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Mobile App Build & Sync</h3>
-              <p class="text-gray-600 leading-relaxed mb-4 text-sm md:text-base">
-                Create a native companion app for iOS and Android. Connect the mobile UI directly to your existing Supabase backend so data syncs perfectly with the web. Implement the compliant "Top up on web only" rule.
+              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Creating the Mobile Experience</h3>
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
+                We take your project directly to the mobile phone. You will build an app that talks directly to your web dashboard. Whatever actions happen on the phone will show up on the web instantly. You are now building a powerful, syncing system.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">Expo Go</span>
-                <span class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">React Native</span>
-                <span class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">AsyncStorage</span>
-              </div>
             </article>
 
             <article class="relative pl-8 md:pl-12">
-              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-500 ring-4 ring-white"></div>
+              <div class="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-brand-600 ring-4 ring-brand-50"></div>
               <p class="text-brand-600 font-bold tracking-wide text-sm mb-2 uppercase">Week 4</p>
-              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Deployment & App Stores</h3>
-              <p class="text-gray-600 leading-relaxed mb-4 text-sm md:text-base">
-                Stop running on "localhost". Push your code to GitHub to trigger automatic Vercel deployments. Learn how to use EAS CLI to compile mobile binaries (.apk / .ipa) and submit them to Apple and Google.
+              <h3 class="text-2xl font-heading font-bold text-brand-900 mb-3">Launching to the World</h3>
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
+                No more testing in secret. We will take your finished app and put it on a live web link that anyone in the world can visit. I will also show you the exact steps to package your mobile app so it is ready for the Apple and Google Play stores.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Vercel Hosting</span>
-                <span class="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">EAS Build</span>
-                <span class="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">App Store Connect</span>
-              </div>
             </article>
 
           </div>
         </div>
       </section>
 
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 reveal">
-        <div class="rounded-3xl bg-brand-900 p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-xl">
-          <div class="absolute right-0 top-0 w-1/2 h-full bg-[url('/assets/grid.svg')] opacity-10 pointer-events-none"></div>
-          <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-brand-500 rounded-full blur-[100px] opacity-30"></div>
+      <section class="bg-white py-24 border-t border-brand-100 reveal">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-16">
+            <p class="tw-section-label">Real Results</p>
+            <h2 class="tw-h2 mb-6">Hear from my past students</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              See what past students of my basic AI course are saying. Join the first cohort of Prompt to Profit™ Advanced and experience practical AI training explained simply.
+            </p>
+          </div>
           
-          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center relative z-10">
-            <div>
-              <p class="inline-flex items-center gap-2 rounded-full border border-brand-500 bg-brand-800 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-100 mb-6">
-                Financial Flexibility
-              </p>
-              <h2 class="text-3xl font-heading font-extrabold text-white sm:text-4xl mb-6">Pay in installments. Start building today.</h2>
-              <p class="text-lg text-brand-200 leading-relaxed mb-8 font-light">
-                We believe advanced software skills should be accessible. If you'd prefer not to pay the full tuition upfront, use our secure <strong>Installment Wallet</strong>.
-              </p>
-              <ul class="space-y-4 mb-8">
-                <li class="flex items-center gap-3 font-medium text-white">
-                  <div class="h-6 w-6 rounded-full bg-brand-700 flex items-center justify-center shrink-0">
-                    <svg class="h-3.5 w-3.5 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                  Reserve your slot in the next live cohort
-                </li>
-                <li class="flex items-center gap-3 font-medium text-white">
-                  <div class="h-6 w-6 rounded-full bg-brand-700 flex items-center justify-center shrink-0">
-                    <svg class="h-3.5 w-3.5 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                  Pay in flexible parts at your own pace
-                </li>
-              </ul>
-              <a class="tw-btn-primary px-8 !bg-white !text-brand-900 hover:!bg-brand-50" href="/dashboard/?course_slug=prompt-to-production">Open Installment Wallet</a>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-brand-50 p-8 rounded-3xl border border-brand-100 relative">
+              <div class="text-brand-gold mb-4 text-4xl font-serif">"</div>
+              <div class="flex items-center gap-4">
+                <img src="/assets/anuri.JPG" alt="Anuri Okongwu" class="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <h4 class="font-bold text-brand-900">Anuri Okongwu</h4>
+                  <p class="text-xs text-gray-500">Parent of secondary school students</p>
+                </div>
+              </div>
+              <p class="testimonial-body text-gray-700 italic mb-6 mt-6">Your Prompt to Profit class was truly excellent. Your teaching style is clear, practical, and very effective. I initially registered for my two sons who are in secondary school, but since they had exams that week, I attended the class so I could guide them afterward. Thanks to your training, they built their websites in just a few days without any prior knowledge of HTML and CSS, and they are already live. Honestly, I got great value for the money spent, which is why I am confident about continuing.</p>
             </div>
             
-            <div class="mt-12 lg:mt-0 flex justify-center">
-              <div class="bg-brand-800/80 backdrop-blur-sm p-8 rounded-3xl shadow-xl ring-1 ring-white/10 max-w-sm w-full text-center border border-brand-700">
-                <div class="h-16 w-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-1 ring-green-500/30">
-                  <svg class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div class="bg-brand-50 p-8 rounded-3xl border border-brand-100 relative">
+              <div class="text-brand-gold mb-4 text-4xl font-serif">"</div>
+              <div class="flex items-center gap-4">
+                <img src="/assets/marquis.jpeg" alt="Marquis Festus" class="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <h4 class="font-bold text-brand-900">Marquis Festus</h4>
+                  <p class="text-xs text-gray-500">Father of an 8-year old</p>
                 </div>
-                <h3 class="text-xl font-heading font-bold text-white mb-2">Secure & Automated</h3>
-                <p class="text-sm text-brand-200 leading-relaxed">Full access to the advanced repository, course material, and live builds unlocks automatically once your plan hits 100%.</p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white border-y border-brand-100 py-24 reveal">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="lg:grid lg:grid-cols-2 lg:gap-20">
-            <div>
-              <p class="tw-section-label">Prerequisites</p>
-              <h2 class="text-3xl font-heading font-extrabold text-brand-900 mb-6">Who is this for?</h2>
-              <p class="text-gray-600 leading-relaxed mb-8">This is a rigorous program. You do not need to be a software engineer, but you do need to be comfortable using a computer and willing to learn technical interfaces and commands.</p>
-              <div class="space-y-4">
-                <article class="p-6 rounded-2xl border border-brand-100 bg-brand-50 shadow-sm flex gap-4">
-                  <div class="mt-1 shrink-0 text-brand-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  </div>
-                  <div>
-                    <h3 class="font-bold text-brand-900 mb-1"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline" /> Graduates</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">You built your first simple site in the beginner course and are hungry to build complex, data-driven applications.</p>
-                  </div>
-                </article>
-                <article class="p-6 rounded-2xl border border-brand-100 bg-brand-50 shadow-sm flex gap-4">
-                  <div class="mt-1 shrink-0 text-brand-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  </div>
-                  <div>
-                    <h3 class="font-bold text-brand-900 mb-1">Non-Technical Founders</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">You have an idea for a software tool or SaaS and want to build the Minimum Viable Product (MVP) yourself.</p>
-                  </div>
-                </article>
-              </div>
+              <p class="testimonial-body text-gray-700 italic mb-6 mt-6">My daughter is 8 years old. Last month, she built a landing page for her dream fashion business. She built it using what she picked up from Nkwocha Tochukwu's Prompt to Profit class, a course designed to teach complete beginners how to build landing pages and websites using ChatGPT. No coding. No prior experience. She followed along and by the end, she had a live page for a business she made up, with a name, a description, and a call to action. The proof that a course works is not in the certificate. It is in what the student builds when the class ends.</p>
             </div>
 
-            <div class="mt-16 lg:mt-0">
-              <p class="tw-section-label">Course Delivery</p>
-              <h2 class="text-3xl font-heading font-extrabold text-brand-900 mb-6">How it works</h2>
-              <div class="space-y-8 mt-8">
-                <div class="flex gap-4">
-                  <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 font-bold font-mono">1</div>
-                  <div>
-                    <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Weekday Video Modules</h3>
-                    <p class="text-gray-600 leading-relaxed text-sm">High-quality, recorded tutorials dropped during the week. Watch, pause, and practice git commands or prompting at your own pace.</p>
-                  </div>
-                </div>
-                <div class="flex gap-4">
-                  <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 font-bold font-mono">2</div>
-                  <div>
-                    <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Weekend Live Builds</h3>
-                    <p class="text-gray-600 leading-relaxed text-sm">Live group sessions where we tackle complex integrations (like Paystack wallets or EAS mobile builds), review student code, and debug together in real-time.</p>
-                  </div>
-                </div>
-                <div class="flex gap-4">
-                  <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 font-bold font-mono">3</div>
-                  <div>
-                    <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">1-Year Access</h3>
-                    <p class="text-gray-600 leading-relaxed text-sm">You retain access to all recordings, prompt libraries, and architecture blueprints so you can reference them whenever you build future projects.</p>
-                  </div>
+            <div class="bg-brand-50 p-8 rounded-3xl border border-brand-100 relative">
+              <div class="text-brand-gold mb-4 text-4xl font-serif">"</div>
+              <div class="flex items-center gap-4">
+                <img src="/assets/ekpere.JPG" alt="Ekpereamaka Blessings" class="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <h4 class="font-bold text-brand-900">Ekpereamaka Blessings</h4>
+                  <p class="text-xs text-gray-500">Beginner Student, Batch 1</p>
                 </div>
               </div>
+              <p class="testimonial-body text-gray-700 italic mb-6 mt-6">Honestly I want to say a big thank you to our outstanding coach @⁨Tochukwu Nkwocha⁩. It's been an amazing week with the prompt to profit rehearsal. I just built a website for my company for $100 and my boss was impressed. I had more offers from his two friends but Electricity wahala in Nigeria is really frustrating.</p>
             </div>
           </div>
         </div>
@@ -522,37 +415,124 @@
       <section id="faq" class="bg-brand-50 py-24 reveal">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div class="mb-12 text-center">
-            <p class="tw-section-label">FAQ</p>
-            <h2 class="tw-h2">Questions about the advanced program</h2>
+            <p class="tw-section-label">Got Questions?</p>
+            <h2 class="tw-h2">Everything you need to know</h2>
           </div>
-          <div class="faq-wrap">
-            <article class="faq-item">
-              <button class="faq-question" type="button">Do I need to take Prompt to Profit first?</button>
-              <div class="faq-answer"><p>If you have never used AI to build a simple webpage, we highly recommend taking Prompt to Profit first. This advanced course assumes you are ready to learn complex tools like VS Code, Terminal commands, and Database structures.</p></div>
+          
+          <div class="space-y-4">
+            
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                I am completely non-techy. Can I really take this course?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>Yes, absolutely. You do not need a background in computer science or programming to succeed here. If you know how to use a web browser and can follow simple step-by-step instructions, I will teach you the rest. We use AI to do the heavy lifting of writing the complex code.</p>
+              </div>
             </article>
-            <article class="faq-item">
-              <button class="faq-question" type="button">Will this teach me how to write code manually?</button>
-              <div class="faq-answer"><p>No. This course teaches you how to act as a "Technical Director." You will learn how to read code structure, navigate a professional Git/GitHub environment, and prompt an AI extension (like Codex) to write and fix the actual syntax.</p></div>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                How are the classes delivered?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>This program is a hybrid model designed for flexibility. You will get high-quality, pre-recorded lessons that you can watch at your own pace inside your learning account. In addition to that, we will have 4 live weekend classes via Zoom where we build together, review progress, and tackle complex setups.</p>
+              </div>
             </article>
-            <article class="faq-item">
-              <button class="faq-question" type="button">What kind of computer do I need?</button>
-              <div class="faq-answer"><p>Any standard Mac or Windows PC from the last few years will work perfectly. You simply need to be able to install VS Code, Node.js, and have a stable internet connection. We use cloud services (Vercel, Expo EAS) to avoid heavy processing on your laptop.</p></div>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                What if I miss a live class?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>Don't worry, all live sessions are recorded and instantly made available inside your learning management system, so you can catch up anytime.</p>
+              </div>
             </article>
-            <article class="faq-item">
-              <button class="faq-question" type="button">Do I need an Apple Developer Account?</button>
-              <div class="faq-answer"><p>To build the iOS app in Week 4, you can test it on your own phone using the free Expo Go app. However, if you wish to officially submit the compiled .ipa file to the Apple App Store, Apple requires a paid developer account ($99/year).</p></div>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                How long do I have access to the course materials?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>You get full access to all pre-recorded lessons, live class recordings, and course materials for one full year after the program ends. You can always come back, log into your account, and review the blueprint whenever you are building your next big project.</p>
+              </div>
             </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                What happens right after I pay or start my installment plan?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>The moment you complete your payment or start your installment plan, your secure learning account is instantly created and accessible. However, to ensure no one is left behind, the actual course videos and materials will remain locked until our official start date on May 30th.</p>
+              </div>
+            </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                What can I do with this skill if I don't want a regular job?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>Becoming a Digital Builder gives you incredible freedom. You can start a highly profitable side hustle building custom apps for local businesses (like inventory trackers for supermarkets or booking systems for salons). You can launch your own tech startup without paying an agency millions of Naira, or you can work as a highly-paid freelance consultant from anywhere in the world.</p>
+              </div>
+            </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                What if I get stuck or have questions during the course?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>You are never building alone. You can ask questions directly during our live Zoom classes, submit support questions privately right inside your learning dashboard, or post on our active student discussion board where I and your fellow builders will be there to help you out.</p>
+              </div>
+            </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                What kind of computer or laptop do I need?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>You do not need an expensive, high-end "gaming" or "developer" laptop. Any standard Mac or Windows PC from the last few years will work perfectly. As long as you have a stable internet connection and a modern web browser, you have everything you need to build.</p>
+              </div>
+            </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="group flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg hover:text-brand-700" role="button" tabindex="0" aria-expanded="false">
+                Is the course accessible for hearing-impaired students?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>Absolutely. Every pre-recorded video comes with clear captions. Additionally, you can request full text transcripts of the lessons to ensure you have a comfortable and complete learning experience.</p>
+              </div>
+            </article>
+
+            <article class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+              <h3 class="flex w-full cursor-pointer items-center text-left font-heading font-bold text-brand-900 text-lg" role="button" tabindex="0" aria-expanded="false">
+                Will I get a certificate?
+              </h3>
+              <div class="mt-4 hidden text-gray-600 leading-relaxed">
+                <p>Yes! Once you complete the 4-week program, you will receive a verified certificate of completion. It is a great asset to showcase your new capabilities to potential clients, partners, or employers.</p>
+              </div>
+            </article>
+
           </div>
         </div>
       </section>
 
-      <section class="bg-white py-24 text-center reveal border-b border-brand-100">
+      <section class="py-24 bg-brand-900 text-center reveal border-t border-brand-800">
         <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-brand-900 sm:text-5xl mb-6">Ready to compile real software?</h2>
-          <p class="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">Stop waiting for a technical co-founder. Learn to command the editor and AI tools to build and deploy your ideas yourself.</p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a class="tw-btn-primary px-8 text-lg" href="/enrol-prompt-to-production/">Enrol in Prompt to Profit Advanced</a>
-            <a class="tw-btn-outline px-8 text-lg" href="/dashboard/?course_slug=prompt-to-production">Start Installment Plan</a>
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl mb-6">Class Starts May 30th.</h2>
+          <p class="text-lg text-brand-200 mb-10 max-w-2xl mx-auto font-light">Join the hundreds of people I have already trained. Whether you want to pay in full or use the flexible installment wallet, your journey as a Digital Builder starts here.</p>
+          
+          <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 max-w-2xl mx-auto flex flex-col sm:flex-row gap-6 justify-center">
+            <div class="flex-1 text-left sm:border-r border-white/10 sm:pr-6">
+              <h4 class="text-white font-bold text-xl mb-2">Pay in Full</h4>
+              <p class="text-2xl font-heading font-extrabold text-brand-gold mb-2">₦150,000</p>
+              <p class="text-sm text-brand-200 mb-4">Get instant access to your learning account and secure your spot.</p>
+              <a class="tw-btn-primary w-full !bg-brand-gold !text-brand-900 hover:!bg-yellow-400" href="/enrol-prompt-to-production/">Enrol Now</a>
+            </div>
+            <div class="flex-1 text-left sm:pl-6">
+              <h4 class="text-white font-bold text-xl mb-2">Installment Wallet</h4>
+              <p class="text-2xl font-heading font-extrabold text-brand-gold mb-2">₦165,000</p>
+              <p class="text-sm text-brand-200 mb-4">Pay at your own pace. Access unlocks when you reach 100%.</p>
+              <a class="inline-flex w-full items-center justify-center rounded-xl bg-white/10 px-6 py-4 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-white/20 transition-all hover:bg-white/20" href="/dashboard/?course_slug=prompt-to-production">Start Installment Plan</a>
+            </div>
           </div>
         </div>
       </section>
@@ -569,7 +549,7 @@
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
           <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
+          <a href="/privacy-policy">Privacy</a>
           <a href="/terms-and-conditions">Terms</a>
           <a href="/contact">Contact</a>
         </nav>
@@ -579,5 +559,71 @@
 
     <script src="/assets/site.js"></script>
     <script src="/assets/recaptcha.js"></script>
+    <script>
+      (function initTestimonialClamp() {
+        var testimonials = document.querySelectorAll(".testimonial-body");
+        testimonials.forEach(function (body) {
+          body.classList.add("testimonial-body--clamped");
+          if (body.scrollHeight <= body.clientHeight + 1) {
+            body.classList.remove("testimonial-body--clamped");
+            return;
+          }
+          var toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "testimonial-toggle";
+          toggle.textContent = "Read more";
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.addEventListener("click", function () {
+            var expanded = body.classList.toggle("testimonial-body--clamped") === false;
+            toggle.textContent = expanded ? "Read less" : "Read more";
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+          });
+          body.insertAdjacentElement("afterend", toggle);
+        });
+      })();
+    </script>
+    <script>
+      (function initFaqAccordion() {
+        var faq = document.getElementById("faq");
+        if (!faq) return;
+        var items = faq.querySelectorAll("article");
+
+        function closeAll() {
+          items.forEach(function (item) {
+            var question = item.querySelector("h3[role='button']");
+            var answer = question ? question.nextElementSibling : null;
+            if (!question || !answer) return;
+            question.setAttribute("aria-expanded", "false");
+            answer.classList.add("hidden");
+          });
+        }
+
+        function toggleItem(item) {
+          var question = item.querySelector("h3[role='button']");
+          var answer = question ? question.nextElementSibling : null;
+          if (!question || !answer) return;
+          var isOpen = question.getAttribute("aria-expanded") === "true";
+          closeAll();
+          if (!isOpen) {
+            question.setAttribute("aria-expanded", "true");
+            answer.classList.remove("hidden");
+          }
+        }
+
+        items.forEach(function (item) {
+          var question = item.querySelector("h3[role='button']");
+          if (!question) return;
+          question.addEventListener("click", function () {
+            toggleItem(item);
+          });
+          question.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggleItem(item);
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
