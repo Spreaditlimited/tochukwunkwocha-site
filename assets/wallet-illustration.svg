@@ -1,0 +1,51 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="1060" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14213D"/>
+      <stop offset="1" stop-color="#22345F"/>
+    </linearGradient>
+    <linearGradient id="wallet" x1="320" y1="280" x2="900" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F7A8C"/>
+      <stop offset="1" stop-color="#145A66"/>
+    </linearGradient>
+    <linearGradient id="flap" x1="330" y1="250" x2="880" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2FA7BC"/>
+      <stop offset="1" stop-color="#1F7A8C"/>
+    </linearGradient>
+    <linearGradient id="card" x1="430" y1="400" x2="760" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <filter id="shadow" x="210" y="170" width="820" height="600" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="24"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.028 0 0 0 0 0.082 0 0 0 0 0.18 0 0 0 0.35 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" rx="48" fill="url(#bg)"/>
+
+  <circle cx="980" cy="180" r="140" fill="#60A5FA" fill-opacity="0.15"/>
+  <circle cx="250" cy="780" r="170" fill="#22D3EE" fill-opacity="0.12"/>
+
+  <g filter="url(#shadow)">
+    <rect x="290" y="300" width="620" height="390" rx="48" fill="url(#wallet)"/>
+    <path d="M320 300C320 273.49 341.49 252 368 252H800C852.467 252 895 294.533 895 347V430H368C341.49 430 320 408.51 320 382V300Z" fill="url(#flap)"/>
+
+    <rect x="420" y="382" width="360" height="210" rx="20" fill="url(#card)"/>
+    <rect x="455" y="430" width="210" height="20" rx="10" fill="#94A3B8" fill-opacity="0.45"/>
+    <rect x="455" y="468" width="160" height="16" rx="8" fill="#94A3B8" fill-opacity="0.35"/>
+    <rect x="455" y="507" width="110" height="16" rx="8" fill="#94A3B8" fill-opacity="0.28"/>
+
+    <circle cx="815" cy="505" r="34" fill="#FBBF24"/>
+    <circle cx="852" cy="505" r="34" fill="#F59E0B" fill-opacity="0.9"/>
+
+    <rect x="742" y="316" width="126" height="72" rx="18" fill="#0F172A" fill-opacity="0.26"/>
+    <circle cx="806" cy="352" r="14" fill="#F8FAFC" fill-opacity="0.92"/>
+  </g>
+</svg>
