@@ -664,29 +664,100 @@
         </div>
       </section>
 
-      <section id="faq" class="reveal" style="background: transparent; border-top: 0; border-bottom: 0; padding: 96px 0;">
+      <section id="faq" class="section reveal" style="background: transparent; border-top: 0; border-bottom: 0; padding: 96px 0;">
         <div style="max-width: 48rem; margin: 0 auto; padding: 0 24px;">
           <div style="margin-bottom: 48px; text-align: center;">
-            <p class="section-label" style="margin-bottom: 16px;">FAQ</p>
-            <h2 class="section-headline" style="max-width: 100%; margin-left: auto; margin-right: auto;">Questions about the program</h2>
+            <p class="section-label" style="margin-bottom: 16px;">Got Questions?</p>
+            <h2 class="section-headline" style="max-width: 100%; margin-left: auto; margin-right: auto;">Everything you need to know</h2>
           </div>
           <div class="faq-wrap">
             <article class="faq-item">
-              <button class="faq-question" type="button">Do I need to know how to code?</button>
-              <div class="faq-answer">
-                <p>Not at all! This course is for absolute beginners. We use AI to do the heavy lifting for us.</p>
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>I am completely non-techy. Can I really take this course?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>Yes, absolutely. You do not need a background in computer science or programming to succeed here. If you know how to use a web browser and can follow simple step-by-step instructions, I will teach you the rest. We use AI to do the heavy lifting of writing the complex code.</p>
               </div>
             </article>
+
             <article class="faq-item">
-              <button class="faq-question" type="button">What if I get stuck or make a mistake?</button>
-              <div class="faq-answer">
-                <p>That's what the live calls are for! Plus, I will teach you a secret trick on how to ask AI to find and fix your mistakes for you.</p>
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>How are the classes delivered?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>This program is a hybrid model designed for flexibility. You will get high-quality, pre-recorded lessons that you can watch at your own pace inside your learning account. In addition to that, we will have 2 live classes via Zoom where I demonstrate how this works and also help you solve any issues you may have.</p>
               </div>
             </article>
+
             <article class="faq-item">
-              <button class="faq-question" type="button">Am I too old to learn this?</button>
-              <div class="faq-answer">
-                <p>Absolutely not. If you know how to send an email or use WhatsApp, you have all the technical skills you need to start this course.</p>
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>What if I miss a live class?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>Don't worry, all live sessions are recorded and instantly made available inside your learning management system, so you can catch up anytime.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>How long do I have access to the course materials?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>You get full access to all pre-recorded lessons, live class recordings, and course materials for one full year after the program ends. You can always come back, log into your account, and review the lessons whenever you are building your next website or tool.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>What happens right after I pay or start my installment plan?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>The moment you complete your payment or start your installment plan, your secure learning account is instantly created and accessible. However, to ensure no one is left behind, the actual course videos and materials will remain locked until our official start date on May 25th.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>What if I get stuck or have questions during the course?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>You are never building alone. You can ask questions directly during our live Zoom classes, submit support questions privately right inside your learning dashboard, or post on our active student discussion board where I and your fellow builders will be there to help you out.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>What kind of computer or laptop do I need?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>You do not need an expensive, high-end "gaming" or "developer" laptop. Any standard Mac or Windows PC from the last few years will work perfectly. As long as you have a stable internet connection and a modern web browser, you have everything you need to build.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>Is the course accessible for hearing-impaired students?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>Absolutely. Every pre-recorded video comes with clear captions. Additionally, you can request full text transcripts of the lessons to ensure you have a comfortable and complete learning experience.</p>
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>Will I get a certificate?</span>
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                <p>Yes! Once you complete the 5-day program and submit link to the website or digital tool you build, you will receive a verified certificate of completion. It is a great asset to showcase your new capabilities to potential clients, partners, or employers.</p>
               </div>
             </article>
           </div>
@@ -748,6 +819,44 @@
             toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
           });
           body.insertAdjacentElement("afterend", toggle);
+        });
+      })();
+
+      (function initFaqAccordion() {
+        var faq = document.getElementById("faq");
+        if (!faq) return;
+        var items = faq.querySelectorAll(".faq-item");
+
+        function closeAll() {
+          items.forEach(function (item) {
+            var q = item.querySelector(".faq-question");
+            var a = item.querySelector(".faq-answer");
+            var icon = q ? q.querySelector("span:last-child") : null;
+            if (!q || !a) return;
+            q.setAttribute("aria-expanded", "false");
+            a.hidden = true;
+            if (icon) icon.textContent = "+";
+          });
+        }
+
+        function toggle(item) {
+          var q = item.querySelector(".faq-question");
+          var a = item.querySelector(".faq-answer");
+          var icon = q ? q.querySelector("span:last-child") : null;
+          if (!q || !a) return;
+          var isOpen = q.getAttribute("aria-expanded") === "true";
+          closeAll();
+          if (!isOpen) {
+            q.setAttribute("aria-expanded", "true");
+            a.hidden = false;
+            if (icon) icon.textContent = "−";
+          }
+        }
+
+        items.forEach(function (item) {
+          var q = item.querySelector(".faq-question");
+          if (!q) return;
+          q.addEventListener("click", function () { toggle(item); });
         });
       })();
     </script>
