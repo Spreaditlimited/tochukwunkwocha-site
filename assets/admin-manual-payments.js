@@ -2509,6 +2509,7 @@
       const payload = {
         firstName: String((addStudentForm.firstName && addStudentForm.firstName.value) || "").trim(),
         email: String((addStudentForm.email && addStudentForm.email.value) || "").trim(),
+        phone: String((addStudentForm.phone && addStudentForm.phone.value) || "").trim(),
         country: String((addStudentForm.country && addStudentForm.country.value) || "").trim(),
         batchKey: String((addStudentForm.batchKey && addStudentForm.batchKey.value) || "").trim(),
         hasDiscount: hasAddStudentDiscount(),
@@ -2518,9 +2519,9 @@
         proofPublicId: "",
       };
 
-      if (!payload.firstName || !payload.email) {
+      if (!payload.firstName || !payload.email || !payload.phone) {
         if (addStudentError) {
-          addStudentError.textContent = "Full Name and email are required.";
+          addStudentError.textContent = "Full Name, email, and phone number are required.";
           addStudentError.classList.remove("hidden");
         }
         return;

@@ -8,6 +8,7 @@ const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
+const { normalizePhoneE164 } = require("./_lib/whatsapp");
 const { sendMetaPurchase } = require("./_lib/meta");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
@@ -75,6 +76,8 @@ exports.handler = async function (event) {
 
   const firstName = String(body.firstName || "").trim().slice(0, 160);
   const email = normalizeEmail(body.email);
+  const phoneRaw = String(body.phone || "").trim().slice(0, 40);
+  const phone = normalizePhoneE164(phoneRaw);
   const country = String(body.country || "").trim().slice(0, 120);
   const adminNote = String(body.adminNote || "").trim().slice(0, 500);
   const proofUrl = String(body.proofUrl || "").trim();
@@ -84,8 +87,8 @@ exports.handler = async function (event) {
     body && (body.hasDiscount === true || String(body.hasDiscount || "").trim().toLowerCase() === "yes");
   const couponCode = normalizeCouponCode(body && body.couponCode);
 
-  if (!firstName || !email) {
-    return json(400, { ok: false, error: "Full Name and valid email are required" });
+  if (!firstName || !email || !phone) {
+    return json(400, { ok: false, error: "Full Name, valid email, and valid phone number are required" });
   }
   if (hasDiscount && !couponCode) {
     return json(400, { ok: false, error: "Select a valid discount code." });
@@ -213,6 +216,7 @@ exports.handler = async function (event) {
       batchLabel: batch ? batch.batch_label : "Immediate Access",
       firstName,
       email,
+      phone,
       country,
       currency,
       amountMinor: pricing.finalAmountMinor,
@@ -322,7 +326,24 @@ exports.handler = async function (event) {
       }
     }
 
-    const synced = await syncBrevoSubscriber({ fullName: firstName, email, listId: batch ? (batch.brevo_list_id || null) : null });
+    if (account && Number(account.id) > 0) {
+      await pool.query(
+        `UPDATE student_accounts
+         SET phone_e164 = ?, updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [phone, nowSql(), Number(account.id)]
+      ).catch(function () {
+        return null;
+      });
+    }
+
+    const synced = await syncBrevoSubscriber({
+      fullName: firstName,
+      email,
+      listId: batch ? (batch.brevo_list_id || null) : null,
+      phone,
+    });
     if (synced.ok) {
       await markMainSynced(pool, paymentUuid);
     }
