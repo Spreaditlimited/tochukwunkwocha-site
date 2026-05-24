@@ -711,9 +711,10 @@
     setMsg(authMsg, "", "");
     const fullName = String((signUpForm && signUpForm.fullName && signUpForm.fullName.value) || "").trim();
     const email = String((signUpForm && signUpForm.email && signUpForm.email.value) || "").trim();
+    const phone = String((signUpForm && signUpForm.phone && signUpForm.phone.value) || "").trim();
     const password = String((signUpForm && signUpForm.password && signUpForm.password.value) || "");
-    if (!fullName || !email || password.length < 8) {
-      setMsg(authMsg, "Full Name, email and password (8+ chars) are required.", "error");
+    if (!fullName || !email || !phone || password.length < 8) {
+      setMsg(authMsg, "Full Name, email, WhatsApp number, and password (8+ chars) are required.", "error");
       return;
     }
 
@@ -723,7 +724,7 @@
       await api("/.netlify/functions/user-auth-register", {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName, email, phone, password }),
       });
       setWalletState(true);
       setMsg(authMsg, "Account created. Signed in.", "ok");

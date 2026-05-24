@@ -39,8 +39,15 @@ exports.handler = async function (event) {
 
     const target = Number(plan.target_amount_minor || 0);
     const paid = Number(plan.total_paid_minor || 0);
+    const accountPhone = String(session.account && session.account.phone || "").trim();
     if (!Number.isFinite(target) || target <= 0) {
       return json(400, { ok: false, error: "Target amount is not configured for this plan" });
+    }
+    if (!accountPhone) {
+      return json(400, {
+        ok: false,
+        error: "Add your WhatsApp phone number in your profile before completing enrolment.",
+      });
     }
     if (paid < target) {
       return json(400, { ok: false, error: "Target amount not yet completed" });
@@ -50,13 +57,14 @@ exports.handler = async function (event) {
     const now = nowSql();
     await pool.query(
       `INSERT INTO course_orders
-       (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label, paid_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?)`,
+       (order_uuid, course_slug, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label, paid_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?)`,
       [
         orderUuid,
         plan.course_slug,
         session.account.fullName,
         session.account.email,
+        accountPhone,
         null,
         plan.currency || "NGN",
         target,

@@ -309,6 +309,7 @@ function hashPassword(password, salt) {
 async function createStudentAccount(pool, input) {
   const fullName = String(input.fullName || "").trim().slice(0, 180);
   const email = normalizeEmail(input.email);
+  const phoneE164 = clean(input && input.phoneE164, 20);
   const password = String(input.password || "");
   if (!fullName || !email || password.length < 8) throw new Error("Full Name, valid email, and password (8+ chars) are required");
 
@@ -320,9 +321,9 @@ async function createStudentAccount(pool, input) {
 
   await pool.query(
     `INSERT INTO student_accounts
-      (account_uuid, full_name, email, password_hash, password_salt, must_reset_password, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [accountUuid, fullName, email, hash, salt, mustReset, now, now]
+      (account_uuid, full_name, email, phone_e164, password_hash, password_salt, must_reset_password, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [accountUuid, fullName, email, phoneE164 || null, hash, salt, mustReset, now, now]
   );
 
   const [rows] = await pool.query(

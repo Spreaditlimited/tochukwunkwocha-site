@@ -1,5 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
+const { normalizePhoneE164 } = require("./_lib/whatsapp");
 const {
   ensureStudentAuthTables,
   createStudentAccount,
@@ -16,6 +17,10 @@ exports.handler = async function (event) {
   } catch (_error) {
     return json(400, { ok: false, error: "Invalid JSON body" });
   }
+  const phone = normalizePhoneE164(body && body.phone);
+  if (!phone) {
+    return json(400, { ok: false, error: "A valid WhatsApp phone number is required." });
+  }
 
   const pool = getPool();
   try {
@@ -23,6 +28,7 @@ exports.handler = async function (event) {
     const account = await createStudentAccount(pool, {
       fullName: body.fullName,
       email: body.email,
+      phoneE164: phone,
       password: body.password,
     });
     if (!account) throw new Error("Could not create user account");

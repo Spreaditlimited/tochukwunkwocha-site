@@ -16,6 +16,14 @@ function isMissingPhoneColumnError(error) {
   return message.indexOf("phone") !== -1 && (code === "ER_BAD_FIELD_ERROR" || message.indexOf("unknown column") !== -1);
 }
 
+function isMissingStudentAccountLookupError(error) {
+  const code = String(error && error.code || "").toUpperCase();
+  const message = String(error && error.message || "").toLowerCase();
+  if (code === "ER_NO_SUCH_TABLE") return true;
+  if (code === "ER_BAD_FIELD_ERROR") return true;
+  return message.indexOf("student_accounts") !== -1 && message.indexOf("doesn't exist") !== -1;
+}
+
 async function queryQueueWithPhoneFallback(pool, sql, params) {
   try {
     return await pool.query(sql, params);
@@ -530,8 +538,47 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
     };
   });
 
-  return manualItems
-    .concat(orderItems)
+  const items = manualItems.concat(orderItems);
+  const phoneLookupEmails = Array.from(
+    new Set(
+      items
+        .filter(function (row) {
+          return !String(row && row.phone || "").trim() && String(row && row.email || "").trim();
+        })
+        .map(function (row) {
+          return String(row.email || "").trim().toLowerCase();
+        })
+    )
+  );
+
+  if (phoneLookupEmails.length) {
+    try {
+      const placeholders = phoneLookupEmails.map(function () { return "?"; }).join(", ");
+      const [phoneRows] = await pool.query(
+        `SELECT LOWER(email) AS email_key, phone_e164
+         FROM student_accounts
+         WHERE LOWER(email) IN (${placeholders})
+           AND phone_e164 IS NOT NULL
+           AND phone_e164 <> ''`,
+        phoneLookupEmails
+      );
+      const phoneByEmail = new Map(
+        (phoneRows || []).map(function (row) {
+          return [String(row.email_key || "").trim().toLowerCase(), String(row.phone_e164 || "").trim()];
+        })
+      );
+      items.forEach(function (row) {
+        if (String(row && row.phone || "").trim()) return;
+        const emailKey = String(row && row.email || "").trim().toLowerCase();
+        const fallbackPhone = phoneByEmail.get(emailKey);
+        if (fallbackPhone) row.phone = fallbackPhone;
+      });
+    } catch (error) {
+      if (!isMissingStudentAccountLookupError(error)) throw error;
+    }
+  }
+
+  return items
     .sort(function (a, b) {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     })
