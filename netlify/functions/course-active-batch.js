@@ -35,6 +35,7 @@ exports.handler = async function (event) {
       ? "immediate"
       : "batch";
     const enabledPaymentMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods);
+    const isEnrollmentLocked = Number(learningCourse && learningCourse.is_enrollment_locked || 0) === 1;
 
     if (enrollmentMode === "immediate") {
       const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
@@ -48,6 +49,7 @@ exports.handler = async function (event) {
       return json(200, {
         ok: true,
         courseSlug,
+        isEnrollmentLocked,
         enabledPaymentMethods,
         coursePricing: {
           priceNgnMinor: Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : 0,
@@ -71,6 +73,7 @@ exports.handler = async function (event) {
     return json(200, {
       ok: true,
       courseSlug,
+      isEnrollmentLocked,
       enabledPaymentMethods,
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),

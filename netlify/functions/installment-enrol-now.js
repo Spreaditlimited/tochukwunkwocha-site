@@ -5,6 +5,7 @@ const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/stude
 const { ensureInstallmentTables, findPlanByUuidForAccount, markPlanEnrolled } = require("./_lib/installments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { resolveCourseBatch } = require("./_lib/batch-store");
+const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { syncBrevoSubscriber } = require("./_lib/brevo");
 const { sendMetaPurchase } = require("./_lib/meta");
 const { recordCouponRedemption } = require("./_lib/coupons");
@@ -27,12 +28,18 @@ exports.handler = async function (event) {
     await ensureStudentAuthTables(pool);
     await ensureInstallmentTables(pool);
     await ensureCourseOrdersBatchColumns(pool);
+    await ensureLearningTables(pool);
 
     const session = await requireStudentSession(pool, event);
     if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
     const plan = await findPlanByUuidForAccount(pool, { planUuid, accountId: session.account.id });
     if (!plan) return json(404, { ok: false, error: "Plan not found" });
+    const learningCourse = await findLearningCourseBySlug(pool, plan.course_slug);
+    if (!learningCourse) return json(400, { ok: false, error: "Unknown course. Please contact support." });
+    if (Number(learningCourse.is_enrollment_locked || 0) === 1) {
+      return json(409, { ok: false, error: "Enrollment is currently locked for this course." });
+    }
     if (String(plan.status || "").toLowerCase() === "enrolled") {
       return json(200, { ok: true, alreadyEnrolled: true, orderUuid: plan.enrolled_order_uuid || null });
     }

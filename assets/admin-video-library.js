@@ -26,6 +26,7 @@
   var coursePaystackEnabledInput = document.getElementById("coursePaystackEnabledInput");
   var coursePaypalEnabledInput = document.getElementById("coursePaypalEnabledInput");
   var courseManualEnabledInput = document.getElementById("courseManualEnabledInput");
+  var courseEnrollmentLockedInput = document.getElementById("courseEnrollmentLockedInput");
   if (coursePaypalEnabledInput) {
     coursePaypalEnabledInput.checked = false;
     coursePaypalEnabledInput.disabled = true;
@@ -519,18 +520,36 @@
         var selected = key === String(row.batch_key || "").trim().toLowerCase() ? " selected" : "";
         batchOptions.push('<option value="' + escapeHtml(key) + '"' + selected + ">" + escapeHtml(label) + "</option>");
       });
+      var readableTime = accessMode === "immediate"
+        ? "Immediate access enabled"
+        : formatDripAt12Hour(row.drip_at || "");
       return [
-        '<div class="grid gap-2 sm:grid-cols-12" data-drip-schedule-index="' + String(index) + '">',
-        '<div class="sm:col-span-5"><select data-drip-field="batch_key" class="premium-picker bg-white">' + batchOptions.join("") + '</select></div>',
+        '<div class="min-w-[60rem] grid gap-2 sm:grid-cols-12" data-drip-schedule-index="' + String(index) + '">',
+        '<div class="sm:col-span-4"><select data-drip-field="batch_key" class="premium-picker bg-white">' + batchOptions.join("") + '</select></div>',
         '<label class="sm:col-span-3 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700">',
         '<input data-drip-field="is_immediate" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-brand-600"' + immediateChecked + " />",
         "Immediate access",
         "</label>",
-        '<div class="sm:col-span-3"><input data-drip-field="drip_at" type="datetime-local" value="' + escapeHtml(toDatetimeLocalValue(row.drip_at || "")) + '" class="' + dripClasses + '"' + dripDisabled + " /></div>",
+        '<div class="sm:col-span-4"><input data-drip-field="drip_at" type="datetime-local" value="' + escapeHtml(toDatetimeLocalValue(row.drip_at || "")) + '" class="' + dripClasses + '"' + dripDisabled + ' /><p class="mt-1 text-[11px] text-gray-500" data-drip-time-preview>' + escapeHtml(readableTime) + "</p></div>",
         '<div class="sm:col-span-1"><button type="button" data-remove-drip-row="' + String(index) + '" class="w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">X</button></div>',
         "</div>",
       ].join("");
     }).join("");
+  }
+
+  function formatDripAt12Hour(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return "No drip time selected";
+    var normalized = raw.replace(" ", "T");
+    if (normalized.length === 16) normalized += ":00";
+    var date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return "Time unavailable";
+    var h = date.getHours();
+    var m = date.getMinutes();
+    var ampm = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return "Opens at " + h12 + ":" + String(m).padStart(2, "0") + " " + ampm;
   }
 
   function collectModuleDripSchedulesFromForm() {
@@ -592,6 +611,7 @@
       if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = true;
       if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
       if (courseManualEnabledInput) courseManualEnabledInput.checked = true;
+      if (courseEnrollmentLockedInput) courseEnrollmentLockedInput.checked = false;
       return;
     }
     if (courseSlugInput) courseSlugInput.value = String(course.course_slug || "");
@@ -613,6 +633,7 @@
     if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = enabled.indexOf("paystack") !== -1;
     if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
     if (courseManualEnabledInput) courseManualEnabledInput.checked = enabled.indexOf("manual_transfer") !== -1;
+    if (courseEnrollmentLockedInput) courseEnrollmentLockedInput.checked = Number(course.is_enrollment_locked || 0) === 1;
   }
 
   function renderModuleSelect() {
@@ -1687,6 +1708,11 @@
     moduleDripScheduleRows.addEventListener("change", function (event) {
       var target = event.target;
       if (!(target instanceof Element)) return;
+      var dripAtInput = target.closest('[data-drip-field="drip_at"]');
+      if (dripAtInput) {
+        var dripPreview = dripAtInput.parentElement ? dripAtInput.parentElement.querySelector("[data-drip-time-preview]") : null;
+        if (dripPreview) dripPreview.textContent = formatDripAt12Hour(dripAtInput.value || "");
+      }
       var immediateInput = target.closest('[data-drip-field="is_immediate"]');
       if (!immediateInput) return;
       var row = immediateInput.closest("[data-drip-schedule-index]");
@@ -1699,6 +1725,12 @@
         dateInput.classList.add("bg-gray-100", "text-gray-500");
       } else {
         dateInput.classList.remove("bg-gray-100", "text-gray-500");
+      }
+      var preview = row.querySelector("[data-drip-time-preview]");
+      if (preview) {
+        preview.textContent = isImmediate
+          ? "Immediate access enabled"
+          : formatDripAt12Hour(dateInput.value || "");
       }
     });
 
@@ -1755,6 +1787,7 @@
         course_title: titleInput,
         course_description: courseDescriptionInput ? String(courseDescriptionInput.value || "").trim() : "",
         is_published: courseIsPublishedInput ? Boolean(courseIsPublishedInput.checked) : false,
+        is_enrollment_locked: courseEnrollmentLockedInput ? Boolean(courseEnrollmentLockedInput.checked) : false,
         release_at: courseReleaseAtInput ? String(courseReleaseAtInput.value || "").trim() : "",
         enrollment_mode: courseEnrollmentModeInput ? String(courseEnrollmentModeInput.value || "batch").trim().toLowerCase() : "batch",
         price_ngn_minor: ngnValue !== ""

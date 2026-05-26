@@ -33,6 +33,7 @@ exports.handler = async function (event) {
   const title = clean(body.course_title, 220);
   const description = clean(body.course_description, 4000);
   const isPublished = body.is_published === true || Number(body.is_published) === 1;
+  const isEnrollmentLocked = body.is_enrollment_locked === true || Number(body.is_enrollment_locked) === 1;
   const releaseAt = clean(body.release_at, 64);
   const enrollmentMode = clean(body.enrollment_mode, 24).toLowerCase() === "immediate" ? "immediate" : "batch";
   const priceNgnMinorRaw = Number(body.price_ngn_minor);
@@ -56,6 +57,7 @@ exports.handler = async function (event) {
       price_ngn_minor: priceNgnMinor,
       price_gbp_minor: priceGbpMinor,
       payment_methods: paymentMethods,
+      is_enrollment_locked: isEnrollmentLocked,
       is_published: isPublished,
       release_at: releaseAt || null,
     });

@@ -132,6 +132,9 @@ exports.handler = async function (event) {
     if (!learningCourse) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
     }
+    if (Number(learningCourse.is_enrollment_locked || 0) === 1) {
+      return json(409, { ok: false, error: "Enrollment is currently locked for this course." });
+    }
     await ensureCourseOrdersBatchColumns(pool);
     await ensureCourseBatchesTable(pool);
     const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"

@@ -46,6 +46,7 @@ async function ensureCourseModeAndPriceColumns(pool) {
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_ngn_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_gbp_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN payment_methods VARCHAR(120) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN is_enrollment_locked TINYINT(1) NOT NULL DEFAULT 0`);
 }
 
 async function hasCourseModuleMappingsTable(pool) {

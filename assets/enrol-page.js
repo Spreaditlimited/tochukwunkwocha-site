@@ -40,6 +40,7 @@
   var couponPricingByProvider = { paystack: null };
   var basePricingByProvider = { paystack: null };
   var enabledPaymentMethods = { paystack: true, manual_transfer: true };
+  var enrollmentLocked = false;
   var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
 
   var COURSE_CONFIGS = {
@@ -372,6 +373,46 @@
     });
   }
 
+  function renderEnrollmentClosedPill() {
+    if (!batchEl) return;
+    batchEl.innerHTML = [
+      '<span class="status-pill status-pending_verification">',
+      "Enrollment Closed",
+      "</span>",
+    ].join("");
+  }
+
+  function applyEnrollmentLock(locked) {
+    enrollmentLocked = !!locked;
+    paymentOptions.forEach(function (el) {
+      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
+      var allowedByMethod = !!enabledPaymentMethods[provider];
+      var disabled = enrollmentLocked || !allowedByMethod;
+      if (disabled) {
+        el.setAttribute("disabled", "disabled");
+        el.setAttribute("data-disabled", "true");
+      } else {
+        el.removeAttribute("disabled");
+        el.removeAttribute("data-disabled");
+      }
+      el.classList.toggle("opacity-50", disabled);
+      el.classList.toggle("cursor-not-allowed", disabled);
+    });
+    if (submitBtn) {
+      submitBtn.disabled = enrollmentLocked;
+      submitBtn.classList.toggle("opacity-50", enrollmentLocked);
+      submitBtn.classList.toggle("cursor-not-allowed", enrollmentLocked);
+      submitBtn.setAttribute("aria-disabled", enrollmentLocked ? "true" : "false");
+      submitBtn.style.opacity = enrollmentLocked ? "0.65" : "";
+      submitBtn.style.cursor = enrollmentLocked ? "not-allowed" : "";
+      submitBtn.style.pointerEvents = enrollmentLocked ? "none" : "";
+      if (!enrollmentLocked) {
+        submitBtn.textContent = (providerInput && providerInput.value) === "manual_transfer" ? "Upload proof and confirm" : "Proceed to Payment";
+      }
+    }
+    if (enrollmentLocked) renderEnrollmentClosedPill();
+  }
+
   function applyEnabledPaymentMethods(methods) {
     enabledPaymentMethods = { paystack: false, manual_transfer: false };
     (Array.isArray(methods) ? methods : []).forEach(function (method) {
@@ -383,19 +424,7 @@
     if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.manual_transfer) {
       enabledPaymentMethods = { paystack: true, manual_transfer: true };
     }
-    paymentOptions.forEach(function (el) {
-      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
-      var allowed = !!enabledPaymentMethods[provider];
-      if (!allowed) {
-        el.setAttribute("disabled", "disabled");
-        el.setAttribute("data-disabled", "true");
-      } else {
-        el.removeAttribute("disabled");
-        el.removeAttribute("data-disabled");
-      }
-      el.classList.toggle("opacity-50", !allowed);
-      el.classList.toggle("cursor-not-allowed", !allowed);
-    });
+    applyEnrollmentLock(enrollmentLocked);
     setActiveProvider(providerInput ? providerInput.value : firstEnabledProvider());
   }
 
@@ -454,6 +483,7 @@
       }
       return;
     }
+    applyEnrollmentLock(json && json.isEnrollmentLocked === true);
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
     activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     var allBatches = Array.isArray(json.batches) ? json.batches : [];
@@ -472,6 +502,7 @@
         "</span>",
       ].join("");
     }
+    if (enrollmentLocked) renderEnrollmentClosedPill();
     setElementVisible(holidayBatchPickerWrap, true);
     if (holidayBatchSelect) {
       var options = ['<option value="">Select a batch</option>'];
@@ -552,6 +583,7 @@
       }
       return;
     }
+    applyEnrollmentLock(json && json.isEnrollmentLocked === true);
     var active = json.activeBatch;
     activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
@@ -571,6 +603,7 @@
         "</span>",
       ].join("");
     }
+    if (enrollmentLocked) renderEnrollmentClosedPill();
     updatePaymentOptionMetas();
     updateIntro();
   }
@@ -746,6 +779,9 @@
     var affiliateCode = resolveAffiliateCode();
     if (!firstName || !email || !phone) {
       setError("Please enter your full name, phone number, and email address.");
+      return;
+    }
+    if (enrollmentLocked) {
       return;
     }
     if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {

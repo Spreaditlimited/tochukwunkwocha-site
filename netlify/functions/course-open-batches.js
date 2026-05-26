@@ -32,6 +32,7 @@ exports.handler = async function (event) {
     const vatPercent = Number(process.env.SITE_VAT_PERCENT);
     const safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
     const enabledPaymentMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
+    const isEnrollmentLocked = Number(learningCourse && learningCourse.is_enrollment_locked || 0) === 1;
     const rows = await listCourseBatches(pool, courseSlug);
     const open = (rows || []).filter((item) => String(item.status || "").toLowerCase() === "open");
     const capacities = [];
@@ -53,6 +54,7 @@ exports.handler = async function (event) {
     return json(200, {
       ok: true,
       courseSlug,
+      isEnrollmentLocked,
       enabledPaymentMethods,
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
