@@ -578,7 +578,11 @@
           throw new Error(`${selectedDomain} is no longer available. Please choose another domain.`);
         }
 
-        const recaptchaToken = await window.recaptchaHelper.getToken("domain_create_payment");
+        const recaptchaHelper = window.recaptchaHelper;
+        if (!recaptchaHelper || typeof recaptchaHelper.getToken !== "function") {
+          throw new Error("Security verification is unavailable. Please refresh and try again.");
+        }
+        const recaptchaToken = await recaptchaHelper.getToken("domain_create_payment");
         const json = await request("/.netlify/functions/domain-create-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
