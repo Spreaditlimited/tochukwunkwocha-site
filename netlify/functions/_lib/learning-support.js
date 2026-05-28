@@ -240,10 +240,14 @@ async function ensureLearningSupportTables(pool, options) {
         id BIGINT NOT NULL AUTO_INCREMENT,
         reply_uuid VARCHAR(64) NOT NULL,
         thread_id BIGINT NOT NULL,
+        parent_reply_id BIGINT NULL,
         course_slug VARCHAR(120) NOT NULL,
         account_id BIGINT NOT NULL,
         author_email VARCHAR(220) NOT NULL,
         author_name VARCHAR(180) NULL,
+        mention_account_id BIGINT NULL,
+        mention_email VARCHAR(220) NULL,
+        mention_name VARCHAR(180) NULL,
         body TEXT NOT NULL,
         created_at DATETIME NOT NULL,
         updated_at DATETIME NOT NULL,
@@ -260,6 +264,10 @@ async function ensureLearningSupportTables(pool, options) {
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN alumni_participation_mode VARCHAR(24) NOT NULL DEFAULT 'none'`);
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN certificate_proof_required TINYINT(1) NOT NULL DEFAULT 0`);
     await safeAlter(pool, `ALTER TABLE ${COURSE_FEATURES_TABLE} ADD COLUMN certificate_proof_type VARCHAR(24) NOT NULL DEFAULT 'website_link'`);
+    await safeAlter(pool, `ALTER TABLE ${COMMUNITY_REPLIES_TABLE} ADD COLUMN parent_reply_id BIGINT NULL`);
+    await safeAlter(pool, `ALTER TABLE ${COMMUNITY_REPLIES_TABLE} ADD COLUMN mention_account_id BIGINT NULL`);
+    await safeAlter(pool, `ALTER TABLE ${COMMUNITY_REPLIES_TABLE} ADD COLUMN mention_email VARCHAR(220) NULL`);
+    await safeAlter(pool, `ALTER TABLE ${COMMUNITY_REPLIES_TABLE} ADD COLUMN mention_name VARCHAR(180) NULL`);
 
     supportTablesAvailable = true;
   } catch (_error) {
@@ -518,10 +526,14 @@ function mapCommunityReplyRow(row) {
     id: Number(row && row.id || 0),
     reply_uuid: clean(row && row.reply_uuid, 64),
     thread_id: Number(row && row.thread_id || 0),
+    parent_reply_id: Number(row && row.parent_reply_id || 0) || null,
     course_slug: normalizeCourseSlug(row && row.course_slug),
     account_id: Number(row && row.account_id || 0),
     author_email: normalizeEmail(row && row.author_email),
     author_name: clean(row && row.author_name, 180) || null,
+    mention_account_id: Number(row && row.mention_account_id || 0) || null,
+    mention_email: normalizeEmail(row && row.mention_email) || null,
+    mention_name: clean(row && row.mention_name, 180) || null,
     body: clean(row && row.body, 20000),
     created_at: row && row.created_at ? String(row.created_at) : null,
     updated_at: row && row.updated_at ? String(row.updated_at) : null,
@@ -809,7 +821,8 @@ async function listCommunityReplies(pool, input) {
   if (!(threadId > 0) || !courseSlug) return [];
 
   var [rows] = await pool.query(
-    `SELECT id, reply_uuid, thread_id, course_slug, account_id, author_email, author_name, body,
+    `SELECT id, reply_uuid, thread_id, parent_reply_id, course_slug, account_id, author_email, author_name,
+            mention_account_id, mention_email, mention_name, body,
             DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
             DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
      FROM ${COMMUNITY_REPLIES_TABLE}
@@ -833,6 +846,10 @@ async function createCommunityReply(pool, input) {
   var accountId = Number(input && input.account_id || 0);
   var authorEmail = normalizeEmail(input && input.author_email);
   var authorName = clean(input && input.author_name, 180);
+  var parentReplyId = Number(input && input.parent_reply_id || 0);
+  var mentionAccountId = Number(input && input.mention_account_id || 0);
+  var mentionEmail = normalizeEmail(input && input.mention_email);
+  var mentionName = clean(input && input.mention_name, 180);
   var body = clean(input && input.body, 20000);
   if (!courseSlug) throw new Error("course_slug is required");
   if (!(threadId > 0)) throw new Error("thread_id is required");
@@ -852,13 +869,45 @@ async function createCommunityReply(pool, input) {
   var thread = threadRows[0] || {};
   if (normalizeCommunityThreadStatus(thread.status) === "closed") throw new Error("This thread is closed.");
 
+  if (parentReplyId > 0) {
+    var [parentRows] = await pool.query(
+      `SELECT id
+       FROM ${COMMUNITY_REPLIES_TABLE}
+       WHERE id = ?
+         AND thread_id = ?
+         AND course_slug = ?
+       LIMIT 1`,
+      [parentReplyId, threadId, courseSlug]
+    );
+    if (!Array.isArray(parentRows) || !parentRows.length) {
+      throw new Error("Parent reply not found.");
+    }
+  } else {
+    parentReplyId = 0;
+  }
+
   var now = nowSql();
   var replyUuid = "comr_" + crypto.randomUUID().replace(/-/g, "");
   var [result] = await pool.query(
     `INSERT INTO ${COMMUNITY_REPLIES_TABLE}
-      (reply_uuid, thread_id, course_slug, account_id, author_email, author_name, body, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [replyUuid, threadId, courseSlug, accountId, authorEmail, authorName || null, body, now, now]
+      (reply_uuid, thread_id, parent_reply_id, course_slug, account_id, author_email, author_name,
+       mention_account_id, mention_email, mention_name, body, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      replyUuid,
+      threadId,
+      parentReplyId > 0 ? parentReplyId : null,
+      courseSlug,
+      accountId,
+      authorEmail,
+      authorName || null,
+      mentionAccountId > 0 ? mentionAccountId : null,
+      mentionEmail || null,
+      mentionName || null,
+      body,
+      now,
+      now,
+    ]
   );
   var replyId = Number(result && result.insertId || 0);
   if (!(replyId > 0)) throw new Error("Could not create reply.");
@@ -874,7 +923,8 @@ async function createCommunityReply(pool, input) {
   );
 
   var [rows] = await pool.query(
-    `SELECT id, reply_uuid, thread_id, course_slug, account_id, author_email, author_name, body,
+    `SELECT id, reply_uuid, thread_id, parent_reply_id, course_slug, account_id, author_email, author_name,
+            mention_account_id, mention_email, mention_name, body,
             DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
             DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
      FROM ${COMMUNITY_REPLIES_TABLE}
@@ -998,7 +1048,8 @@ async function updateCommunityReplyByOwner(pool, input) {
   }
 
   var [rows] = await pool.query(
-    `SELECT id, reply_uuid, thread_id, course_slug, account_id, author_email, author_name, body,
+    `SELECT id, reply_uuid, thread_id, parent_reply_id, course_slug, account_id, author_email, author_name,
+            mention_account_id, mention_email, mention_name, body,
             DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
             DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
      FROM ${COMMUNITY_REPLIES_TABLE}

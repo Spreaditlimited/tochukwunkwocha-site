@@ -120,6 +120,7 @@
     assignmentScreenshotUploads: [],
     communityThreads: [],
     communityRepliesByThread: new Map(),
+    communityReplyDraftByThread: new Map(),
     communitySearchTerm: "",
     confirmResolver: null,
     editResolver: null,
@@ -1408,6 +1409,16 @@
     });
   }
 
+  function replyDisplayName(item) {
+    return clean(item && item.author_name) || clean(item && item.author_email) || "Student";
+  }
+
+  function clearReplyDraft(threadId) {
+    var id = Number(threadId || 0);
+    if (!(id > 0)) return;
+    state.communityReplyDraftByThread.delete(id);
+  }
+
   function renderCommunityThreads() {
     if (!communityThreadListEl) return;
     var items = filteredCommunityThreads();
@@ -1425,22 +1436,53 @@
       var replies = state.communityRepliesByThread && state.communityRepliesByThread.get(id)
         ? state.communityRepliesByThread.get(id)
         : [];
-      var replyItems = (Array.isArray(replies) ? replies : []).map(function (reply, idx) {
+      var replyDraft = state.communityReplyDraftByThread.get(id) || null;
+      var replyRows = Array.isArray(replies) ? replies : [];
+      var replyById = new Map();
+      var childByParent = new Map();
+      replyRows.forEach(function (row) {
+        var rowId = Number(row && row.id || 0);
+        if (rowId > 0) replyById.set(rowId, row);
+      });
+      replyRows.forEach(function (row) {
+        var parentId = Number(row && row.parent_reply_id || 0);
+        if (!(parentId > 0) || !replyById.has(parentId)) return;
+        if (!childByParent.has(parentId)) childByParent.set(parentId, []);
+        childByParent.get(parentId).push(row);
+      });
+
+      function renderReplyCard(reply, idx, isChild) {
         var replyId = Number(reply && reply.id || 0);
         var replyOwned = isOwnedByCurrentAccount(reply);
         var tint = ["bg-blue-50 border-blue-100", "bg-emerald-50 border-emerald-100", "bg-amber-50 border-amber-100", "bg-slate-50 border-slate-200"][idx % 4];
+        var mentionLabel = clean(reply && reply.mention_name) || clean(reply && reply.mention_email);
+        var bodyText = clean(reply && reply.body, 20000);
         return [
-          '<div class="rounded-lg border ' + tint + ' px-3 py-2">',
-          '<p class="text-xs font-semibold text-gray-800">' + escapeHtml(clean(reply.author_name) || clean(reply.author_email) || "Student") + '</p>',
-          '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + escapeHtml(clean(reply.body, 20000)) + "</p>",
+          '<div class="rounded-lg border ' + tint + ' px-3 py-2 ' + (isChild ? 'ml-4 sm:ml-6' : '') + '">',
+          '<p class="text-xs font-semibold text-gray-800">' + escapeHtml(replyDisplayName(reply)) + '</p>',
+          '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + (mentionLabel ? '<span class="font-semibold text-brand-700">@' + escapeHtml(mentionLabel) + '</span> ' : '') + escapeHtml(bodyText) + "</p>",
           '<div class="mt-1 flex flex-wrap items-center justify-between gap-2">',
           '<p class="text-[11px] text-gray-500">' + escapeHtml(fmtDate(reply.created_at)) + "</p>",
-          (replyOwned
-            ? '<div class="flex items-center gap-1"><button type="button" data-community-reply-edit="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Edit</button><button type="button" data-community-reply-delete="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</button></div>'
-            : ""),
+          '<div class="flex items-center gap-1"><button type="button" data-community-reply-to-reply="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Reply</button>' +
+            (replyOwned
+              ? '<button type="button" data-community-reply-edit="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Edit</button><button type="button" data-community-reply-delete="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</button>'
+              : '') + '</div>',
           "</div>",
           "</div>",
         ].join("");
+      }
+
+      var replyItems = replyRows.filter(function (row) {
+        var parentId = Number(row && row.parent_reply_id || 0);
+        return !(parentId > 0) || !replyById.has(parentId);
+      }).map(function (rootReply, idx) {
+        var rootId = Number(rootReply && rootReply.id || 0);
+        var children = childByParent.get(rootId) || [];
+        return [renderReplyCard(rootReply, idx, false)]
+          .concat(children.map(function (child, childIdx) {
+            return renderReplyCard(child, childIdx, true);
+          }))
+          .join("");
       }).join("");
       return [
         '<article class="rounded-lg border border-gray-200 bg-white p-3">',
@@ -1458,6 +1500,9 @@
           : ""),
         "</div>",
         '<div class="mt-2 space-y-2" data-community-replies-wrap="' + String(id) + '">' + (replyItems || "") + "</div>",
+        (replyDraft && replyDraft.parent_reply_id
+          ? '<div class="mt-2 rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-[11px] text-brand-800">Replying to @' + escapeHtml(clean(replyDraft.mention_name) || clean(replyDraft.mention_email) || "Student") + ' <button type="button" data-community-reply-cancel="' + String(id) + '" class="ml-2 font-semibold underline">Cancel</button></div>'
+          : ''),
         '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
         '<textarea rows="2" data-community-reply-input="' + String(id) + '" placeholder="Write a reply..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-900 focus:border-brand-500 focus:ring-brand-500"></textarea>',
         '<button type="button" data-community-reply-submit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Reply</button>',
@@ -1531,11 +1576,13 @@
     if (!communityEnabled()) {
       state.communityThreads = [];
       state.communityRepliesByThread = new Map();
+      state.communityReplyDraftByThread = new Map();
       renderCommunityThreads();
       return;
     }
     var payload = await api("/.netlify/functions/user-learning-community-threads-list?course_slug=" + encodeURIComponent(state.courseSlug));
     state.communityThreads = Array.isArray(payload.items) ? payload.items : [];
+    state.communityReplyDraftByThread = new Map();
     renderCommunityThreads();
   }
 
@@ -1588,7 +1635,7 @@
     renderCommunityThreads();
   }
 
-  async function submitCommunityReply(threadId, text) {
+  async function submitCommunityReply(threadId, text, draft) {
     var id = Number(threadId || 0);
     if (!(id > 0)) throw new Error("Invalid thread selected.");
     if (!communityEnabled()) throw new Error("Course community is disabled for this course.");
@@ -1601,6 +1648,10 @@
       body: JSON.stringify({
         course_slug: state.courseSlug,
         thread_id: id,
+        parent_reply_id: draft && Number(draft.parent_reply_id || 0) > 0 ? Number(draft.parent_reply_id) : null,
+        mention_account_id: draft && Number(draft.mention_account_id || 0) > 0 ? Number(draft.mention_account_id) : null,
+        mention_email: draft ? clean(draft.mention_email, 220).toLowerCase() : "",
+        mention_name: draft ? clean(draft.mention_name, 180) : "",
         body: clean(text),
       }),
     });
@@ -1619,6 +1670,7 @@
         last_activity_at: item.created_at || thread.last_activity_at,
       });
     });
+    clearReplyDraft(id);
     renderCommunityThreads();
   }
 
@@ -2273,13 +2325,14 @@
         if (!(threadId > 0)) return;
         var input = communityThreadListEl.querySelector('[data-community-reply-input="' + String(threadId) + '"]');
         var text = clean(input && input.value);
+        var draft = state.communityReplyDraftByThread.get(threadId) || null;
         if (!text) {
           setCommunityMessage("Reply cannot be empty.", true);
           return;
         }
         replyBtn.disabled = true;
         replyBtn.textContent = "Posting...";
-        submitCommunityReply(threadId, text)
+        submitCommunityReply(threadId, text, draft)
           .then(function () {
             if (input) input.value = "";
             setCommunityMessage("Reply posted.", false);
@@ -2291,6 +2344,48 @@
             replyBtn.disabled = false;
             replyBtn.textContent = "Reply";
           });
+        return;
+      }
+
+      var replyToReplyBtn = target.closest("[data-community-reply-to-reply]");
+      if (replyToReplyBtn && communityThreadListEl.contains(replyToReplyBtn)) {
+        var parentReplyId = Number(replyToReplyBtn.getAttribute("data-community-reply-to-reply") || 0);
+        var parentThreadId = Number(replyToReplyBtn.getAttribute("data-community-thread-id") || 0);
+        if (!(parentReplyId > 0) || !(parentThreadId > 0)) return;
+        var threadReplies = state.communityRepliesByThread.get(parentThreadId);
+        var parentReply = Array.isArray(threadReplies) ? threadReplies.find(function (row) {
+          return Number(row && row.id || 0) === parentReplyId;
+        }) : null;
+        if (!parentReply) {
+          setCommunityMessage("Load replies first, then try again.", true);
+          return;
+        }
+        var mentionName = replyDisplayName(parentReply);
+        state.communityReplyDraftByThread.set(parentThreadId, {
+          parent_reply_id: parentReplyId,
+          mention_account_id: Number(parentReply.account_id || 0) || null,
+          mention_email: clean(parentReply.author_email),
+          mention_name: mentionName,
+        });
+        renderCommunityThreads();
+        var threadInput = communityThreadListEl.querySelector('[data-community-reply-input="' + String(parentThreadId) + '"]');
+        if (threadInput) {
+          var mentionPrefix = "@" + mentionName + " ";
+          if (clean(threadInput.value).toLowerCase().indexOf(clean(mentionPrefix).toLowerCase()) !== 0) {
+            threadInput.value = mentionPrefix + clean(threadInput.value);
+          }
+          if (typeof threadInput.focus === "function") threadInput.focus();
+        }
+        return;
+      }
+
+      var cancelReplyDraftBtn = target.closest("[data-community-reply-cancel]");
+      if (cancelReplyDraftBtn && communityThreadListEl.contains(cancelReplyDraftBtn)) {
+        var cancelThreadId = Number(cancelReplyDraftBtn.getAttribute("data-community-reply-cancel") || 0);
+        if (!(cancelThreadId > 0)) return;
+        clearReplyDraft(cancelThreadId);
+        renderCommunityThreads();
+        return;
       }
     });
   }
