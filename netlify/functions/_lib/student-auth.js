@@ -6,6 +6,7 @@ const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 const COOKIE_NAME = "tws_student_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const DEFAULT_MAX_DEVICES_PER_ACCOUNT = 2;
+const DEFAULT_MAX_CONCURRENT_SESSIONS_PER_ACCOUNT = 2;
 const DEVICE_ALERT_IP_SPREAD_THRESHOLD = 3;
 const STUDENT_SESSIONS_TABLE = "student_sessions";
 const STUDENT_DEVICES_TABLE = "student_account_devices";
@@ -56,6 +57,16 @@ function maxDevicesPerAccount() {
       DEFAULT_MAX_DEVICES_PER_ACCOUNT
   );
   if (!Number.isFinite(raw) || raw < 1) return DEFAULT_MAX_DEVICES_PER_ACCOUNT;
+  return Math.max(1, Math.trunc(raw));
+}
+
+function maxConcurrentSessionsPerAccount() {
+  const raw = Number(
+    process.env.STUDENT_MAX_CONCURRENT_SESSIONS_PER_ACCOUNT ||
+      process.env.SCHOOL_STUDENT_MAX_CONCURRENT_SESSIONS_PER_ACCOUNT ||
+      DEFAULT_MAX_CONCURRENT_SESSIONS_PER_ACCOUNT
+  );
+  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_MAX_CONCURRENT_SESSIONS_PER_ACCOUNT;
   return Math.max(1, Math.trunc(raw));
 }
 
@@ -466,6 +477,7 @@ async function registerStudentDevice(pool, input) {
 
   const deviceHash = clean(identity.deviceHash, 128);
   if (!deviceHash) throw new Error("Could not resolve device identity");
+  const enforceLimit = input && input.enforceLimit !== false;
   const now = nowSql();
   let rows = [];
   try {
@@ -507,25 +519,43 @@ async function registerStudentDevice(pool, input) {
     const currentCount = Number(countRows && countRows[0] && countRows[0].total || 0);
     const limit = maxDevicesPerAccount();
     if (currentCount >= limit) {
+      if (enforceLimit) {
+        await createStudentSecurityAlert(pool, {
+          accountId,
+          schoolId,
+          alertType: "device_limit_blocked",
+          severity: "high",
+          alertKey: shaValue(`device_limit:${accountId}:${deviceHash}`),
+          title: "Login blocked: device limit reached",
+          details: {
+            limit,
+            currentCount,
+            attemptedDeviceHash: deviceHash,
+            userAgent: clean(identity.userAgent, 255),
+          },
+        });
+        throw makeCodedError(
+          `This account has reached the maximum allowed devices (${limit}). Contact support to reset trusted devices.`,
+          "DEVICE_LIMIT_EXCEEDED",
+          429
+        );
+      }
       await createStudentSecurityAlert(pool, {
         accountId,
         schoolId,
-        alertType: "device_limit_blocked",
-        severity: "high",
-        alertKey: shaValue(`device_limit:${accountId}:${deviceHash}`),
-        title: "Login blocked: device limit reached",
+        alertType: "device_limit_reached",
+        severity: "low",
+        alertKey: shaValue(`device_limit_reached:${accountId}:${deviceHash}`),
+        title: "Device history limit reached (login still allowed)",
         details: {
           limit,
           currentCount,
           attemptedDeviceHash: deviceHash,
           userAgent: clean(identity.userAgent, 255),
+          reason: "concurrent_session_enforcement_active",
         },
       });
-      throw makeCodedError(
-        `This account has reached the maximum allowed devices (${limit}). Contact support to reset trusted devices.`,
-        "DEVICE_LIMIT_EXCEEDED",
-        429
-      );
+      return;
     }
 
     await pool.query(
@@ -599,6 +629,7 @@ async function createStudentSession(pool, accountId, options) {
         accountId: accountIdNum,
         schoolId: schoolContext.schoolId,
         identity,
+        enforceLimit: false,
       });
     } catch (error) {
       if (!isMissingTableError(error) && !isUnknownColumnError(error)) throw error;
@@ -611,39 +642,60 @@ async function createStudentSession(pool, accountId, options) {
   const now = nowSql();
   const expires = new Date(Date.now() + SESSION_MAX_AGE * 1000).toISOString().slice(0, 19).replace("T", " ");
 
+  await pool.query(
+    `DELETE FROM ${STUDENT_SESSIONS_TABLE}
+     WHERE account_id = ?
+       AND expires_at <= ?`,
+    [accountIdNum, now]
+  );
+
   let existingSessions = [];
   try {
     const [rowsWithDevice] = await pool.query(
-      `SELECT id, device_hash
+      `SELECT id, device_hash, last_seen_at, created_at
        FROM ${STUDENT_SESSIONS_TABLE}
-       WHERE account_id = ?`,
-      [accountIdNum]
+       WHERE account_id = ?
+         AND expires_at > ?`,
+      [accountIdNum, now]
     );
     existingSessions = Array.isArray(rowsWithDevice) ? rowsWithDevice : [];
   } catch (error) {
     if (!isUnknownColumnError(error)) throw error;
     const [rowsBasic] = await pool.query(
-      `SELECT id
+      `SELECT id, last_seen_at, created_at
        FROM ${STUDENT_SESSIONS_TABLE}
-       WHERE account_id = ?`,
-      [accountIdNum]
+       WHERE account_id = ?
+         AND expires_at > ?`,
+      [accountIdNum, now]
     );
     existingSessions = Array.isArray(rowsBasic) ? rowsBasic : [];
   }
-  if (Array.isArray(existingSessions) && existingSessions.length) {
-    await pool.query(`DELETE FROM ${STUDENT_SESSIONS_TABLE} WHERE account_id = ?`, [accountIdNum]);
-    const replacedDifferentDevice = existingSessions.some(function (row) {
-      return clean(row && row.device_hash, 128) && clean(row && row.device_hash, 128) !== clean(identity.deviceHash, 128);
-    });
-    if (replacedDifferentDevice) {
+  const maxConcurrent = maxConcurrentSessionsPerAccount();
+  if (Array.isArray(existingSessions) && existingSessions.length >= maxConcurrent) {
+    const sorted = existingSessions
+      .slice()
+      .sort(function (a, b) {
+        const aTime = new Date(a && (a.last_seen_at || a.created_at) || 0).getTime() || 0;
+        const bTime = new Date(b && (b.last_seen_at || b.created_at) || 0).getTime() || 0;
+        return aTime - bTime;
+      });
+    const replace = sorted[0];
+    if (replace && Number(replace.id) > 0) {
+      await pool.query(
+        `DELETE FROM ${STUDENT_SESSIONS_TABLE}
+         WHERE id = ?
+         LIMIT 1`,
+        [Number(replace.id)]
+      );
       await createStudentSecurityAlert(pool, {
         accountId: accountIdNum,
         schoolId: schoolContext.schoolId,
         alertType: "session_replaced_other_device",
         severity: "medium",
         alertKey: shaValue(`session_replace:${accountIdNum}:${identity.deviceHash}`),
-        title: "Active session replaced from another device",
+        title: "Active session replaced due to concurrent session limit",
         details: {
+          concurrentLimit: maxConcurrent,
           previousSessions: existingSessions.length,
           newDeviceHash: clean(identity.deviceHash, 128),
         },

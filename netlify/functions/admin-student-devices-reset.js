@@ -80,7 +80,7 @@ exports.handler = async function (event) {
        SET status = 'resolved', updated_at = ?
        WHERE account_id = ?
          AND status = 'open'
-         AND alert_type IN ('device_limit_blocked', 'new_device_login', 'high_ip_spread')`,
+         AND alert_type IN ('device_limit_blocked', 'device_limit_reached', 'new_device_login', 'high_ip_spread')`,
       [now, accountId]
     );
 
