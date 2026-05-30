@@ -283,6 +283,156 @@ async function markPlanEnrolled(pool, input) {
   );
 }
 
+async function insertWalletOrder(pool, input) {
+  const columnsWithPhone = [
+    "order_uuid",
+    "course_slug",
+    "first_name",
+    "email",
+    "phone",
+    "country",
+    "currency",
+    "amount_minor",
+    "base_amount_minor",
+    "discount_minor",
+    "final_amount_minor",
+    "coupon_code",
+    "coupon_id",
+    "provider",
+    "status",
+    "batch_key",
+    "batch_label",
+    "paid_at",
+    "updated_at",
+  ];
+  const valuesWithPhone = [
+    input.orderUuid,
+    input.courseSlug,
+    input.fullName,
+    input.email,
+    input.phone,
+    null,
+    input.currency,
+    input.amountMinor,
+    input.baseAmountMinor,
+    input.discountMinor,
+    input.finalAmountMinor,
+    input.couponCode,
+    input.couponId,
+    "wallet",
+    "paid",
+    input.batchKey,
+    input.batchLabel,
+    input.now,
+    input.now,
+  ];
+
+  try {
+    await pool.query(
+      `INSERT INTO course_orders
+       (${columnsWithPhone.join(", ")})
+       VALUES (${columnsWithPhone.map(() => "?").join(", ")})`,
+      valuesWithPhone
+    );
+    return { ok: true };
+  } catch (error) {
+    if (!(error && error.code === "ER_BAD_FIELD_ERROR")) throw error;
+    const columnsNoPhone = columnsWithPhone.filter((c) => c !== "phone");
+    const valuesNoPhone = [
+      input.orderUuid,
+      input.courseSlug,
+      input.fullName,
+      input.email,
+      null,
+      input.currency,
+      input.amountMinor,
+      input.baseAmountMinor,
+      input.discountMinor,
+      input.finalAmountMinor,
+      input.couponCode,
+      input.couponId,
+      "wallet",
+      "paid",
+      input.batchKey,
+      input.batchLabel,
+      input.now,
+      input.now,
+    ];
+    await pool.query(
+      `INSERT INTO course_orders
+       (${columnsNoPhone.join(", ")})
+       VALUES (${columnsNoPhone.map(() => "?").join(", ")})`,
+      valuesNoPhone
+    );
+    return { ok: true, usedLegacyShape: true };
+  }
+}
+
+async function autoEnrollPlanIfEligible(pool, input) {
+  const planId = Number(input && input.planId);
+  if (!Number.isFinite(planId) || planId <= 0) return { ok: false, error: "Invalid planId" };
+
+  const [rows] = await pool.query(
+    `SELECT pl.id,
+            pl.plan_uuid,
+            pl.course_slug,
+            pl.batch_key,
+            pl.batch_label,
+            pl.currency,
+            pl.target_amount_minor,
+            pl.total_paid_minor,
+            pl.base_amount_minor,
+            pl.discount_minor,
+            pl.coupon_code,
+            pl.coupon_id,
+            pl.status,
+            pl.enrolled_order_uuid,
+            a.full_name,
+            a.email,
+            a.phone_e164
+     FROM student_installment_plans pl
+     JOIN student_accounts a ON a.id = pl.account_id
+     WHERE pl.id = ?
+     LIMIT 1`,
+    [planId]
+  );
+  if (!rows || !rows.length) return { ok: false, error: "Plan not found" };
+  const plan = rows[0];
+
+  if (String(plan.status || "").toLowerCase() === "enrolled") {
+    return { ok: true, enrolled: true, alreadyEnrolled: true, orderUuid: plan.enrolled_order_uuid || null };
+  }
+  const target = Number(plan.target_amount_minor || 0);
+  const paid = Number(plan.total_paid_minor || 0);
+  if (!Number.isFinite(target) || target <= 0) return { ok: true, enrolled: false, reason: "invalid_target" };
+  if (paid < target) return { ok: true, enrolled: false, reason: "not_fully_paid" };
+  if (!String(plan.email || "").trim()) return { ok: true, enrolled: false, reason: "missing_email" };
+  if (!String(plan.phone_e164 || "").trim()) return { ok: true, enrolled: false, reason: "missing_phone" };
+
+  const orderUuid = crypto.randomUUID();
+  const now = nowSql();
+  await insertWalletOrder(pool, {
+    orderUuid,
+    courseSlug: plan.course_slug,
+    fullName: plan.full_name || "Student",
+    email: plan.email,
+    phone: plan.phone_e164,
+    currency: plan.currency || "NGN",
+    amountMinor: target,
+    baseAmountMinor: Number(plan.base_amount_minor || target),
+    discountMinor: Number(plan.discount_minor || 0),
+    finalAmountMinor: target,
+    couponCode: plan.coupon_code || null,
+    couponId: Number(plan.coupon_id || 0) > 0 ? Number(plan.coupon_id) : null,
+    batchKey: plan.batch_key,
+    batchLabel: plan.batch_label,
+    now,
+  });
+  await markPlanEnrolled(pool, { planId: Number(plan.id), orderUuid });
+
+  return { ok: true, enrolled: true, alreadyEnrolled: false, orderUuid };
+}
+
 async function cancelPlanIfUnpaid(pool, input) {
   const planId = Number(input && input.planId);
   if (!Number.isFinite(planId) || planId <= 0) {
@@ -340,5 +490,6 @@ module.exports = {
   listPaymentCountsForPlanIds,
   findPlanByUuidForAccount,
   markPlanEnrolled,
+  autoEnrollPlanIfEligible,
   cancelPlanIfUnpaid,
 };

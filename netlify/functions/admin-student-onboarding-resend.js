@@ -390,7 +390,7 @@ async function listBatchTargets(pool, input) {
      WHERE course_slug = ?
        AND batch_key = ?
        AND status = 'paid'
-       AND (provider IS NULL OR provider <> 'wallet_installment')
+       AND (provider IS NULL OR provider NOT IN ('wallet_installment', 'wallet'))
      GROUP BY LOWER(email)
      ORDER BY email ASC`,
     [courseSlug, batchKey]

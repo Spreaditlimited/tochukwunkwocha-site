@@ -456,7 +456,7 @@ async function listPaymentsQueue(pool, { courseSlug, status, search, limit, batc
       FROM course_orders
       WHERE course_slug = ?
         AND status = 'paid'
-        AND (provider IS NULL OR provider <> 'wallet_installment')
+        AND (provider IS NULL OR provider NOT IN ('wallet_installment', 'wallet'))
     `;
     const orderParams = [desiredCourseSlug];
     if (desiredBatchKey && desiredBatchKey !== "all") {
@@ -638,7 +638,7 @@ async function getPaymentsQueueSummary(pool, opts) {
      WHERE 1=1
        ${ordersCourseClause}
        AND status = 'paid'
-       AND (provider IS NULL OR provider <> 'wallet_installment')
+       AND (provider IS NULL OR provider NOT IN ('wallet_installment', 'wallet'))
        ${ordersBatchClause}
      GROUP BY currency, provider`,
     ordersCourseParams.concat(ordersBatchParams)

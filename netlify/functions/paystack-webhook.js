@@ -3,7 +3,7 @@ const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { verifyPaystackSignature } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
-const { ensureInstallmentTables, markInstallmentPaymentPaidByReference } = require("./_lib/installments");
+const { ensureInstallmentTables, markInstallmentPaymentPaidByReference, autoEnrollPlanIfEligible } = require("./_lib/installments");
 const { ensureSchoolTables, markSchoolOrderPaidBy } = require("./_lib/schools");
 const { ensureAffiliateTables, bindSchoolReferralAfterPayment } = require("./_lib/affiliates");
 
@@ -53,6 +53,11 @@ exports.handler = async function (event) {
     });
     if (!installmentResult.ok) {
       return json(404, { ok: false, error: installmentResult.error });
+    }
+    if (Number.isFinite(Number(installmentResult.planId)) && Number(installmentResult.planId) > 0) {
+      try {
+        await autoEnrollPlanIfEligible(pool, { planId: Number(installmentResult.planId) });
+      } catch (_error) {}
     }
     return json(200, { ok: true });
   }

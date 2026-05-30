@@ -1,6 +1,6 @@
 const { getPool } = require("./_lib/db");
 const { paystackVerifyTransaction, siteBaseUrl } = require("./_lib/payments");
-const { ensureInstallmentTables, markInstallmentPaymentPaidByReference } = require("./_lib/installments");
+const { ensureInstallmentTables, markInstallmentPaymentPaidByReference, autoEnrollPlanIfEligible } = require("./_lib/installments");
 
 function redirect(url) {
   return {
@@ -31,6 +31,11 @@ exports.handler = async function (event) {
       providerOrderId: tx.id ? String(tx.id) : null,
     });
     if (!result.ok) return redirect(`${siteBaseUrl()}/dashboard/?payment=failed`);
+    if (Number.isFinite(Number(result.planId)) && Number(result.planId) > 0) {
+      try {
+        await autoEnrollPlanIfEligible(pool, { planId: Number(result.planId) });
+      } catch (_error) {}
+    }
     return redirect(`${siteBaseUrl()}/dashboard/?payment=success`);
   } catch (_error) {
     return redirect(`${siteBaseUrl()}/dashboard/?payment=failed`);

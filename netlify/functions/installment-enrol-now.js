@@ -60,7 +60,7 @@ exports.handler = async function (event) {
       return json(400, { ok: false, error: "Target amount not yet completed" });
     }
 
-    const orderUuid = `wallet_${crypto.randomUUID()}`;
+    const orderUuid = crypto.randomUUID();
     const now = nowSql();
     await pool.query(
       `INSERT INTO course_orders
@@ -80,7 +80,7 @@ exports.handler = async function (event) {
         target,
         plan.coupon_code || null,
         Number(plan.coupon_id || 0) > 0 ? Number(plan.coupon_id) : null,
-        "wallet_installment",
+        "wallet",
         plan.batch_key,
         plan.batch_label,
         now,
