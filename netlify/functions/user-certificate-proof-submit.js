@@ -2,8 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/user-auth");
 const { ensureLearningAccessOverridesTable } = require("./_lib/learning-access-overrides");
-const { MODULES_TABLE, LESSONS_TABLE, ensureLearningTables } = require("./_lib/learning");
-const { LESSON_PROGRESS_TABLE, ensureLearningProgressTables } = require("./_lib/learning-progress");
+const { getLearnerBatchAwareCompletion } = require("./_lib/learning-progress");
 const {
   ASSIGNMENTS_TABLE,
   ensureLearningSupportTables,
@@ -98,40 +97,18 @@ async function loadLatestProofStatus(pool, input) {
 
 async function hasCompletedCourse(pool, input) {
   const accountId = Number(input && input.accountId || 0);
+  const accountEmail = clean(input && input.accountEmail, 220).toLowerCase();
   const courseSlug = normalizeCourseSlug(input && input.courseSlug);
-  if (!(accountId > 0) || !courseSlug) return false;
+  if (!(accountId > 0) || !accountEmail || !courseSlug) return false;
 
-  await ensureLearningTables(pool);
-  await ensureLearningProgressTables(pool);
-
-  const [totalRows] = await pool.query(
-    `SELECT COUNT(*) AS total_lessons
-     FROM ${LESSONS_TABLE} l
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug = ?
-     LIMIT 1`,
-    [courseSlug]
-  );
-  const totalLessons = Number(totalRows && totalRows[0] && totalRows[0].total_lessons || 0);
-  if (!(totalLessons > 0)) return false;
-
-  const [doneRows] = await pool.query(
-    `SELECT COUNT(*) AS completed_lessons
-     FROM ${LESSON_PROGRESS_TABLE} p
-     JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE p.account_id = ?
-       AND p.is_completed = 1
-       AND m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug = ?
-     LIMIT 1`,
-    [accountId, courseSlug]
-  );
-  const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
-  return completedLessons >= totalLessons;
+  const completion = await getLearnerBatchAwareCompletion(pool, {
+    account_id: accountId,
+    account_email: accountEmail,
+    course_slug: courseSlug,
+  });
+  const totalLessons = Number(completion && completion.total_lessons || 0);
+  const completedLessons = Number(completion && completion.completed_lessons || 0);
+  return totalLessons > 0 && completedLessons >= totalLessons;
 }
 
 exports.handler = async function (event) {
@@ -170,6 +147,7 @@ exports.handler = async function (event) {
     }
     const completedCourse = await hasCompletedCourse(pool, {
       accountId: Number(session.account.id || 0),
+      accountEmail: email,
       courseSlug,
     });
     if (!completedCourse) {

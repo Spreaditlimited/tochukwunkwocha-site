@@ -1,15 +1,13 @@
 const crypto = require("crypto");
 const { getPool } = require("./_lib/db");
 const { json, badMethod } = require("./_lib/http");
-const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
 const {
   ensureSchoolTables,
   requireSchoolAdminSession,
   SCHOOL_STUDENTS_TABLE,
   SCHOOL_CERTIFICATES_TABLE,
 } = require("./_lib/schools");
-
-const LESSON_PROGRESS_TABLE = "tochukwu_learning_lesson_progress";
+const { getLearnerBatchAwareCompletion } = require("./_lib/learning-progress");
 
 function siteBaseUrl() {
   return String(process.env.SITE_BASE_URL || "https://tochukwunkwocha.com").trim().replace(/\/$/, "");
@@ -78,31 +76,14 @@ exports.handler = async function (event) {
       return json(400, { ok: false, error: "Student profile name is missing" });
     }
 
-    const [totRows] = await pool.query(
-      `SELECT COUNT(*) AS total_lessons
-       FROM ${LESSONS_TABLE} l
-       JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-       WHERE m.course_slug = ?
-         AND m.is_active = 1
-         AND l.is_active = 1`,
-      [session.admin.courseSlug]
-    );
-    const totalLessons = Number(totRows && totRows[0] && totRows[0].total_lessons || 0);
+    const completion = await getLearnerBatchAwareCompletion(pool, {
+      account_id: accountId,
+      account_email: String(student.email || "").toLowerCase(),
+      course_slug: session.admin.courseSlug,
+    });
+    const totalLessons = Number(completion && completion.total_lessons || 0);
     if (!totalLessons) return json(400, { ok: false, error: "Course has no lessons configured." });
-
-    const [doneRows] = await pool.query(
-      `SELECT COUNT(*) AS completed_lessons
-       FROM ${LESSON_PROGRESS_TABLE} p
-       JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id
-       JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-       WHERE p.account_id = ?
-         AND p.is_completed = 1
-         AND m.course_slug = ?
-         AND m.is_active = 1
-         AND l.is_active = 1`,
-      [accountId, session.admin.courseSlug]
-    );
-    const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
+    const completedLessons = Number(completion && completion.completed_lessons || 0);
 
     if (completedLessons < totalLessons) {
       return json(400, { ok: false, error: "Student has not completed 100% of the course." });

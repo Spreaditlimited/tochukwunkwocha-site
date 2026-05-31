@@ -3,7 +3,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireStudentSession } = require("./_lib/user-auth");
 const { getCourseName, canonicalizeCourseSlug } = require("./_lib/course-config");
-const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
+const { LESSON_PROGRESS_TABLE, getLearnerBatchAwareCompletion } = require("./_lib/learning-progress");
 const { MODULES_TABLE, LESSONS_TABLE, COURSES_TABLE, ensureLearningTables } = require("./_lib/learning");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 const { ensureLearningAccessOverridesTable } = require("./_lib/learning-access-overrides");
@@ -195,66 +195,26 @@ async function loadCertificateProofStatusByCourse(pool, accountId, email, course
   return map;
 }
 
-async function loadCourseCompletionMap(pool, accountId, courseSlugs) {
+async function loadCourseCompletionMap(pool, accountId, accountEmail, courseSlugs) {
   const slugs = Array.from(new Set((courseSlugs || []).map(normalizeKey).filter(Boolean)));
   const map = new Map();
-  if (!Number.isFinite(Number(accountId)) || Number(accountId) <= 0 || !slugs.length) return map;
+  const accountIdNum = Number(accountId || 0);
+  const email = clean(accountEmail, 220).toLowerCase();
+  if (!(accountIdNum > 0) || !email || !slugs.length) return map;
 
-  const placeholders = slugs.map(function () {
-    return "?";
-  }).join(",");
-
-  const [totalRows] = await pool.query(
-    `SELECT m.course_slug, COUNT(*) AS total_lessons
-     FROM ${LESSONS_TABLE} l
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug IN (${placeholders})
-     GROUP BY m.course_slug`,
-    slugs
-  );
-  (Array.isArray(totalRows) ? totalRows : []).forEach(function (row) {
-    const slug = normalizeKey(row.course_slug);
-    if (!slug) return;
-    map.set(slug, {
-      totalLessons: Number(row.total_lessons || 0),
-      completedLessons: 0,
-      completionPercent: 0,
+  for (let i = 0; i < slugs.length; i += 1) {
+    const slug = slugs[i];
+    const completion = await getLearnerBatchAwareCompletion(pool, {
+      account_id: accountIdNum,
+      account_email: email,
+      course_slug: slug,
     });
-  });
-
-  const [doneRows] = await pool.query(
-    `SELECT m.course_slug, COUNT(*) AS completed_lessons
-     FROM ${LESSON_PROGRESS_TABLE} p
-     JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE p.account_id = ?
-       AND p.is_completed = 1
-       AND m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug IN (${placeholders})
-     GROUP BY m.course_slug`,
-    [Number(accountId)].concat(slugs)
-  );
-  (Array.isArray(doneRows) ? doneRows : []).forEach(function (row) {
-    const slug = normalizeKey(row.course_slug);
-    if (!slug) return;
-    const existing = map.get(slug) || {
-      totalLessons: 0,
-      completedLessons: 0,
-      completionPercent: 0,
-    };
-    existing.completedLessons = Number(row.completed_lessons || 0);
-    map.set(slug, existing);
-  });
-
-  map.forEach(function (value) {
-    const total = Number(value.totalLessons || 0);
-    const done = Number(value.completedLessons || 0);
-    value.completionPercent = total > 0 ? Math.round((done / total) * 100) : 0;
-  });
-
+    map.set(slug, {
+      totalLessons: Number(completion && completion.total_lessons || 0),
+      completedLessons: Number(completion && completion.completed_lessons || 0),
+      completionPercent: Number(completion && completion.completion_percent || 0),
+    });
+  }
   return map;
 }
 
@@ -815,6 +775,7 @@ exports.handler = async function (event) {
     const completionByCourse = await loadCourseCompletionMap(
       pool,
       Number(session.account.id || 0),
+      email,
       completionEligibleCourseSlugs
     );
     const proofRequirementByCourse = await loadCertificateProofRequirements(pool, individualEligibleCourseSlugs);

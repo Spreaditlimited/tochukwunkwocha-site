@@ -1948,11 +1948,152 @@ async function getStudentCourseProgressDetail(pool, input) {
   };
 }
 
+async function getLearnerBatchAwareCompletion(pool, input) {
+  const accountId = Number(input && input.account_id || 0);
+  const accountEmail = clean(input && input.account_email, 220).toLowerCase();
+  const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
+  const includeUnreleased = !!(input && input.include_unreleased === true);
+  const nowMs = Number(input && input.now_ms);
+  const effectiveNowMs = Number.isFinite(nowMs)
+    ? nowMs
+    : nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE);
+
+  if (!(accountId > 0) || !accountEmail || !courseSlug) {
+    return {
+      total_lessons: 0,
+      completed_lessons: 0,
+      completion_percent: 0,
+      eligible_lesson_ids: [],
+      eligible_module_ids: [],
+      learner_batch_key: "",
+      course_active_batch_key: "",
+      guard: { has_eligible_lessons: false, reason: "invalid_input" },
+    };
+  }
+
+  await ensureLearningProgressTables(pool);
+  const hasCourseModuleMappings = await hasCourseModuleMappingsTable(pool).catch(function () { return false; });
+  const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
+  const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
+  const context = await getLearnerDripContext(pool, accountEmail, courseSlug, accountId);
+
+  const moduleSql = hasCourseModuleMappings
+    ? `SELECT
+         m.id AS module_id,
+         cm.drip_enabled,
+         DATE_FORMAT(cm.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+         cm.drip_batch_key,
+         cm.drip_offset_seconds
+       FROM ${COURSE_MODULES_TABLE} cm
+       JOIN ${MODULES_TABLE} m ON m.id = cm.module_id
+       WHERE cm.course_slug = ?
+         AND cm.is_active = 1
+         AND m.is_active = 1`
+    : `SELECT
+         m.id AS module_id,
+         m.drip_enabled,
+         DATE_FORMAT(m.drip_at, '%Y-%m-%d %H:%i:%s') AS drip_at,
+         ${dripBatchKeySelect},
+         m.drip_offset_seconds
+       FROM ${MODULES_TABLE} m
+       WHERE m.course_slug = ?
+         AND m.is_active = 1`;
+  const [moduleRows] = await pool.query(moduleSql, [courseSlug]);
+  const allModuleRows = Array.isArray(moduleRows) ? moduleRows : [];
+  const moduleIds = allModuleRows.map(function (row) {
+    return Number(row && row.module_id || 0);
+  }).filter(function (id) {
+    return id > 0;
+  });
+  context.module_batch_drip_map = await loadModuleBatchDripMap(pool, moduleIds);
+
+  const eligibleModuleIds = allModuleRows.filter(function (row) {
+    if (includeUnreleased) {
+      // Keep strict batch targeting while ignoring time-based release gates.
+      return moduleIsReleasedForContext({
+        module_id: row && row.module_id,
+        drip_enabled: row && row.drip_enabled,
+        drip_at: "1970-01-01 00:00:00",
+        drip_batch_key: row && row.drip_batch_key,
+        drip_offset_seconds: row && row.drip_offset_seconds,
+      }, context, effectiveNowMs);
+    }
+    return moduleIsReleasedForContext(row, context, effectiveNowMs);
+  }).map(function (row) {
+    return Number(row && row.module_id || 0);
+  }).filter(function (id) {
+    return id > 0;
+  });
+
+  if (!eligibleModuleIds.length) {
+    return {
+      total_lessons: 0,
+      completed_lessons: 0,
+      completion_percent: 0,
+      eligible_lesson_ids: [],
+      eligible_module_ids: [],
+      learner_batch_key: clean(context && context.learner_batch_key, 64).toLowerCase(),
+      course_active_batch_key: clean(context && context.course_active_batch_key, 64).toLowerCase(),
+      guard: { has_eligible_lessons: false, reason: "no_eligible_modules" },
+    };
+  }
+
+  const modulePlaceholders = eligibleModuleIds.map(function () { return "?"; }).join(",");
+  const [lessonRows] = await pool.query(
+    `SELECT id
+     FROM ${LESSONS_TABLE}
+     WHERE is_active = 1
+       AND module_id IN (${modulePlaceholders})`,
+    eligibleModuleIds
+  );
+  const eligibleLessonIds = (Array.isArray(lessonRows) ? lessonRows : []).map(function (row) {
+    return Number(row && row.id || 0);
+  }).filter(function (id) {
+    return id > 0;
+  });
+  if (!eligibleLessonIds.length) {
+    return {
+      total_lessons: 0,
+      completed_lessons: 0,
+      completion_percent: 0,
+      eligible_lesson_ids: [],
+      eligible_module_ids: eligibleModuleIds,
+      learner_batch_key: clean(context && context.learner_batch_key, 64).toLowerCase(),
+      course_active_batch_key: clean(context && context.course_active_batch_key, 64).toLowerCase(),
+      guard: { has_eligible_lessons: false, reason: "no_active_lessons" },
+    };
+  }
+
+  const lessonPlaceholders = eligibleLessonIds.map(function () { return "?"; }).join(",");
+  const [doneRows] = await pool.query(
+    `SELECT COUNT(*) AS completed_lessons
+     FROM ${LESSON_PROGRESS_TABLE}
+     WHERE account_id = ?
+       AND is_completed = 1
+       AND lesson_id IN (${lessonPlaceholders})`,
+    [accountId].concat(eligibleLessonIds)
+  );
+  const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
+  const totalLessons = eligibleLessonIds.length;
+  const completionPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  return {
+    total_lessons: totalLessons,
+    completed_lessons: completedLessons,
+    completion_percent: completionPercent,
+    eligible_lesson_ids: eligibleLessonIds,
+    eligible_module_ids: eligibleModuleIds,
+    learner_batch_key: clean(context && context.learner_batch_key, 64).toLowerCase(),
+    course_active_batch_key: clean(context && context.course_active_batch_key, 64).toLowerCase(),
+    guard: { has_eligible_lessons: true, reason: "ok" },
+  };
+}
+
 module.exports = {
   LESSON_PROGRESS_TABLE,
   ensureLearningProgressTables,
   hasCourseAccess,
   isModuleReleasedForLearner,
+  getLearnerBatchAwareCompletion,
   listCourseForLearner,
   saveLessonProgress,
   getStudentCourseAccessAudit,

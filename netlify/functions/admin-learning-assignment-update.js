@@ -2,8 +2,7 @@ const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { MODULES_TABLE, LESSONS_TABLE } = require("./_lib/learning");
-const { LESSON_PROGRESS_TABLE } = require("./_lib/learning-progress");
+const { getLearnerBatchAwareCompletion } = require("./_lib/learning-progress");
 const { STUDENT_CERTIFICATES_TABLE, ensureStudentCertificatesTable } = require("./_lib/student-certificates");
 const { getCourseName } = require("./_lib/course-config");
 const { sendEmail } = require("./_lib/email");
@@ -50,33 +49,17 @@ function certificateBlockReasonText(reason) {
   return code || "unknown requirement";
 }
 
-async function hasCompletedCourse(pool, accountId, courseSlug) {
-  const [totalRows] = await pool.query(
-    `SELECT COUNT(*) AS total_lessons
-     FROM ${LESSONS_TABLE} l
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug = ?`,
-    [courseSlug]
-  );
-  const totalLessons = Number(totalRows && totalRows[0] && totalRows[0].total_lessons || 0);
-  if (!(totalLessons > 0)) return false;
-
-  const [doneRows] = await pool.query(
-    `SELECT COUNT(*) AS completed_lessons
-     FROM ${LESSON_PROGRESS_TABLE} p
-     JOIN ${LESSONS_TABLE} l ON l.id = p.lesson_id
-     JOIN ${MODULES_TABLE} m ON m.id = l.module_id
-     WHERE p.account_id = ?
-       AND p.is_completed = 1
-       AND m.is_active = 1
-       AND l.is_active = 1
-       AND m.course_slug = ?`,
-    [Number(accountId), courseSlug]
-  );
-  const completedLessons = Number(doneRows && doneRows[0] && doneRows[0].completed_lessons || 0);
-  return completedLessons >= totalLessons;
+async function hasCompletedCourse(pool, accountId, accountEmail, courseSlug) {
+  const email = clean(accountEmail, 220).toLowerCase();
+  if (!(Number(accountId || 0) > 0) || !email || !clean(courseSlug, 120)) return false;
+  const completion = await getLearnerBatchAwareCompletion(pool, {
+    account_id: Number(accountId || 0),
+    account_email: email,
+    course_slug: clean(courseSlug, 120).toLowerCase(),
+  });
+  const totalLessons = Number(completion && completion.total_lessons || 0);
+  const completedLessons = Number(completion && completion.completed_lessons || 0);
+  return totalLessons > 0 && completedLessons >= totalLessons;
 }
 
 async function issueIndividualCertificateIfEligible(pool, assignment) {
@@ -85,7 +68,7 @@ async function issueIndividualCertificateIfEligible(pool, assignment) {
   if (!(accountId > 0) || !courseSlug) return { issued: false, reason: "missing_account_or_course" };
 
   const [accountRows] = await pool.query(
-    `SELECT full_name, certificate_name_confirmed_at
+    `SELECT full_name, email, certificate_name_confirmed_at
      FROM student_accounts
      WHERE id = ?
      LIMIT 1`,
@@ -97,7 +80,9 @@ async function issueIndividualCertificateIfEligible(pool, assignment) {
   const recipientName = clean(account.full_name, 180);
   if (!recipientName) return { issued: false, reason: "recipient_name_missing" };
 
-  const completed = await hasCompletedCourse(pool, accountId, courseSlug);
+  const completionEmail = clean(assignment && assignment.student_email, 220).toLowerCase()
+    || clean(account && account.email, 220).toLowerCase();
+  const completed = await hasCompletedCourse(pool, accountId, completionEmail, courseSlug);
   if (!completed) return { issued: false, reason: "course_incomplete" };
 
   await ensureStudentCertificatesTable(pool);
