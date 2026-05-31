@@ -50,6 +50,8 @@
   var cloneModuleSourceSelect = document.getElementById("cloneModuleSourceSelect");
   var cloneModuleToCourseBtn = document.getElementById("cloneModuleToCourseBtn");
   var moduleRows = document.getElementById("moduleRows");
+  var moduleTableCourseFilter = document.getElementById("moduleTableCourseFilter");
+  var moduleTableBatchFilter = document.getElementById("moduleTableBatchFilter");
   var moduleCourseSlugInput = document.getElementById("moduleCourseSlugInput");
   var moduleTitleInput = document.getElementById("moduleTitleInput");
   var moduleDescriptionInput = document.getElementById("moduleDescriptionInput");
@@ -84,6 +86,8 @@
     selectedModuleId: 0,
     selectedCourseId: 0,
     selectedCourseBatchKey: "",
+    moduleTableFilterCourseSlug: "",
+    moduleTableFilterBatchKey: "",
   };
   var dragLessonIndex = -1;
 
@@ -313,6 +317,36 @@
 
   function visibleModules() {
     return (state.modules || []).filter(isModuleVisibleForSelectedCourse);
+  }
+
+  function moduleHasBatchSchedule(moduleId, batchKey) {
+    var id = Number(moduleId || 0);
+    var key = String(batchKey || "").trim().toLowerCase();
+    if (!(id > 0) || !key) return false;
+    var schedules = state.moduleDripSchedulesByModule.get(id) || [];
+    return schedules.some(function (row) {
+      return String(row && row.batch_key || "").trim().toLowerCase() === key;
+    });
+  }
+
+  function moduleHasAnyBatchSchedule(moduleId) {
+    var id = Number(moduleId || 0);
+    if (!(id > 0)) return false;
+    var schedules = state.moduleDripSchedulesByModule.get(id) || [];
+    return schedules.length > 0;
+  }
+
+  function visibleModulesForTable() {
+    var filteredCourse = String(state.moduleTableFilterCourseSlug || "").trim().toLowerCase();
+    var filteredBatch = String(state.moduleTableFilterBatchKey || "").trim().toLowerCase();
+    return (state.modules || []).filter(function (mod) {
+      var moduleCourseSlug = String(mod && mod.course_slug || "").trim().toLowerCase();
+      if (filteredCourse && moduleCourseSlug !== filteredCourse) return false;
+      if (!filteredBatch) return true;
+      if (moduleHasBatchSchedule(mod && mod.id, filteredBatch)) return true;
+      // Modules without explicit batch schedules are treated as course-wide.
+      return !moduleHasAnyBatchSchedule(mod && mod.id);
+    });
   }
 
   function toDatetimeLocalValue(value) {
@@ -646,6 +680,42 @@
     if (state.selectedModuleId > 0) moduleSelect.value = String(state.selectedModuleId);
   }
 
+  function renderModuleTableCourseFilter() {
+    if (!moduleTableCourseFilter) return;
+    var previous = String(state.moduleTableFilterCourseSlug || "").trim().toLowerCase();
+    var options = ['<option value="">All courses</option>'];
+    (state.courses || []).forEach(function (course) {
+      var slug = String(course && course.course_slug || "").trim().toLowerCase();
+      if (!slug) return;
+      options.push('<option value="' + escapeHtml(slug) + '">' + escapeHtml(courseLabel(course)) + "</option>");
+    });
+    moduleTableCourseFilter.innerHTML = options.join("");
+    moduleTableCourseFilter.value = previous;
+    if (moduleTableCourseFilter.value !== previous) {
+      state.moduleTableFilterCourseSlug = String(moduleTableCourseFilter.value || "").trim().toLowerCase();
+    }
+  }
+
+  function renderModuleTableBatchFilter() {
+    if (!moduleTableBatchFilter) return;
+    var courseSlug = String(state.moduleTableFilterCourseSlug || "").trim().toLowerCase();
+    var previous = String(state.moduleTableFilterBatchKey || "").trim().toLowerCase();
+    var options = ['<option value="">All batches</option>'];
+    if (courseSlug) {
+      listBatchesForCourse(courseSlug).forEach(function (row) {
+        var key = String(readBatchField(row, "batch_key", "batchKey") || "").trim().toLowerCase();
+        if (!key) return;
+        var label = String(readBatchField(row, "batch_label", "batchLabel") || key).trim();
+        options.push('<option value="' + escapeHtml(key) + '">' + escapeHtml(label + " (" + key + ")") + "</option>");
+      });
+    }
+    moduleTableBatchFilter.innerHTML = options.join("");
+    moduleTableBatchFilter.value = previous;
+    if (moduleTableBatchFilter.value !== previous) {
+      state.moduleTableFilterBatchKey = "";
+    }
+  }
+
   function renderCloneModuleSourceOptions() {
     if (!cloneModuleSourceSelect) return;
     var previous = String(cloneModuleSourceSelect.value || "");
@@ -661,10 +731,10 @@
 
   function renderModuleRows() {
     if (!moduleRows) return;
-    var modules = visibleModules();
+    var modules = visibleModulesForTable();
     var hasCourseFilter = !!selectedCourseSlug();
     if (!modules.length) {
-      moduleRows.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">' + (selectedCourseSlug() ? "No modules for selected course." : "No modules yet.") + "</td></tr>";
+      moduleRows.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">No modules found for selected course/batch filter.</td></tr>';
       return;
     }
     moduleRows.innerHTML = modules.map(function (mod) {
@@ -863,6 +933,8 @@
     state.selectedModuleId = moduleParam > 0 ? moduleParam : 0;
 
     renderCourseSelect();
+    renderModuleTableCourseFilter();
+    renderModuleTableBatchFilter();
     renderModuleCourseOptions();
     renderCloneModuleSourceOptions();
     if (state.selectedCourseId > 0) {
@@ -999,6 +1071,22 @@
         ? state.modules.find(function (m) { return Number(m.id) === Number(state.selectedModuleId); })
         : null);
       renderLessonRows();
+    });
+  }
+
+  if (moduleTableCourseFilter) {
+    moduleTableCourseFilter.addEventListener("change", function () {
+      state.moduleTableFilterCourseSlug = String(moduleTableCourseFilter.value || "").trim().toLowerCase();
+      state.moduleTableFilterBatchKey = "";
+      renderModuleTableBatchFilter();
+      renderModuleRows();
+    });
+  }
+
+  if (moduleTableBatchFilter) {
+    moduleTableBatchFilter.addEventListener("change", function () {
+      state.moduleTableFilterBatchKey = String(moduleTableBatchFilter.value || "").trim().toLowerCase();
+      renderModuleRows();
     });
   }
 

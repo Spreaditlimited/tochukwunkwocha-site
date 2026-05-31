@@ -303,6 +303,20 @@
                 <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <h4 class="text-sm font-heading font-bold uppercase tracking-wider text-gray-700">Modules</h4>
                   <p class="mt-1 text-xs text-gray-500">Quickly publish/unpublish modules or open one to edit lessons.</p>
+                  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label for="moduleTableCourseFilter" class="block text-xs font-semibold uppercase tracking-wide text-gray-600">Filter by Course</label>
+                      <select id="moduleTableCourseFilter" class="premium-picker mt-1 bg-white">
+                        <option value="">All courses</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="moduleTableBatchFilter" class="block text-xs font-semibold uppercase tracking-wide text-gray-600">Filter by Batch</label>
+                      <select id="moduleTableBatchFilter" class="premium-picker mt-1 bg-white">
+                        <option value="">All batches</option>
+                      </select>
+                    </div>
+                  </div>
                   <div class="hide-scrollbar mt-3 max-h-[24rem] overflow-auto">
                     <table class="min-w-full md:min-w-[52rem] divide-y divide-gray-200 text-sm">
                       <thead class="bg-white">
