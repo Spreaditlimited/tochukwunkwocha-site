@@ -4,6 +4,7 @@
   const navDropdowns = Array.prototype.slice.call(document.querySelectorAll(".nav-dropdown"));
 
   const META_PIXEL_ID = "197692536710001";
+  const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-K09N39FSXZ";
   const COOKIE_CONSENT_KEY = "tws_cookie_consent";
   const AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
   const PURCHASE_WELCOME_KEY = "recent_course_purchase_notice_v1";
@@ -125,6 +126,28 @@
     window.fbq("track", "PageView");
   }
 
+  function initGoogleAnalytics() {
+    if (!GOOGLE_ANALYTICS_MEASUREMENT_ID || window.gtag) return;
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () {
+      window.dataLayer.push(arguments);
+    };
+    window.gtag("js", new Date());
+    window.gtag("config", GOOGLE_ANALYTICS_MEASUREMENT_ID);
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(GOOGLE_ANALYTICS_MEASUREMENT_ID);
+    const firstScript = document.getElementsByTagName("script")[0];
+    firstScript.parentNode.insertBefore(script, firstScript);
+  }
+
+  function initOptionalTracking() {
+    initMetaPixel();
+    initGoogleAnalytics();
+  }
+
   function getCookieConsent() {
     try {
       return String(window.localStorage.getItem(COOKIE_CONSENT_KEY) || "").trim();
@@ -174,7 +197,10 @@
       acceptBtn.addEventListener("click", function () {
         setCookieConsent("granted");
         closeBanner();
-        initMetaPixel();
+        initOptionalTracking();
+        trackCurrentPagePurchase().catch(function () {
+          return null;
+        });
       });
     }
 
@@ -215,31 +241,56 @@
 
   async function trackPurchase(orderUuid) {
     if (!orderUuid) return;
-    if (typeof window.fbq !== "function") return;
-
-    const storageKey = `meta_purchase_sent_${orderUuid}`;
-    if (window.localStorage && window.localStorage.getItem(storageKey) === "1") return;
+    const canTrackMeta = typeof window.fbq === "function";
+    const canTrackGoogleAnalytics = typeof window.gtag === "function";
+    if (!canTrackMeta && !canTrackGoogleAnalytics) return;
 
     const order = await fetchPaidOrderSummary(orderUuid);
     if (!order || !Number.isFinite(Number(order.value)) || !order.currency) return;
     const courseSlug = String(order.course_slug || "prompt-to-profit");
     const courseName = (COURSE_CONFIGS[courseSlug] && COURSE_CONFIGS[courseSlug].name) || "Course";
+    const value = Number(order.value);
+    const currency = String(order.currency).toUpperCase();
 
-    const eventId = `ptp_${orderUuid}`;
-    window.fbq(
-      "track",
-      "Purchase",
-      {
-        value: Number(order.value),
-        currency: String(order.currency).toUpperCase(),
-        content_name: courseName,
-        content_type: "product",
-        content_ids: [courseSlug],
-      },
-      { eventID: eventId }
-    );
+    if (canTrackMeta) {
+      const metaStorageKey = `meta_purchase_sent_${orderUuid}`;
+      if (!window.localStorage || window.localStorage.getItem(metaStorageKey) !== "1") {
+        const eventId = `ptp_${orderUuid}`;
+        window.fbq(
+          "track",
+          "Purchase",
+          {
+            value: value,
+            currency: currency,
+            content_name: courseName,
+            content_type: "product",
+            content_ids: [courseSlug],
+          },
+          { eventID: eventId }
+        );
 
-    if (window.localStorage) window.localStorage.setItem(storageKey, "1");
+        if (window.localStorage) window.localStorage.setItem(metaStorageKey, "1");
+      }
+    }
+
+    if (canTrackGoogleAnalytics) {
+      const gaStorageKey = `ga_purchase_sent_${orderUuid}`;
+      if (!window.localStorage || window.localStorage.getItem(gaStorageKey) !== "1") {
+        window.gtag("event", "purchase", {
+          transaction_id: orderUuid,
+          value: value,
+          currency: currency,
+          items: [
+            {
+              item_id: courseSlug,
+              item_name: courseName,
+            },
+          ],
+        });
+
+        if (window.localStorage) window.localStorage.setItem(gaStorageKey, "1");
+      }
+    }
   }
 
   function queuePurchaseWelcomeNotice(courseName) {
@@ -257,7 +308,7 @@
   }
 
   if (getCookieConsent() === "granted") {
-    initMetaPixel();
+    initOptionalTracking();
   } else if (!getCookieConsent()) {
     openCookieBanner();
   }
@@ -861,6 +912,12 @@
   const isEnrollmentCoursePage =
     window.location.pathname.indexOf("/courses/prompt-to-profit") === 0 ||
     window.location.pathname.indexOf("/courses/prompt-to-production") === 0;
+
+  function trackCurrentPagePurchase() {
+    if (payment !== "success" || !paidOrderUuid) return Promise.resolve();
+    return trackPurchase(paidOrderUuid);
+  }
+
   if (isEnrollmentCoursePage) {
     if (payment === "success" && paidOrderUuid) {
       queuePurchaseWelcomeNotice(currentCourseConfig().name);
@@ -871,7 +928,7 @@
         .finally(function () {
           openPaymentFeedbackModal("success");
         });
-      trackPurchase(paidOrderUuid).catch(function () {
+      trackCurrentPagePurchase().catch(function () {
         return null;
       });
     } else if (payment === "failed") {
