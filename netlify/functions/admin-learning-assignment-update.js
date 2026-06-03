@@ -26,6 +26,19 @@ function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function nl2br(value) {
+  return escapeHtml(value).replace(/\r?\n/g, "<br/>");
+}
+
 function nowSqlDateTime() {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
@@ -47,6 +60,16 @@ function certificateBlockReasonText(reason) {
   if (code === "course_incomplete") return "student is not currently at 100% completion for this course";
   if (code === "certificate_not_found_after_upsert") return "certificate record could not be loaded after issuance";
   return code || "unknown requirement";
+}
+
+function assignmentStatusLabel(status) {
+  const raw = clean(status, 32).toLowerCase();
+  if (raw === "submitted") return "Submitted";
+  if (raw === "in_review") return "In review";
+  if (raw === "needs_revision") return "Needs revision";
+  if (raw === "approved") return "Approved";
+  if (raw === "rejected") return "Rejected";
+  return raw ? raw.replace(/_/g, " ") : "Updated";
 }
 
 async function hasCompletedCourse(pool, accountId, accountEmail, courseSlug) {
@@ -121,40 +144,50 @@ async function issueIndividualCertificateIfEligible(pool, assignment) {
   };
 }
 
-async function sendApprovalEmail(input) {
+async function sendStatusChangeEmail(input) {
   const to = clean(input && input.to, 220).toLowerCase();
-  if (!to) return;
+  if (!to) throw new Error("Student email is missing.");
   const studentName = clean(input && input.studentName, 180) || "Student";
   const courseName = clean(input && input.courseName, 180) || "your course";
   const adminFeedback = clean(input && input.adminFeedback, 4000);
+  const previousStatus = clean(input && input.previousStatus, 32);
+  const nextStatus = clean(input && input.nextStatus, 32);
   const certificateUrl = clean(input && input.certificateUrl, 1500);
   const websiteUrl = clean(input && input.websiteUrl, 1500);
   const certificateReady = !!certificateUrl;
   const feedbackLine = adminFeedback ? adminFeedback : "No additional feedback was added.";
+  const statusLabel = assignmentStatusLabel(nextStatus);
   const subject = certificateReady
-    ? "Your Website Proof Was Approved — Certificate Ready"
-    : "Your Website Proof Was Approved";
+    ? "Your learning support status changed - Certificate ready"
+    : `Your learning support status changed to ${statusLabel}`;
+  const dashboardUrl = `${siteBaseUrl()}/dashboard/courses/`;
   const html = [
-    `<p>Hello ${studentName},</p>`,
-    `<p>Great news. Your website proof for <strong>${courseName}</strong> has been approved.</p>`,
-    websiteUrl ? `<p><strong>Approved website:</strong> <a href="${websiteUrl}">${websiteUrl}</a></p>` : "",
+    `<p>Hello ${escapeHtml(studentName)},</p>`,
+    `<p>Your learning support submission for <strong>${escapeHtml(courseName)}</strong> has been updated.</p>`,
+    `<p><strong>Status:</strong> ${escapeHtml(assignmentStatusLabel(previousStatus))} to ${escapeHtml(statusLabel)}</p>`,
+    `<p><strong>Feedback:</strong><br/>${nl2br(feedbackLine)}</p>`,
+    websiteUrl && nextStatus === "approved" ? `<p><strong>Approved website:</strong> <a href="${escapeHtml(websiteUrl)}">${escapeHtml(websiteUrl)}</a></p>` : "",
     certificateReady
-      ? `<p>Your certificate is now available.</p><p><a href="${certificateUrl}">Download your certificate</a></p>`
-      : "<p>Your certificate will be available after all certificate requirements are fully satisfied.</p>",
-    `<p><strong>Admin feedback:</strong> ${feedbackLine}</p>`,
-    "<p>If your dashboard does not update immediately, refresh and check again.</p>",
+      ? `<p>Your certificate is now available.</p><p><a href="${escapeHtml(certificateUrl)}">Download your certificate</a></p>`
+      : "",
+    !certificateReady && nextStatus === "approved" && websiteUrl
+      ? "<p>Your certificate will be available after all certificate requirements are fully satisfied.</p>"
+      : "",
+    `<p><a href="${escapeHtml(dashboardUrl)}">Open your dashboard</a></p>`,
     "<p>Tochukwu Tech and AI Academy</p>",
   ].filter(Boolean).join("\n");
   const text = [
     `Hello ${studentName},`,
     "",
-    `Great news. Your website proof for ${courseName} has been approved.`,
-    websiteUrl ? `Approved website: ${websiteUrl}` : "",
-    certificateReady
-      ? `Your certificate is now available: ${certificateUrl}`
-      : "Your certificate will be available after all certificate requirements are fully satisfied.",
-    `Admin feedback: ${feedbackLine}`,
-    "If your dashboard does not update immediately, refresh and check again.",
+    `Your learning support submission for ${courseName} has been updated.`,
+    `Status: ${assignmentStatusLabel(previousStatus)} to ${statusLabel}`,
+    `Feedback: ${feedbackLine}`,
+    websiteUrl && nextStatus === "approved" ? `Approved website: ${websiteUrl}` : "",
+    certificateReady ? `Your certificate is now available: ${certificateUrl}` : "",
+    !certificateReady && nextStatus === "approved" && websiteUrl
+      ? "Your certificate will be available after all certificate requirements are fully satisfied."
+      : "",
+    `Open your dashboard: ${dashboardUrl}`,
     "",
     "Tochukwu Tech and AI Academy",
   ].filter(Boolean).join("\n");
@@ -189,8 +222,10 @@ exports.handler = async function (event) {
       admin_feedback: body.admin_feedback,
       admin_actor: auth && auth.payload ? auth.payload.role : "admin",
     });
-    const becameApproved = clean(before && before.status, 32).toLowerCase() !== "approved"
-      && clean(item && item.status, 32).toLowerCase() === "approved";
+    const previousStatus = clean(before && before.status, 32).toLowerCase();
+    const nextStatus = clean(item && item.status, 32).toLowerCase();
+    const statusChanged = previousStatus && nextStatus && previousStatus !== nextStatus;
+    const becameApproved = previousStatus !== "approved" && nextStatus === "approved";
     const isCertificateProof = clean(before && before.submission_kind, 24).toLowerCase() === "link"
       && clean(before && before.submission_text, 120) === CERTIFICATE_PROOF_MARKER;
     let email = {
@@ -199,26 +234,35 @@ exports.handler = async function (event) {
       certificateReady: false,
       note: "",
     };
-    if (becameApproved && isCertificateProof) {
+    if (statusChanged) {
       email.attempted = true;
-      const cert = await issueIndividualCertificateIfEligible(pool, before);
+      let cert = null;
+      if (becameApproved && isCertificateProof) {
+        cert = await issueIndividualCertificateIfEligible(pool, before);
+      }
       email.certificateReady = !!(cert && cert.issued);
       try {
-        await sendApprovalEmail({
+        await sendStatusChangeEmail({
           to: before.student_email,
           studentName: before.student_name,
           courseName: getCourseName(before.course_slug),
           websiteUrl: before.submission_link,
           certificateUrl: cert && cert.issued ? cert.certificateUrl : "",
           adminFeedback: item && item.admin_feedback ? item.admin_feedback : "",
+          previousStatus,
+          nextStatus,
         });
         email.sent = true;
-        email.note = cert && cert.issued
-          ? "Approval email sent with certificate link."
-          : "Approval email sent. Certificate link not included: " + certificateBlockReasonText(cert && cert.reason) + ".";
+        if (cert && cert.issued) {
+          email.note = "Status update email sent with certificate link.";
+        } else if (becameApproved && isCertificateProof && cert && cert.reason) {
+          email.note = "Status update email sent. Certificate link not included: " + certificateBlockReasonText(cert && cert.reason) + ".";
+        } else {
+          email.note = "Status update email sent with feedback.";
+        }
       } catch (emailError) {
         email.note = emailError && emailError.message ? emailError.message : "Email send failed";
-        console.warn("assignment_approval_email_failed", {
+        console.warn("assignment_status_email_failed", {
           assignment_id: assignmentId,
           error: emailError && emailError.message ? emailError.message : String(emailError || "unknown"),
         });

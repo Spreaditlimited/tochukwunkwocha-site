@@ -311,12 +311,12 @@
       if (email && email.attempted) {
         setModalEmailStatus(
           email.sent
-            ? clean(email.note, 300) || "Approval email sent."
-            : "Auto-send failed. You can use 'Send Approval Email'.",
+            ? clean(email.note, 300) || "Status update email sent."
+            : "Status update email failed. Check email settings before changing status again.",
           !email.sent
         );
       } else {
-        setModalEmailStatus("Review saved. No auto-email sent for this status/type.", false);
+        setModalEmailStatus("Review saved. No status change email was needed.", false);
       }
       if (updated) syncModalSendEmailButton(updated);
       setMessage("Assignment review updated.", false);
