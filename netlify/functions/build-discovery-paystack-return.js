@@ -6,6 +6,7 @@ const {
   markBuildDiscoveryPaymentPaid,
   findBuildScorecardLeadByUuid,
   issueBuildBookingAccess,
+  isBuildDiscoveryEligible,
 } = require("./_lib/build-scorecards-tochukwu");
 
 function clean(value, max) {
@@ -55,7 +56,7 @@ exports.handler = async function (event) {
     });
 
     const lead = await findBuildScorecardLeadByUuid(pool, payment.leadUuid);
-    if (!lead || Number(lead.score || 0) < 70) {
+    if (!lead || !isBuildDiscoveryEligible(lead)) {
       return {
         statusCode: 302,
         headers: { Location: `${siteBaseUrl()}/build-scorecard/?payment=failed` },
@@ -65,6 +66,7 @@ exports.handler = async function (event) {
 
     const issued = await issueBuildBookingAccess(pool, {
       score: Number(lead.score || 0),
+      discoveryApproved: Boolean(lead.discoveryPaymentApprovedAt),
       leadUuid: clean(lead.leadUuid, 64),
       answers: Array.isArray(lead.answers) ? lead.answers : [],
       sourcePath: "/build-scorecard/",

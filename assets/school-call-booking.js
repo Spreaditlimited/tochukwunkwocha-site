@@ -482,7 +482,7 @@
     if (!manageToken && bookingSource === "build" && !buildAccessToken) {
       if (bookPanel) bookPanel.hidden = true;
       if (managePanel) managePanel.hidden = true;
-      setStatus(bookStatus, "Build booking access is restricted to qualified scorecard submissions.", "error");
+      setStatus(bookStatus, "Build booking access is restricted to approved scorecard submissions.", "error");
       return;
     }
 

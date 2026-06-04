@@ -114,7 +114,7 @@
     <main class="flex-1 w-full flex items-center justify-center py-12 px-4 sm:px-6 relative z-10">
       <div class="w-full max-w-2xl">
         
-        <form id="scorecardForm" class="relative" onsubmit="event.preventDefault(); submitForm();">
+        <form id="scorecardForm" class="relative" novalidate onsubmit="event.preventDefault(); submitForm();">
           
           <div id="introStep" class="step-container active text-center pt-8 pb-16">
             <span class="inline-flex items-center rounded-full border border-build-soft bg-white/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-build-accent mb-6 shadow-sm">
@@ -181,7 +181,7 @@
               </div>
               <div>
                 <label class="block text-sm font-bold text-build-ink mb-2">Who will use this system?</label>
-                <input type="text" required class="input-premium" placeholder="Internal staff, external clients, etc.">
+                <input id="systemUsers" type="text" required class="input-premium" placeholder="Internal staff, external clients, etc.">
               </div>
             </div>
             <div class="mt-8 flex justify-between items-center">
@@ -246,7 +246,7 @@
                   <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 flex-shrink-0 transition"></div>
                   <div>
                     <span class="text-sm font-semibold block">Focused Systems</span>
-                    <span class="text-xs text-build-ink/60">Dashboards, internal tools, customer portals, booking systems.</span>
+                    <span class="text-xs text-build-ink/60">Dashboards, internal tools, customer portals, booking systems, e-commerce websites.</span>
                   </div>
                 </div>
               </label>
@@ -293,12 +293,11 @@
             <div class="space-y-8">
               <div>
                 <label class="block text-sm font-bold text-build-ink mb-3">Allocated Budget Range</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="0" required class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Under ₦500k</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="5" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦500k – ₦1m</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="15" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦1m – ₦3m</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="18" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦3m – ₦5m</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="20" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦5m+</div></label>
+                <p class="mb-3 text-xs text-build-ink/50">USD equivalents calculated at ₦1,400 per $1.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_1m_3m" required class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦1m – ₦3m<br><span class="text-xs font-normal text-build-ink/50">Approx. $714 – $2,143</span></div></label>
+                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_3m_5m" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦3m – ₦5m<br><span class="text-xs font-normal text-build-ink/50">Approx. $2,143 – $3,571</span></div></label>
+                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_5m_plus" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦5m+<br><span class="text-xs font-normal text-build-ink/50">Approx. $3,571+</span></div></label>
                 </div>
               </div>
 
@@ -322,7 +321,7 @@
               </div>
 
               <label class="flex items-start mt-6 cursor-pointer group">
-                <input type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-build-accent focus:ring-build-accent cursor-pointer">
+                <input id="discoveryAcknowledgement" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-build-accent focus:ring-build-accent cursor-pointer">
                 <span class="ml-3 text-sm text-build-ink/80 leading-relaxed">
                   I understand that discovery sessions are paid, implementation slots are strictly limited to one per month, and submission does not guarantee selection.
                 </span>
@@ -476,7 +475,11 @@
           if (!key || !(key in draft)) return;
           const value = draft[key];
           if (field.type === 'radio') {
-            field.checked = String(field.value) === String(value);
+            const legacyBudgetValues = { '15': 'ngn_1m_3m', '18': 'ngn_3m_5m', '20': 'ngn_5m_plus' };
+            const restoredValue = key === 'budget' && legacyBudgetValues[String(value)]
+              ? legacyBudgetValues[String(value)]
+              : String(value);
+            field.checked = String(field.value) === restoredValue;
             return;
           }
           if (field.type === 'checkbox') {
@@ -562,7 +565,31 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      function selectedValue(name) {
+        const selected = document.querySelector(`input[name="${name}"]:checked`);
+        return selected ? selected.value : '';
+      }
+
+      function validateFormForSubmission() {
+        const form = document.getElementById('scorecardForm');
+        if (!form) return false;
+        const invalidField = Array.from(form.querySelectorAll('input, textarea, select'))
+          .find(function (field) { return !field.checkValidity(); });
+        if (!invalidField) return true;
+
+        const stepContainer = invalidField.closest('.step-container');
+        if (stepContainer && stepContainer.dataset.step) {
+          prevStep(Number(stepContainer.dataset.step));
+          setTimeout(function () { invalidField.reportValidity(); }, 100);
+        } else {
+          invalidField.reportValidity();
+        }
+        return false;
+      }
+
       async function submitForm() {
+        if (!validateFormForSubmission()) return;
+
         const submitBtn = document.querySelector('button[type="submit"]');
         const originalSubmitLabel = submitBtn ? submitBtn.textContent : '';
         if (submitBtn) {
@@ -578,11 +605,12 @@
             website: document.getElementById('websiteUrl').value.trim(),
             buildDesc: document.getElementById('buildDesc').value.trim(),
             problemDesc: document.getElementById('problemDesc').value.trim(),
-            currentProcess: document.querySelector('input[name="currentProcess"]:checked').value,
-            complexity: document.querySelector('input[name="complexity"]:checked').value,
-            budget: document.querySelector('input[name="budget"]:checked').value,
-            decision: document.querySelector('input[name="decision"]:checked').value,
-            timeline: document.querySelector('input[name="timeline"]:checked').value,
+            systemUsers: document.getElementById('systemUsers').value.trim(),
+            currentProcess: selectedValue('currentProcess'),
+            complexity: selectedValue('complexity'),
+            budget: selectedValue('budget'),
+            decision: selectedValue('decision'),
+            timeline: selectedValue('timeline'),
           };
 
           const submitRes = await fetch('/.netlify/functions/build-scorecard-submit', {

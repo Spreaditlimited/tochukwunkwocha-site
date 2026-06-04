@@ -13,9 +13,15 @@
   var submissionModal = document.getElementById("buildSubmissionModal");
   var submissionModalTitle = document.getElementById("buildSubmissionModalTitle");
   var submissionModalBody = document.getElementById("buildSubmissionModalBody");
+  var paymentLinkModal = document.getElementById("buildPaymentLinkModal");
+  var paymentLinkModalTitle = document.getElementById("buildPaymentLinkModalTitle");
+  var paymentLinkModalDescription = document.getElementById("buildPaymentLinkModalDescription");
+  var paymentLinkModalError = document.getElementById("buildPaymentLinkModalError");
+  var paymentLinkModalConfirm = document.getElementById("buildPaymentLinkModalConfirmBtn");
 
   var currentRows = [];
   var currentLeadForBook = null;
+  var currentLeadForPaymentLink = null;
 
   function clean(value) {
     return String(value || "").trim();
@@ -82,6 +88,23 @@
     return '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600">No</span>';
   }
 
+  function paymentStatusBadge(status) {
+    var s = clean(status).toLowerCase();
+    if (s === "paid") return '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">Paid</span>';
+    if (s === "initiated") return '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-700">Payment pending</span>';
+    return '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600">Not sent</span>';
+  }
+
+  function isManualReviewLead(row) {
+    return clean(row && row.bandKey).toLowerCase() === "manual_review" || Boolean(row && row.followUpRequired);
+  }
+
+  function canSendPaymentLinkForRow(row) {
+    var call = row && row.call && typeof row.call === "object" ? row.call : {};
+    var payment = row && row.discoveryPayment && typeof row.discoveryPayment === "object" ? row.discoveryPayment : {};
+    return isManualReviewLead(row) && !clean(call.bookingUuid) && clean(payment.status).toLowerCase() !== "paid";
+  }
+
   function setMessage(text, bad) {
     if (!messageEl) return;
     messageEl.textContent = clean(text);
@@ -121,10 +144,37 @@
     document.body.classList.remove("modal-open");
   }
 
+  function setPaymentLinkModalError(text) {
+    if (!paymentLinkModalError) return;
+    var msg = clean(text);
+    paymentLinkModalError.textContent = msg;
+    paymentLinkModalError.classList.toggle("hidden", !msg);
+  }
+
+  function showPaymentLinkModal() {
+    if (!paymentLinkModal) return;
+    paymentLinkModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closePaymentLinkModal() {
+    currentLeadForPaymentLink = null;
+    if (!paymentLinkModal) return;
+    paymentLinkModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    setPaymentLinkModalError("");
+    if (paymentLinkModalConfirm) {
+      paymentLinkModalConfirm.disabled = false;
+      paymentLinkModalConfirm.textContent = "Send Payment Link";
+    }
+  }
+
   function renderSubmissionHtml(row) {
     var answers = Array.isArray(row && row.answers) ? row.answers : [];
     var scoredAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") !== 0; });
     var submittedAnswers = answers.filter(function (a) { return clean(a && a.question).indexOf("Submitted - ") === 0; });
+    var payment = row && row.discoveryPayment && typeof row.discoveryPayment === "object" ? row.discoveryPayment : {};
+    var paymentStatus = clean(payment.status).toLowerCase();
     var answerHtml = scoredAnswers.length
       ? scoredAnswers.map(function (a, idx) {
         return '<div class="rounded-lg border border-gray-200 bg-white p-3"><p class="text-xs font-semibold text-gray-500">Q' + String(idx + 1) + '</p><p class="mt-1 text-sm font-semibold text-gray-900">' + escapeHtml(a.question || "-") + '</p><p class="mt-1 text-sm text-gray-700">' + escapeHtml(a.answer || "-") + '</p><p class="mt-1 text-xs text-gray-500">Score: ' + escapeHtml(String(Number(a.score || 0))) + "</p></div>";
@@ -146,7 +196,11 @@
       '<p><span class="font-semibold">Company size/website:</span> ' + escapeHtml(row.studentPopulation || "-") + '</p>',
       '<p><span class="font-semibold">Score:</span> ' + escapeHtml(String(Number(row.score || 0))) + '/100</p>',
       '<p><span class="font-semibold">Band:</span> ' + escapeHtml(row.bandKey || "-") + '</p>',
+      '<p><span class="font-semibold">Discovery payment:</span> ' + escapeHtml(paymentStatus || "not sent") + '</p>',
       "</div>",
+      canSendPaymentLinkForRow(row)
+        ? '<button type="button" data-lead="' + escapeHtml(row.leadUuid || "") + '" data-action="send-payment-link" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">Send Discovery Payment Link</button>'
+        : "",
       '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted Details</p><div class="space-y-2">' + submittedHtml + "</div></div>",
       '<div><p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Scoring Answers</p><div class="space-y-2">' + answerHtml + "</div></div>",
       "</div>",
@@ -160,6 +214,16 @@
     if (!row) return;
     if (submissionModalTitle) submissionModalTitle.textContent = "Submission - " + clean(row.schoolName || row.fullName || "Build lead");
     if (submissionModalBody) submissionModalBody.innerHTML = renderSubmissionHtml(row);
+    var paymentBtn = submissionModalBody && submissionModalBody.querySelector('button[data-action="send-payment-link"]');
+    if (paymentBtn) {
+      paymentBtn.addEventListener("click", function () {
+        try {
+          openPaymentLinkModal(clean(paymentBtn.getAttribute("data-lead")));
+        } catch (error) {
+          setMessage(error.message || "Could not send discovery payment link.", true);
+        }
+      });
+    }
     showSubmissionModal();
   }
 
@@ -266,6 +330,54 @@
     }
   }
 
+  function openPaymentLinkModal(leadUuid) {
+    var row = (currentRows || []).find(function (x) {
+      return clean(x && x.leadUuid) === clean(leadUuid);
+    }) || null;
+    if (!row) throw new Error("Lead not found");
+
+    var payment = row.discoveryPayment && typeof row.discoveryPayment === "object" ? row.discoveryPayment : {};
+    var verb = clean(payment.status).toLowerCase() === "initiated" ? "Resend" : "Send";
+    currentLeadForPaymentLink = row;
+    if (paymentLinkModalTitle) paymentLinkModalTitle.textContent = verb + " discovery payment link";
+    if (paymentLinkModalDescription) {
+      paymentLinkModalDescription.textContent = verb + " the discovery call payment link to " + clean(row.fullName || "this applicant") + " at " + clean(row.workEmail) + ".";
+    }
+    if (paymentLinkModalConfirm) paymentLinkModalConfirm.textContent = verb + " Payment Link";
+    setPaymentLinkModalError("");
+    if (submissionModal && submissionModal.getAttribute("aria-hidden") === "false") closeSubmissionModal();
+    showPaymentLinkModal();
+    if (paymentLinkModalConfirm) paymentLinkModalConfirm.focus();
+  }
+
+  async function submitPaymentLinkModal() {
+    if (!currentLeadForPaymentLink) return;
+    var originalText = paymentLinkModalConfirm ? clean(paymentLinkModalConfirm.textContent) : "Send Payment Link";
+    if (paymentLinkModalConfirm) {
+      paymentLinkModalConfirm.disabled = true;
+      paymentLinkModalConfirm.textContent = "Sending...";
+    }
+
+    try {
+      var data = await api("/.netlify/functions/admin-build-scorecard-send-payment-link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ leadUuid: clean(currentLeadForPaymentLink.leadUuid) }),
+      });
+      closePaymentLinkModal();
+      setMessage(data.message || "Discovery payment link sent.", false);
+      await load();
+    } finally {
+      if (paymentLinkModalConfirm) {
+        paymentLinkModalConfirm.disabled = false;
+        paymentLinkModalConfirm.textContent = originalText;
+      }
+    }
+  }
+
   function toDatetimeLocalValue(iso) {
     var raw = clean(iso);
     if (!raw) return "";
@@ -294,6 +406,10 @@
       var metaOk = row.metaLeadSent ? "sent" : "not_sent";
       var brevoOk = row.brevoSynced ? "synced" : "not_synced";
       var leadId = clean(row.leadUuid);
+      var payment = row.discoveryPayment && typeof row.discoveryPayment === "object" ? row.discoveryPayment : {};
+      var paymentStatus = clean(payment.status).toLowerCase();
+      var canSendPaymentLink = canSendPaymentLinkForRow(row);
+      var paymentActionLabel = paymentStatus === "initiated" ? "Resend Payment Link" : "Send Payment Link";
 
       return [
         "<tr>",
@@ -324,6 +440,9 @@
         '<td class="px-4 py-3 align-top">',
         '<p class="text-xs text-gray-700">Meta: ' + escapeHtml(metaOk) + "</p>",
         '<p class="text-xs text-gray-700">Brevo: ' + escapeHtml(brevoOk) + "</p>",
+        '<div class="mt-2">' + paymentStatusBadge(paymentStatus) + "</div>",
+        row.discoveryPaymentLinkSentAt ? '<p class="mt-1 text-xs text-gray-500">Link sent: ' + escapeHtml(fmtDate(row.discoveryPaymentLinkSentAt)) + "</p>" : "",
+        payment.paidAt ? '<p class="text-xs text-gray-500">Paid: ' + escapeHtml(fmtDate(payment.paidAt)) + "</p>" : "",
         '<p class="text-xs text-gray-500 break-all">' + escapeHtml(source) + "</p>",
         "</td>",
         '<td class="px-4 py-3 align-top text-xs text-gray-700">',
@@ -351,9 +470,14 @@
         '<td class="px-4 py-3 align-top text-right">',
         '<div class="flex w-full flex-col items-stretch sm:items-end gap-2">',
         '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="view-submission" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors">View Submission</button>',
+        (canSendPaymentLink
+          ? '<button type="button" data-lead="' + escapeHtml(leadId) + '" data-action="send-payment-link" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">' + escapeHtml(paymentActionLabel) + "</button>"
+          : ""),
         (call.bookingUuid
           ? '<a href="/internal/build-calls/" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors">View Call</a>'
-          : '<span class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">Manual review only</span>'),
+          : (paymentStatus === "paid"
+            ? '<span class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 whitespace-nowrap">Paid - Awaiting Booking</span>'
+            : '<span class="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 whitespace-nowrap">Manual review only</span>')),
         '</div>',
         "</td>",
         "</tr>",
@@ -372,6 +496,16 @@
     Array.prototype.slice.call(rowsEl.querySelectorAll('button[data-action="view-submission"]')).forEach(function (btn) {
       btn.addEventListener("click", function () {
         openSubmissionModal(clean(btn.getAttribute("data-lead")));
+      });
+    });
+
+    Array.prototype.slice.call(rowsEl.querySelectorAll('button[data-action="send-payment-link"]')).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        try {
+          openPaymentLinkModal(clean(btn.getAttribute("data-lead")));
+        } catch (error) {
+          setMessage(error.message || "Could not send discovery payment link.", true);
+        }
       });
     });
   }
@@ -491,6 +625,21 @@
     });
   }
 
+  if (paymentLinkModal) {
+    Array.prototype.slice.call(paymentLinkModal.querySelectorAll("[data-build-payment-link-close]")).forEach(function (el) {
+      el.addEventListener("click", closePaymentLinkModal);
+    });
+  }
+
+  if (paymentLinkModalConfirm) {
+    paymentLinkModalConfirm.addEventListener("click", function () {
+      setPaymentLinkModalError("");
+      submitPaymentLinkModal().catch(function (error) {
+        setPaymentLinkModalError(error.message || "Could not send discovery payment link.");
+      });
+    });
+  }
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && bookModal && bookModal.getAttribute("aria-hidden") === "false") {
       closeBookModal();
@@ -498,6 +647,10 @@
     }
     if (event.key === "Escape" && submissionModal && submissionModal.getAttribute("aria-hidden") === "false") {
       closeSubmissionModal();
+      return;
+    }
+    if (event.key === "Escape" && paymentLinkModal && paymentLinkModal.getAttribute("aria-hidden") === "false") {
+      closePaymentLinkModal();
     }
   });
 

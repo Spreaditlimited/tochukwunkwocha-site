@@ -223,8 +223,29 @@
       </div>
     </div>
 
+    <div id="buildPaymentLinkModal" class="scorecard-modal" aria-hidden="true">
+      <button type="button" data-build-payment-link-close class="scorecard-modal__backdrop" aria-label="Close payment link confirmation"></button>
+      <div class="scorecard-modal__panel" role="dialog" aria-modal="true" aria-labelledby="buildPaymentLinkModalTitle">
+        <button type="button" data-build-payment-link-close class="scorecard-modal__close inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" aria-label="Close dialog">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div class="p-6 sm:p-7">
+          <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Build Scorecard</p>
+          <h3 id="buildPaymentLinkModalTitle" class="mt-1 text-2xl font-heading font-bold text-gray-900">Send discovery payment link</h3>
+          <p id="buildPaymentLinkModalDescription" class="mt-2 text-sm text-gray-600"></p>
+
+          <p id="buildPaymentLinkModalError" class="mt-4 hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></p>
+
+          <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" data-build-payment-link-close class="inline-flex w-full items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors sm:w-auto">Cancel</button>
+            <button id="buildPaymentLinkModalConfirmBtn" type="button" class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors sm:w-auto">Send Payment Link</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="/assets/internal-auth.js?v=20260423b" defer></script>
     <script src="/assets/internal-nav.js?v=20260509e" defer></script>
-    <script src="/assets/admin-build-scorecards.js?v=20260514b" defer></script>
+    <script src="/assets/admin-build-scorecards.js?v=20260604c" defer></script>
   </body>
 </html>

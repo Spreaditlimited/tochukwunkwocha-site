@@ -53,7 +53,9 @@ async function ensureBuildScorecardTablesTochukwu(pool) {
       next_step VARCHAR(255) NULL,
       follow_up_required TINYINT(1) NOT NULL DEFAULT 0,
       answers_json LONGTEXT NULL,
-      lead_uuid VARCHAR(64) NULL,
+      discovery_payment_approved_at DATETIME NULL,
+      discovery_payment_approved_by VARCHAR(180) NULL,
+      discovery_payment_link_sent_at DATETIME NULL,
       source_path VARCHAR(255) NULL,
       created_at DATETIME NOT NULL,
       updated_at DATETIME NOT NULL,
@@ -76,6 +78,7 @@ async function ensureBuildScorecardTablesTochukwu(pool) {
       amount_minor INT NOT NULL DEFAULT 0,
       payment_provider VARCHAR(40) NOT NULL DEFAULT 'paystack',
       payment_reference VARCHAR(120) NOT NULL,
+      checkout_url VARCHAR(1200) NULL,
       payment_order_id VARCHAR(120) NULL,
       payment_status VARCHAR(40) NOT NULL DEFAULT 'initiated',
       paid_at DATETIME NULL,
@@ -95,6 +98,7 @@ async function ensureBuildScorecardTablesTochukwu(pool) {
       access_uuid VARCHAR(64) NOT NULL,
       token_hash VARCHAR(80) NOT NULL,
       score INT NOT NULL,
+      discovery_approved TINYINT(1) NOT NULL DEFAULT 0,
       answers_json LONGTEXT NULL,
       source_path VARCHAR(255) NULL,
       expires_at DATETIME NOT NULL,
@@ -110,7 +114,12 @@ async function ensureBuildScorecardTablesTochukwu(pool) {
 
   await safeAlter(pool, `ALTER TABLE ${BUILD_SCORECARDS_TABLE} ADD COLUMN source_path VARCHAR(255) NULL`);
   await safeAlter(pool, `ALTER TABLE ${BUILD_SCORECARDS_TABLE} ADD COLUMN follow_up_required TINYINT(1) NOT NULL DEFAULT 0`);
+  await safeAlter(pool, `ALTER TABLE ${BUILD_SCORECARDS_TABLE} ADD COLUMN discovery_payment_approved_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${BUILD_SCORECARDS_TABLE} ADD COLUMN discovery_payment_approved_by VARCHAR(180) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${BUILD_SCORECARDS_TABLE} ADD COLUMN discovery_payment_link_sent_at DATETIME NULL`);
+  await safeAlter(pool, `ALTER TABLE ${BUILD_DISCOVERY_PAYMENTS_TABLE} ADD COLUMN checkout_url VARCHAR(1200) NULL`);
   await safeAlter(pool, `ALTER TABLE ${BUILD_BOOKING_ACCESS_TABLE} ADD COLUMN lead_uuid VARCHAR(64) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${BUILD_BOOKING_ACCESS_TABLE} ADD COLUMN discovery_approved TINYINT(1) NOT NULL DEFAULT 0`);
 }
 
 async function saveBuildScorecardLead(pool, input) {
@@ -179,7 +188,9 @@ async function findBuildScorecardLeadByUuid(pool, leadUuidInput) {
   const [rows] = await pool.query(
     `SELECT
        id, lead_uuid, full_name, business_name, work_email, phone, role_title, company_size,
-       score, band_key, headline, next_step, follow_up_required, answers_json, source_path
+       score, band_key, headline, next_step, follow_up_required, answers_json,
+       discovery_payment_approved_at, discovery_payment_approved_by, discovery_payment_link_sent_at,
+       source_path
      FROM ${BUILD_SCORECARDS_TABLE}
      WHERE lead_uuid = ?
      LIMIT 1`,
@@ -206,9 +217,46 @@ async function findBuildScorecardLeadByUuid(pool, leadUuidInput) {
     headline: clean(row.headline, 255),
     nextStep: clean(row.next_step, 255),
     followUpRequired: Number(row.follow_up_required || 0) === 1,
+    discoveryPaymentApprovedAt: toIso(row.discovery_payment_approved_at),
+    discoveryPaymentApprovedBy: clean(row.discovery_payment_approved_by, 180),
+    discoveryPaymentLinkSentAt: toIso(row.discovery_payment_link_sent_at),
     answers,
     sourcePath: clean(row.source_path, 255),
   };
+}
+
+function isBuildDiscoveryEligible(lead) {
+  const item = lead && typeof lead === "object" ? lead : {};
+  const automaticallyQualified = Number(item.score || 0) >= 70 && clean(item.bandKey || item.band_key, 40) === "qualified";
+  const manuallyApproved = Boolean(clean(item.discoveryPaymentApprovedAt || item.discovery_payment_approved_at, 40));
+  return automaticallyQualified || manuallyApproved;
+}
+
+async function approveBuildDiscoveryPayment(pool, input) {
+  const leadUuid = clean(input && input.leadUuid, 64);
+  const approvedBy = clean(input && input.approvedBy, 180) || "admin";
+  if (!leadUuid) throw new Error("leadUuid is required");
+  await pool.query(
+    `UPDATE ${BUILD_SCORECARDS_TABLE}
+        SET discovery_payment_approved_at = COALESCE(discovery_payment_approved_at, ?),
+            discovery_payment_approved_by = COALESCE(discovery_payment_approved_by, ?),
+            updated_at = ?
+      WHERE lead_uuid = ?
+      LIMIT 1`,
+    [nowSql(), approvedBy, nowSql(), leadUuid]
+  );
+}
+
+async function markBuildDiscoveryPaymentLinkSent(pool, leadUuidInput) {
+  const leadUuid = clean(leadUuidInput, 64);
+  if (!leadUuid) return;
+  await pool.query(
+    `UPDATE ${BUILD_SCORECARDS_TABLE}
+        SET discovery_payment_link_sent_at = ?, updated_at = ?
+      WHERE lead_uuid = ?
+      LIMIT 1`,
+    [nowSql(), nowSql(), leadUuid]
+  );
 }
 
 async function createBuildDiscoveryPayment(pool, input) {
@@ -218,17 +266,19 @@ async function createBuildDiscoveryPayment(pool, input) {
   const fullName = clean(input && input.fullName, 180);
   const amountMinor = Number(input && input.amountMinor || 0);
   const paymentReference = clean(input && input.paymentReference, 120);
+  const checkoutUrl = clean(input && input.checkoutUrl, 1200);
   const now = nowSql();
   await pool.query(
     `INSERT INTO ${BUILD_DISCOVERY_PAYMENTS_TABLE}
-      (payment_uuid, lead_uuid, work_email, full_name, amount_minor, payment_provider, payment_reference, payment_status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'paystack', ?, 'initiated', ?, ?)
+      (payment_uuid, lead_uuid, work_email, full_name, amount_minor, payment_provider, payment_reference, checkout_url, payment_status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'paystack', ?, ?, 'initiated', ?, ?)
      ON DUPLICATE KEY UPDATE
        work_email = VALUES(work_email),
        full_name = VALUES(full_name),
        amount_minor = VALUES(amount_minor),
+       checkout_url = VALUES(checkout_url),
        updated_at = VALUES(updated_at)`,
-    [paymentUuid, leadUuid, workEmail, fullName, Math.max(0, Math.round(amountMinor)), paymentReference, now, now]
+    [paymentUuid, leadUuid, workEmail, fullName, Math.max(0, Math.round(amountMinor)), paymentReference, checkoutUrl || null, now, now]
   );
 }
 
@@ -236,7 +286,7 @@ async function findBuildDiscoveryPaymentByReference(pool, referenceInput) {
   const reference = clean(referenceInput, 120);
   if (!reference) return null;
   const [rows] = await pool.query(
-    `SELECT id, payment_uuid, lead_uuid, work_email, full_name, amount_minor, payment_reference, payment_status
+    `SELECT id, payment_uuid, lead_uuid, work_email, full_name, amount_minor, payment_reference, checkout_url, payment_status
        FROM ${BUILD_DISCOVERY_PAYMENTS_TABLE}
       WHERE payment_reference = ?
       LIMIT 1`,
@@ -252,7 +302,36 @@ async function findBuildDiscoveryPaymentByReference(pool, referenceInput) {
     fullName: clean(row.full_name, 180),
     amountMinor: Number(row.amount_minor || 0),
     paymentReference: clean(row.payment_reference, 120),
+    checkoutUrl: clean(row.checkout_url, 1200),
     paymentStatus: clean(row.payment_status, 40).toLowerCase(),
+  };
+}
+
+async function findLatestBuildDiscoveryPaymentByLead(pool, leadUuidInput) {
+  const leadUuid = clean(leadUuidInput, 64);
+  if (!leadUuid) return null;
+  const [rows] = await pool.query(
+    `SELECT id, payment_uuid, lead_uuid, work_email, full_name, amount_minor, payment_reference, checkout_url, payment_status,
+            DATE_FORMAT(paid_at, '%Y-%m-%d %H:%i:%s') AS paid_at,
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+       FROM ${BUILD_DISCOVERY_PAYMENTS_TABLE}
+      WHERE lead_uuid = ?
+      ORDER BY id DESC
+      LIMIT 1`,
+    [leadUuid]
+  );
+  if (!rows || !rows.length) return null;
+  const row = rows[0] || {};
+  return {
+    id: Number(row.id || 0),
+    paymentUuid: clean(row.payment_uuid, 64),
+    leadUuid: clean(row.lead_uuid, 64),
+    amountMinor: Number(row.amount_minor || 0),
+    paymentReference: clean(row.payment_reference, 120),
+    checkoutUrl: clean(row.checkout_url, 1200),
+    paymentStatus: clean(row.payment_status, 40).toLowerCase(),
+    paidAt: toIso(row.paid_at),
+    createdAt: toIso(row.created_at),
   };
 }
 
@@ -273,6 +352,7 @@ async function issueBuildBookingAccess(pool, input) {
   const tokenHash = sha256(token);
   const accessUuid = `build_access_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
   const score = Number(input && input.score || 0);
+  const discoveryApproved = input && input.discoveryApproved ? 1 : 0;
   const leadUuid = clean(input && input.leadUuid, 64);
   const answersJson = safeJson(input && input.answers);
   const sourcePath = clean(input && input.sourcePath, 255);
@@ -280,12 +360,13 @@ async function issueBuildBookingAccess(pool, input) {
 
   await pool.query(
     `INSERT INTO ${BUILD_BOOKING_ACCESS_TABLE}
-      (access_uuid, token_hash, score, answers_json, source_path, expires_at, used_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`,
+      (access_uuid, token_hash, score, discovery_approved, answers_json, source_path, expires_at, used_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
     [
       accessUuid,
       tokenHash,
       Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 0,
+      discoveryApproved,
       answersJson,
       sourcePath || null,
       toIso(expiresAt).slice(0, 19).replace("T", " "),
@@ -311,7 +392,7 @@ async function verifyBuildBookingAccessToken(pool, token) {
   if (!raw) return { ok: false, error: "Missing booking access token" };
   const tokenHash = sha256(raw);
   const [rows] = await pool.query(
-    `SELECT id, access_uuid, score, lead_uuid,
+    `SELECT id, access_uuid, score, discovery_approved, lead_uuid,
             DATE_FORMAT(expires_at, '%Y-%m-%d %H:%i:%s') AS expires_at,
             DATE_FORMAT(used_at, '%Y-%m-%d %H:%i:%s') AS used_at
        FROM ${BUILD_BOOKING_ACCESS_TABLE}
@@ -322,12 +403,13 @@ async function verifyBuildBookingAccessToken(pool, token) {
   if (!rows || !rows.length) return { ok: false, error: "Invalid booking access token" };
   const row = rows[0] || {};
   const score = Number(row.score || 0);
-  if (score < 70) return { ok: false, error: "Booking access is only available for qualified submissions" };
+  const discoveryApproved = Number(row.discovery_approved || 0) === 1;
+  if (score < 70 && !discoveryApproved) return { ok: false, error: "Booking access is only available for approved submissions" };
   if (clean(row.used_at, 40)) return { ok: false, error: "This booking access token has already been used" };
   const expiryRaw = clean(row.expires_at, 40);
   const expiry = new Date((expiryRaw.includes("T") ? expiryRaw : expiryRaw.replace(" ", "T")) + "Z");
   if (!Number.isFinite(expiry.getTime()) || expiry.getTime() < Date.now()) return { ok: false, error: "Booking access token has expired" };
-  return { ok: true, access: { id: Number(row.id || 0), accessUuid: clean(row.access_uuid, 64), leadUuid: clean(row.lead_uuid, 64), score } };
+  return { ok: true, access: { id: Number(row.id || 0), accessUuid: clean(row.access_uuid, 64), leadUuid: clean(row.lead_uuid, 64), score, discoveryApproved } };
 }
 
 async function markBuildBookingAccessUsed(pool, accessId) {
@@ -342,6 +424,15 @@ async function listBuildScorecardLeads(pool, input) {
     `SELECT
        b.id, b.lead_uuid, b.full_name, b.business_name, b.work_email, b.phone, b.role_title, b.company_size,
        b.score, b.band_key, b.headline, b.next_step, b.follow_up_required, b.answers_json, b.source_path,
+       DATE_FORMAT(b.discovery_payment_approved_at, '%Y-%m-%d %H:%i:%s') AS discovery_payment_approved_at,
+       b.discovery_payment_approved_by,
+       DATE_FORMAT(b.discovery_payment_link_sent_at, '%Y-%m-%d %H:%i:%s') AS discovery_payment_link_sent_at,
+       p.payment_status AS discovery_payment_status,
+       p.amount_minor AS discovery_payment_amount_minor,
+       p.payment_reference AS discovery_payment_reference,
+       p.checkout_url AS discovery_payment_checkout_url,
+       DATE_FORMAT(p.paid_at, '%Y-%m-%d %H:%i:%s') AS discovery_payment_paid_at,
+       DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS discovery_payment_created_at,
        DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
        DATE_FORMAT(b.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at,
        c.booking_uuid AS call_booking_uuid,
@@ -354,6 +445,14 @@ async function listBuildScorecardLeads(pool, input) {
        DATE_FORMAT(c.next_follow_up_at, '%Y-%m-%d %H:%i:%s') AS call_next_follow_up_at,
        DATE_FORMAT(c.outcome_updated_at, '%Y-%m-%d %H:%i:%s') AS call_outcome_updated_at
      FROM ${BUILD_SCORECARDS_TABLE} b
+     LEFT JOIN ${BUILD_DISCOVERY_PAYMENTS_TABLE} p
+       ON p.id = (
+         SELECT p2.id
+         FROM ${BUILD_DISCOVERY_PAYMENTS_TABLE} p2
+         WHERE p2.lead_uuid = b.lead_uuid
+         ORDER BY p2.id DESC
+         LIMIT 1
+       )
      LEFT JOIN ${SCHOOL_CALL_BOOKINGS_TABLE} c
        ON c.id = (
          SELECT c2.id
@@ -395,6 +494,17 @@ async function listBuildScorecardLeads(pool, input) {
       headline: clean(row.headline, 255),
       nextStep: clean(row.next_step, 255),
       followUpRequired: Number(row.follow_up_required || 0) === 1,
+      discoveryPaymentApprovedAt: toIsoSql(row.discovery_payment_approved_at),
+      discoveryPaymentApprovedBy: clean(row.discovery_payment_approved_by, 180),
+      discoveryPaymentLinkSentAt: toIsoSql(row.discovery_payment_link_sent_at),
+      discoveryPayment: {
+        status: clean(row.discovery_payment_status, 40).toLowerCase(),
+        amountMinor: Number(row.discovery_payment_amount_minor || 0),
+        reference: clean(row.discovery_payment_reference, 120),
+        checkoutUrl: clean(row.discovery_payment_checkout_url, 1200),
+        paidAt: toIsoSql(row.discovery_payment_paid_at),
+        createdAt: toIsoSql(row.discovery_payment_created_at),
+      },
       answers: answers,
       sourcePath: clean(row.source_path, 255),
       createdAt: toIsoSql(row.created_at),
@@ -418,12 +528,16 @@ module.exports = {
   BUILD_SCORECARDS_TABLE,
   ensureBuildScorecardTablesTochukwu,
   saveBuildScorecardLead,
+  isBuildDiscoveryEligible,
+  approveBuildDiscoveryPayment,
+  markBuildDiscoveryPaymentLinkSent,
   issueBuildBookingAccess,
   verifyBuildBookingAccessToken,
   markBuildBookingAccessUsed,
   findBuildScorecardLeadByUuid,
   createBuildDiscoveryPayment,
   findBuildDiscoveryPaymentByReference,
+  findLatestBuildDiscoveryPaymentByLead,
   markBuildDiscoveryPaymentPaid,
   BUILD_DISCOVERY_PAYMENTS_TABLE,
   listBuildScorecardLeads,

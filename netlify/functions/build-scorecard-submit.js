@@ -7,6 +7,17 @@ const {
 } = require("./_lib/build-scorecards-tochukwu");
 
 const SUPPORT_EMAIL = "support@tochukwunkwocha.com";
+const BUILD_FORM_MAX_SCORE_WITHOUT_BUDGET = 80;
+const LEGACY_MAX_SCORE_WITHOUT_BUDGET = 90;
+const BUDGET_LABELS = {
+  "15": "₦1m – ₦3m (Approx. $714 – $2,143)",
+  "18": "₦3m – ₦5m (Approx. $2,143 – $3,571)",
+  "20": "₦5m+ (Approx. $3,571+)",
+  ngn_1m_3m: "₦1m – ₦3m (Approx. $714 – $2,143)",
+  ngn_3m_5m: "₦3m – ₦5m (Approx. $2,143 – $3,571)",
+  ngn_5m_plus: "₦5m+ (Approx. $3,571+)",
+};
+const VALID_BUILD_BUDGETS = new Set(Object.keys(BUDGET_LABELS));
 
 const QUESTIONS = [
   { text: "Do you have a clear workflow problem to fix now?", options: [{ label: "Yes, urgent", score: 10 }, { label: "Somewhat", score: 7 }, { label: "Not clear", score: 2 }] },
@@ -16,7 +27,7 @@ const QUESTIONS = [
   { text: "Team readiness", options: [{ label: "Ready to adopt", score: 10 }, { label: "Needs support", score: 6 }, { label: "Not ready", score: 2 }] },
   { text: "Data availability", options: [{ label: "Data exists and accessible", score: 10 }, { label: "Some data gaps", score: 6 }, { label: "Major gaps", score: 2 }] },
   { text: "Scope clarity", options: [{ label: "Single clear use-case", score: 10 }, { label: "Few use-cases", score: 7 }, { label: "Broad/unclear", score: 2 }] },
-  { text: "Budget intent", options: [{ label: "Budget approved", score: 10 }, { label: "Budget likely", score: 7 }, { label: "No budget yet", score: 1 }] },
+  { text: "Budget intent", options: [{ label: "Budget approved", score: 0 }, { label: "Budget likely", score: 0 }, { label: "No budget yet", score: 0 }] },
   { text: "Operational pain", options: [{ label: "High", score: 10 }, { label: "Medium", score: 7 }, { label: "Low", score: 3 }] },
   { text: "Success urgency", options: [{ label: "Need result in 30 days", score: 10 }, { label: "Flexible", score: 6 }, { label: "No urgency", score: 1 }] },
 ];
@@ -34,6 +45,11 @@ function normalizeEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
 
+function normalizeScore(score, maxScore) {
+  if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((score / maxScore) * 100)));
+}
+
 function computeScore(answersInput) {
   if (!Array.isArray(answersInput) || answersInput.length !== QUESTIONS.length) return { ok: false, error: "Invalid answers payload" };
   let total = 0;
@@ -46,7 +62,7 @@ function computeScore(answersInput) {
     total += option.score;
     normalizedAnswers.push({ question: QUESTIONS[i].text, answer: option.label, score: option.score });
   }
-  return { ok: true, total, normalizedAnswers };
+  return { ok: true, total: normalizeScore(total, LEGACY_MAX_SCORE_WITHOUT_BUDGET), normalizedAnswers };
 }
 
 function bandFor(score) {
@@ -82,12 +98,8 @@ function computeBuildFormScore(body) {
   score += complexityPoints;
   answers.push({ question: "Project complexity", answer: complexity || "-", score: complexityPoints });
 
-  var budget = Number(body.budget);
-  if (Number.isFinite(budget)) {
-    if (budget === 0) isHardDQ = true;
-    score += Math.max(0, Math.round(budget));
-  }
-  answers.push({ question: "Budget", answer: String(body.budget || "-"), score: Number.isFinite(budget) ? Math.max(0, Math.round(budget)) : 0 });
+  var budget = clean(body.budget, 120);
+  answers.push({ question: "Budget", answer: BUDGET_LABELS[budget] || budget || "-", score: 0 });
 
   var decision = Number(body.decision);
   if (Number.isFinite(decision)) score += Math.max(0, Math.round(decision));
@@ -104,7 +116,7 @@ function computeBuildFormScore(body) {
   }
   answers.push({ question: "Timeline", answer: timeline || "-", score: timelinePoints });
 
-  return { score, isHardDQ, normalizedAnswers: answers };
+  return { score: normalizeScore(score, BUILD_FORM_MAX_SCORE_WITHOUT_BUDGET), isHardDQ, normalizedAnswers: answers };
 }
 
 function optionLabel(value, optionsMap) {
@@ -127,13 +139,7 @@ function explicitSubmissionAnswers(body) {
     dq_marketplace: "Mass consumer apps",
     dq_fintech: "Heavy infrastructure",
   });
-  const budgetLabel = optionLabel(body.budget, {
-    "0": "Under ₦500k",
-    "5": "₦500k – ₦1m",
-    "15": "₦1m – ₦3m",
-    "18": "₦3m – ₦5m",
-    "20": "₦5m+",
-  });
+  const budgetLabel = optionLabel(body.budget, BUDGET_LABELS);
   const decisionLabel = optionLabel(body.decision, {
     "10": "Yes",
     "5": "Partially",
@@ -149,6 +155,7 @@ function explicitSubmissionAnswers(body) {
   return [
     { question: "Submitted - Build description", answer: cleanText(body.buildDesc, 4000) || "-", score: 0 },
     { question: "Submitted - Problem description", answer: cleanText(body.problemDesc, 6000) || "-", score: 0 },
+    { question: "Submitted - System users", answer: cleanText(body.systemUsers, 1000) || "-", score: 0 },
     { question: "Submitted - Current process", answer: currentProcessLabel, score: 0 },
     { question: "Submitted - Project complexity", answer: complexityLabel, score: 0 },
     { question: "Submitted - Budget range", answer: budgetLabel, score: 0 },
@@ -173,12 +180,16 @@ exports.handler = async function (event) {
   if (!fullName || !businessName || !workEmail || !phone || !role) {
     return json(400, { ok: false, error: "All required fields are required." });
   }
+  const isLegacyAnswersSubmission = Array.isArray(body.answers) && body.answers.length === QUESTIONS.length;
+  if (!isLegacyAnswersSubmission && !VALID_BUILD_BUDGETS.has(clean(body.budget, 120))) {
+    return json(400, { ok: false, error: "A valid budget range is required." });
+  }
 
   let score = 0;
   let normalizedAnswers = [];
   let hardDq = false;
   let submittedSnapshot = [];
-  if (Array.isArray(body.answers) && body.answers.length === QUESTIONS.length) {
+  if (isLegacyAnswersSubmission) {
     const answersResult = computeScore(body.answers);
     if (!answersResult.ok) return json(400, { ok: false, error: answersResult.error });
     score = Number(answersResult.total || 0);

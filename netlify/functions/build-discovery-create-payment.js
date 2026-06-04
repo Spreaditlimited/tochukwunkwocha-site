@@ -7,6 +7,7 @@ const {
   ensureBuildScorecardTablesTochukwu,
   findBuildScorecardLeadByUuid,
   createBuildDiscoveryPayment,
+  isBuildDiscoveryEligible,
 } = require("./_lib/build-scorecards-tochukwu");
 
 function clean(value, max) {
@@ -27,8 +28,8 @@ exports.handler = async function (event) {
     await ensureBuildScorecardTablesTochukwu(pool);
     const lead = await findBuildScorecardLeadByUuid(pool, leadUuid);
     if (!lead) return json(404, { ok: false, error: "Lead not found" });
-    if (Number(lead.score || 0) < 70 || clean(lead.bandKey, 40) !== "qualified") {
-      return json(403, { ok: false, error: "Payment is only available for qualified applications" });
+    if (!isBuildDiscoveryEligible(lead)) {
+      return json(403, { ok: false, error: "Payment is only available for approved applications" });
     }
 
     const pricing = buildDiscoveryPricing();
@@ -54,6 +55,7 @@ exports.handler = async function (event) {
       fullName: clean(lead.fullName, 180),
       amountMinor: Number(pricing.payableMinor || 0),
       paymentReference: payment.providerReference || reference,
+      checkoutUrl: payment.checkoutUrl,
     });
 
     return json(200, {

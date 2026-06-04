@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireStudentSession } = require("./_lib/user-auth");
 const { hasCourseAccess, isModuleReleasedForLearner } = require("./_lib/learning-progress");
+const { getActiveLearningAccessOverride } = require("./_lib/learning-access-overrides");
 const { COURSES_TABLE, MODULES_TABLE, LESSONS_TABLE, VIDEO_ASSETS_TABLE } = require("./_lib/learning");
 const { buildSignedLessonEmbedUrl } = require("./_lib/learning-playback");
 
@@ -146,16 +147,23 @@ exports.handler = async function (event) {
     if (Number(row.course_published || 0) !== 1) {
       return json(403, { ok: false, error: "This course is not yet available." });
     }
+    const courseSlug = String(row.course_slug || "").trim().toLowerCase();
+    const releaseOverride = await getActiveLearningAccessOverride(pool, {
+      email: session.account.email,
+      course_slug: courseSlug,
+    }).catch(function () {
+      return null;
+    });
     if (row.release_at) {
       const releaseAt = new Date(row.release_at).getTime();
-      if (Number.isFinite(releaseAt) && releaseAt > Date.now()) {
+      if (Number.isFinite(releaseAt) && releaseAt > Date.now() && !(releaseOverride && releaseOverride.allow_before_release)) {
         return json(403, { ok: false, error: "This course is not yet available." });
       }
     }
     const isReleased = await isModuleReleasedForLearner(pool, {
       account_id: session.account.id,
       account_email: session.account.email,
-      course_slug: String(row.course_slug || "").trim().toLowerCase(),
+      course_slug: courseSlug,
       module_id: Number(row.module_id || 0),
       drip_enabled: row.drip_enabled,
       drip_at: row.drip_at,
@@ -168,7 +176,7 @@ exports.handler = async function (event) {
       return json(404, { ok: false, error: "This lesson has no playable video yet." });
     }
 
-    const allowed = await hasCourseAccess(pool, session.account.email, String(row.course_slug || "").trim().toLowerCase(), session.account.id);
+    const allowed = await hasCourseAccess(pool, session.account.email, courseSlug, session.account.id);
     if (!allowed) {
       return json(403, { ok: false, error: "You do not currently have access to this course." });
     }

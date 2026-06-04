@@ -371,6 +371,13 @@ async function isModuleReleasedForLearner(pool, input) {
   const accountId = Number(input && input.account_id || 0);
   const courseSlug = clean(input && input.course_slug, 120).toLowerCase();
   if (!accountEmail || !courseSlug) return false;
+  const override = await getActiveLearningAccessOverride(pool, {
+    email: accountEmail,
+    course_slug: courseSlug,
+  }).catch(function () {
+    return null;
+  });
+  if (override && override.allow_before_release) return true;
   const context = await getLearnerDripContext(pool, accountEmail, courseSlug, accountId);
   const moduleId = Number(input && input.module_id || 0);
   const scheduleMap = await loadModuleBatchDripMap(pool, moduleId > 0 ? [moduleId] : []);
@@ -1157,9 +1164,12 @@ async function listCourseForLearner(pool, input) {
   })));
   dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, moduleIdsForSchedule);
   const nowMs = nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE);
-  const gatedRows = (Array.isArray(rows) ? rows : []).filter(function (row) {
-    return moduleIsReleasedForContext(row, dripContext, nowMs);
-  });
+  const skipModuleReleaseGuard = !!(accessState && accessState.override && accessState.override.allow_before_release);
+  const gatedRows = skipModuleReleaseGuard
+    ? (Array.isArray(rows) ? rows : [])
+    : (Array.isArray(rows) ? rows : []).filter(function (row) {
+        return moduleIsReleasedForContext(row, dripContext, nowMs);
+      });
 
   const byModule = new Map();
   const lessonIds = [];
@@ -1321,7 +1331,8 @@ async function saveLessonProgress(pool, input) {
 
   const dripContext = await getLearnerDripContext(pool, accountEmail, courseSlug);
   dripContext.module_batch_drip_map = await loadModuleBatchDripMap(pool, [moduleId]);
-  if (!moduleIsReleasedForContext(lesson, dripContext, nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE))) {
+  const skipModuleReleaseGuard = !!(accessState && accessState.override && accessState.override.allow_before_release);
+  if (!skipModuleReleaseGuard && !moduleIsReleasedForContext(lesson, dripContext, nowInTimeZoneWallClockMs(LEARNING_WALL_CLOCK_TIME_ZONE))) {
     return {
       ok: false,
       statusCode: 403,
@@ -1976,6 +1987,13 @@ async function getLearnerBatchAwareCompletion(pool, input) {
   const hasDripBatchKey = await hasModuleColumn(pool, "drip_batch_key").catch(function () { return false; });
   const dripBatchKeySelect = hasDripBatchKey ? "m.drip_batch_key AS drip_batch_key" : "NULL AS drip_batch_key";
   const context = await getLearnerDripContext(pool, accountEmail, courseSlug, accountId);
+  const override = await getActiveLearningAccessOverride(pool, {
+    email: accountEmail,
+    course_slug: courseSlug,
+  }).catch(function () {
+    return null;
+  });
+  const skipModuleReleaseGuard = !!(override && override.allow_before_release);
 
   const moduleSql = hasCourseModuleMappings
     ? `SELECT
@@ -2008,6 +2026,7 @@ async function getLearnerBatchAwareCompletion(pool, input) {
   context.module_batch_drip_map = await loadModuleBatchDripMap(pool, moduleIds);
 
   const eligibleModuleIds = allModuleRows.filter(function (row) {
+    if (skipModuleReleaseGuard) return true;
     if (includeUnreleased) {
       // Keep strict batch targeting while ignoring time-based release gates.
       return moduleIsReleasedForContext({
