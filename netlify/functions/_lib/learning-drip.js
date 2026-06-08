@@ -31,6 +31,7 @@ async function listCourseRecipients(pool, courseSlug) {
        FROM course_orders
        WHERE course_slug = ?
          AND status = 'paid'
+         AND COALESCE(buyer_type, 'student') <> 'family'
 
        UNION
 
@@ -38,6 +39,7 @@ async function listCourseRecipients(pool, courseSlug) {
        FROM course_manual_payments
        WHERE course_slug = ?
          AND status = 'approved'
+         AND COALESCE(buyer_type, 'student') <> 'family'
 
        UNION
 

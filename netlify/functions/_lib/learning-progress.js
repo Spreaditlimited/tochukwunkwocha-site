@@ -264,6 +264,7 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
        WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
          AND o.course_slug = ?
          AND o.status = 'paid'
+         AND COALESCE(o.buyer_type, 'student') <> 'family'
          AND COALESCE(TRIM(o.batch_key), '') <> ''
          AND ${orderWindowStartSql} <= NOW()
          AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
@@ -276,6 +277,7 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
        WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
          AND m.course_slug = ?
          AND m.status = 'approved'
+         AND COALESCE(m.buyer_type, 'student') <> 'family'
          AND COALESCE(TRIM(m.batch_key), '') <> ''
          AND ${manualWindowStartSql} <= NOW()
          AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
@@ -518,6 +520,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
+       AND COALESCE(o.buyer_type, 'student') <> 'family'
        AND ${orderWindowStartSql} <= NOW()
        AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      LIMIT 1`,
@@ -536,6 +539,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
+       AND COALESCE(m.buyer_type, 'student') <> 'family'
        AND ${manualWindowStartSql} <= NOW()
        AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) >= NOW()
      LIMIT 1`,
@@ -554,6 +558,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
+       AND COALESCE(o.buyer_type, 'student') <> 'family'
        AND ${orderWindowStartSql} > NOW()`,
     [email, slug]
   );
@@ -566,6 +571,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
+       AND COALESCE(m.buyer_type, 'student') <> 'family'
        AND ${manualWindowStartSql} > NOW()`,
     [email, slug]
   );
@@ -597,6 +603,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
+       AND COALESCE(o.buyer_type, 'student') <> 'family'
        AND ${orderWindowStartSql} IS NOT NULL
        AND DATE_ADD(${orderWindowStartSql}, INTERVAL 1 YEAR) < NOW()`,
     [email, slug]
@@ -610,6 +617,7 @@ async function getIndividualCourseAccessState(pool, accountEmail, courseSlug) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
+       AND COALESCE(m.buyer_type, 'student') <> 'family'
        AND ${manualWindowStartSql} IS NOT NULL
        AND DATE_ADD(${manualWindowStartSql}, INTERVAL 1 YEAR) < NOW()`,
     [email, slug]
@@ -713,6 +721,7 @@ async function getStudentCourseAccessAudit(pool, input) {
      WHERE LOWER(o.email) COLLATE utf8mb4_general_ci = ?
        AND o.course_slug = ?
        AND o.status = 'paid'
+       AND COALESCE(o.buyer_type, 'student') <> 'family'
      ORDER BY o.id DESC`,
     [accountEmail, courseSlug]
   );
@@ -725,6 +734,7 @@ async function getStudentCourseAccessAudit(pool, input) {
      WHERE LOWER(m.email) COLLATE utf8mb4_general_ci = ?
        AND m.course_slug = ?
        AND m.status = 'approved'
+       AND COALESCE(m.buyer_type, 'student') <> 'family'
      ORDER BY m.id DESC`,
     [accountEmail, courseSlug]
   );
@@ -1462,6 +1472,7 @@ async function listStudentsProgressByCourse(pool, input) {
          FROM course_orders
          WHERE course_slug ${courseSlugWhereSql}
            AND status = 'paid'
+           AND COALESCE(buyer_type, 'student') <> 'family'
          GROUP BY LOWER(email) COLLATE utf8mb4_general_ci, LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci, COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci
 
          UNION ALL
@@ -1477,6 +1488,7 @@ async function listStudentsProgressByCourse(pool, input) {
          FROM course_manual_payments
          WHERE course_slug ${courseSlugWhereSql}
            AND status = 'approved'
+           AND COALESCE(buyer_type, 'student') <> 'family'
          GROUP BY LOWER(email) COLLATE utf8mb4_general_ci, LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci, COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci
 
          UNION ALL
@@ -1657,12 +1669,14 @@ async function listStudentsProgressByCourse(pool, input) {
        FROM course_orders
        WHERE course_slug ${courseSlugWhereSql}
          AND status = 'paid'
+         AND COALESCE(buyer_type, 'student') <> 'family'
        UNION
        SELECT LOWER(COALESCE(batch_key, '')) COLLATE utf8mb4_general_ci AS batch_key,
               COALESCE(batch_label, 'Unspecified Batch') COLLATE utf8mb4_general_ci AS batch_label
        FROM course_manual_payments
        WHERE course_slug ${courseSlugWhereSql}
          AND status = 'approved'
+         AND COALESCE(buyer_type, 'student') <> 'family'
      ) b
      ORDER BY batch_label ASC, batch_key ASC`,
     [...courseSlugScope, ...courseSlugScope]
@@ -1796,12 +1810,14 @@ async function getStudentCourseProgressDetail(pool, input) {
          FROM course_orders
          WHERE course_slug = ?
            AND status = 'paid'
+           AND COALESCE(buyer_type, 'student') <> 'family'
            AND LOWER(email) = ?
          UNION ALL
          SELECT COALESCE(first_name, '') AS full_name, LOWER(email) AS email
          FROM course_manual_payments
          WHERE course_slug = ?
            AND status = 'approved'
+           AND COALESCE(buyer_type, 'student') <> 'family'
            AND LOWER(email) = ?
        ) enrolled
        ORDER BY CASE WHEN full_name <> '' THEN 0 ELSE 1 END

@@ -471,6 +471,7 @@ exports.handler = async function (event) {
         AND b.batch_key COLLATE utf8mb4_general_ci = o.batch_key COLLATE utf8mb4_general_ci
        WHERE o.email = ?
          AND o.status = 'paid'
+         AND COALESCE(o.buyer_type, 'student') <> 'family'
        GROUP BY o.course_slug, o.batch_key, o.batch_label`,
       [email]
     );
@@ -495,6 +496,7 @@ exports.handler = async function (event) {
         AND b.batch_key COLLATE utf8mb4_general_ci = m.batch_key COLLATE utf8mb4_general_ci
        WHERE m.email = ?
          AND m.status = 'approved'
+         AND COALESCE(m.buyer_type, 'student') <> 'family'
        GROUP BY m.course_slug, m.batch_key, m.batch_label`,
       [email]
     );
@@ -503,6 +505,7 @@ exports.handler = async function (event) {
        FROM course_manual_payments
        WHERE email = ?
          AND status = 'pending_verification'
+         AND COALESCE(buyer_type, 'student') <> 'family'
        GROUP BY course_slug, batch_key, batch_label`,
       [email]
     );

@@ -37,6 +37,7 @@ async function hasIndividualAccessForCourse(pool, input) {
      WHERE LOWER(email) COLLATE utf8mb4_general_ci = ?
        AND course_slug = ?
        AND status = 'paid'
+       AND COALESCE(buyer_type, 'student') <> 'family'
      LIMIT 1`,
     [email, courseSlug]
   );
@@ -48,6 +49,7 @@ async function hasIndividualAccessForCourse(pool, input) {
      WHERE LOWER(email) COLLATE utf8mb4_general_ci = ?
        AND course_slug = ?
        AND status = 'approved'
+       AND COALESCE(buyer_type, 'student') <> 'family'
      LIMIT 1`,
     [email, courseSlug]
   );
