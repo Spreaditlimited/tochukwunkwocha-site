@@ -5,6 +5,7 @@ const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-s
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { maxFamilyChildren } = require("./_lib/families");
 
 function formatNaira(minor) {
   const amount = Math.max(0, Number(minor || 0)) / 100;
@@ -33,6 +34,12 @@ function manualPaymentPricing(courseSlug, learningCourse) {
   };
 }
 
+function normalizeSeatCount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return Math.max(1, Math.min(maxFamilyChildren(), Math.round(parsed)));
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
 
@@ -41,6 +48,7 @@ exports.handler = async function (event) {
   const batchKey = String(qs.batch_key || "").trim();
   const couponCode = normalizeCouponCode(qs.coupon_code);
   const email = String(qs.email || "").trim().toLowerCase();
+  const seatCount = normalizeSeatCount(qs.seat_count);
   const pool = getPool();
   await applyRuntimeSettings(pool);
 
@@ -67,14 +75,14 @@ exports.handler = async function (event) {
       resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
     }
     breakdown = manualPaymentPricing(courseSlug, learningCourse);
-    amountMinor = breakdown.totalMinor;
+    amountMinor = breakdown.totalMinor * seatCount;
     if (couponCode) {
       const evaluated = await evaluateCouponForOrder(pool, {
         couponCode,
         courseSlug,
         email,
         currency: "NGN",
-        baseAmountMinor: amountMinor,
+      baseAmountMinor: amountMinor,
       });
       if (evaluated && evaluated.ok && evaluated.pricing) {
         pricing = evaluated.pricing;
@@ -101,10 +109,11 @@ exports.handler = async function (event) {
       amountMinor: Math.round(amountMinor),
       amountLabel: formatNaira(amountMinor),
       coursePriceMinor: breakdown.courseMinor,
-      coursePriceLabel: formatNaira(breakdown.courseMinor),
+      coursePriceLabel: formatNaira(breakdown.courseMinor * seatCount),
       vatPercent: breakdown.vatPercent,
-      vatMinor: breakdown.vatMinor,
-      vatLabel: formatNaira(breakdown.vatMinor),
+      vatMinor: breakdown.vatMinor * seatCount,
+      vatLabel: formatNaira(breakdown.vatMinor * seatCount),
+      seatCount,
       pricing,
       couponError: couponError || null,
       coupon: coupon

@@ -11,26 +11,52 @@ async function ensureBatchSeatLimitColumn(pool) {
 }
 
 async function countEnrolledForBatch(db, courseSlug, batchKey) {
-  const [rows] = await db.query(
-    `SELECT (
-        COALESCE((
-          SELECT COUNT(*)
-          FROM course_orders
-          WHERE course_slug = ?
-            AND batch_key = ?
-            AND status = 'paid'
-        ), 0)
-        +
-        COALESCE((
-          SELECT COUNT(*)
-          FROM course_manual_payments
-          WHERE course_slug = ?
-            AND batch_key = ?
-            AND status = 'approved'
-        ), 0)
-      ) AS enrolled_count`,
-    [courseSlug, batchKey, courseSlug, batchKey]
-  );
+  let rows;
+  try {
+    [rows] = await db.query(
+      `SELECT (
+          COALESCE((
+            SELECT COALESCE(SUM(CASE WHEN seat_count IS NULL OR seat_count < 1 THEN 1 ELSE seat_count END), COUNT(*))
+            FROM course_orders
+            WHERE course_slug = ?
+              AND batch_key = ?
+              AND status = 'paid'
+          ), 0)
+          +
+          COALESCE((
+            SELECT COALESCE(SUM(CASE WHEN seat_count IS NULL OR seat_count < 1 THEN 1 ELSE seat_count END), COUNT(*))
+            FROM course_manual_payments
+            WHERE course_slug = ?
+              AND batch_key = ?
+              AND status = 'approved'
+          ), 0)
+        ) AS enrolled_count`,
+      [courseSlug, batchKey, courseSlug, batchKey]
+    );
+  } catch (error) {
+    const msg = String(error && error.message || "").toLowerCase();
+    if (msg.indexOf("unknown column") === -1 || msg.indexOf("seat_count") === -1) throw error;
+    [rows] = await db.query(
+      `SELECT (
+          COALESCE((
+            SELECT COUNT(*)
+            FROM course_orders
+            WHERE course_slug = ?
+              AND batch_key = ?
+              AND status = 'paid'
+          ), 0)
+          +
+          COALESCE((
+            SELECT COUNT(*)
+            FROM course_manual_payments
+            WHERE course_slug = ?
+              AND batch_key = ?
+              AND status = 'approved'
+          ), 0)
+        ) AS enrolled_count`,
+      [courseSlug, batchKey, courseSlug, batchKey]
+    );
+  }
   return Number(rows && rows[0] && rows[0].enrolled_count ? rows[0].enrolled_count : 0);
 }
 

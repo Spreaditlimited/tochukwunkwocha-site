@@ -5,6 +5,7 @@ const { ensureBatchSeatLimitColumn, getBatchCapacity } = require("./_lib/batch-c
 const { listCourseBatches } = require("./_lib/batch-store");
 const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
+const { familyEnrollmentEnabledForCourse, maxFamilyChildren } = require("./_lib/families");
 
 function normalizeBooleanFlag(value) {
   if (value === true) return true;
@@ -56,6 +57,10 @@ exports.handler = async function (event) {
       courseSlug,
       isEnrollmentLocked,
       enabledPaymentMethods,
+      familyEnrollment: {
+        enabled: familyEnrollmentEnabledForCourse(courseSlug),
+        maxChildren: maxFamilyChildren(),
+      },
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
         vatPercent: safeVatPercent,

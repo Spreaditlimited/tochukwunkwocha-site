@@ -22,6 +22,11 @@
   const schoolStudentCodeConfirmHint = document.getElementById("schoolStudentCodeConfirmHint");
   const schoolStudentNameConfirmWrap = document.getElementById("schoolStudentNameConfirmWrap");
   const schoolStudentNameConfirmInput = document.getElementById("schoolStudentNameConfirmInput");
+  const studentCodeSchoolTab = document.getElementById("studentCodeSchoolTab");
+  const studentCodeFamilyTab = document.getElementById("studentCodeFamilyTab");
+  const studentCodeLoginHelp = document.getElementById("studentCodeLoginHelp");
+  const studentCodeInputLabel = document.getElementById("studentCodeInputLabel");
+  let studentCodeMode = "school";
 
   const logoutBtn = document.getElementById("walletLogoutBtn");
   const accountMeta = document.getElementById("walletAccountMeta");
@@ -786,6 +791,37 @@
     }
   }
 
+  function setStudentCodeMode(mode) {
+    studentCodeMode = mode === "family" ? "family" : "school";
+    schoolStudentChallenge = "";
+    if (schoolStudentCodeForm) schoolStudentCodeForm.reset();
+    if (schoolStudentCodeConfirmHint) {
+      schoolStudentCodeConfirmHint.textContent = "";
+      schoolStudentCodeConfirmHint.classList.add("hidden");
+    }
+    if (schoolStudentNameConfirmWrap) schoolStudentNameConfirmWrap.classList.add("hidden");
+    if (schoolStudentNameConfirmInput) schoolStudentNameConfirmInput.value = "";
+    if (studentCodeLoginHelp) {
+      studentCodeLoginHelp.textContent = studentCodeMode === "family"
+        ? "Use the child access code from your family dashboard."
+        : "Use your school student code.";
+    }
+    if (studentCodeInputLabel) {
+      studentCodeInputLabel.textContent = studentCodeMode === "family" ? "Family child code" : "School student code";
+    }
+    if (schoolStudentCodeBtn) schoolStudentCodeBtn.textContent = "Continue With Code";
+    [
+      { el: studentCodeSchoolTab, active: studentCodeMode === "school" },
+      { el: studentCodeFamilyTab, active: studentCodeMode === "family" },
+    ].forEach(function (item) {
+      if (!item.el) return;
+      item.el.setAttribute("aria-selected", item.active ? "true" : "false");
+      item.el.classList.toggle("bg-amber-100", item.active);
+      item.el.classList.toggle("text-amber-900", item.active);
+      item.el.classList.toggle("text-gray-600", !item.active);
+    });
+  }
+
   async function handleSchoolStudentCodeLogin() {
     setMsg(authMsg, "", "");
     const code = String((schoolStudentCodeInput && schoolStudentCodeInput.value) || "").trim().toUpperCase();
@@ -807,7 +843,10 @@
             confirmName: String((schoolStudentNameConfirmInput && schoolStudentNameConfirmInput.value) || "").trim(),
           }
         : { code: code };
-      const data = await api("/.netlify/functions/school-student-code-login", {
+      const endpoint = studentCodeMode === "family"
+        ? "/.netlify/functions/family-child-code-login"
+        : "/.netlify/functions/school-student-code-login";
+      const data = await api(endpoint, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify(payload),
@@ -1044,6 +1083,17 @@
       handleSchoolStudentCodeLogin();
     });
   }
+  if (studentCodeSchoolTab) {
+    studentCodeSchoolTab.addEventListener("click", function () {
+      setStudentCodeMode("school");
+    });
+  }
+  if (studentCodeFamilyTab) {
+    studentCodeFamilyTab.addEventListener("click", function () {
+      setStudentCodeMode("family");
+    });
+  }
+  setStudentCodeMode("school");
 
   if (showSignInBtn) {
     showSignInBtn.addEventListener("click", function () {

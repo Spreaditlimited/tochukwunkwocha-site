@@ -13,6 +13,7 @@ const {
   createPasswordResetToken,
   setStudentCookieHeader,
 } = require("./_lib/student-auth");
+const { provisionFamilyOrder } = require("./_lib/families");
 
 function randomPassword() {
   return crypto.randomBytes(6).toString("base64url") + "A9!";
@@ -132,6 +133,22 @@ exports.handler = async function (event) {
         }
       }
       if (account && account.id) {
+        if (String(result.buyerType || "").toLowerCase() === "family") {
+          await provisionFamilyOrder(pool, {
+            sourceType: "course_order",
+            sourceUuid: result.orderUuid,
+            parentAccountId: Number(account.id),
+            parentName: result.fullName,
+            parentEmail: result.email,
+            parentPhone: result.phone || "",
+          }).catch(function (error) {
+            console.warn("family_order_provision_failed", {
+              source: "paystack",
+              orderUuid: result.orderUuid,
+              error: error && error.message ? error.message : String(error || "unknown error"),
+            });
+          });
+        }
         const token = await createStudentSession(pool, account.id, {
           event,
           enforceDeviceLimit: false,
@@ -145,10 +162,13 @@ exports.handler = async function (event) {
       payment: "success",
       course_slug: String(successCourseSlug || "prompt-to-profit"),
     });
+    const successPath = String(result && result.buyerType || "").toLowerCase() === "family"
+      ? "/dashboard/family/"
+      : "/dashboard/courses/";
     return {
       statusCode: 302,
       headers: {
-        Location: `${siteBaseUrl()}/dashboard/courses/?${successParams.toString()}`,
+        Location: `${siteBaseUrl()}${successPath}?${successParams.toString()}`,
         ...(setCookie ? { "Set-Cookie": setCookie } : {}),
       },
       body: "",

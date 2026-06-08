@@ -25,7 +25,8 @@
     var attrs = active ? ' aria-current="page"' : "";
     var href = String(item.href || item.path || "/dashboard/");
     var extra = item.extraAttr ? " " + String(item.extraAttr) : "";
-    return '<a href="' + href + '" class="' + (active ? activeCls : idleCls) + '"' + attrs + extra + ">" + item.label + "</a>";
+    var icon = item.icon || "";
+    return '<a href="' + href + '" class="' + (active ? activeCls : idleCls) + '"' + attrs + extra + ">" + icon + '<span>' + item.label + "</span></a>";
   }
 
   function renderForSidebar(aside) {
@@ -36,6 +37,12 @@
     var menu = [
       { label: "Overview", path: "/dashboard/", href: "/dashboard/" },
       { label: "My Courses", path: "/dashboard/courses/", href: "/dashboard/courses/" },
+      {
+        label: "Family",
+        path: "/dashboard/family/",
+        href: "/dashboard/family/",
+        icon: '<svg class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      },
       { label: "My Domains", path: "/dashboard/domains/", href: "/dashboard/domains/" },
       { label: "Affiliate", path: "/dashboard/affiliate/", href: "/dashboard/affiliate/" },
       { label: "Profile", path: "/dashboard/", hash: "#profile", href: "/dashboard/#profile", extraAttr: "data-profile-nav-link" },

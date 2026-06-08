@@ -4,6 +4,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor, getCourseDefaultPaypalMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { familyEnrollmentEnabledForCourse, maxFamilyChildren } = require("./_lib/families");
 function normalizePaymentMethods(input) {
   const raw = String(input || "");
   const parts = raw.split(",").map(function (v) { return String(v || "").trim().toLowerCase(); }).filter(Boolean);
@@ -51,6 +52,10 @@ exports.handler = async function (event) {
         courseSlug,
         isEnrollmentLocked,
         enabledPaymentMethods,
+        familyEnrollment: {
+          enabled: familyEnrollmentEnabledForCourse(courseSlug),
+          maxChildren: maxFamilyChildren(),
+        },
         coursePricing: {
           priceNgnMinor: Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : 0,
           vatPercent: safeVatPercent,
@@ -75,6 +80,10 @@ exports.handler = async function (event) {
       courseSlug,
       isEnrollmentLocked,
       enabledPaymentMethods,
+      familyEnrollment: {
+        enabled: familyEnrollmentEnabledForCourse(courseSlug),
+        maxChildren: maxFamilyChildren(),
+      },
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
         vatPercent: safeVatPercent,

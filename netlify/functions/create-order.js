@@ -11,6 +11,12 @@ const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods 
 const { ensureAffiliateTables, recordAffiliateAttribution } = require("./_lib/affiliates");
 const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 const {
+  ensureFamilyTables,
+  familyEnrollmentEnabledForCourse,
+  normalizeFamilyPayload,
+  savePendingFamilyChildren,
+} = require("./_lib/families");
+const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
   getCourseConfig,
@@ -65,6 +71,14 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
   return { currency: "NGN", amountMinor: amountMinor, amountDisplay: (amountMinor / 100).toFixed(2) };
 }
 
+function multiplyPricing(price, seatCount) {
+  const qty = Math.max(1, Math.round(Number(seatCount || 1)));
+  return Object.assign({}, price, {
+    amountMinor: Math.max(0, Number(price && price.amountMinor || 0)) * qty,
+    amountDisplay: ((Math.max(0, Number(price && price.amountMinor || 0)) * qty) / 100).toFixed(2),
+  });
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -92,8 +106,12 @@ exports.handler = async function (event) {
       (event.queryStringParameters && event.queryStringParameters.affiliate)
   );
   const courseConfig = getCourseConfig(courseSlug);
+  const family = normalizeFamilyPayload(body, firstName);
   if (!firstName || !email || !phone) {
     return json(400, { ok: false, error: "Full Name, valid email, and WhatsApp phone number are required" });
+  }
+  if (family.isFamily && !familyEnrollmentEnabledForCourse(courseSlug)) {
+    return json(400, { ok: false, error: "Family enrollment is not available for this course." });
   }
 
   if (provider !== "paystack") {
@@ -127,6 +145,7 @@ exports.handler = async function (event) {
 
   try {
     await ensureLearningTables(pool);
+    await ensureFamilyTables(pool);
     await ensureAffiliateTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!learningCourse) {
@@ -156,9 +175,13 @@ exports.handler = async function (event) {
       if (String(batch.batch_key || "").toLowerCase() !== requestedBatchKey.toLowerCase()) {
         return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
       }
-      await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+      const capacity = await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+      if (capacity && capacity.remainingSeats !== null && family.seatCount > capacity.remainingSeats) {
+        return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });
+      }
     }
-    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
+    const singleSeatPrice = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
+    const price = multiplyPricing(singleSeatPrice, family.seatCount);
 
     let pricing = {
       currency: price.currency,
@@ -193,8 +216,8 @@ exports.handler = async function (event) {
     try {
       await pool.query(
         `INSERT INTO course_orders
-         (order_uuid, course_slug, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+         (order_uuid, course_slug, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, buyer_type, seat_count, status, batch_key, batch_label)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
         [
           orderUuid,
           courseSlug,
@@ -210,13 +233,18 @@ exports.handler = async function (event) {
           pricing.couponCode || null,
           pricing.couponId,
           provider,
+          family.isFamily ? "family" : "student",
+          family.seatCount,
           batch ? batch.batch_key : null,
           batch ? batch.batch_label : null,
         ]
       );
     } catch (insertError) {
       const msg = String(insertError && insertError.message || "").toLowerCase();
-      if (msg.indexOf("unknown column") === -1 || msg.indexOf("phone") === -1) throw insertError;
+      const missingCompatibleColumn =
+        msg.indexOf("unknown column") !== -1 &&
+        (msg.indexOf("phone") !== -1 || msg.indexOf("buyer_type") !== -1 || msg.indexOf("seat_count") !== -1);
+      if (!missingCompatibleColumn || family.isFamily) throw insertError;
       await pool.query(
         `INSERT INTO course_orders
          (order_uuid, course_slug, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, provider, status, batch_key, batch_label)
@@ -239,6 +267,17 @@ exports.handler = async function (event) {
           batch ? batch.batch_label : null,
         ]
       );
+    }
+
+    if (family.isFamily) {
+      await savePendingFamilyChildren(pool, {
+        sourceType: "course_order",
+        sourceUuid: orderUuid,
+        courseSlug,
+        batchKey: batch ? batch.batch_key : null,
+        batchLabel: batch ? batch.batch_label : null,
+        children: family.children,
+      });
     }
 
     if (affiliateCode) {
@@ -282,6 +321,8 @@ exports.handler = async function (event) {
         course_slug: courseSlug,
         batch_key: batch ? batch.batch_key : null,
         batch_label: batch ? batch.batch_label : null,
+        buyer_type: family.isFamily ? "family" : "student",
+        seat_count: family.seatCount,
       },
     });
 

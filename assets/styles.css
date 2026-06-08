@@ -1301,6 +1301,187 @@ body.modal-open {
   font-size: 0.82rem;
 }
 
+.family-enrollment {
+  margin: 4px 0 18px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.family-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.enrol-form .family-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  font-weight: 400;
+}
+
+.family-toggle__input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  flex: 0 0 auto;
+  accent-color: #1a2849;
+}
+
+.enrol-form .family-toggle__input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin: 3px 0 0;
+  border-radius: 4px;
+  flex: 0 0 16px;
+  box-shadow: none;
+}
+
+.family-toggle__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: #374151;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.enrol-form .family-toggle__copy {
+  flex: 1 1 auto;
+  max-width: 42rem;
+}
+
+.family-toggle__copy strong {
+  color: #14213d;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.family-toggle__copy span {
+  color: #6b7280;
+  font-size: 0.84rem;
+}
+
+.family-children-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.family-payment-summary {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #dbe3f4;
+  border-radius: 10px;
+  background: #f3f6ff;
+  color: #14213d;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.family-children-wrap {
+  display: grid;
+  gap: 12px;
+}
+
+.family-child-row {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.family-child-row__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.family-child-row__title {
+  color: #14213d;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.family-child-row__remove {
+  border: 0;
+  background: transparent;
+  color: #b91c1c;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.family-child-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.family-enrollment .form-label {
+  display: block;
+  margin: 0 0 5px;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.family-enrollment .form-input.family-input {
+  margin: 0;
+  padding: 11px 12px;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.94rem;
+}
+
+.family-add-child-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 12px;
+  padding: 9px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #14213d;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.family-add-child-btn:hover,
+.family-add-child-btn:focus-visible {
+  border-color: #9ca3af;
+  background: #f3f4f6;
+}
+
+@media (min-width: 640px) {
+  .family-child-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(84px, 0.8fr);
+  }
+
+  .family-field--class {
+    grid-column: 1 / -1;
+  }
+}
+
 .payment-feedback-modal {
   position: fixed;
   inset: 0;

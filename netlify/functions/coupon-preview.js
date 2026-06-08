@@ -8,6 +8,7 @@ const {
   getCourseDefaultAmountMinor,
 } = require("./_lib/course-config");
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
+const { maxFamilyChildren } = require("./_lib/families");
 
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
@@ -32,6 +33,12 @@ function priceConfig({ provider, courseSlug, batch }) {
   return { currency: "NGN", amountMinor };
 }
 
+function normalizeSeatCount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return Math.max(1, Math.min(maxFamilyChildren(), Math.round(parsed)));
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -46,6 +53,7 @@ exports.handler = async function (event) {
   const provider = normalizeProvider(body.provider);
   const couponCode = normalizeCouponCode(body.couponCode);
   const email = String(body.email || "").trim().toLowerCase();
+  const seatCount = normalizeSeatCount(body.seatCount || body.seat_count);
 
   if (!couponCode) return json(400, { ok: false, error: "Enter a valid coupon code." });
 
@@ -58,6 +66,7 @@ exports.handler = async function (event) {
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
 
     const base = priceConfig({ provider, courseSlug, batch });
+    base.amountMinor = Number(base.amountMinor || 0) * seatCount;
     const evaluated = await evaluateCouponForOrder(pool, {
       couponCode,
       courseSlug,

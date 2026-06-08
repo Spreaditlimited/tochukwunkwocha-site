@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Dashboard | Tochukwu Tech</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              heading: ["Manrope", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#eef2fb",
+                100: "#dfe7f7",
+                500: "#22345f",
+                600: "#1a2849",
+                700: "#14213d",
+                800: "#0f182d",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      [hidden] { display: none !important; }
+      .picker-wrap {
+        position: relative;
+      }
+      .picker-select {
+        display: block;
+        width: 100%;
+        appearance: none;
+        border: 0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        color: #111827;
+        padding: 0.75rem 2.75rem 0.75rem 0.875rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.35;
+        box-shadow: inset 0 0 0 1px #d1d5db, 0 1px 2px rgba(15, 23, 42, 0.04);
+        transition: box-shadow 150ms ease, background-color 150ms ease;
+      }
+      .picker-select:hover {
+        box-shadow: inset 0 0 0 1px #99a9cc, 0 1px 2px rgba(15, 23, 42, 0.06);
+      }
+      .picker-select:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 2px #1a2849, 0 0 0 3px rgba(26, 40, 73, 0.12);
+      }
+      .picker-select:disabled {
+        cursor: not-allowed;
+        background: #f8fafc;
+        color: #64748b;
+      }
+      .picker-wrap__icon {
+        pointer-events: none;
+        position: absolute;
+        inset-block: 0;
+        right: 0.875rem;
+        display: flex;
+        align-items: center;
+        color: #1a2849;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased">
+    <section class="flex min-h-screen w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 z-40 hidden bg-brand-900/40 backdrop-blur-sm peer-checked:block md:hidden"></label>
+      <aside class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-brand-800 text-white shadow-2xl transition-transform duration-300 peer-checked:translate-x-0 md:relative md:translate-x-0 md:shadow-none">
+        <div class="flex h-16 items-center border-b border-white/10 px-6">
+          <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="mr-3 h-8 w-8 rounded bg-white object-contain p-0.5" />
+          <span class="font-heading text-lg font-bold">Family Dashboard</span>
+        </div>
+        <nav class="flex-1 space-y-1 overflow-y-auto p-4"></nav>
+        <div class="border-t border-white/10 p-4">
+          <button type="button" class="w-full rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20" data-user-signout>Sign out</button>
+        </div>
+      </aside>
+
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header class="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
+          <div class="flex items-center gap-3">
+            <label for="mobile-menu-toggle" class="-ml-2 rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-brand-700 md:hidden">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <div>
+              <p id="familyAccountName" class="text-sm font-bold text-gray-900"></p>
+              <p id="familyAccountEmail" class="text-xs font-medium text-gray-500"></p>
+            </div>
+          </div>
+          <button type="button" id="familyEnrollToggle" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Enroll Child</button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <section id="familyLoading" class="mx-auto max-w-5xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <p class="text-sm font-semibold text-gray-600">Loading family dashboard...</p>
+          </section>
+
+          <section id="familyError" class="mx-auto hidden max-w-5xl rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700"></section>
+
+          <section id="familyContent" class="mx-auto hidden max-w-5xl space-y-6">
+            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p class="text-xs font-bold uppercase tracking-wide text-brand-600">Family Account</p>
+              <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h1 id="familyTitle" class="font-heading text-2xl font-extrabold text-gray-900">Your children</h1>
+                  <p id="familySummary" class="mt-1 text-sm text-gray-600"></p>
+                </div>
+                <a href="/dashboard/courses/" class="inline-flex rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">My own courses</a>
+              </div>
+            </div>
+
+            <section id="familyEnrollPanel" class="hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-brand-600">Enroll from dashboard</p>
+                  <h2 class="mt-1 font-heading text-xl font-extrabold text-gray-900">Add a child to a program</h2>
+                  <p class="mt-1 text-sm text-gray-600">Use your parent account details. After payment, each child gets their own access code.</p>
+                </div>
+                <button type="button" id="familyEnrollClose" class="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Close</button>
+              </div>
+
+              <form id="familyEnrollForm" class="mt-5 space-y-5">
+                <div class="grid gap-4 md:grid-cols-2">
+                  <label class="block">
+                    <span class="text-sm font-bold text-gray-800">Program</span>
+                    <span class="picker-wrap mt-2 block">
+                      <select id="familyEnrollCourse" class="picker-select">
+                        <option value="prompt-to-profit-holiday">Prompt to Profit Holiday</option>
+                        <option value="prompt-to-profit">Prompt to Profit</option>
+                        <option value="prompt-to-production">Prompt to Profit Advanced</option>
+                      </select>
+                      <span class="picker-wrap__icon" aria-hidden="true">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </span>
+                  </label>
+                  <label class="block">
+                    <span class="text-sm font-bold text-gray-800">Batch</span>
+                    <span class="picker-wrap mt-2 block">
+                      <select id="familyEnrollBatch" class="picker-select"></select>
+                      <span class="picker-wrap__icon" aria-hidden="true">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-sm font-bold text-gray-900">Child details</h3>
+                    <button type="button" id="familyEnrollAddChild" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Add another child</button>
+                  </div>
+                  <div id="familyEnrollChildren" class="mt-3 space-y-4"></div>
+                </div>
+
+                <div class="flex flex-col gap-3 rounded-lg border border-brand-100 bg-brand-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p id="familyEnrollSummary" class="text-sm font-bold text-brand-800">Select a program to see the total.</p>
+                    <p class="mt-1 text-xs font-medium text-brand-700">Payment method: Paystack</p>
+                  </div>
+                  <button type="submit" id="familyEnrollSubmit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60">Proceed to Payment</button>
+                </div>
+                <p id="familyEnrollMessage" class="hidden text-sm font-semibold"></p>
+              </form>
+            </section>
+
+            <div id="familyChildrenGrid" class="grid grid-cols-1 gap-4 lg:grid-cols-2"></div>
+
+            <div id="familyEmpty" class="hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 class="font-heading text-xl font-bold text-gray-900">No children enrolled yet</h2>
+              <p class="mt-2 text-sm text-gray-600">When you enrol more than one child, their access and program details will appear here.</p>
+            </div>
+          </section>
+        </main>
+      </div>
+    </section>
+    <script src="/assets/student-sidebar.js?v=20260608-family" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260608-family" defer></script>
+    <script src="/assets/family-dashboard.js?v=20260608-family-enrol" defer></script>
+  </body>
+</html>

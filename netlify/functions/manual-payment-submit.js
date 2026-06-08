@@ -26,6 +26,12 @@ const {
   recordAffiliateAttribution,
 } = require("./_lib/affiliates");
 const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
+const {
+  ensureFamilyTables,
+  familyEnrollmentEnabledForCourse,
+  normalizeFamilyPayload,
+  savePendingFamilyChildren,
+} = require("./_lib/families");
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -80,6 +86,10 @@ function manualPaymentAmountMinor(courseSlug, learningCourse) {
   return courseMinor + vatMinor;
 }
 
+function multiplyMinor(minor, seatCount) {
+  return Math.max(0, Number(minor || 0)) * Math.max(1, Math.round(Number(seatCount || 1)));
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
 
@@ -103,9 +113,13 @@ exports.handler = async function (event) {
   const proofPublicId = String(body.proofPublicId || "").trim().slice(0, 255);
   const currency = "NGN";
   const affiliateCode = String(body.affiliateCode || body.affiliate_code || "").trim().toUpperCase().slice(0, 40);
+  const family = normalizeFamilyPayload(body, firstName);
 
   if (!firstName || !email || !phone) {
     return json(400, { ok: false, error: "Full Name, valid email, and WhatsApp phone number are required" });
+  }
+  if (family.isFamily && !familyEnrollmentEnabledForCourse(courseSlug)) {
+    return json(400, { ok: false, error: "Family enrollment is not available for this course." });
   }
 
   if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
@@ -117,6 +131,7 @@ exports.handler = async function (event) {
   try {
     await applyRuntimeSettings(pool);
     await ensureLearningTables(pool);
+    await ensureFamilyTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     if (!learningCourse) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
@@ -147,9 +162,12 @@ exports.handler = async function (event) {
       if (String(batch.batch_key || "").toLowerCase() !== requestedBatchKey.toLowerCase()) {
         return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
       }
-      await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+      const capacity = await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
+      if (capacity && capacity.remainingSeats !== null && family.seatCount > capacity.remainingSeats) {
+        return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });
+      }
     }
-    const baseAmountMinor = manualPaymentAmountMinor(courseSlug, learningCourse);
+    const baseAmountMinor = multiplyMinor(manualPaymentAmountMinor(courseSlug, learningCourse), family.seatCount);
     let pricing = {
       currency: "NGN",
       baseAmountMinor,
@@ -196,7 +214,20 @@ exports.handler = async function (event) {
       transferReference,
       proofUrl,
       proofPublicId,
+      buyerType: family.isFamily ? "family" : "student",
+      seatCount: family.seatCount,
     });
+
+    if (family.isFamily) {
+      await savePendingFamilyChildren(pool, {
+        sourceType: "manual_payment",
+        sourceUuid: paymentUuid,
+        courseSlug,
+        batchKey: batch ? batch.batch_key : null,
+        batchLabel: batch ? batch.batch_label : null,
+        children: family.children,
+      });
+    }
 
     if (affiliateCode) {
       await recordAffiliateAttribution(pool, {

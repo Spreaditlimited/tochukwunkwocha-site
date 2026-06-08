@@ -31,11 +31,20 @@
   var holidayWaitlistRows = document.getElementById("holidayWaitlistRows");
 
   var courseSlug = String(form.getAttribute("data-course-slug") || "prompt-to-profit").trim();
+  var pageFamilyToggle = String(form.getAttribute("data-family-enrollment") || "").trim().toLowerCase();
+  var familyEnrollmentEnabled = pageFamilyToggle === "true" || pageFamilyToggle === "1" || pageFamilyToggle === "yes";
+  var familyMaxChildren = 8;
+  var familySection = null;
+  var familyEnabledInput = null;
+  var familyChildrenWrap = null;
+  var familyAddChildBtn = null;
+  var originalContactLabels = null;
   var activeCourseBatchKey = "";
   var activeCourseBatchStartAt = "";
   var activeCoursePricing = null;
   var holidayBatchMap = {};
   var manualConfigLoadedKey = "";
+  var manualPaymentDetails = null;
   var appliedCoupon = null;
   var couponPricingByProvider = { paystack: null };
   var basePricingByProvider = { paystack: null };
@@ -126,14 +135,96 @@
     return formatGbpMinor(minor);
   }
 
+  function familySeatCount() {
+    if (!familyEnabledInput || !familyEnabledInput.checked) return 1;
+    if (!familyChildrenWrap) return 1;
+    var rows = familyChildrenWrap.querySelectorAll("[data-family-child-row]").length;
+    return Math.max(1, rows || 1);
+  }
+
+  function familyChildren() {
+    if (!familyChildrenWrap || !familyEnabledInput || !familyEnabledInput.checked) return [];
+    return Array.prototype.slice.call(familyChildrenWrap.querySelectorAll("[data-family-child-row]")).map(function (row) {
+      return {
+        fullName: String((row.querySelector("[data-family-child-name]") || {}).value || "").trim(),
+        age: String((row.querySelector("[data-family-child-age]") || {}).value || "").trim(),
+        classLevel: String((row.querySelector("[data-family-child-class]") || {}).value || "").trim(),
+      };
+    }).filter(function (item) {
+      return !!item.fullName;
+    });
+  }
+
+  function pricingForSeats(pricing) {
+    if (!pricing) return null;
+    var seats = familySeatCount();
+    return Object.assign({}, pricing, {
+      baseAmountMinor: Number(pricing.baseAmountMinor || 0) * seats,
+      discountMinor: Number(pricing.discountMinor || 0) * seats,
+      finalAmountMinor: Number(pricing.finalAmountMinor || 0) * seats,
+    });
+  }
+
+  function currentPaystackPricing() {
+    return couponPricingByProvider.paystack || pricingForSeats(basePricingByProvider.paystack);
+  }
+
+  function renderFamilyPaymentSummary() {
+    var summaryEl = document.getElementById("familyPaymentSummary");
+    if (!summaryEl) return;
+    if (!familyEnabledInput || !familyEnabledInput.checked) {
+      summaryEl.textContent = "Turn this on to enrol siblings under one parent account.";
+      return;
+    }
+    var seats = familySeatCount();
+    var provider = providerInput ? providerInput.value : "paystack";
+    if (provider === "manual_transfer" && manualPaymentDetails && Number.isFinite(Number(manualPaymentDetails.amountMinor))) {
+      summaryEl.textContent = String(seats) + " child" + (seats === 1 ? "" : "ren") + " selected • Total (Direct Bank Transfer): " + formatCurrencyMinor("NGN", Number(manualPaymentDetails.amountMinor || 0));
+      return;
+    }
+    var pricing = currentPaystackPricing();
+    if (!pricing || !Number.isFinite(Number(pricing.finalAmountMinor))) {
+      summaryEl.textContent = String(seats) + " child" + (seats === 1 ? "" : "ren") + " selected. Total updates when pricing loads.";
+      return;
+    }
+    var breakdown = paystackBreakdownForTotal(pricing.finalAmountMinor, pricing.currency || "NGN");
+    var totalMinor = breakdown ? breakdown.totalMinor : pricing.finalAmountMinor;
+    summaryEl.textContent = String(seats) + " child" + (seats === 1 ? "" : "ren") + " selected • Total (Paystack): " + formatCurrencyMinor("NGN", totalMinor);
+  }
+
+  function updateContactLabelsForFamilyMode() {
+    var nameLabel = document.querySelector('label[for="enrolFirstName"]');
+    var emailLabel = document.querySelector('label[for="enrolEmail"]');
+    var phoneLabel = document.querySelector('label[for="enrolPhone"]');
+    if (!originalContactLabels) {
+      originalContactLabels = {
+        name: nameLabel ? nameLabel.textContent : "Full Name",
+        email: emailLabel ? emailLabel.textContent : "Email address",
+        phone: phoneLabel ? phoneLabel.textContent : "WhatsApp phone number",
+      };
+    }
+    var familyMode = !!(familyEnabledInput && familyEnabledInput.checked);
+    if (nameLabel) nameLabel.textContent = familyMode ? "Parent's name" : originalContactLabels.name;
+    if (emailLabel) emailLabel.textContent = familyMode ? "Parent's email address" : originalContactLabels.email;
+    if (phoneLabel) phoneLabel.textContent = familyMode ? "Parent's WhatsApp phone number" : originalContactLabels.phone;
+  }
+
+  function clearCouponForSeatChange() {
+    if (!appliedCoupon) return;
+    appliedCoupon = null;
+    couponPricingByProvider = { paystack: null };
+    renderCouponSummary();
+    setCouponStatus("Coupon removed because the number of children changed.", "info");
+  }
+
   function renderCouponSummary() {
     if (!couponSummaryEl) return;
     var provider = providerInput ? providerInput.value : "paystack";
     var pricing = null;
     if (provider === "manual_transfer") {
-      pricing = couponPricingByProvider.paystack;
+      pricing = currentPaystackPricing();
     } else {
-      pricing = couponPricingByProvider[provider] || null;
+      pricing = currentPaystackPricing();
     }
     if (!appliedCoupon || !pricing) {
       couponSummaryEl.classList.add("hidden");
@@ -160,7 +251,7 @@
         currency: cur,
       };
     }
-    var configuredCourseMinor = Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0);
+    var configuredCourseMinor = Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0) * familySeatCount();
     var vatPercent = Number(activeCoursePricing && activeCoursePricing.vatPercent || 7.5);
     var safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
     var courseMinor = configuredCourseMinor > 0 ? Math.round(configuredCourseMinor) : 0;
@@ -205,7 +296,7 @@
       paystackBreakdown.classList.add("hidden");
       return;
     }
-    var pricing = couponPricingByProvider.paystack || basePricingByProvider.paystack;
+    var pricing = currentPaystackPricing();
     if (!pricing || !Number.isFinite(Number(pricing.finalAmountMinor))) {
       paystackBreakdown.classList.add("hidden");
       return;
@@ -232,7 +323,7 @@
   }
 
   function updatePaymentOptionMetas() {
-    var paystackPricing = couponPricingByProvider.paystack || basePricingByProvider.paystack;
+    var paystackPricing = currentPaystackPricing();
     var paystackOption = findOption("paystack");
     if (paystackOptionMeta && !isOptionDisabled(paystackOption)) {
       var paystackBreakdown = paystackPricing ? paystackBreakdownForTotal(paystackPricing.finalAmountMinor, paystackPricing.currency || "NGN") : null;
@@ -242,6 +333,7 @@
     }
     if (paypalOptionMeta) paypalOptionMeta.textContent = "Unavailable";
     renderPaystackBreakdown();
+    renderFamilyPaymentSummary();
   }
 
   function parseBatchStart(value) {
@@ -464,7 +556,12 @@
     if (submitBtn) submitBtn.textContent = isManual ? "Upload proof and confirm" : "Proceed to Payment";
     renderCouponSummary();
     renderPaystackBreakdown();
-    if (isManual) ensureManualConfigLoaded().catch(function () { return null; });
+    renderFamilyPaymentSummary();
+    if (isManual) {
+      ensureManualConfigLoaded()
+        .then(function () { renderFamilyPaymentSummary(); })
+        .catch(function () { return null; });
+    }
   }
 
   async function loadHolidayBatches() {
@@ -485,6 +582,7 @@
     }
     applyEnrollmentLock(json && json.isEnrollmentLocked === true);
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
+    applyFamilySettings(json.familyEnrollment);
     activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     var allBatches = Array.isArray(json.batches) ? json.batches : [];
     var fullBatches = allBatches.filter(function (item) { return isBatchFull(item); });
@@ -587,6 +685,7 @@
     var active = json.activeBatch;
     activeCoursePricing = json.coursePricing && typeof json.coursePricing === "object" ? json.coursePricing : null;
     applyEnabledPaymentMethods(Array.isArray(json.enabledPaymentMethods) ? json.enabledPaymentMethods : []);
+    applyFamilySettings(json.familyEnrollment);
     activeCourseBatchKey = String(active.batchKey || "");
     activeCourseBatchStartAt = String(active.batchStartAt || "");
     var paystackMinor = Number(active.paystackAmountMinor || 0);
@@ -610,7 +709,7 @@
 
   async function ensureManualConfigLoaded() {
     var couponForManual = appliedCoupon ? String(appliedCoupon.code || "").trim() : String((couponCodeInput && couponCodeInput.value) || "").trim();
-    var cacheKey = courseSlug + ":" + (activeCourseBatchKey || "") + ":" + couponForManual;
+    var cacheKey = courseSlug + ":" + (activeCourseBatchKey || "") + ":" + couponForManual + ":" + familySeatCount();
     if (manualConfigLoadedKey === cacheKey) return;
     manualConfigLoadedKey = cacheKey;
     var params = new URLSearchParams({
@@ -618,6 +717,7 @@
       batch_key: activeCourseBatchKey || "",
     });
     if (couponForManual) params.set("coupon_code", couponForManual);
+    params.set("seat_count", String(familySeatCount()));
     var emailForManual = String((form.email && form.email.value) || "").trim();
     if (emailForManual) params.set("email", emailForManual);
     var res = await fetch("/.netlify/functions/manual-payment-config?" + params.toString(), {
@@ -627,6 +727,7 @@
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok || !json.details) throw new Error((json && json.error) || "Could not load bank details");
     var details = json.details || {};
+    manualPaymentDetails = details;
     if (details.couponError) {
       setCouponStatus(String(details.couponError), "error");
     }
@@ -648,6 +749,7 @@
       manualBankDetails.innerHTML = manualDetailRows.join("");
     }
     if (manualOptionMeta) manualOptionMeta.textContent = "Transfer " + amountLabel + " and upload proof";
+    renderFamilyPaymentSummary();
   }
 
   async function getUploadSignature() {
@@ -680,6 +782,127 @@
       proofUrl: String(json.secure_url || ""),
       proofPublicId: String(json.public_id || ""),
     };
+  }
+
+  function childRowHtml(index) {
+    return [
+      '<div class="family-child-row" data-family-child-row>',
+      '<div class="family-child-row__header">',
+      '<p class="family-child-row__title">Child ' + String(Number(index || 0) + 1) + "</p>",
+      '<button type="button" class="family-child-row__remove" data-family-remove-child>Remove</button>',
+      "</div>",
+      '<div class="family-child-grid">',
+      '<div class="family-field family-field--name"><label class="form-label">Child full name</label><input class="form-input family-input" data-family-child-name placeholder="E.g. Ada Johnson" /></div>',
+      '<div class="family-field family-field--age"><label class="form-label">Age</label><input class="form-input family-input" data-family-child-age inputmode="numeric" placeholder="10" /></div>',
+      '<div class="family-field family-field--class"><label class="form-label">Class / level</label><input class="form-input family-input" data-family-child-class placeholder="Primary 5, JSS 1, beginner" /></div>',
+      "</div>",
+      "</div>",
+    ].join("");
+  }
+
+  function renumberFamilyRows() {
+    if (!familyChildrenWrap) return;
+    Array.prototype.slice.call(familyChildrenWrap.querySelectorAll("[data-family-child-row]")).forEach(function (row, index) {
+      var label = row.querySelector("p");
+      if (label) label.textContent = "Child " + String(index + 1);
+      var remove = row.querySelector("[data-family-remove-child]");
+      if (remove) remove.hidden = index === 0;
+    });
+  }
+
+  function addFamilyChildRow() {
+    if (!familyChildrenWrap) return;
+    var count = familyChildrenWrap.querySelectorAll("[data-family-child-row]").length;
+    if (count >= familyMaxChildren) return;
+    familyChildrenWrap.insertAdjacentHTML("beforeend", childRowHtml(count));
+    renumberFamilyRows();
+    clearCouponForSeatChange();
+    manualConfigLoadedKey = "";
+    manualPaymentDetails = null;
+    updatePaymentOptionMetas();
+  }
+
+  function buildFamilySection() {
+    if (familySection || !familyEnrollmentEnabled) return;
+    var section = document.createElement("section");
+    section.id = "familyEnrollmentBlock";
+    section.className = "family-enrollment";
+    section.innerHTML = [
+      '<label class="family-toggle">',
+      '<input id="familyEnrollmentEnabled" type="checkbox" class="family-toggle__input" />',
+      '<span class="family-toggle__copy"><strong>Enrolling more than one child?</strong><span>Pay once and manage every child from your family dashboard.</span></span>',
+      "</label>",
+      '<div id="familyChildrenPanel" class="family-children-panel hidden" hidden>',
+      '<p id="familyPaymentSummary" class="family-payment-summary">Turn this on to enrol siblings under one parent account.</p>',
+      '<div id="familyChildrenWrap" class="family-children-wrap"></div>',
+      '<button type="button" id="familyAddChildBtn" class="family-add-child-btn">Add another child</button>',
+      "</div>",
+    ].join("");
+    if (form.parentNode) form.parentNode.insertBefore(section, form);
+    else form.insertBefore(section, form.firstChild);
+    familySection = section;
+    familyEnabledInput = document.getElementById("familyEnrollmentEnabled");
+    familyChildrenWrap = document.getElementById("familyChildrenWrap");
+    familyAddChildBtn = document.getElementById("familyAddChildBtn");
+    addFamilyChildRow();
+    if (familyEnabledInput) {
+      familyEnabledInput.addEventListener("change", function () {
+        var panel = document.getElementById("familyChildrenPanel");
+        if (panel) {
+          panel.hidden = !familyEnabledInput.checked;
+          panel.classList.toggle("hidden", !familyEnabledInput.checked);
+        }
+        clearCouponForSeatChange();
+        manualConfigLoadedKey = "";
+        manualPaymentDetails = null;
+        updateContactLabelsForFamilyMode();
+        updatePaymentOptionMetas();
+        if (providerInput && providerInput.value === "manual_transfer") ensureManualConfigLoaded().catch(function () { return null; });
+      });
+    }
+    if (familyAddChildBtn) {
+      familyAddChildBtn.addEventListener("click", function () {
+        addFamilyChildRow();
+        if (providerInput && providerInput.value === "manual_transfer") ensureManualConfigLoaded().catch(function () { return null; });
+      });
+    }
+    if (familyChildrenWrap) {
+      familyChildrenWrap.addEventListener("click", function (event) {
+        var target = event.target;
+        if (!target || !target.matches("[data-family-remove-child]")) return;
+        var row = target.closest("[data-family-child-row]");
+        if (row) row.remove();
+        if (!familyChildrenWrap.querySelector("[data-family-child-row]")) addFamilyChildRow();
+        renumberFamilyRows();
+        clearCouponForSeatChange();
+        manualConfigLoadedKey = "";
+        manualPaymentDetails = null;
+        updatePaymentOptionMetas();
+        if (providerInput && providerInput.value === "manual_transfer") ensureManualConfigLoaded().catch(function () { return null; });
+      });
+      familyChildrenWrap.addEventListener("input", function () {
+        manualConfigLoadedKey = "";
+        renderFamilyPaymentSummary();
+      });
+    }
+    updateContactLabelsForFamilyMode();
+  }
+
+  function applyFamilySettings(settings) {
+    var cfg = settings && typeof settings === "object" ? settings : {};
+    if (pageFamilyToggle === "false" || pageFamilyToggle === "0" || pageFamilyToggle === "no") {
+      familyEnrollmentEnabled = false;
+      if (familySection) familySection.hidden = true;
+      return;
+    }
+    if (cfg.enabled === false) {
+      familyEnrollmentEnabled = false;
+      if (familySection) familySection.hidden = true;
+      return;
+    }
+    if (cfg.enabled === true) familyEnrollmentEnabled = true;
+    familyMaxChildren = Math.max(1, Number(cfg.maxChildren || familyMaxChildren || 8));
+    buildFamilySection();
   }
 
   paymentOptions.forEach(function (option) {
@@ -720,6 +943,7 @@
             batchKey: activeCourseBatchKey,
             provider: targetProvider,
             email: emailValue,
+            seatCount: familySeatCount(),
           }),
         });
         var json = await res.json().catch(function () { return null; });
@@ -777,8 +1001,14 @@
     var country = "";
     var provider = providerInput ? providerInput.value : "paystack";
     var affiliateCode = resolveAffiliateCode();
+    var familyMode = !!(familyEnabledInput && familyEnabledInput.checked);
+    var children = familyChildren();
     if (!firstName || !email || !phone) {
       setError("Please enter your full name, phone number, and email address.");
+      return;
+    }
+    if (familyMode && children.length < 2) {
+      setError("Please add at least two child names for family enrollment.");
       return;
     }
     if (enrollmentLocked) {
@@ -812,6 +1042,8 @@
             batchKey: activeCourseBatchKey,
             couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
             affiliateCode: affiliateCode,
+            familyEnrollment: familyMode,
+            children: children,
             proofUrl: uploaded.proofUrl,
             proofPublicId: uploaded.proofPublicId,
           }),
@@ -842,6 +1074,8 @@
           batchKey: activeCourseBatchKey,
           couponCode: appliedCoupon ? appliedCoupon.code : String((couponCodeInput && couponCodeInput.value) || "").trim(),
           affiliateCode: affiliateCode,
+          familyEnrollment: familyMode,
+          children: children,
           recaptchaToken: recaptchaToken,
         }),
       });
@@ -862,6 +1096,7 @@
 
   updateIntro();
   setActiveProvider((providerInput && providerInput.value) || "paystack");
+  buildFamilySection();
   if (holidayBatchSelect) {
     holidayBatchSelect.addEventListener("change", function () {
       applyHolidayBatchSelection(String(holidayBatchSelect.value || ""));

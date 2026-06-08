@@ -138,6 +138,21 @@ async function ensureManualPaymentsTable(pool) {
   } catch (_error) {
     // no-op
   }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN buyer_type VARCHAR(40) NOT NULL DEFAULT 'student'`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN seat_count INT NOT NULL DEFAULT 1`);
+  } catch (_error) {
+    // no-op
+  }
+  try {
+    await pool.query(`ALTER TABLE course_manual_payments ADD COLUMN family_account_id BIGINT NULL`);
+  } catch (_error) {
+    // no-op
+  }
   await pool.query(
     `UPDATE course_manual_payments
      SET base_amount_minor = amount_minor
@@ -179,8 +194,8 @@ async function createManualPayment(pool, input) {
 
   await pool.query(
     `INSERT INTO course_manual_payments
-     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (payment_uuid, course_slug, batch_key, batch_label, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, buyer_type, seat_count, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       paymentUuid,
       input.courseSlug,
@@ -200,13 +215,18 @@ async function createManualPayment(pool, input) {
       input.transferReference || null,
       input.proofUrl,
       input.proofPublicId || null,
+      input.buyerType || "student",
+      Math.max(1, Number(input.seatCount || 1)),
       STATUS_PENDING,
       now,
       now,
     ]
   ).catch(async function (error) {
     const msg = String(error && error.message || "").toLowerCase();
-    if (msg.indexOf("unknown column") === -1 || msg.indexOf("phone") === -1) throw error;
+    const missingCompatibleColumn =
+      msg.indexOf("unknown column") !== -1 &&
+      (msg.indexOf("phone") !== -1 || msg.indexOf("buyer_type") !== -1 || msg.indexOf("seat_count") !== -1);
+    if (!missingCompatibleColumn || String(input.buyerType || "student") === "family") throw error;
     await pool.query(
       `INSERT INTO course_manual_payments
        (payment_uuid, course_slug, batch_key, batch_label, first_name, email, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, coupon_code, coupon_id, transfer_reference, proof_url, proof_public_id, status, created_at, updated_at)
@@ -268,6 +288,7 @@ async function findManualPaymentByUuid(pool, paymentUuid) {
             batch_label,
             first_name,
             email,
+            phone,
             country,
             currency,
             amount_minor,
@@ -279,6 +300,8 @@ async function findManualPaymentByUuid(pool, paymentUuid) {
             transfer_reference,
             proof_url,
             proof_public_id,
+            buyer_type,
+            seat_count,
             status,
             flodesk_pre_synced,
             flodesk_main_synced,

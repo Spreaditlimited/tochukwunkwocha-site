@@ -72,7 +72,7 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
   try {
     await conn.beginTransaction();
     const [rows] = await conn.query(
-      `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, status, flodesk_synced, currency, amount_minor, discount_minor, coupon_id, meta_purchase_sent
+      `SELECT id, order_uuid, course_slug, batch_key, batch_label, first_name, email, phone, status, flodesk_synced, currency, amount_minor, discount_minor, coupon_id, meta_purchase_sent, buyer_type, seat_count
        FROM course_orders
        WHERE ${where.join(" OR ")}
        ORDER BY id DESC
@@ -99,10 +99,14 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
            FOR UPDATE`,
           [order.course_slug, order.batch_key]
         );
-        await assertBatchHasCapacity(conn, {
+        const capacity = await assertBatchHasCapacity(conn, {
           courseSlug: order.course_slug,
           batchKey: order.batch_key,
         });
+        const seatCount = Math.max(1, Number(order.seat_count || 1));
+        if (capacity && capacity.remainingSeats !== null && seatCount > capacity.remainingSeats) {
+          throw new Error(`Only ${capacity.remainingSeats} seats are left in this batch.`);
+        }
       }
 
       await conn.query(
@@ -194,6 +198,9 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     courseSlug: order.course_slug,
     email: order.email,
     fullName: order.first_name,
+    phone: order.phone || "",
+    buyerType: order.buyer_type || "student",
+    seatCount: Number(order.seat_count || 1),
   };
 }
 

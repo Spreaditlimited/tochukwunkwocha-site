@@ -16,6 +16,8 @@ const { resolveCourseBatch } = require("./_lib/batch-store");
 const { recordCouponRedemption } = require("./_lib/coupons");
 const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./_lib/affiliates");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
+const { provisionFamilyOrder } = require("./_lib/families");
+const { ensureStudentAuthTables, findStudentByEmail } = require("./_lib/student-auth");
 
 function withTimeout(promise, timeoutMs) {
   const ms = Math.max(200, Number(timeoutMs) || 2000);
@@ -72,10 +74,14 @@ exports.handler = async function (event) {
            FOR UPDATE`,
           [payment.course_slug, payment.batch_key]
         );
-        await assertBatchHasCapacity(conn, {
+        const capacity = await assertBatchHasCapacity(conn, {
           courseSlug: payment.course_slug,
           batchKey: payment.batch_key,
         });
+        const seatCount = Math.max(1, Number(payment.seat_count || 1));
+        if (capacity && capacity.remainingSeats !== null && seatCount > capacity.remainingSeats) {
+          throw new Error(`Only ${capacity.remainingSeats} seats are left in this batch.`);
+        }
         await reviewManualPayment(conn, {
           paymentUuid,
           nextStatus,
@@ -171,6 +177,29 @@ exports.handler = async function (event) {
       }).catch(function () {
         return null;
       });
+
+      if (String(payment.buyer_type || "").toLowerCase() === "family") {
+        try {
+          await ensureStudentAuthTables(pool);
+          const parentAccount = await findStudentByEmail(pool, payment.email);
+          if (parentAccount && parentAccount.id) {
+            await provisionFamilyOrder(pool, {
+              sourceType: "manual_payment",
+              sourceUuid: paymentUuid,
+              parentAccountId: Number(parentAccount.id),
+              parentName: payment.first_name,
+              parentEmail: payment.email,
+              parentPhone: payment.phone || "",
+            });
+          }
+        } catch (error) {
+          console.warn("family_order_provision_failed", {
+            source: "manual-payment",
+            paymentUuid,
+            error: error && error.message ? error.message : String(error || "unknown error"),
+          });
+        }
+      }
     }
 
     return json(200, {
