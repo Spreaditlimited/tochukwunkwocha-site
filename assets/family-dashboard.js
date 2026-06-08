@@ -301,7 +301,8 @@
 
   if (enrollToggleEl) {
     enrollToggleEl.addEventListener("click", function () {
-      setEnrollmentPanelOpen(enrollPanelEl ? enrollPanelEl.hidden : true);
+      var isOpen = !!(enrollPanelEl && !enrollPanelEl.hidden && !enrollPanelEl.classList.contains("hidden"));
+      setEnrollmentPanelOpen(!isOpen);
     });
   }
 
