@@ -16,12 +16,13 @@ function normalizeProvider(value) {
   return "paystack";
 }
 
-function priceConfig({ provider, courseSlug, batch }) {
+function priceConfig({ provider, courseSlug, batch, seatCount }) {
+  const qty = Math.max(1, Math.round(Number(seatCount || 1)));
   const rawMinor = Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug));
   if (provider !== "paystack") {
     throw new Error("Only Paystack coupon preview is supported.");
   }
-  const courseMinor = Math.max(0, Number(rawMinor || 0));
+  const courseMinor = Math.max(0, Number(rawMinor || 0)) * qty;
   const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
   const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
   const vatMinor = Math.round((courseMinor * vatPercent) / 100);
@@ -65,8 +66,7 @@ exports.handler = async function (event) {
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(500, { ok: false, error: "No active batch configured" });
 
-    const base = priceConfig({ provider, courseSlug, batch });
-    base.amountMinor = Number(base.amountMinor || 0) * seatCount;
+    const base = priceConfig({ provider, courseSlug, batch, seatCount });
     const evaluated = await evaluateCouponForOrder(pool, {
       couponCode,
       courseSlug,

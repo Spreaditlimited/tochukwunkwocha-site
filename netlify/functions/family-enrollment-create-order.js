@@ -18,6 +18,7 @@ const {
   ensureFamilyTables,
   familyEnrollmentEnabledForCourse,
   normalizeFamilyPayload,
+  consumeFamilySeatsForChildren,
   savePendingFamilyChildren,
 } = require("./_lib/families");
 
@@ -29,10 +30,11 @@ function requiresExplicitBatchSelection(courseSlug) {
   return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
-function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode }) {
+function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount }) {
   const mode = String(enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+  const qty = Math.max(1, Math.round(Number(seatCount || 1)));
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const courseMinor = mode === "immediate"
+  const singleCourseMinor = mode === "immediate"
     ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
     : (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
       ? Math.round(courseNgnMinor)
@@ -40,6 +42,7 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
   if (provider !== "paystack") throw new Error("Only Paystack is supported.");
   const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
   const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  const courseMinor = Math.max(0, Number(singleCourseMinor || 0)) * qty;
   const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
   const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
   const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
@@ -73,9 +76,9 @@ exports.handler = async function (event) {
     children: body.children,
   }, "");
 
-  if (!family.children.length) return json(400, { ok: false, error: "Add at least one child." });
+  if (!family.children.length) return json(400, { ok: false, error: "Add at least one learner." });
   if (!familyEnrollmentEnabledForCourse(courseSlug)) {
-    return json(400, { ok: false, error: "Family enrollment is not available for this course." });
+    return json(400, { ok: false, error: "Group enrollment is not available for this course." });
   }
 
   try {
@@ -109,6 +112,33 @@ exports.handler = async function (event) {
         return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
       }
     }
+
+    try {
+      const consumed = await consumeFamilySeatsForChildren(pool, {
+        parentAccountId: Number(session.account.id),
+        parentName,
+        parentEmail,
+        parentPhone,
+        courseSlug,
+        batchKey: batch ? batch.batch_key : "",
+        batchLabel: batch ? batch.batch_label : "",
+        children: family.children,
+      });
+      return json(200, {
+        ok: true,
+        usedExistingSeats: true,
+        created: Number(consumed.created || 0),
+        seats: {
+          purchased: Number(consumed.seatsPurchased || 0),
+          used: Number(consumed.seatsUsed || 0),
+          available: Math.max(0, Number(consumed.seatsPurchased || 0) - Number(consumed.seatsUsed || 0)),
+        },
+      });
+    } catch (consumeError) {
+      const msg = String(consumeError && consumeError.message || "");
+      if (msg.indexOf("purchased seat") === -1) throw consumeError;
+    }
+
     if (enrollmentMode === "batch" && batch) {
       const capacity = await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
       if (capacity && capacity.remainingSeats !== null && family.seatCount > capacity.remainingSeats) {
@@ -116,8 +146,8 @@ exports.handler = async function (event) {
       }
     }
 
-    const singleSeatPrice = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
-    const amountMinor = Number(singleSeatPrice.amountMinor || 0) * family.seatCount;
+    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount });
+    const amountMinor = Number(price.amountMinor || 0);
     const orderUuid = crypto.randomUUID();
     const courseConfig = getCourseConfig(courseSlug);
     const prefix = String((batch && batch.paystack_reference_prefix) || (courseConfig && courseConfig.defaultPrefix) || "PTP").trim().toUpperCase();
@@ -186,6 +216,6 @@ exports.handler = async function (event) {
       },
     });
   } catch (error) {
-    return json(500, { ok: false, error: error.message || "Could not create family enrollment" });
+    return json(500, { ok: false, error: error.message || "Could not create group enrollment" });
   }
 };

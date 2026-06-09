@@ -11,9 +11,11 @@ const {
 const FAMILY_ACCOUNTS_TABLE = "family_accounts";
 const FAMILY_CHILDREN_TABLE = "family_children";
 const FAMILY_CHILD_ENROLLMENTS_TABLE = "family_child_enrollments";
+const FAMILY_SEAT_BALANCES_TABLE = "family_seat_balances";
+const FAMILY_SEAT_LEDGER_TABLE = "family_seat_ledger";
 const FAMILY_CODE_LENGTH = 10;
 const FAMILY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const DEFAULT_MAX_CHILDREN = 8;
+const DEFAULT_MAX_CHILDREN = 500;
 
 let familyTablesEnsured = false;
 
@@ -40,7 +42,7 @@ function familyEnrollmentEnabledForCourse(courseSlug) {
 function maxFamilyChildren() {
   const parsed = Number(process.env.FAMILY_ENROLLMENT_MAX_CHILDREN || DEFAULT_MAX_CHILDREN);
   if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_CHILDREN;
-  return Math.max(1, Math.min(20, Math.round(parsed)));
+  return Math.max(1, Math.min(500, Math.round(parsed)));
 }
 
 function normalizeFamilyChildren(input) {
@@ -67,6 +69,7 @@ function normalizeFamilyPayload(body, fallbackName) {
     String(body.enrollmentMode || body.enrollment_mode || "").toLowerCase() === "family"
   );
   const children = normalizeFamilyChildren(body && body.children);
+  const requestedSeats = Math.max(0, Math.round(Number(body && (body.seatCount || body.seat_count) || 0)));
   if (!familyMode && children.length <= 1) {
     return {
       isFamily: false,
@@ -74,12 +77,13 @@ function normalizeFamilyPayload(body, fallbackName) {
       children: [],
     };
   }
-  if (!children.length && fallbackName) {
+  if (!children.length && !requestedSeats && fallbackName) {
     children.push({ fullName: clean(fallbackName, 180), age: "", classLevel: "", email: "" });
   }
+  const seatCount = Math.max(1, requestedSeats || children.length || 1);
   return {
-    isFamily: children.length > 0,
-    seatCount: Math.max(1, children.length || 1),
+    isFamily: familyMode || children.length > 0 || requestedSeats > 1,
+    seatCount,
     children,
   };
 }
@@ -162,6 +166,43 @@ async function ensureFamilyTables(pool) {
       UNIQUE KEY uniq_family_child_enrollment_source (child_id, course_slug, source_type, source_uuid),
       KEY idx_family_enrollment_family (family_id, course_slug, status),
       KEY idx_family_enrollment_account (account_id, course_slug, status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${FAMILY_SEAT_BALANCES_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      family_id BIGINT NOT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      batch_key VARCHAR(64) NOT NULL DEFAULT '',
+      batch_label VARCHAR(120) NULL,
+      seats_purchased INT NOT NULL DEFAULT 0,
+      seats_consumed INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_family_seat_balance (family_id, course_slug, batch_key),
+      KEY idx_family_seat_balance_family (family_id, course_slug)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ${FAMILY_SEAT_LEDGER_TABLE} (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      family_id BIGINT NOT NULL,
+      course_slug VARCHAR(120) NOT NULL,
+      batch_key VARCHAR(64) NOT NULL DEFAULT '',
+      entry_type VARCHAR(40) NOT NULL,
+      quantity INT NOT NULL,
+      source_type VARCHAR(40) NOT NULL,
+      source_uuid VARCHAR(64) NOT NULL,
+      idempotency_key VARCHAR(160) NOT NULL,
+      metadata_json TEXT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_family_seat_ledger_idempotency (idempotency_key),
+      KEY idx_family_seat_ledger_family (family_id, course_slug, batch_key)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
@@ -269,7 +310,7 @@ async function upsertFamilyAccount(pool, input) {
   const parentName = clean(input && input.parentName, 180);
   const parentEmail = normalizeEmail(input && input.parentEmail);
   const parentPhone = clean(input && input.parentPhone, 80);
-  if (!(parentAccountId > 0) || !parentName || !parentEmail) throw new Error("Family parent account is required.");
+  if (!(parentAccountId > 0) || !parentName || !parentEmail) throw new Error("Enrollment account details are required.");
   await ensureFamilyTables(pool);
   const now = nowSql();
   await pool.query(
@@ -304,10 +345,19 @@ async function provisionFamilyOrder(pool, input) {
   const parentEmail = normalizeEmail(input && input.parentEmail);
   const parentPhone = clean(input && input.parentPhone, 80);
   const family = await upsertFamilyAccount(pool, { parentAccountId, parentName, parentEmail, parentPhone });
-  if (!family || !family.id) return { ok: false, error: "Could not create family account." };
+  if (!family || !family.id) return { ok: false, error: "Could not create enrollment account." };
 
   const [children] = await pool.query(
-    `SELECT c.id, c.full_name, c.email, c.account_id, e.id AS enrollment_id, e.course_slug
+    `SELECT c.id,
+            c.full_name,
+            c.email,
+            c.account_id,
+            c.status AS child_status,
+            e.id AS enrollment_id,
+            e.course_slug,
+            e.batch_key,
+            e.batch_label,
+            e.status AS enrollment_status
      FROM ${FAMILY_CHILDREN_TABLE} c
      JOIN ${FAMILY_CHILD_ENROLLMENTS_TABLE} e ON e.child_id = c.id
      WHERE c.source_type = ?
@@ -319,6 +369,7 @@ async function provisionFamilyOrder(pool, input) {
   );
   let provisioned = 0;
   for (const row of children || []) {
+    const wasActive = clean(row.enrollment_status, 40).toLowerCase() === "active";
     let accountId = Number(row.account_id || 0);
     if (!(accountId > 0)) {
       const childEmail = normalizeEmail(row.email) || syntheticChildEmail();
@@ -346,9 +397,284 @@ async function provisionFamilyOrder(pool, input) {
        WHERE id = ?`,
       [Number(family.id), accountId || null, nowSql(), nowSql(), Number(row.enrollment_id)]
     );
-    if (code) provisioned += 1;
+    if (!wasActive && code) provisioned += 1;
+  }
+  if (provisioned > 0 && children && children.length) {
+    const first = children[0] || {};
+    const courseSlug = clean(first.course_slug, 120).toLowerCase();
+    const batchKey = clean(first.batch_key, 64);
+    const batchLabel = clean(first.batch_label, 120);
+    if (courseSlug) {
+      const normalizedBatchKey = batchKey || "";
+      const now = nowSql();
+      await pool.query(
+        `UPDATE ${FAMILY_SEAT_BALANCES_TABLE}
+         SET seats_consumed = LEAST(seats_purchased, seats_consumed + ?),
+             batch_label = COALESCE(?, batch_label),
+             updated_at = ?
+         WHERE family_id = ?
+           AND course_slug = ?
+           AND batch_key = ?
+         LIMIT 1`,
+        [provisioned, batchLabel || null, now, Number(family.id), courseSlug, normalizedBatchKey]
+      );
+      await pool.query(
+        `INSERT INTO ${FAMILY_SEAT_LEDGER_TABLE}
+          (family_id, course_slug, batch_key, entry_type, quantity, source_type, source_uuid, idempotency_key, metadata_json, created_at, updated_at)
+         VALUES (?, ?, ?, 'consume', ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE id = id`,
+        [
+          Number(family.id),
+          courseSlug,
+          normalizedBatchKey,
+          provisioned,
+          sourceType,
+          sourceUuid,
+          `${sourceType}:${sourceUuid}:consume`,
+          JSON.stringify({ provisioned_from_pending_children: true }),
+          now,
+          now,
+        ]
+      );
+    }
   }
   return { ok: true, familyId: Number(family.id), provisioned };
+}
+
+async function creditFamilySeats(pool, input) {
+  const sourceType = clean(input && input.sourceType, 40);
+  const sourceUuid = clean(input && input.sourceUuid, 64);
+  const parentAccountId = Number(input && input.parentAccountId);
+  const courseSlug = clean(input && input.courseSlug, 120).toLowerCase();
+  const batchKey = clean(input && input.batchKey, 64);
+  const batchLabel = clean(input && input.batchLabel, 120);
+  const quantity = Math.max(0, Math.round(Number(input && input.quantity || 0)));
+  if (!sourceType || !sourceUuid || !(parentAccountId > 0) || !courseSlug || quantity <= 0) {
+    return { ok: false, error: "Seat credit details are incomplete." };
+  }
+  await ensureFamilyTables(pool);
+  const parentName = clean(input && input.parentName, 180);
+  const parentEmail = normalizeEmail(input && input.parentEmail);
+  const parentPhone = clean(input && input.parentPhone, 80);
+  const family = await upsertFamilyAccount(pool, { parentAccountId, parentName, parentEmail, parentPhone });
+  if (!family || !family.id) return { ok: false, error: "Could not create enrollment account." };
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const now = nowSql();
+    const idempotencyKey = `${sourceType}:${sourceUuid}:purchase`;
+    const [ledgerRows] = await conn.query(
+      `SELECT id
+       FROM ${FAMILY_SEAT_LEDGER_TABLE}
+       WHERE idempotency_key = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [idempotencyKey]
+    );
+    if (ledgerRows && ledgerRows.length) {
+      await conn.commit();
+      return { ok: true, familyId: Number(family.id), credited: 0, duplicate: true };
+    }
+
+    const normalizedBatchKey = batchKey || "";
+    const [balanceRows] = await conn.query(
+      `SELECT id, seats_purchased
+       FROM ${FAMILY_SEAT_BALANCES_TABLE}
+       WHERE family_id = ?
+         AND course_slug = ?
+         AND batch_key = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [Number(family.id), courseSlug, normalizedBatchKey]
+    );
+    if (balanceRows && balanceRows.length) {
+      await conn.query(
+        `UPDATE ${FAMILY_SEAT_BALANCES_TABLE}
+         SET seats_purchased = ?, batch_label = COALESCE(?, batch_label), updated_at = ?
+         WHERE id = ?
+         LIMIT 1`,
+        [
+          Number(balanceRows[0].seats_purchased || 0) + quantity,
+          batchLabel || null,
+          now,
+          Number(balanceRows[0].id),
+        ]
+      );
+    } else {
+      await conn.query(
+        `INSERT INTO ${FAMILY_SEAT_BALANCES_TABLE}
+          (family_id, course_slug, batch_key, batch_label, seats_purchased, seats_consumed, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+        [Number(family.id), courseSlug, normalizedBatchKey, batchLabel || null, quantity, now, now]
+      );
+    }
+    await conn.query(
+      `INSERT INTO ${FAMILY_SEAT_LEDGER_TABLE}
+        (family_id, course_slug, batch_key, entry_type, quantity, source_type, source_uuid, idempotency_key, metadata_json, created_at, updated_at)
+       VALUES (?, ?, ?, 'purchase', ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        Number(family.id),
+        courseSlug,
+        normalizedBatchKey,
+        quantity,
+        sourceType,
+        sourceUuid,
+        idempotencyKey,
+        JSON.stringify({ batch_label: batchLabel || null }),
+        now,
+        now,
+      ]
+    );
+    await conn.commit();
+    return { ok: true, familyId: Number(family.id), credited: quantity };
+  } catch (error) {
+    try { await conn.rollback(); } catch (_rollbackError) {}
+    return { ok: false, error: error.message || "Could not credit purchased seats." };
+  } finally {
+    conn.release();
+  }
+}
+
+async function consumeFamilySeatsForChildren(pool, input) {
+  const parentAccountId = Number(input && input.parentAccountId);
+  const courseSlug = clean(input && input.courseSlug, 120).toLowerCase();
+  const batchKey = clean(input && input.batchKey, 64);
+  const batchLabel = clean(input && input.batchLabel, 120);
+  const children = normalizeFamilyChildren(input && input.children);
+  if (!(parentAccountId > 0) || !courseSlug || !children.length) throw new Error("Learner enrollment details are required.");
+  await ensureFamilyTables(pool);
+  const family = await upsertFamilyAccount(pool, {
+    parentAccountId,
+    parentName: input && input.parentName,
+    parentEmail: input && input.parentEmail,
+    parentPhone: input && input.parentPhone,
+  });
+  if (!family || !family.id) throw new Error("Enrollment account is required.");
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const normalizedBatchKey = batchKey || "";
+    const [balanceRows] = await conn.query(
+      `SELECT id, seats_purchased, seats_consumed
+       FROM ${FAMILY_SEAT_BALANCES_TABLE}
+       WHERE family_id = ?
+         AND course_slug = ?
+         AND batch_key = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [Number(family.id), courseSlug, normalizedBatchKey]
+    );
+    const balance = balanceRows && balanceRows[0] ? balanceRows[0] : null;
+    const available = balance
+      ? Math.max(0, Number(balance.seats_purchased || 0) - Number(balance.seats_consumed || 0))
+      : 0;
+    if (children.length > available) {
+      throw new Error(`Only ${available} purchased seat${available === 1 ? "" : "s"} available for this program.`);
+    }
+
+    const now = nowSql();
+    const created = [];
+    for (const child of children) {
+      const childEmail = normalizeEmail(child.email) || syntheticChildEmail();
+      let account = normalizeEmail(child.email) ? await findStudentByEmail(conn, childEmail) : null;
+      if (!account) {
+        account = await createStudentAccount(conn, {
+          fullName: child.fullName,
+          email: childEmail,
+          password: crypto.randomBytes(8).toString("base64url") + "A9!",
+          mustResetPassword: true,
+        });
+      }
+      const accountId = Number(account && account.id || 0) || null;
+      const [res] = await conn.query(
+        `INSERT INTO ${FAMILY_CHILDREN_TABLE}
+          (child_uuid, family_id, parent_account_id, account_id, full_name, age, class_level, email, status, source_type, source_uuid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 'family_seat', ?, ?, ?)`,
+        [
+          `fch_${crypto.randomUUID().replace(/-/g, "")}`,
+          Number(family.id),
+          parentAccountId,
+          accountId,
+          child.fullName,
+          child.age || null,
+          child.classLevel || null,
+          normalizeEmail(child.email) || null,
+          `seat_${crypto.randomUUID().replace(/-/g, "")}`,
+          now,
+          now,
+        ]
+      );
+      const childId = Number(res && res.insertId || 0);
+      const sourceUuid = `family_seat_${childId || crypto.randomUUID().replace(/-/g, "")}`;
+      if (childId > 0) {
+        await conn.query(
+          `UPDATE ${FAMILY_CHILDREN_TABLE}
+           SET source_uuid = ?
+           WHERE id = ?
+           LIMIT 1`,
+          [sourceUuid, childId]
+        );
+        await assignFamilyChildCode(conn, childId);
+        await conn.query(
+          `INSERT INTO ${FAMILY_CHILD_ENROLLMENTS_TABLE}
+            (child_id, family_id, account_id, course_slug, batch_key, batch_label, source_type, source_uuid, status, paid_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'family_seat', ?, 'active', ?, ?, ?)`,
+          [
+            childId,
+            Number(family.id),
+            accountId,
+            courseSlug,
+            normalizedBatchKey || null,
+            batchLabel || null,
+            sourceUuid,
+            now,
+            now,
+            now,
+          ]
+        );
+        created.push({ childId, fullName: child.fullName });
+      }
+    }
+
+    await conn.query(
+      `UPDATE ${FAMILY_SEAT_BALANCES_TABLE}
+       SET seats_consumed = ?, updated_at = ?
+       WHERE id = ?
+       LIMIT 1`,
+      [Number(balance.seats_consumed || 0) + created.length, now, Number(balance.id)]
+    );
+    await conn.query(
+      `INSERT INTO ${FAMILY_SEAT_LEDGER_TABLE}
+        (family_id, course_slug, batch_key, entry_type, quantity, source_type, source_uuid, idempotency_key, metadata_json, created_at, updated_at)
+       VALUES (?, ?, ?, 'consume', ?, 'family_dashboard', ?, ?, ?, ?, ?)`,
+      [
+        Number(family.id),
+        courseSlug,
+        normalizedBatchKey,
+        created.length,
+        `consume_${crypto.randomUUID().replace(/-/g, "")}`,
+        `consume_${crypto.randomUUID().replace(/-/g, "")}`,
+        JSON.stringify({ children: created.map(function (row) { return row.childId; }) }),
+        now,
+        now,
+      ]
+    );
+    await conn.commit();
+    return {
+      ok: true,
+      familyId: Number(family.id),
+      created: created.length,
+      seatsPurchased: Number(balance.seats_purchased || 0),
+      seatsUsed: Number(balance.seats_consumed || 0) + created.length,
+    };
+  } catch (error) {
+    try { await conn.rollback(); } catch (_rollbackError) {}
+    throw error;
+  } finally {
+    conn.release();
+  }
 }
 
 async function listFamilyDashboard(pool, parentAccountId) {
@@ -361,7 +687,7 @@ async function listFamilyDashboard(pool, parentAccountId) {
     [Number(parentAccountId)]
   );
   const family = families && families.length ? families[0] : null;
-  if (!family) return { family: null, children: [] };
+  if (!family) return { family: null, children: [], seats: [] };
   const [rows] = await pool.query(
     `SELECT
        c.id AS child_id,
@@ -384,6 +710,13 @@ async function listFamilyDashboard(pool, parentAccountId) {
      ORDER BY c.id ASC, e.id ASC`,
     [Number(family.id), Number(parentAccountId)]
   );
+  const [seatRows] = await pool.query(
+    `SELECT course_slug, batch_key, batch_label, seats_purchased, seats_consumed
+     FROM ${FAMILY_SEAT_BALANCES_TABLE}
+     WHERE family_id = ?
+     ORDER BY course_slug ASC, batch_label ASC, batch_key ASC`,
+    [Number(family.id)]
+  );
   return {
     family: {
       familyUuid: clean(family.family_uuid, 64),
@@ -392,6 +725,18 @@ async function listFamilyDashboard(pool, parentAccountId) {
       parentPhone: clean(family.parent_phone, 80),
       status: clean(family.status, 40),
     },
+    seats: (seatRows || []).map(function (row) {
+      const purchased = Number(row.seats_purchased || 0);
+      const consumed = Number(row.seats_consumed || 0);
+      return {
+        courseSlug: clean(row.course_slug, 120),
+        batchKey: clean(row.batch_key, 64),
+        batchLabel: clean(row.batch_label, 120),
+        seatsPurchased: purchased,
+        seatsUsed: consumed,
+        seatsAvailable: Math.max(0, purchased - consumed),
+      };
+    }),
     children: (rows || []).map(function (row) {
       return {
         childId: Number(row.child_id || 0),
@@ -419,5 +764,7 @@ module.exports = {
   normalizeFamilyPayload,
   savePendingFamilyChildren,
   provisionFamilyOrder,
+  creditFamilySeats,
+  consumeFamilySeatsForChildren,
   listFamilyDashboard,
 };

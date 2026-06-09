@@ -1,6 +1,7 @@
 const { ensureAdminSettingsTable, listAdminSettings, SETTINGS_DEFINITIONS } = require("./admin-settings");
 
 const PROTECTED_KEYS = new Set(["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"]);
+const LOCAL_ENV_ONLY_KEYS = new Set(["SITE_BASE_URL", "PAYSTACK_SECRET_KEY"]);
 const BASELINE_VALUES = new Map();
 for (const def of SETTINGS_DEFINITIONS) {
   BASELINE_VALUES.set(def.key, String(process.env[def.key] || ""));
@@ -30,8 +31,15 @@ function computeHash(rows) {
   );
 }
 
+function isLocalRuntime() {
+  const siteBaseUrl = String(process.env.SITE_BASE_URL || "").trim().toLowerCase();
+  if (siteBaseUrl.indexOf("localhost") !== -1 || siteBaseUrl.indexOf("127.0.0.1") !== -1) return true;
+  return String(process.env.NETLIFY_DEV || "").trim().toLowerCase() === "true";
+}
+
 function applyRowsToProcessEnv(rows) {
   const rowMap = new Map();
+  const localRuntime = isLocalRuntime();
   for (const row of rows || []) {
     const key = clean(row.setting_key, 120);
     const value = clean(row.setting_value, 5000);
@@ -42,6 +50,7 @@ function applyRowsToProcessEnv(rows) {
   for (const def of SETTINGS_DEFINITIONS) {
     const key = def.key;
     if (PROTECTED_KEYS.has(key)) continue;
+    if (localRuntime && LOCAL_ENV_ONLY_KEYS.has(key) && BASELINE_VALUES.get(key)) continue;
     const overrideValue = rowMap.get(key) || "";
     if (overrideValue) {
       process.env[key] = overrideValue;

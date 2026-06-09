@@ -196,6 +196,8 @@ async function markOrderPaidBy({ pool, orderUuid, providerReference, providerOrd
     ok: true,
     orderUuid: order.order_uuid,
     courseSlug: order.course_slug,
+    batchKey: order.batch_key || "",
+    batchLabel: order.batch_label || "",
     email: order.email,
     fullName: order.first_name,
     phone: order.phone || "",

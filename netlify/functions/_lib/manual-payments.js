@@ -629,7 +629,10 @@ async function getPaymentsQueueSummary(pool, opts) {
   const ordersBatchParams = scopedBatch ? [scopedBatch] : [];
 
   const manualApprovedPromise = pool.query(
-    `SELECT currency, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
+    `SELECT currency,
+            COUNT(*) AS c,
+            COALESCE(SUM(amount_minor), 0) AS t,
+            COALESCE(SUM(CASE WHEN seat_count IS NULL OR seat_count < 1 THEN 1 ELSE seat_count END), 0) AS seats
      FROM course_manual_payments
      WHERE 1=1
        ${manualCourseClause}
@@ -656,7 +659,11 @@ async function getPaymentsQueueSummary(pool, opts) {
     manualCourseParams.concat(manualBatchParams)
   );
   const paidOrdersPromise = pool.query(
-    `SELECT currency, provider, COUNT(*) AS c, COALESCE(SUM(amount_minor), 0) AS t
+    `SELECT currency,
+            provider,
+            COUNT(*) AS c,
+            COALESCE(SUM(amount_minor), 0) AS t,
+            COALESCE(SUM(CASE WHEN seat_count IS NULL OR seat_count < 1 THEN 1 ELSE seat_count END), 0) AS seats
      FROM course_orders
      WHERE 1=1
        ${ordersCourseClause}
@@ -686,15 +693,18 @@ async function getPaymentsQueueSummary(pool, opts) {
   const providerCounts = { manual: 0, paystack: 0, paypal: 0 };
   let paidApprovedCount = 0;
   let paidOrderCount = 0;
+  let actualEnrollments = 0;
 
   (manualApprovedRows || []).forEach(function (row) {
     const currency = String(row.currency || "NGN").toUpperCase();
     const count = Number(row.c || 0);
     const totalMinor = Number(row.t || 0);
+    const seats = Number(row.seats || count || 0);
     if (!totalsByCurrency[currency]) totalsByCurrency[currency] = 0;
     totalsByCurrency[currency] += totalMinor;
     providerCounts.manual += count;
     paidApprovedCount += count;
+    actualEnrollments += seats;
   });
 
   (paidOrderRows || []).forEach(function (row) {
@@ -702,12 +712,14 @@ async function getPaymentsQueueSummary(pool, opts) {
     const provider = String(row.provider || "").toLowerCase();
     const count = Number(row.c || 0);
     const totalMinor = Number(row.t || 0);
+    const seats = Number(row.seats || count || 0);
     if (!totalsByCurrency[currency]) totalsByCurrency[currency] = 0;
     totalsByCurrency[currency] += totalMinor;
     if (provider === "paystack") providerCounts.paystack += count;
     if (provider === "paypal") providerCounts.paypal += count;
     paidOrderCount += count;
     paidApprovedCount += count;
+    actualEnrollments += seats;
   });
 
 
@@ -727,8 +739,10 @@ async function getPaymentsQueueSummary(pool, opts) {
     registrationStatus: includeAllCourses
       ? "Mixed"
       : (batchConfig ? (String(batchConfig.status || "").toLowerCase() === "open" ? "Open" : "Closed") : "Mixed"),
-    totalStudents: paidApprovedCount,
+    totalStudents: actualEnrollments,
     totalRegistrations,
+    totalPayments: paidApprovedCount,
+    actualEnrollments,
     paidApprovedCount,
     totalsByCurrency,
     providerCounts,

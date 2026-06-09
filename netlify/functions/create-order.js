@@ -51,10 +51,11 @@ function requiresExplicitBatchSelection(courseSlug) {
   return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
-function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode }) {
+function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount }) {
   const mode = String(enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
+  const qty = Math.max(1, Math.round(Number(seatCount || 1)));
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const courseMinor = mode === "immediate"
+  const singleCourseMinor = mode === "immediate"
     ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
     : (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
       ? Math.round(courseNgnMinor)
@@ -62,6 +63,7 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
   if (provider !== "paystack") throw new Error("Only Paystack is supported.");
   const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
   const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  const courseMinor = Math.max(0, Number(singleCourseMinor || 0)) * qty;
   const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
   const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
   const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
@@ -69,14 +71,6 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
     ? (priceMinor + 200000)
     : Math.ceil(((priceMinor + (priceMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
   return { currency: "NGN", amountMinor: amountMinor, amountDisplay: (amountMinor / 100).toFixed(2) };
-}
-
-function multiplyPricing(price, seatCount) {
-  const qty = Math.max(1, Math.round(Number(seatCount || 1)));
-  return Object.assign({}, price, {
-    amountMinor: Math.max(0, Number(price && price.amountMinor || 0)) * qty,
-    amountDisplay: ((Math.max(0, Number(price && price.amountMinor || 0)) * qty) / 100).toFixed(2),
-  });
 }
 
 exports.handler = async function (event) {
@@ -180,8 +174,7 @@ exports.handler = async function (event) {
         return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });
       }
     }
-    const singleSeatPrice = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode });
-    const price = multiplyPricing(singleSeatPrice, family.seatCount);
+    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount });
 
     let pricing = {
       currency: price.currency,

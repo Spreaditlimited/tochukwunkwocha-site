@@ -16,7 +16,7 @@ const { resolveCourseBatch } = require("./_lib/batch-store");
 const { recordCouponRedemption } = require("./_lib/coupons");
 const { ensureAffiliateTables, createAffiliateCommissionForPaidOrder } = require("./_lib/affiliates");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
-const { provisionFamilyOrder } = require("./_lib/families");
+const { creditFamilySeats, provisionFamilyOrder } = require("./_lib/families");
 const { ensureStudentAuthTables, findStudentByEmail } = require("./_lib/student-auth");
 
 function withTimeout(promise, timeoutMs) {
@@ -183,6 +183,18 @@ exports.handler = async function (event) {
           await ensureStudentAuthTables(pool);
           const parentAccount = await findStudentByEmail(pool, payment.email);
           if (parentAccount && parentAccount.id) {
+            await creditFamilySeats(pool, {
+              sourceType: "manual_payment",
+              sourceUuid: paymentUuid,
+              parentAccountId: Number(parentAccount.id),
+              parentName: payment.first_name,
+              parentEmail: payment.email,
+              parentPhone: payment.phone || "",
+              courseSlug: payment.course_slug,
+              batchKey: payment.batch_key || "",
+              batchLabel: payment.batch_label || "",
+              quantity: Number(payment.seat_count || 1),
+            });
             await provisionFamilyOrder(pool, {
               sourceType: "manual_payment",
               sourceUuid: paymentUuid,

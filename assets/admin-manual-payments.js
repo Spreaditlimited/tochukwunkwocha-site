@@ -34,6 +34,7 @@
   const summaryCourseFilter = document.getElementById("paymentsSummaryCourseFilter");
   const summaryBatchFilter = document.getElementById("paymentsSummaryBatchFilter");
   const summaryCourseEl = document.getElementById("paymentsSummaryCourse");
+  const summaryPaymentsEl = document.getElementById("paymentsSummaryPayments");
   const summaryStudentsEl = document.getElementById("paymentsSummaryStudents");
   const summaryTotalEl = document.getElementById("paymentsSummaryTotal");
   const summarySourcesEl = document.getElementById("paymentsSummarySources");
@@ -1537,8 +1538,8 @@
     const courseName = String(summary.courseName || "Prompt to Profit").trim();
     const batchLabel = String(summary.batchLabel || "Batch 1").trim();
     const registrationStatus = String(summary.registrationStatus || "Closed").trim();
-    const totalStudents = Number(summary.totalStudents || 0);
-    const paidApprovedCount = Number(summary.paidApprovedCount || totalStudents);
+    const actualEnrollments = Number(summary.actualEnrollments || summary.totalStudents || 0);
+    const paidApprovedCount = Number(summary.totalPayments || summary.paidApprovedCount || 0);
     const manualPendingCount = Number(summary.manualPendingCount || 0);
 
     const totalsByCurrency = summary.totalsByCurrency && typeof summary.totalsByCurrency === "object"
@@ -1563,10 +1564,11 @@
     if (summaryStatusEl) summaryStatusEl.textContent = `Registration: ${registrationStatus}`;
     if (summaryPendingEl) summaryPendingEl.textContent = `Pending manual approvals: ${manualPendingCount}`;
     if (summaryCourseEl) summaryCourseEl.textContent = `${courseName} (${batchLabel})`;
-    if (summaryStudentsEl) summaryStudentsEl.textContent = String(totalStudents);
+    if (summaryPaymentsEl) summaryPaymentsEl.textContent = String(paidApprovedCount);
+    if (summaryStudentsEl) summaryStudentsEl.textContent = String(actualEnrollments);
     if (summaryTotalEl) summaryTotalEl.textContent = totalAmount;
     if (summarySourcesEl) {
-      summarySourcesEl.textContent = `Manual: ${manualCount}, Paystack: ${paystackCount}, PayPal: ${paypalCount} | Approved/Paid: ${paidApprovedCount}`;
+      summarySourcesEl.textContent = `Manual: ${manualCount}, Paystack: ${paystackCount}, PayPal: ${paypalCount} | Payments: ${paidApprovedCount} | Actual enrollments: ${actualEnrollments}`;
     }
   }
 

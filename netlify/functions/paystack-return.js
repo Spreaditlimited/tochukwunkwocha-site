@@ -13,7 +13,7 @@ const {
   createPasswordResetToken,
   setStudentCookieHeader,
 } = require("./_lib/student-auth");
-const { provisionFamilyOrder } = require("./_lib/families");
+const { creditFamilySeats, provisionFamilyOrder } = require("./_lib/families");
 
 function randomPassword() {
   return crypto.randomBytes(6).toString("base64url") + "A9!";
@@ -134,6 +134,24 @@ exports.handler = async function (event) {
       }
       if (account && account.id) {
         if (String(result.buyerType || "").toLowerCase() === "family") {
+          await creditFamilySeats(pool, {
+            sourceType: "course_order",
+            sourceUuid: result.orderUuid,
+            parentAccountId: Number(account.id),
+            parentName: result.fullName,
+            parentEmail: result.email,
+            parentPhone: result.phone || "",
+            courseSlug: result.courseSlug,
+            batchKey: result.batchKey || "",
+            batchLabel: result.batchLabel || "",
+            quantity: Number(result.seatCount || 1),
+          }).catch(function (error) {
+            console.warn("family_seat_credit_failed", {
+              source: "paystack",
+              orderUuid: result.orderUuid,
+              error: error && error.message ? error.message : String(error || "unknown error"),
+            });
+          });
           await provisionFamilyOrder(pool, {
             sourceType: "course_order",
             sourceUuid: result.orderUuid,

@@ -6,6 +6,8 @@ const { markOrderPaidBy } = require("./_lib/orders");
 const { ensureInstallmentTables, markInstallmentPaymentPaidByReference, autoEnrollPlanIfEligible } = require("./_lib/installments");
 const { ensureSchoolTables, markSchoolOrderPaidBy } = require("./_lib/schools");
 const { ensureAffiliateTables, bindSchoolReferralAfterPayment } = require("./_lib/affiliates");
+const { ensureStudentAuthTables, findStudentByEmail } = require("./_lib/student-auth");
+const { creditFamilySeats, provisionFamilyOrder } = require("./_lib/families");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -106,6 +108,41 @@ exports.handler = async function (event) {
       error: result.error || "unknown_error",
     });
     return json(404, { ok: false, error: result.error });
+  }
+
+  if (String(result.buyerType || "").toLowerCase() === "family") {
+    await ensureStudentAuthTables(pool);
+    const account = await findStudentByEmail(pool, result.email);
+    if (account && account.id) {
+      await creditFamilySeats(pool, {
+        sourceType: "course_order",
+        sourceUuid: result.orderUuid,
+        parentAccountId: Number(account.id),
+        parentName: result.fullName,
+        parentEmail: result.email,
+        parentPhone: result.phone || "",
+        courseSlug: result.courseSlug,
+        batchKey: result.batchKey || "",
+        batchLabel: result.batchLabel || "",
+        quantity: Number(result.seatCount || 1),
+      }).catch(function (error) {
+        console.warn("family_seat_credit_failed", {
+          source: "paystack_webhook",
+          orderUuid: result.orderUuid,
+          error: error && error.message ? error.message : String(error || "unknown error"),
+        });
+      });
+      await provisionFamilyOrder(pool, {
+        sourceType: "course_order",
+        sourceUuid: result.orderUuid,
+        parentAccountId: Number(account.id),
+        parentName: result.fullName,
+        parentEmail: result.email,
+        parentPhone: result.phone || "",
+      }).catch(function () {
+        return null;
+      });
+    }
   }
 
   return json(200, { ok: true });

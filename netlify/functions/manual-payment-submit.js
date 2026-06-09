@@ -162,6 +162,8 @@ exports.handler = async function (event) {
       if (String(batch.batch_key || "").toLowerCase() !== requestedBatchKey.toLowerCase()) {
         return json(400, { ok: false, error: "Selected batch is unavailable. Please choose another batch." });
       }
+    }
+    if (enrollmentMode === "batch" && batch) {
       const capacity = await assertBatchHasCapacity(pool, { courseSlug, batchKey: batch.batch_key });
       if (capacity && capacity.remainingSeats !== null && family.seatCount > capacity.remainingSeats) {
         return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });

@@ -1,7 +1,6 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
-const { ensureBatchSeatLimitColumn, getBatchCapacity } = require("./_lib/batch-capacity");
 const { listCourseBatches } = require("./_lib/batch-store");
 const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
@@ -27,7 +26,6 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await applyRuntimeSettings(pool);
-    await ensureBatchSeatLimitColumn(pool);
     await ensureLearningTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     const vatPercent = Number(process.env.SITE_VAT_PERCENT);
@@ -38,18 +36,16 @@ exports.handler = async function (event) {
     const open = (rows || []).filter((item) => String(item.status || "").toLowerCase() === "open");
     const capacities = [];
     for (const row of open) {
-      const cap = await getBatchCapacity(pool, { courseSlug, batchKey: row.batch_key });
-      if (!cap) continue;
       capacities.push({
         batchKey: row.batch_key,
         batchLabel: row.batch_label,
         batchStartAt: row.batch_start_at || null,
         paystackAmountMinor: Number(row.paystack_amount_minor || 0),
         paypalAmountMinor: Number(row.paypal_amount_minor || 0),
-        seatLimit: cap.seatLimit,
-        enrolledCount: cap.enrolledCount,
-        remainingSeats: cap.remainingSeats,
-        isFull: normalizeBooleanFlag(cap.isFull),
+        seatLimit: null,
+        enrolledCount: 0,
+        remainingSeats: null,
+        isFull: false,
       });
     }
     return json(200, {

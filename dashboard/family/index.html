@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Family Dashboard | Tochukwu Tech</title>
+    <title>Group Enrollment Dashboard | Tochukwu Tech</title>
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -81,7 +81,7 @@
       <aside class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-brand-800 text-white shadow-2xl transition-transform duration-300 peer-checked:translate-x-0 md:relative md:translate-x-0 md:shadow-none">
         <div class="flex h-16 items-center border-b border-white/10 px-6">
           <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="mr-3 h-8 w-8 rounded bg-white object-contain p-0.5" />
-          <span class="font-heading text-lg font-bold">Family Dashboard</span>
+          <span class="font-heading text-lg font-bold">Group Enrollment</span>
         </div>
         <nav class="flex-1 space-y-1 overflow-y-auto p-4"></nav>
         <div class="border-t border-white/10 p-4">
@@ -104,39 +104,27 @@
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <section id="familyLoading" class="mx-auto max-w-5xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <p class="text-sm font-semibold text-gray-600">Loading family dashboard...</p>
+            <p class="text-sm font-semibold text-gray-600">Loading group enrollment dashboard...</p>
           </section>
 
           <section id="familyError" class="mx-auto hidden max-w-5xl rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700"></section>
 
           <section id="familyContent" class="mx-auto hidden max-w-5xl space-y-6">
-            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p class="text-xs font-bold uppercase tracking-wide text-brand-600">Family Account</p>
-              <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h1 id="familyTitle" class="font-heading text-2xl font-extrabold text-gray-900">Your children</h1>
-                  <p id="familySummary" class="mt-1 text-sm text-gray-600"></p>
-                </div>
-                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  <button type="button" id="familyEnrollToggle" class="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500 sm:w-auto">Enroll Child</button>
-                  <a href="/dashboard/courses/" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100 sm:w-auto">My own courses</a>
-                </div>
-              </div>
-            </div>
+
+            <section id="familySeatSummary" class="hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm"></section>
 
             <section id="familyEnrollPanel" class="hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p class="text-xs font-bold uppercase tracking-wide text-brand-600">Enroll from dashboard</p>
-                  <h2 class="mt-1 font-heading text-xl font-extrabold text-gray-900">Add a child to a program</h2>
-                  <p class="mt-1 text-sm text-gray-600">Use your parent account details. After payment, each child gets their own access code.</p>
+                  <h2 class="mt-1 font-heading text-xl font-extrabold text-gray-900">Assign learners to a program</h2>
+                  <p class="mt-1 text-sm text-gray-600">Add learner details here to use purchased seats, or buy more seats if needed.</p>
                 </div>
                 <button type="button" id="familyEnrollClose" class="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Close</button>
               </div>
 
               <form id="familyEnrollForm" class="mt-5 space-y-5">
                 <div class="grid gap-4 md:grid-cols-2">
-                  <label class="block">
+                  <label id="familyEnrollCourseField" class="block">
                     <span class="text-sm font-bold text-gray-800">Program</span>
                     <span class="picker-wrap mt-2 block">
                       <select id="familyEnrollCourse" class="picker-select">
@@ -149,7 +137,7 @@
                       </span>
                     </span>
                   </label>
-                  <label class="block">
+                  <label id="familyEnrollBatchField" class="block">
                     <span class="text-sm font-bold text-gray-800">Batch</span>
                     <span class="picker-wrap mt-2 block">
                       <select id="familyEnrollBatch" class="picker-select"></select>
@@ -162,8 +150,8 @@
 
                 <div>
                   <div class="flex items-center justify-between gap-3">
-                    <h3 class="text-sm font-bold text-gray-900">Child details</h3>
-                    <button type="button" id="familyEnrollAddChild" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Add another child</button>
+                    <h3 class="text-sm font-bold text-gray-900">Learner details</h3>
+                    <button type="button" id="familyEnrollAddChild" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Add another learner</button>
                   </div>
                   <div id="familyEnrollChildren" class="mt-3 space-y-4"></div>
                 </div>
@@ -173,7 +161,7 @@
                     <p id="familyEnrollSummary" class="text-sm font-bold text-brand-800">Select a program to see the total.</p>
                     <p class="mt-1 text-xs font-medium text-brand-700">Payment method: Paystack</p>
                   </div>
-                  <button type="submit" id="familyEnrollSubmit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60">Proceed to Payment</button>
+                  <button type="submit" id="familyEnrollSubmit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60">Assign Learners</button>
                 </div>
                 <p id="familyEnrollMessage" class="hidden text-sm font-semibold"></p>
               </form>
@@ -182,15 +170,15 @@
             <div id="familyChildrenGrid" class="grid grid-cols-1 gap-4 lg:grid-cols-2"></div>
 
             <div id="familyEmpty" class="hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 class="font-heading text-xl font-bold text-gray-900">No children enrolled yet</h2>
-              <p class="mt-2 text-sm text-gray-600">When you enrol more than one child, their access and program details will appear here.</p>
+              <h2 class="font-heading text-xl font-bold text-gray-900">No learners assigned yet</h2>
+              <p class="mt-2 text-sm text-gray-600">When you assign seats to learners, their access and program details will appear here.</p>
             </div>
           </section>
         </main>
       </div>
     </section>
-    <script src="/assets/student-sidebar.js?v=20260608-family" defer></script>
+    <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
     <script src="/assets/user-dashboard-shell.js?v=20260608-family" defer></script>
-    <script src="/assets/family-dashboard.js?v=20260608-family-enrol" defer></script>
+    <script src="/assets/family-dashboard.js?v=20260609-existing-seat-course" defer></script>
   </body>
 </html>

@@ -20,6 +20,7 @@ exports.handler = async function (event) {
         email: session.account.email,
       },
       family: dashboard.family,
+      seats: dashboard.seats || [],
       children: dashboard.children,
     });
   } catch (error) {
