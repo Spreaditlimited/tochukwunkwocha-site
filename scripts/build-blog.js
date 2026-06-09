@@ -222,6 +222,53 @@ function formatDateForHumans(dateText) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function absoluteAssetUrl(assetPath) {
+  const raw = clean(assetPath);
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `${SITE_URL}${raw.startsWith('/') ? raw : `/${raw}`}`;
+}
+
+function getPostImageUrl(post) {
+  return absoluteAssetUrl(post && post.image) || `${SITE_URL}/assets/Proof/tochukwunkwocha-desktop.png`;
+}
+
+function getSeoTitle(post) {
+  return clean(post && post.seoTitle) || `${clean(post && post.title)} | Prompt to Profit`;
+}
+
+function getRelatedPosts(post, posts) {
+  const currentTags = new Set(Array.isArray(post.tags) ? post.tags.map((tag) => String(tag).toLowerCase()) : []);
+  return posts
+    .filter((candidate) => candidate.slug !== post.slug)
+    .map((candidate) => {
+      const score = (Array.isArray(candidate.tags) ? candidate.tags : [])
+        .reduce((total, tag) => total + (currentTags.has(String(tag).toLowerCase()) ? 1 : 0), 0);
+      return { post: candidate, score };
+    })
+    .sort((a, b) => b.score - a.score || (a.post.date < b.post.date ? 1 : -1))
+    .slice(0, 3)
+    .map((item) => item.post);
+}
+
+function renderRelatedPosts(post, posts) {
+  const related = getRelatedPosts(post, posts);
+  if (!related.length) return '';
+  return `
+    <section class="mt-12 border-t border-slate-200 pt-8">
+      <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Related articles</p>
+      <div class="mt-5 grid gap-4">
+        ${related.map((item) => `
+          <a href="/blog/${item.slug}/" class="group block rounded-xl border border-slate-200 bg-white p-4 no-underline transition hover:border-brand-300 hover:shadow-sm">
+            <p class="!mt-0 font-heading text-lg font-bold leading-snug text-slate-950 group-hover:text-brand-700">${escapeHtml(item.title)}</p>
+            <p class="mt-2 text-sm leading-relaxed text-slate-600">${escapeHtml(item.excerpt || '')}</p>
+          </a>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function pageShell(opts) {
   const input = opts && typeof opts === 'object' ? opts : {};
   const title = clean(input.title) || 'Blog';
@@ -264,7 +311,7 @@ function pageShell(opts) {
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -283,66 +330,124 @@ function pageShell(opts) {
       };
     </script>
     <style>
-      .tw-section-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        border-radius: 9999px;
-        border: 1px solid #c8dced;
-        background: #f0f5fa;
-        padding: 0.35rem 0.85rem;
-        font-size: 0.7rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #3f6ba4;
-      }
       .blog-hero {
         position: relative;
         overflow: hidden;
-        border-radius: 1.5rem;
-        border: 1px solid #1f2f55;
-        background: radial-gradient(circle at 20% 20%, rgba(117, 165, 208, 0.22), transparent 45%),
-          linear-gradient(120deg, #0a1930 0%, #14213d 55%, #22345f 100%);
-        color: #fff;
-        box-shadow: 0 24px 60px rgba(10, 25, 48, 0.28);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(17, 17, 17, 0.06);
+        background: #ffffff;
+        padding: clamp(2rem, 6vw, 4.5rem);
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.03);
       }
       .blog-hero-grid {
-        position: absolute;
-        inset: 0;
-        opacity: 0.16;
-        background-image: linear-gradient(to right, rgba(255,255,255,.2) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255,255,255,.2) 1px, transparent 1px);
-        background-size: 24px 24px;
-        pointer-events: none;
+        display: none;
+      }
+      .blog-kicker {
+        color: #9b7b4f;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      .blog-title {
+        margin-top: 1rem;
+        max-width: 920px;
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: clamp(2.25rem, 6vw, 4.5rem);
+        line-height: 1.1;
+        color: #111111;
+        font-weight: 400;
+      }
+      .blog-excerpt {
+        margin-top: 1.35rem;
+        max-width: 760px;
+        color: #4b5563;
+        font-size: clamp(1rem, 2vw, 1.2rem);
+        line-height: 1.8;
+      }
+      .blog-meta {
+        margin-top: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
       }
       .blog-chip {
-        border-radius: 9999px;
-        border: 1px solid rgba(255,255,255,.28);
-        background: rgba(255,255,255,.08);
-        color: #dbeafe;
+        border-radius: 0;
+        border-bottom: 1px solid #111111;
+        background: transparent;
+        padding: 0.25rem 0;
         font-size: 0.75rem;
-        padding: 0.3rem 0.72rem;
-        font-weight: 700;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: #666666;
       }
       .blog-shell {
-        border-radius: 1.5rem;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        box-shadow: 0 10px 36px rgba(15, 23, 42, 0.08);
+        margin-top: 3rem;
+        background: transparent;
+        border: none;
+        padding: 0;
       }
-      .blog-content h1,.blog-content h2,.blog-content h3{font-family:Manrope,sans-serif;color:#0f172a;line-height:1.2;margin-top:1.4rem}
-      .blog-content h2{font-size:1.7rem;margin-top:2.1rem;border-left:4px solid #75a5d0;padding-left:.7rem}
-      .blog-content h3{font-size:1.28rem;margin-top:1.45rem}
-      .blog-content p{color:#334155;line-height:1.9;margin-top:1rem;font-size:1.04rem}
-      .blog-content ul{margin-top:1rem;padding-left:1.25rem;list-style:disc}
-      .blog-content li{margin-top:.52rem;color:#334155;line-height:1.75}
-      .blog-content a{color:#22345f;text-decoration:underline}
+      .blog-content {
+        max-width: 680px;
+        margin-inline: auto;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .blog-content p {
+        margin-top: 1.75rem;
+        color: #2d2d2d;
+        font-size: 1.125rem;
+        line-height: 1.95;
+      }
+      .blog-content > p:first-of-type::first-letter {
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 4.5rem;
+        float: left;
+        line-height: 0.8;
+        margin-top: 0.15rem;
+        margin-right: 0.75rem;
+        color: #111111;
+      }
+      .blog-content h1,.blog-content h2,.blog-content h3 {
+        font-family: "Playfair Display", Georgia, serif;
+        color: #111111;
+        line-height: 1.25;
+        font-weight: 400;
+      }
+      .blog-content h2 {
+        margin-top: 4rem;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+      }
+      .blog-content h3 {
+        margin-top: 2.5rem;
+        font-size: 1.4rem;
+      }
+      .blog-content ul {
+        margin-top: 1.5rem;
+        padding-left: 1.5rem;
+        list-style-type: square;
+      }
+      .blog-content li {
+        margin-top: 0.75rem;
+        color: #2d2d2d;
+        line-height: 1.85;
+      }
+      .blog-content a {
+        color: #111111;
+        font-weight: 500;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(17, 17, 17, 0.3);
+        transition: border-color 0.3s ease, color 0.3s ease;
+      }
+      .blog-content a:hover {
+        color: #9b7b4f;
+        border-bottom-color: #9b7b4f;
+      }
       .blog-content code{background:#f1f5f9;padding:.1rem .35rem;border-radius:.35rem}
-      .blog-content strong{color:#0f172a}
+      .blog-content strong{color:#111111}
       @media (max-width: 640px) {
-        .blog-content p { font-size: 1rem; line-height: 1.8; }
-        .blog-content h2 { font-size: 1.42rem; }
+        .blog-hero { padding: 1.5rem; }
+        .blog-content p { font-size: 1rem; line-height: 1.85; }
+        .blog-content > p:first-of-type::first-letter { font-size: 3.4rem; }
       }
     </style>
   </head>
@@ -394,7 +499,7 @@ function pageShell(opts) {
 </html>`;
 }
 
-function writePost(post) {
+function writePost(post, posts) {
   const outDir = path.join(OUTPUT_DIR, post.slug);
   ensureDir(outDir);
   const tagBadges = (Array.isArray(post.tags) ? post.tags : [])
@@ -404,33 +509,35 @@ function writePost(post) {
   const isoDate = toIsoDate(post.date);
   const readTime = estimateReadTimeMinutes(post.body);
   const humanDate = formatDateForHumans(post.date);
+  const relatedPosts = renderRelatedPosts(post, posts || []);
   const article = `
-    <section class="mt-6 sm:mt-0 blog-hero p-6 sm:p-8 lg:p-10">
-      <div class="blog-hero-grid"></div>
-      <div class="relative z-10">
-        <p class="tw-section-label">Prompt to Profit Insights</p>
-        <h1 class="mt-4 text-3xl sm:text-4xl lg:text-5xl font-heading font-extrabold tracking-tight text-white">${escapeHtml(post.title)}</h1>
-        <p class="mt-4 max-w-3xl text-base sm:text-lg leading-relaxed text-brand-100">${escapeHtml(post.excerpt || '')}</p>
-        <div class="mt-5 flex flex-wrap items-center gap-2">
+    <section class="mt-6 sm:mt-0 blog-hero">
+      <div>
+        <p class="blog-kicker">Prompt to Profit Insights</p>
+        <h1 class="blog-title">${escapeHtml(post.title)}</h1>
+        <p class="blog-excerpt">${escapeHtml(post.excerpt || '')}</p>
+        <div class="blog-meta">
           <span class="blog-chip">${escapeHtml(humanDate)}</span>
           <span class="blog-chip">${readTime} min read</span>
           ${tagBadges}
         </div>
       </div>
     </section>
-    <article class="blog-shell mt-6 p-6 sm:p-10">
+    <article class="blog-shell">
       <a href="/blog/" class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">← Back to blog</a>
       <div class="blog-content mt-7">
         ${injectInArticleCta(markdownToHtml(post.body))}
+        ${relatedPosts}
       </div>
     </article>
   `;
+  const postImageUrl = getPostImageUrl(post);
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.excerpt || '',
-    image: `${SITE_URL}/assets/Proof/tochukwunkwocha-desktop.png`,
+    image: postImageUrl,
     author: { '@type': 'Organization', name: post.author || 'Tochukwu Tech and AI Academy' },
     publisher: {
       '@type': 'Organization',
@@ -449,10 +556,11 @@ function writePost(post) {
   fs.writeFileSync(
     path.join(outDir, 'index.html'),
     pageShell({
-      title: `${post.title} | Prompt to Profit Insights`,
+      title: getSeoTitle(post),
       description: post.excerpt,
       canonicalPath: `/blog/${post.slug}/`,
       ogType: 'article',
+      ogImage: postImageUrl,
       body: article,
       extraHead,
       articleJsonLd,
@@ -557,13 +665,15 @@ function build() {
       excerpt: clean(parsed.data.excerpt) || '',
       tags: Array.isArray(parsed.data.tags) ? parsed.data.tags : [],
       author: clean(parsed.data.author) || 'Tochukwu Tech and AI Academy',
+      seoTitle: clean(parsed.data.seoTitle) || clean(parsed.data.metaTitle) || '',
+      image: clean(parsed.data.image) || clean(parsed.data.heroImage) || '',
       body: parsed.body,
     });
   }
 
   posts.sort((a, b) => (a.date < b.date ? 1 : -1));
   writeIndex(posts);
-  posts.forEach(writePost);
+  posts.forEach((post) => writePost(post, posts));
   writeRss(posts);
   writeBlogSitemap(posts);
   console.log(`Built blog: ${posts.length} published post(s)`);
