@@ -119,6 +119,27 @@
     return Math.ceil(((targetMinor + (targetMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
   }
 
+  function groupEnrollmentUnitPriceMinor(courseSlug, standardUnitMinor, seats) {
+    var slug = String(courseSlug || "").trim().toLowerCase();
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    if (slug === "prompt-to-profit-holiday" && count >= 10) return 900000;
+    return Math.max(0, Math.round(Number(standardUnitMinor || 0)));
+  }
+
+  function groupEnrollmentBaseAmountMinor(courseSlug, standardUnitMinor, seats) {
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    return groupEnrollmentUnitPriceMinor(courseSlug, standardUnitMinor, count) * count;
+  }
+
+  function groupDiscountText(courseSlug, standardUnitMinor, seats) {
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    var standard = Math.max(0, Math.round(Number(standardUnitMinor || 0)));
+    var discounted = groupEnrollmentUnitPriceMinor(courseSlug, standard, count);
+    if (String(courseSlug || "").trim().toLowerCase() !== "prompt-to-profit-holiday" || count < 10 || discounted >= standard) return "";
+    var savings = (standard - discounted) * count;
+    return " Group discount applied: " + formatNgnMinor(discounted) + " per seat. You save " + formatNgnMinor(savings) + ".";
+  }
+
   function firstAvailableSeatBalance() {
     for (var i = 0; i < familySeatBalances.length; i += 1) {
       var row = familySeatBalances[i] || {};
@@ -318,10 +339,12 @@
       if (enrollSubmitEl && !enrollSubmitEl.disabled) enrollSubmitEl.textContent = "Assign Learners";
       return;
     }
-    var totalMinor = paystackTotalForBase(basePerChild * seats);
+    var selectedCourseSlug = enrollCourseEl && enrollCourseEl.value;
+    var totalMinor = paystackTotalForBase(groupEnrollmentBaseAmountMinor(selectedCourseSlug, basePerChild, seats));
+    var discountText = groupDiscountText(selectedCourseSlug, basePerChild, seats);
     enrollSummaryEl.textContent = available > 0
-      ? String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor)
-      : String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor);
+      ? String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText
+      : String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText;
     if (enrollSubmitEl && !enrollSubmitEl.disabled) enrollSubmitEl.textContent = "Purchase Seats";
   }
 

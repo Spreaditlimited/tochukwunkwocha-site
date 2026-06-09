@@ -13,6 +13,7 @@ const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 const {
   ensureFamilyTables,
   familyEnrollmentEnabledForCourse,
+  groupEnrollmentBaseAmountMinor,
   normalizeFamilyPayload,
   savePendingFamilyChildren,
 } = require("./_lib/families");
@@ -63,7 +64,9 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
   if (provider !== "paystack") throw new Error("Only Paystack is supported.");
   const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
   const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
-  const courseMinor = Math.max(0, Number(singleCourseMinor || 0)) * qty;
+  const courseMinor = familyEnrollmentEnabledForCourse(courseSlug) && qty > 1
+    ? groupEnrollmentBaseAmountMinor(courseSlug, singleCourseMinor, qty)
+    : Math.max(0, Number(singleCourseMinor || 0)) * qty;
   const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
   const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
   const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);

@@ -5,7 +5,7 @@ const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-s
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseName, getCourseDefaultAmountMinor } = require("./_lib/course-config");
 const { ensureCouponsTables, evaluateCouponForOrder, normalizeCouponCode } = require("./_lib/coupons");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
-const { maxFamilyChildren } = require("./_lib/families");
+const { groupEnrollmentBaseAmountMinor, groupEnrollmentUnitPriceMinor, maxFamilyChildren } = require("./_lib/families");
 
 function formatNaira(minor) {
   const amount = Math.max(0, Number(minor || 0)) / 100;
@@ -18,11 +18,12 @@ function vatPercentFromSettings() {
   return Number.isFinite(raw) && raw >= 0 ? raw : 7.5;
 }
 
-function manualPaymentPricing(courseSlug, learningCourse) {
+function manualPaymentPricing(courseSlug, learningCourse, seatCount) {
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const courseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
+  const standardCourseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
     ? Math.round(courseNgnMinor)
     : getCourseDefaultAmountMinor(courseSlug);
+  const courseMinor = groupEnrollmentUnitPriceMinor(courseSlug, standardCourseMinor, seatCount);
   const vatPercent = vatPercentFromSettings();
   const vatMinor = Math.round((courseMinor * vatPercent) / 100);
   return {
@@ -56,7 +57,7 @@ exports.handler = async function (event) {
   const accountName = String(process.env.MANUAL_BANK_ACCOUNT_NAME || "").trim();
   const accountNumber = String(process.env.MANUAL_BANK_ACCOUNT_NUMBER || "").trim();
   const note = String(process.env.MANUAL_BANK_NOTE || "").trim();
-  let breakdown = manualPaymentPricing(courseSlug, null);
+  let breakdown = manualPaymentPricing(courseSlug, null, seatCount);
   let amountMinor = breakdown.totalMinor;
   let resolvedBatch = null;
   let pricing = null;
@@ -74,8 +75,8 @@ exports.handler = async function (event) {
     if (enrollmentMode === "batch") {
       resolvedBatch = await resolveCourseBatch(pool, { courseSlug, batchKey });
     }
-    breakdown = manualPaymentPricing(courseSlug, learningCourse);
-    amountMinor = breakdown.totalMinor * seatCount;
+    breakdown = manualPaymentPricing(courseSlug, learningCourse, seatCount);
+    amountMinor = groupEnrollmentBaseAmountMinor(courseSlug, breakdown.courseMinor, seatCount) + (breakdown.vatMinor * seatCount);
     if (couponCode) {
       const evaluated = await evaluateCouponForOrder(pool, {
         couponCode,

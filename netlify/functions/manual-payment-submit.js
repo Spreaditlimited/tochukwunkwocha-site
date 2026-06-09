@@ -29,6 +29,7 @@ const { upsertWhatsAppContact } = require("./_lib/whatsapp-marketing");
 const {
   ensureFamilyTables,
   familyEnrollmentEnabledForCourse,
+  groupEnrollmentBaseAmountMinor,
   normalizeFamilyPayload,
   savePendingFamilyChildren,
 } = require("./_lib/families");
@@ -77,17 +78,14 @@ function vatPercentFromSettings() {
   return Number.isFinite(raw) && raw >= 0 ? raw : 7.5;
 }
 
-function manualPaymentAmountMinor(courseSlug, learningCourse) {
+function manualPaymentAmountMinor(courseSlug, learningCourse, seatCount) {
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const courseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
+  const standardCourseMinor = Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
     ? Math.round(courseNgnMinor)
     : getCourseDefaultAmountMinor(courseSlug);
+  const courseMinor = groupEnrollmentBaseAmountMinor(courseSlug, standardCourseMinor, seatCount);
   const vatMinor = Math.round((courseMinor * vatPercentFromSettings()) / 100);
   return courseMinor + vatMinor;
-}
-
-function multiplyMinor(minor, seatCount) {
-  return Math.max(0, Number(minor || 0)) * Math.max(1, Math.round(Number(seatCount || 1)));
 }
 
 exports.handler = async function (event) {
@@ -169,7 +167,7 @@ exports.handler = async function (event) {
         return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });
       }
     }
-    const baseAmountMinor = multiplyMinor(manualPaymentAmountMinor(courseSlug, learningCourse), family.seatCount);
+    const baseAmountMinor = manualPaymentAmountMinor(courseSlug, learningCourse, family.seatCount);
     let pricing = {
       currency: "NGN",
       baseAmountMinor,

@@ -8,7 +8,7 @@ const {
   getCourseDefaultAmountMinor,
 } = require("./_lib/course-config");
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
-const { maxFamilyChildren } = require("./_lib/families");
+const { groupEnrollmentBaseAmountMinor, maxFamilyChildren } = require("./_lib/families");
 
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
@@ -22,7 +22,7 @@ function priceConfig({ provider, courseSlug, batch, seatCount }) {
   if (provider !== "paystack") {
     throw new Error("Only Paystack coupon preview is supported.");
   }
-  const courseMinor = Math.max(0, Number(rawMinor || 0)) * qty;
+  const courseMinor = groupEnrollmentBaseAmountMinor(courseSlug, rawMinor, qty);
   const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
   const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
   const vatMinor = Math.round((courseMinor * vatPercent) / 100);

@@ -16,6 +16,9 @@ const FAMILY_SEAT_LEDGER_TABLE = "family_seat_ledger";
 const FAMILY_CODE_LENGTH = 10;
 const FAMILY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const DEFAULT_MAX_CHILDREN = 500;
+const HOLIDAY_COURSE_SLUG = "prompt-to-profit-holiday";
+const HOLIDAY_GROUP_DISCOUNT_MIN_SEATS = 10;
+const HOLIDAY_GROUP_DISCOUNT_UNIT_MINOR = 900000;
 
 let familyTablesEnsured = false;
 
@@ -43,6 +46,20 @@ function maxFamilyChildren() {
   const parsed = Number(process.env.FAMILY_ENROLLMENT_MAX_CHILDREN || DEFAULT_MAX_CHILDREN);
   if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_CHILDREN;
   return Math.max(1, Math.min(500, Math.round(parsed)));
+}
+
+function groupEnrollmentUnitPriceMinor(courseSlug, standardUnitMinor, seatCount) {
+  const slug = clean(courseSlug, 120).toLowerCase();
+  const seats = Math.max(1, Math.round(Number(seatCount || 1)));
+  if (slug === HOLIDAY_COURSE_SLUG && seats >= HOLIDAY_GROUP_DISCOUNT_MIN_SEATS) {
+    return HOLIDAY_GROUP_DISCOUNT_UNIT_MINOR;
+  }
+  return Math.max(0, Math.round(Number(standardUnitMinor || 0)));
+}
+
+function groupEnrollmentBaseAmountMinor(courseSlug, standardUnitMinor, seatCount) {
+  const seats = Math.max(1, Math.round(Number(seatCount || 1)));
+  return groupEnrollmentUnitPriceMinor(courseSlug, standardUnitMinor, seats) * seats;
 }
 
 function normalizeFamilyChildren(input) {
@@ -761,6 +778,8 @@ module.exports = {
   ensureFamilyTables,
   familyEnrollmentEnabledForCourse,
   maxFamilyChildren,
+  groupEnrollmentUnitPriceMinor,
+  groupEnrollmentBaseAmountMinor,
   normalizeFamilyPayload,
   savePendingFamilyChildren,
   provisionFamilyOrder,

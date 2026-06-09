@@ -142,6 +142,26 @@
     return Math.max(2, Math.min(familyMaxChildren, Number.isFinite(seats) ? seats : 2));
   }
 
+  function groupEnrollmentUnitPriceMinor(standardUnitMinor, seats) {
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    if (isHolidayMultiBatchCourse() && count >= 10) return 900000;
+    return Math.max(0, Math.round(Number(standardUnitMinor || 0)));
+  }
+
+  function groupEnrollmentBaseAmountMinor(standardUnitMinor, seats) {
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    return groupEnrollmentUnitPriceMinor(standardUnitMinor, count) * count;
+  }
+
+  function groupDiscountText(standardUnitMinor, seats) {
+    var count = Math.max(1, Math.round(Number(seats || 1)));
+    var standard = Math.max(0, Math.round(Number(standardUnitMinor || 0)));
+    var discounted = groupEnrollmentUnitPriceMinor(standard, count);
+    if (!isHolidayMultiBatchCourse() || count < 10 || discounted >= standard) return "";
+    var savings = (standard - discounted) * count;
+    return "Group discount applied: " + formatCurrencyMinor("NGN", discounted) + " per seat. You save " + formatCurrencyMinor("NGN", savings) + ".";
+  }
+
   function familyChildren() {
     if (!familyChildrenWrap || !familyEnabledInput || !familyEnabledInput.checked) return [];
     return Array.prototype.slice.call(familyChildrenWrap.querySelectorAll("[data-family-child-row]")).map(function (row) {
@@ -158,10 +178,11 @@
   function pricingForSeats(pricing) {
     if (!pricing) return null;
     var seats = familySeatCount();
+    var baseAmountMinor = groupEnrollmentBaseAmountMinor(Number(pricing.baseAmountMinor || 0), seats);
     return Object.assign({}, pricing, {
-      baseAmountMinor: Number(pricing.baseAmountMinor || 0) * seats,
+      baseAmountMinor: baseAmountMinor,
       discountMinor: Number(pricing.discountMinor || 0) * seats,
-      finalAmountMinor: Number(pricing.finalAmountMinor || 0) * seats,
+      finalAmountMinor: baseAmountMinor,
     });
   }
 
@@ -179,7 +200,8 @@
     var seats = familySeatCount();
     var provider = providerInput ? providerInput.value : "paystack";
     if (provider === "manual_transfer" && manualPaymentDetails && Number.isFinite(Number(manualPaymentDetails.amountMinor))) {
-      summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Direct Bank Transfer): " + formatCurrencyMinor("NGN", Number(manualPaymentDetails.amountMinor || 0));
+      var manualDiscount = groupDiscountText(Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0), seats);
+      summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Direct Bank Transfer): " + formatCurrencyMinor("NGN", Number(manualPaymentDetails.amountMinor || 0)) + (manualDiscount ? " • " + manualDiscount : "");
       return;
     }
     var pricing = currentPaystackPricing();
@@ -189,7 +211,8 @@
     }
     var breakdown = paystackBreakdownForTotal(pricing.finalAmountMinor, pricing.currency || "NGN");
     var totalMinor = breakdown ? breakdown.totalMinor : pricing.finalAmountMinor;
-    summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Paystack): " + formatCurrencyMinor("NGN", totalMinor);
+    var discount = groupDiscountText(Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0), seats);
+    summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Paystack): " + formatCurrencyMinor("NGN", totalMinor) + (discount ? " • " + discount : "");
   }
 
   function clearCouponForSeatChange() {
@@ -234,7 +257,7 @@
         currency: cur,
       };
     }
-    var configuredCourseMinor = Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0) * familySeatCount();
+    var configuredCourseMinor = groupEnrollmentBaseAmountMinor(Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0), familySeatCount());
     var vatPercent = Number(activeCoursePricing && activeCoursePricing.vatPercent || 7.5);
     var safeVatPercent = Number.isFinite(vatPercent) && vatPercent >= 0 ? vatPercent : 7.5;
     var courseMinor = configuredCourseMinor > 0 ? Math.round(configuredCourseMinor) : 0;
