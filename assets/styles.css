@@ -1388,8 +1388,54 @@ body.modal-open {
 
 .family-seat-count {
   display: block;
-  max-width: 180px;
+  max-width: 220px;
   margin: 0 0 12px;
+}
+
+.family-seat-stepper {
+  display: grid;
+  grid-template-columns: 42px minmax(68px, 1fr) 42px;
+  align-items: stretch;
+  margin-top: 6px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.family-seat-stepper__button {
+  border: 0;
+  background: #f3f4f6;
+  color: #14213d;
+  font-family: "Manrope", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.family-seat-stepper__button:hover,
+.family-seat-stepper__button:focus-visible {
+  background: #e7edf8;
+  outline: none;
+}
+
+.family-seat-stepper__input.family-input {
+  margin: 0;
+  border: 0;
+  border-left: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
+  border-radius: 0;
+  text-align: center;
+  font-weight: 800;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.family-seat-stepper__input::-webkit-outer-spin-button,
+.family-seat-stepper__input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .family-children-wrap {

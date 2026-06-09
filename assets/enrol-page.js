@@ -37,6 +37,8 @@
   var familySection = null;
   var familyEnabledInput = null;
   var familySeatCountInput = null;
+  var familySeatDecrementBtn = null;
+  var familySeatIncrementBtn = null;
   var familyChildrenWrap = null;
   var familyAddChildBtn = null;
   var activeCourseBatchKey = "";
@@ -843,6 +845,17 @@
     updatePaymentOptionMetas();
   }
 
+  function setFamilySeatCount(value) {
+    if (!familySeatCountInput) return;
+    var parsed = Math.round(Number(value || 2));
+    var seats = Math.max(2, Math.min(familyMaxChildren, Number.isFinite(parsed) ? parsed : 2));
+    familySeatCountInput.value = String(seats);
+    clearCouponForSeatChange();
+    manualConfigLoadedKey = "";
+    manualPaymentDetails = null;
+    refreshPaymentCalculations();
+  }
+
   function buildFamilySection() {
     if (familySection || !familyEnrollmentEnabled) return;
     var section = document.createElement("section");
@@ -855,7 +868,7 @@
       "</label>",
       '<div id="familyChildrenPanel" class="family-children-panel hidden" hidden>',
       '<p id="familyPaymentSummary" class="family-payment-summary">Turn this on to buy multiple family seats under one parent account.</p>',
-      '<label class="family-seat-count"><span class="form-label">Number of seats</span><input id="familySeatCountInput" type="number" min="2" step="1" value="2" class="form-input family-input" /></label>',
+      '<label class="family-seat-count"><span class="form-label">Number of seats</span><span class="family-seat-stepper"><button type="button" class="family-seat-stepper__button" data-family-seat-decrement aria-label="Decrease seats">-</button><input id="familySeatCountInput" type="number" min="2" step="1" value="2" class="form-input family-input family-seat-stepper__input" /><button type="button" class="family-seat-stepper__button" data-family-seat-increment aria-label="Increase seats">+</button></span></label>',
       '<p class="family-payment-summary">After payment, seats become available in your dashboard. You can assign them to the right learners there.</p>',
       '<div id="familyChildrenWrap" class="family-children-wrap hidden" hidden></div>',
       "</div>",
@@ -865,6 +878,8 @@
     familySection = section;
     familyEnabledInput = document.getElementById("familyEnrollmentEnabled");
     familySeatCountInput = document.getElementById("familySeatCountInput");
+    familySeatDecrementBtn = document.querySelector("[data-family-seat-decrement]");
+    familySeatIncrementBtn = document.querySelector("[data-family-seat-increment]");
     familyChildrenWrap = document.getElementById("familyChildrenWrap");
     familyAddChildBtn = document.getElementById("familyAddChildBtn");
     if (familyEnabledInput) {
@@ -883,12 +898,17 @@
     if (familySeatCountInput) {
       familySeatCountInput.setAttribute("max", String(familyMaxChildren));
       familySeatCountInput.addEventListener("input", function () {
-        var seats = familySeatCount();
-        familySeatCountInput.value = String(seats);
-        clearCouponForSeatChange();
-        manualConfigLoadedKey = "";
-        manualPaymentDetails = null;
-        refreshPaymentCalculations();
+        setFamilySeatCount(familySeatCountInput.value);
+      });
+    }
+    if (familySeatDecrementBtn) {
+      familySeatDecrementBtn.addEventListener("click", function () {
+        setFamilySeatCount(familySeatCount() - 1);
+      });
+    }
+    if (familySeatIncrementBtn) {
+      familySeatIncrementBtn.addEventListener("click", function () {
+        setFamilySeatCount(familySeatCount() + 1);
       });
     }
     if (familyAddChildBtn) {
