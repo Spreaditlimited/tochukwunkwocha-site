@@ -84,6 +84,43 @@ Schools can begin with [Prompt to Profit for Schools](/courses/prompt-to-profit-
 
 Students who want to start independently can read [How Nigerian Students Can Build Websites With ChatGPT Without Coding](/blog/how-nigerian-students-can-build-websites-with-chatgpt-without-coding/).
 
+## What practical technology classes should produce
+
+A modern technology class should produce visible student work.
+
+That work can include:
+
+- a simple website
+- a digital poster
+- a portfolio page
+- a project presentation
+- a business idea page
+- a class research showcase
+
+The point is not that every student must become a developer. The point is that every student should experience technology as a creation tool.
+
+When students build, teachers can assess more than memory. They can assess clarity, problem-solving, communication, and improvement.
+
+## How teachers can transition gradually
+
+Schools do not need to abandon theory completely. Students still need vocabulary and foundations. The change is that theory should support building.
+
+For example, after teaching input and output devices, a teacher can ask students to design a simple page explaining how a computer receives and displays information.
+
+After teaching internet basics, students can build a page for a school club and discuss hosting, links, and mobile access.
+
+After teaching software categories, students can compare tools used for writing, design, coding, and AI-assisted creation.
+
+This kind of transition respects the existing curriculum while making it more useful.
+
+## Why parents respond to practical outcomes
+
+Parents may not understand every technical term, but they understand visible progress.
+
+When a child can show a website and explain how it was planned, built, and improved, parents see value. This can help schools justify technology programs and strengthen trust.
+
+Practical outcomes also help students feel proud. A student who once memorized definitions can now point to something they created.
+
 ## FAQ
 
 **Why are theory-only technology classes a problem?**  

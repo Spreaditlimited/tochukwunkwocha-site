@@ -5,7 +5,7 @@ slug: "ai-skills-for-nigerian-teenagers-building-a-portfolio-before-university"
 date: "2026-05-31"
 excerpt: "Why Nigerian teenagers should use AI to build portfolios, websites, and practical digital projects before university or their first serious opportunity."
 tags: ["nigeria", "teenagers", "students", "portfolio", "ai education"]
-image: "/assets/blog/nigeria-teen-ai-portfolio.jpg"
+image: "/assets/blog/nigeria-teen-ai-portfolio-v2.jpg"
 published: true
 source_file: "original-nigeria-seo-series"
 ---
@@ -100,6 +100,49 @@ Ask them:
 These questions help teenagers think beyond copying AI output.
 
 Younger children can start with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/). Older teenagers who are ready for deeper building can explore [Prompt to Profit Advanced](/courses/prompt-to-production/).
+
+## A 30-day portfolio plan for Nigerian teenagers
+
+Teenagers do not need to build a perfect portfolio in one weekend. A simple 30-day plan is more realistic.
+
+In week one, choose the portfolio focus. The student should decide whether the portfolio is for school projects, tech interests, writing, entrepreneurship, design, or general personal development.
+
+In week two, collect proof. This can include assignments, project screenshots, certificates, club activities, volunteer work, and anything the student can explain honestly.
+
+In week three, use AI to organize the material. The student can ask AI to suggest sections, rewrite project descriptions, and make the wording clearer.
+
+In week four, build the first version of the portfolio website. The goal is not perfection. The goal is a clear page that can be improved over time.
+
+This process teaches planning, editing, and presentation. It also gives the teenager something useful to show parents, teachers, mentors, and future opportunities.
+
+## What should not go into a teenager's portfolio
+
+A portfolio should be honest. Teenagers should not include fake experience, copied projects, exaggerated claims, or private information.
+
+They should avoid:
+
+- home address
+- personal phone number if a parent has not approved it
+- school login details
+- private family information
+- projects they cannot explain
+- AI-written content they have not reviewed
+
+Parents should help younger teenagers decide what contact information is safe. A portfolio can still be useful without exposing private details.
+
+## How AI can improve portfolio writing
+
+Many teenagers struggle to describe their work. They may say, "I made a website," when a better description would explain the purpose, audience, tools, and result.
+
+AI can help turn rough notes into better project descriptions. For example, a student can write a rough paragraph and ask AI to make it clearer while keeping it honest.
+
+The student should still review every sentence. The final portfolio should sound like the student, not like a corporate brochure.
+
+## How often teenagers should update a portfolio
+
+A portfolio should grow as the student grows. Teenagers can review it once every term and add stronger work.
+
+They should remove weak projects, improve old descriptions, and add new evidence. This keeps the portfolio honest and current.
 
 ## FAQ
 

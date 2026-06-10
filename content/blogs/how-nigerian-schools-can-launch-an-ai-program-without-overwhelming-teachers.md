@@ -110,6 +110,64 @@ At the end of a pilot, let students present what they built. Show websites, proj
 
 Visible outcomes help parents understand why AI education matters and why your school is investing in it.
 
+## A phased rollout plan for one term
+
+A school can introduce AI over one term without overwhelming staff.
+
+In week one, train the teachers or coordinators who will supervise the pilot. Focus on the project goal, safety rules, and how students will access the platform.
+
+In week two, introduce students to AI literacy and responsible use. Keep the lesson simple and practical.
+
+In weeks three and four, teach prompt writing and project planning. Students should choose a project topic and outline their website or digital project.
+
+In weeks five to seven, students build and revise. Teachers should focus on guidance, not perfection.
+
+In week eight, students present. The school can invite parents, school leaders, or selected teachers to view the outcomes.
+
+This kind of phased plan keeps the rollout manageable.
+
+## What school leaders should monitor
+
+School leaders should not only ask whether the program happened. They should monitor whether it produced useful results.
+
+Track:
+
+- number of students who completed projects
+- teacher feedback
+- student confidence
+- parent response
+- access or device issues
+- time pressure
+- quality of student explanations
+
+These details help the school improve the next cycle.
+
+## How to avoid teacher resistance
+
+Some teachers may worry that AI will make their work harder or make students lazy. The school should address this directly.
+
+Teachers need to see that AI is not replacing them. It gives them a new tool for project-based learning. Their role becomes even more important because students need guidance, feedback, and supervision.
+
+When teachers receive templates and a clear structure, resistance often reduces. Confusion is usually the bigger problem than opposition.
+
+## What to do after the first pilot
+
+After the pilot, the school should not rush straight into a full rollout. Review the evidence first.
+
+Look at student projects, teacher notes, parent feedback, technical issues, and timetable pressure. Ask what worked and what should change.
+
+The second cycle should be better than the first. It may need clearer prompts, more device planning, smaller groups, or stronger parent communication.
+
+This review habit is what turns AI from a one-time experiment into a sustainable school program.
+
+## How to make the program part of school identity
+
+Once the school has proof, it can communicate the program more confidently.
+
+Use student presentations, project showcases, open days, newsletters, and parent meetings. Let the work speak.
+
+The strongest marketing message is not "we teach AI." It is "our students build and explain real digital projects."
+
 ## FAQ
 
 **Can a Nigerian school launch AI without overwhelming teachers?**  

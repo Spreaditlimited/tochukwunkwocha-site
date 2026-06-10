@@ -66,6 +66,30 @@ This access-code model is part of [Prompt to Profit for Schools](/courses/prompt
 
 If your school is still comparing curriculum options, also read [AI Curriculum for Nigerian Schools](/blog/ai-curriculum-for-nigerian-schools-what-students-should-actually-learn/) and [The End of Theory-Only Technology Classes](/blog/the-end-of-theory-only-technology-classes/).
 
+## Why login friction is a real learning problem
+
+Login problems may sound small, but they affect the entire lesson. A teacher may plan a practical activity, but if ten students cannot access the platform quickly, the class energy drops.
+
+Students become frustrated. Teachers become distracted. The lesson moves from building to troubleshooting.
+
+For Nigerian schools where time, devices, and internet access may already be limited, every wasted minute matters. A simple access system helps protect the learning window.
+
+## How access codes support classroom management
+
+Access codes make it easier for teachers to manage students without becoming account recovery officers.
+
+The teacher or admin can issue codes, guide students to the login point, and get the class started faster. Students do not need to remember complex passwords or create personal email accounts.
+
+This is especially useful for younger learners and shared-device environments.
+
+## What schools should still monitor
+
+Access codes reduce friction, but schools should still manage them responsibly.
+
+Schools should keep records of which code belongs to which student, avoid sharing codes publicly, and replace a code if it is misused. Students should understand that the code is their learning access, not something to pass around.
+
+The goal is simple access with enough structure to protect learning progress.
+
 ## FAQ
 
 **Why use student access codes instead of emails?**  

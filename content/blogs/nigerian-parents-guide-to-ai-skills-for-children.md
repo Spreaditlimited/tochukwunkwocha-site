@@ -109,6 +109,81 @@ If you want a guided path, explore [Prompt to Profit for Kids](/courses/prompt-t
 
 If you are a parent with older children or teenagers who want to build portfolios, also read [How Nigerian Students Can Build Websites With ChatGPT Without Coding](/blog/how-nigerian-students-can-build-websites-with-chatgpt-without-coding/).
 
+## A simple AI learning roadmap for Nigerian parents
+
+Parents often ask what order children should learn these skills. The order matters because a child who jumps straight into complex tools can become confused or start copying without understanding.
+
+A practical roadmap looks like this:
+
+- Stage 1: learn what AI can and cannot do.
+- Stage 2: learn safety rules and what not to share.
+- Stage 3: practice simple prompts with adult guidance.
+- Stage 4: build a small project, such as a one-page website.
+- Stage 5: explain the project and what AI helped with.
+- Stage 6: improve the project after feedback.
+- Stage 7: save the best work as part of a growing portfolio.
+
+This progression teaches children to think like builders. They are not only asking AI for answers. They are learning how to define an idea, direct a tool, review output, and improve the result.
+
+For younger children, one small project is enough at first. For teenagers, the same process can become a stronger portfolio path. That is why [AI Skills for Nigerian Teenagers](/blog/ai-skills-for-nigerian-teenagers-building-a-portfolio-before-university/) is a natural next read for parents with older children.
+
+## How to know your child is actually learning
+
+Parents should not measure AI learning only by how excited a child sounds after a class. Excitement is good, but the real question is whether the child can show understanding.
+
+Look for these signs:
+
+- the child can explain what they asked AI to do
+- the child can identify at least one mistake AI made
+- the child can describe what they changed
+- the child can show a finished project
+- the child can explain who the project is for
+- the child remembers basic safety rules
+
+If a child cannot explain any of these, they may only be consuming AI output passively. The goal is active learning.
+
+One of the best parent questions is: "What did you improve after the first result?" This question teaches the child that the first AI output is a draft, not the final answer.
+
+## Common mistakes Nigerian parents should avoid
+
+The first mistake is waiting too long. Some parents assume AI is only for university students or adults. In reality, children can learn age-appropriate AI habits early, especially when the focus is creativity, safety, and projects.
+
+The second mistake is choosing a course only because it sounds technical. A child does not need a course filled with complicated language. They need a course that turns ideas into visible outcomes.
+
+The third mistake is leaving the child alone with AI tools. Supervision matters. Children should have room to explore, but they also need boundaries.
+
+The fourth mistake is judging progress only by certificates. A certificate is helpful, but a finished project is stronger proof. If a child can show a website, explain the prompt, and talk about what they improved, the learning is more real.
+
+Parents who want a shorter program during school breaks can read [Holiday AI Programs for Children in Nigeria](/blog/holiday-ai-programs-for-children-in-nigeria/). Parents comparing options should also read [How to Choose an AI Course for Your Child in Nigeria](/blog/how-to-choose-an-ai-course-for-your-child-in-nigeria/).
+
+## What a strong first AI project looks like
+
+A strong first project is not necessarily complex. It should be clear, complete, and easy for the child to explain.
+
+For example, a child can build a website about a favorite book, school club, science topic, family business, personal hobby, or community problem.
+
+The project should include a clear title, short sections, useful images, and a simple call to action. The child should be able to say why each section exists.
+
+This matters because website building teaches structure. A website forces the child to think about audience, sequence, clarity, and design. These are transferable skills that help with school presentations, writing, communication, and problem-solving.
+
+## How parents can balance AI learning and school work
+
+AI learning should not compete with school work in a harmful way. It should support it.
+
+Parents can schedule practical AI learning during weekends, holidays, or lighter school periods. During exam season, the focus can shift to revision, safe research habits, and project planning rather than long build sessions.
+
+The important thing is consistency. A child who builds one meaningful project every few months will develop more confidence than a child who only watches random tutorials without finishing anything.
+
+Parents should also connect AI learning to school subjects. A website about a science topic, a history presentation, or a business studies idea can strengthen academic understanding while building digital skill.
+
+## Why parents should ask for visible outcomes
+
+When choosing a program, ask what your child will produce. The answer should be specific.
+
+Useful outcomes include a website, portfolio page, project presentation, prompt journal, or digital showcase. These are easier to evaluate than vague promises.
+
+Visible outcomes also motivate children. When a child sees a finished project, they feel ownership. That emotional ownership makes the learning stick.
+
 ## FAQ
 
 **Can Nigerian children learn AI without coding?**  

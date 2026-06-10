@@ -81,6 +81,55 @@ These questions help parents separate activity from real learning.
 
 If your child is younger, you can also review [Prompt to Profit for Kids](/courses/prompt-to-profit-children/). If the child is older and ready for deeper digital projects, [Prompt to Profit Advanced](/courses/prompt-to-production/) may be the next path.
 
+## Questions to ask before paying for a holiday program
+
+Before paying for a holiday AI program, parents should ask direct questions.
+
+Ask:
+
+- What will my child build by the end?
+- How many practical sessions are included?
+- Will my child receive feedback?
+- Are safety rules taught?
+- Is the program age-appropriate?
+- Will I see the final project?
+- How does the child access the learning platform?
+
+These questions help parents separate real programs from vague holiday activities. A provider should be able to explain the learning outcome clearly.
+
+If the answer is only "your child will learn AI," ask for more detail. AI is broad. A child needs a defined path.
+
+## How to support your child during the holiday
+
+Parents do not need to sit through every class. But they should stay interested.
+
+At the end of each day or week, ask your child to show progress. Let them explain what they built, what was difficult, and what they improved.
+
+This conversation reinforces learning. It also helps the child practice explaining technical work in simple language.
+
+Parents can also create a calm learning environment. Make sure the child has time, a working device where possible, and fewer distractions during project sessions.
+
+## What a final holiday presentation should include
+
+A strong holiday program should end with presentation, not only completion.
+
+The child should be able to show:
+
+- the project idea
+- the website or digital output
+- the prompt process
+- one thing AI got wrong
+- one thing the child improved
+- what they want to build next
+
+This gives parents visible proof. It also builds the child's confidence because they learn to talk about their work.
+
+## Why holiday learning should connect to the next term
+
+A good holiday program should not end in isolation. The child should return to school with stronger confidence, better project habits, and something useful to show.
+
+Parents can encourage the child to apply the new skill to a school assignment, club activity, or personal portfolio. That connection makes the holiday investment more valuable.
+
 ## FAQ
 
 **What is the best holiday tech program for a Nigerian child?**  

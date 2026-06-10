@@ -82,6 +82,58 @@ Schools should not simply tell teachers to "use AI" without training. Teachers n
 
 School owners can also use the [School AI Readiness in Nigeria checklist](/blog/school-ai-readiness-in-nigeria-checklist-for-principals-and-school-owners/) to assess the next step.
 
+## A practical lesson planning prompt template
+
+Teachers can save time by using a repeatable prompt template.
+
+Use this structure:
+
+"Act as a Nigerian classroom teacher. Create a lesson plan for [subject] on [topic] for [class level]. The lesson is [duration] minutes. Include learning objectives, simple explanation, local examples, class activity, assessment questions, homework, and common student misunderstandings."
+
+This template is useful because it gives ChatGPT enough context. The teacher can then review, correct, and adapt the output.
+
+For example, a Basic Science teacher can ask for local examples related to food, water, weather, or household items. A Business Studies teacher can ask for examples using small shops, markets, and family businesses.
+
+## How teachers can use AI without weakening student thinking
+
+Teachers should use AI to support preparation, not to remove student effort.
+
+Instead of giving students AI-written answers, teachers can use AI to create better questions, project briefs, discussion prompts, and examples.
+
+For example, rather than asking students to copy an AI summary, a teacher can ask students to compare two AI answers and identify which one is clearer. This teaches judgment.
+
+Teachers can also ask students to explain how they improved an AI draft. This builds accountability and discourages lazy copying.
+
+## Common teacher mistakes with ChatGPT
+
+The first mistake is copying AI output without checking it. Teachers should verify facts, curriculum fit, and age appropriateness.
+
+The second mistake is using prompts that are too vague. "Prepare lesson note" will often produce generic results. A better prompt includes class level, topic, duration, examples, and assessment style.
+
+The third mistake is hiding AI use from students. Teachers can model responsible use by explaining that AI can help plan, but humans must review and improve.
+
+The fourth mistake is assuming AI will solve classroom management. It will not. AI can help with planning, but teaching still requires presence, judgment, and relationships.
+
+## How school leaders can support teachers using AI
+
+School leaders should give teachers permission to experiment in a structured way. If teachers fear being judged for using AI, they may avoid it or use it quietly without guidance.
+
+The school can create a simple policy. Teachers may use AI for planning, examples, worksheets, and project ideas, but they must review all output before use.
+
+Leaders can also organize short sharing sessions where teachers show useful prompts. This builds confidence across departments.
+
+## Subject-specific examples for teachers
+
+An English teacher can use ChatGPT to create comprehension passages and discussion questions, then adapt them for class level.
+
+A Business Studies teacher can ask for examples using Nigerian shops, small businesses, or customer service situations.
+
+A Computer Studies teacher can ask for project briefs that move students from definitions to building.
+
+A Civic Education teacher can create debate prompts around responsible technology use.
+
+The point is not to replace lesson planning. The point is to give teachers a faster first draft they can improve.
+
 ## FAQ
 
 **Can Nigerian teachers use ChatGPT for lesson notes?**  

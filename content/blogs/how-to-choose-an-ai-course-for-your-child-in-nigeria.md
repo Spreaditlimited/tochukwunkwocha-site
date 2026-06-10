@@ -77,6 +77,82 @@ Ask whether your child will have something to present. Ask whether the course in
 
 For holiday periods, [Holiday AI Programs for Children in Nigeria](/blog/holiday-ai-programs-for-children-in-nigeria/) explains how to evaluate short programs.
 
+## Red flags parents should watch for
+
+Some AI courses sound impressive but offer little structure. Parents should watch for red flags.
+
+Be careful if a course:
+
+- cannot explain the final project
+- has no age grouping
+- promises unrealistic results
+- ignores safety
+- focuses only on certificates
+- gives children tools without supervision
+- has no clear feedback process
+
+The course should make you feel clear, not confused. If the provider cannot explain what your child will do in simple language, that is a concern.
+
+## How to compare two AI courses
+
+If you are comparing two options, create a simple table.
+
+Compare:
+
+- age fit
+- project outcome
+- class format
+- safety rules
+- feedback
+- parent visibility
+- cost
+- schedule
+- next learning path
+
+The cheapest option is not always best. The most expensive option is not automatically better either. The best option is the one with clear outcomes, good guidance, and visible proof.
+
+## What to ask your child after the course starts
+
+Once your child starts, keep checking for understanding.
+
+Ask:
+
+- What did you build this week?
+- What prompt did you use?
+- What did you change after feedback?
+- What did you learn about AI safety?
+- Can you show me your project?
+
+These questions help you know whether the course is working.
+
+## How parents can match a course to a child's personality
+
+Children do not all learn the same way. Some children are confident and experimental. Others need more encouragement. Some enjoy design, while others prefer logic, stories, or business ideas.
+
+The right AI course should allow different kinds of children to succeed. A child who loves drawing can build a visual project. A child who loves talking can present a project. A child who loves business can build a product page.
+
+Ask whether the course has room for creativity. A rigid course may not bring out the child's best work.
+
+## What parents should expect after the first course
+
+One course should not be the end of the journey. After the first course, parents should look for the next level.
+
+The child may move from simple prompts to websites, from websites to portfolios, or from portfolios to more advanced digital projects.
+
+This progression matters because AI skill grows through repeated building.
+
+## How to judge value after completion
+
+After the course, ask whether the child gained confidence, built something visible, learned safety rules, and can explain the process.
+
+If the answer is yes, the course created value. If the child only watched lessons and cannot show or explain anything, the course may not have gone deep enough.
+
+## Why the next step matters
+
+The best AI course should point to a next step. A child may begin with safe prompting, then move to websites, portfolios, or more advanced projects.
+
+This progression helps parents avoid one-off learning. It turns a course into a pathway.
+
 ## FAQ
 
 **What should my child learn first in AI?**  

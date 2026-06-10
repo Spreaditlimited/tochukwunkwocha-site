@@ -63,6 +63,38 @@ Are you ready to empower your students to build the future? Contact us to secure
 
 Start with [Prompt to Profit for Schools](/courses/prompt-to-profit-schools/) if you want a guided AI pathway for your school. Parents who want this same practical approach for children outside school can also explore [Prompt to Profit for Kids](/courses/prompt-to-profit-children/).
 
+## What makes a classroom future-proof?
+
+A future-proof classroom is not defined only by devices. A school can have laptops and still teach outdated habits. A future-proof classroom helps students use tools to think, create, communicate, and solve problems.
+
+The classroom should encourage students to ask better questions, test ideas quickly, review output, and present results. AI makes this more possible because it shortens the distance between idea and first draft.
+
+For Nigerian schools, this matters because students will compete in a world where digital confidence is expected. They need more than exposure. They need guided practice.
+
+## How to start without disrupting the timetable
+
+Schools can begin with a small practical module. It can run inside ICT, as a club, during a project week, or as a holiday program.
+
+The first module should have one outcome. For example: every student builds and presents a simple website.
+
+That outcome gives teachers focus. It gives parents proof. It gives school leaders something concrete to evaluate.
+
+After that, the school can expand into portfolios, business pages, app-like projects, or deeper AI literacy.
+
+## What parents should hear from the school
+
+When announcing an AI program, schools should avoid vague promises. Parents need clarity.
+
+The school should explain:
+
+- what students will build
+- how teachers will supervise
+- how safety is handled
+- how student access works
+- how parents will see results
+
+Clear communication turns AI from a buzzword into a serious learning pathway.
+
 ## FAQ
 
 **What is the best way for a Nigerian school to start AI education?**  

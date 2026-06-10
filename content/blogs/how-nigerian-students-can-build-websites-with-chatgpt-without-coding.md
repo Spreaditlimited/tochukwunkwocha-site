@@ -97,6 +97,123 @@ That is a different level. For that next step, read about [Prompt to Profit Adva
 
 You can also read [AI for Nigerian Small Business Owners: Practical Daily Use Cases](/blog/ai-for-nigerian-small-business-owners-practical-daily-use-cases/) to understand how business owners think about AI beyond websites.
 
+## A step-by-step workflow students can follow
+
+The easiest way to use ChatGPT for website building is to follow a process. Do not ask for everything at once.
+
+Start with the idea. Write one sentence that explains what the website is about and who it is for. A clear idea is easier to build than a vague ambition.
+
+Next, ask ChatGPT to suggest a structure. The structure should include sections such as hero, about, benefits, project details, gallery, FAQ, and contact.
+
+After that, ask for headlines and short copy for each section. Review the copy carefully. Make sure it sounds like you and fits the Nigerian context.
+
+Then ask for design suggestions. You can request colors, layout ideas, image ideas, and mobile-friendly structure.
+
+Finally, ask for code or builder instructions depending on the platform you are using.
+
+This step-by-step method produces better results than a single vague prompt.
+
+## Example prompts for Nigerian students
+
+Here are practical prompts students can adapt.
+
+"Help me plan a one-page website for my school debate club in Nigeria. Include sections, headings, and short descriptions. The audience is students, parents, and teachers."
+
+"Write homepage copy for a student portfolio website. I am a Nigerian secondary school student interested in AI, writing, and web design. Make it simple and confident."
+
+"Create a website structure for a small food business run by a student during holidays. Include product sections, order instructions, and FAQ."
+
+"Review this website copy and make it clearer for Nigerian parents and teachers."
+
+These prompts work because they give context. They tell AI who the website is for and what the student wants to achieve.
+
+For stronger prompting habits, read [Prompt Engineering for Nigerian Students](/blog/prompt-engineering-for-nigerian-students/).
+
+## What students should learn from the website process
+
+The real lesson is not only the final website. The process teaches important skills.
+
+Students learn audience thinking. They ask, "Who is this for?"
+
+They learn structure. They understand that a website is made of sections that guide a visitor.
+
+They learn editing. They see that AI output should be reviewed and improved.
+
+They learn design judgment. They decide what should be simple, what should be bold, and what should be removed.
+
+They learn confidence. A student who publishes or presents a project begins to see technology as something they can create with, not only consume.
+
+This is why website building is a strong bridge between AI literacy and practical digital skill.
+
+## Mistakes students should avoid
+
+Do not copy everything from ChatGPT without understanding it. If you cannot explain a section, improve it until you can.
+
+Do not put private information on a website. Avoid home addresses, private phone numbers, school login details, and personal family information.
+
+Do not overdesign. A clear simple page is better than a confusing page with too many colors, animations, or sections.
+
+Do not publish false claims. If you are building a business or portfolio page, be honest about your experience and what you can do.
+
+Do not stop at the first result. Ask for feedback, revise, and improve.
+
+## How to turn one website into a portfolio
+
+A single website project can become the beginning of a portfolio if the student documents it properly.
+
+Do not only save the final link. Save the project idea, the prompt, the first version, the feedback, and the final version. This shows growth.
+
+A portfolio entry can explain:
+
+- what the project was about
+- who it was built for
+- what tools were used
+- what AI helped with
+- what the student changed
+- what the student learned
+
+This kind of explanation is useful for university applications, internships, scholarship conversations, and early freelance opportunities.
+
+## How students can practice with real Nigerian use cases
+
+Students should not only build imaginary websites. They can practice with realistic Nigerian scenarios.
+
+For example, build a landing page for a local barber, a private lesson teacher, a church youth event, a food vendor, a school club, a fashion brand, or a community campaign.
+
+These examples teach students how real people communicate online. They also help students understand customer questions, trust signals, WhatsApp contact habits, and mobile-first design.
+
+## What to learn after the first website
+
+After the first website, students should learn the basics of publishing, domain names, responsive design, forms, and simple lead capture.
+
+They do not need to master everything immediately. But each new project should add one new skill.
+
+This steady progression is better than jumping from beginner work into advanced apps without understanding the fundamentals.
+
+## How students can present their website project
+
+Presentation is part of the learning. A student should be able to explain the project clearly in a few minutes.
+
+A simple presentation can cover:
+
+- the problem or idea
+- the audience
+- the sections on the website
+- the prompts used
+- what AI got wrong
+- what the student improved
+- what the student would add next
+
+This helps teachers, parents, or potential clients see that the student understands the work.
+
+## How to improve after feedback
+
+Students should ask at least two people to review the website. One person can focus on clarity. Another can focus on design or mobile experience.
+
+After feedback, the student should make specific changes. For example, simplify a headline, add a clearer button, reduce text, improve spacing, or rewrite an FAQ.
+
+This revision process is where real skill grows. The first version proves you can start. The improved version proves you can think.
+
 ## FAQ
 
 **Can I build a website with ChatGPT on my phone?**  
