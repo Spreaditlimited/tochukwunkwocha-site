@@ -3263,6 +3263,10 @@ body.public-page--prompt-to-production .site-header {
   background: #060b14;
 }
 
+body.public-page--prompt-to-profit-children .site-header {
+  background: #060b14;
+}
+
 .site-header *,
 .site-header *::before,
 .site-header *::after {
