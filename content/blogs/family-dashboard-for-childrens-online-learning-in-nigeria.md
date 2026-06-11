@@ -5,7 +5,7 @@ slug: "family-dashboard-for-childrens-online-learning-in-nigeria"
 date: "2026-05-25"
 excerpt: "Why a family dashboard helps Nigerian parents manage multiple children, track learning access, and understand the value of online AI programs."
 tags: ["nigeria", "parents", "family dashboard", "kids", "online learning"]
-image: "/assets/blog/nigeria-family-learning-dashboard.jpg"
+image: "/assets/blog/nigeria-family-learning-dashboard-laptop.jpg"
 published: true
 source_file: "original-nigeria-seo-series"
 ---

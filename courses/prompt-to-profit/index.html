@@ -382,6 +382,27 @@
           padding-right: 16px;
         }
 
+        .section-headline {
+          letter-spacing: 0;
+        }
+
+        section[aria-label="Real project proof"] {
+          padding-top: 72px;
+          padding-bottom: 72px;
+        }
+
+        section[aria-label="Real project proof"] .text-center {
+          margin-bottom: 2rem;
+        }
+
+        section[aria-label="Real project proof"] .grid {
+          gap: 2rem;
+        }
+
+        section[aria-label="Real project proof"] .browser-mockup iframe {
+          height: 420px !important;
+        }
+
         section[aria-label="Testimonials"] .hide-scrollbar {
           display: grid !important;
           grid-template-columns: 1fr;
@@ -403,6 +424,10 @@
           max-width: 100% !important;
         }
 
+        .student-websites-section .browser-mockup iframe {
+          height: 420px !important;
+        }
+
         .browser-header {
           padding: 0.75rem;
           gap: 0.5rem;
@@ -414,6 +439,7 @@
           font-size: 0.72rem;
           padding: 0.4rem 0.65rem;
         }
+
       }
 
       /* Remove unintended side borders on this page layout */
@@ -691,9 +717,9 @@
             <a class="btn btn-outline" href="/#about">Read My Story</a>
           </div>
           <div class="order-1 md:order-2">
-            <div class="relative">
-              <div class="absolute inset-0 bg-brand-200 rounded-3xl transform translate-x-4 translate-y-4 -z-10"></div>
-              <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" loading="lazy" class="rounded-3xl shadow-xl w-full object-cover aspect-[4/3] md:aspect-square" />
+            <div class="relative w-full max-w-md mx-auto">
+              <div class="absolute inset-0 bg-brand-100 rounded-[3rem] transform translate-x-4 translate-y-4"></div>
+              <img src="/assets/tochukwu.jpg" alt="Tochukwu Nkwocha" class="relative rounded-[3rem] shadow-xl border-8 border-white object-cover aspect-[4/5] w-full" loading="lazy" />
               <div class="absolute -bottom-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-brand-100 flex items-center gap-4">
                 <div class="bg-brand-100 text-brand-600 p-3 rounded-full">
                   <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
