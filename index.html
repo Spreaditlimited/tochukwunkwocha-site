@@ -57,10 +57,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    
     <link rel="stylesheet" href="/assets/styles.css" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -71,15 +70,19 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
               heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
             },
             colors: {
               brand: {
                 50: '#eef2fb',
                 100: '#dfe7f7',
                 200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
                 500: '#22345f',
                 600: '#14213d',
-                900: '#0f1a33',
+                700: '#0f1a33',
+                900: '#060b14',
               }
             }
           }
@@ -87,44 +90,46 @@
       }
     </script>
     
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .reveal {
-          @apply animate-[fadeIn_0.8s_ease-out_forwards];
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Reusable UI Components */
-        .tw-section-label {
-          @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4;
-        }
-        .tw-h2 {
-          @apply text-3xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-4xl;
-        }
-        .tw-btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-500 hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
-        }
-        .tw-btn-outline {
-          @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 hover:shadow hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
-        }
-        
-        /* Ensures original JS FAQ works smoothly while looking modern */
-        .faq-answer {
-          @apply mt-2 text-gray-600 leading-relaxed pr-8;
-        }
-      }
-    </style>
     <style>
+      /* Base & Utilities */
+      body {
+        background-color: #060b14;
+        color: #cbd5e1;
+      }
       main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
-      .site-footer { margin-top: 0 !important; }
+      
+      .reveal {
+        animation: fadeIn 0.8s ease-out forwards;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .tw-section-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        font-family: 'Fira Code', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+      }
+      
       .hero-ptp-logo {
         width: min(300px, 68vw);
         height: auto;
         margin: 0 auto 18px;
         display: block;
+        filter: drop-shadow(0 0 20px rgba(255,255,255,0.15));
       }
       @media (max-width: 640px) {
         .hero-ptp-logo {
@@ -137,20 +142,54 @@
           margin: 0 0 22px;
         }
       }
+
+      .ambient-grid {
+        position: absolute;
+        inset: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      @media (max-width: 639px) {
+        .home-hero-grid {
+          display: flex !important;
+          flex-direction: column;
+        }
+
+        .home-hero-copy {
+          display: contents;
+        }
+
+        .home-hero-copy > :not(.home-hero-cta) {
+          order: 1;
+        }
+
+        .home-hero-media {
+          order: 2;
+          margin-top: 28px !important;
+        }
+
+        .home-hero-cta {
+          order: 3;
+          width: 100%;
+          margin-top: 28px !important;
+        }
+      }
     </style>
   </head>
-  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+  <body class="bg-[#060b14] font-sans antialiased min-h-screen flex flex-col text-slate-300">
     
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-<a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/build/">Build</a>
           <a href="/services/domain-registration/">Domains</a>
           <div class="nav-dropdown">
@@ -164,51 +203,71 @@
       </div>
     </header>
 
-    <main class="flex-1 w-full">
+    <main class="flex-1 w-full relative">
       
-      <section class="relative overflow-hidden pt-16 pb-20 lg:pt-24 lg:pb-28 reveal">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+      <section class="relative overflow-hidden pt-32 pb-24 lg:pt-40 lg:pb-32 reveal border-b border-white/5">
+        <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] bg-brand-600/20 blur-[150px] rounded-full pointer-events-none z-0"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[50%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none z-0"></div>
+        <div class="ambient-grid"></div>
+
+        <div class="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
+          <div class="home-hero-grid lg:grid lg:grid-cols-12 lg:gap-16 items-center">
             
-            <div class="lg:col-span-7 text-center sm:text-left">
-              <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-ptp-logo" />
-              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-[1.1]">
-                I build real systems and teach people how to use AI for real work.
+            <div class="home-hero-copy lg:col-span-7 text-center sm:text-left">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-brand-300 font-semibold text-xs uppercase tracking-widest mb-6 mx-auto sm:mx-0">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                </span>
+                Practical AI Education
+              </div>
+              
+              <h1 class="text-4xl font-heading font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1]">
+                I build real systems and teach you how to use <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-[#a5d6ff] to-purple-400">AI for real work.</span>
               </h1>
-              <p class="mt-6 text-lg leading-relaxed text-gray-600 max-w-2xl mx-auto sm:mx-0">
+              
+              <p class="mt-6 text-lg lg:text-xl leading-relaxed text-slate-400 max-w-2xl mx-auto sm:mx-0 font-light">
                 I am Tochukwu Nkwocha, founder, builder, and practical educator. Over the years, I have built platforms across sourcing, ed-tech, and commerce. Today, I teach people how to use AI in a useful way—not just to generate text, but to think clearly, solve problems, and build simple things that actually work.
               </p>
-              <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
-                <a class="tw-btn-primary" href="/courses/prompt-to-profit">Explore Prompt to Profit</a>
-                <a class="tw-btn-outline" href="/courses">View All Courses</a>
+              
+              <div class="home-hero-cta mt-10 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+                <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 shadow-[0_0_30px_rgba(102,126,178,0.4)] transition-all duration-300 hover:-translate-y-1" href="/courses/prompt-to-profit">
+                  Explore Prompt to Profit
+                </a>
+                <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1" href="/courses">
+                  View All Courses
+                </a>
               </div>
             </div>
 
-            <aside class="mt-16 lg:mt-0 lg:col-span-5 relative">
-              <div class="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-gray-900/5 relative overflow-hidden">
-                <div class="absolute -right-20 -top-20 w-48 h-48 bg-brand-100 rounded-full blur-3xl opacity-50"></div>
+            <aside class="home-hero-media mt-16 lg:mt-0 lg:col-span-5 relative perspective-1000">
+              <div class="relative group mx-auto max-w-md lg:max-w-full">
+                <div class="absolute -inset-2 bg-gradient-to-br from-brand-500 to-purple-600 rounded-[3rem] blur-2xl opacity-30 -z-10"></div>
                 
-                <div class="mb-8 aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
-                  <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'%23eef2fb\'/%3E%3C/svg%3E'" />
-                </div>
-
-                <h3 class="text-xl font-heading font-bold text-gray-900 mb-2">A better way to learn AI</h3>
-                <p class="text-sm text-gray-600 leading-relaxed mb-6">
-                  This platform is built for beginners, professionals, and business owners who want clear guidance, useful skills, and a practical path into building with AI.
-                </p>
-                
-                <div class="space-y-3">
-                  <div class="flex items-center gap-3">
-                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    <span class="text-sm font-medium text-gray-700">Beginner-friendly approach</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    <span class="text-sm font-medium text-gray-700">No coding background required</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <svg class="h-5 w-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    <span class="text-sm font-medium text-gray-700">Real-world practical use cases</span>
+                <div class="relative rounded-[3rem] overflow-hidden border border-white/10 bg-[#0d1117] z-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+                  <div class="absolute inset-0 border-2 border-white/5 rounded-[3rem] z-20 pointer-events-none"></div>
+                  <img src="/assets/tochukwu.jpg" alt="Portrait of Tochukwu Nkwocha" class="relative object-cover aspect-[4/5] w-full mix-blend-luminosity opacity-90" />
+                  <div class="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-[#060b14] to-transparent z-10 pointer-events-none"></div>
+                  
+                  <div class="absolute bottom-8 left-8 right-8 z-30">
+                    <h3 class="text-xl font-heading font-bold text-white mb-2">A better way to learn AI</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed mb-4 font-light">
+                      Built for beginners, professionals, and business owners who want clear guidance and a practical path into building with AI.
+                    </p>
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                        <span class="text-xs font-medium text-slate-300">Beginner-friendly approach</span>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                        <span class="text-xs font-medium text-slate-300">No coding background required</span>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                        <span class="text-xs font-medium text-slate-300">Real-world practical use cases</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -218,36 +277,40 @@
         </div>
       </section>
 
-      <section class="border-y border-gray-200 bg-white py-8 reveal" aria-label="Credibility strip">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 divide-x-0 lg:divide-x divide-gray-100">
+      <section class="border-y border-white/5 bg-white/5 backdrop-blur-md py-10 reveal" aria-label="Credibility strip">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 divide-x-0 lg:divide-x divide-white/10">
             <article class="text-center px-4">
-              <h3 class="text-lg font-heading font-bold text-gray-900">Founder</h3>
-              <p class="mt-1 text-sm text-gray-500">Sure Imports & LineScout</p>
+              <h3 class="text-lg font-heading font-bold text-white">Founder</h3>
+              <p class="mt-1 text-sm text-slate-400">Sure Imports & LineScout</p>
             </article>
             <article class="text-center px-4">
-              <h3 class="text-lg font-heading font-bold text-gray-900">Builder</h3>
-              <p class="mt-1 text-sm text-gray-500">Real products & workflows</p>
+              <h3 class="text-lg font-heading font-bold text-white">Builder</h3>
+              <p class="mt-1 text-sm text-slate-400">Real products & workflows</p>
             </article>
             <article class="text-center px-4">
-              <h3 class="text-lg font-heading font-bold text-gray-900">Educator</h3>
-              <p class="mt-1 text-sm text-gray-500">Practical, no-fluff teaching</p>
+              <h3 class="text-lg font-heading font-bold text-white">Educator</h3>
+              <p class="mt-1 text-sm text-slate-400">Practical, no-fluff teaching</p>
             </article>
             <article class="text-center px-4">
-              <h3 class="text-lg font-heading font-bold text-gray-900">Focus</h3>
-              <p class="mt-1 text-sm text-gray-500">AI, systems, & execution</p>
+              <h3 class="text-lg font-heading font-bold text-white">Focus</h3>
+              <p class="mt-1 text-sm text-slate-400">AI, systems, & execution</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section id="about" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28 reveal">
-        <p class="tw-section-label">About</p>
+      <section id="about" class="relative mx-auto max-w-7xl px-6 lg:px-8 py-24 lg:py-32 reveal">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <p class="tw-section-label">About</p>
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
+            A practical builder, not a theory-first teacher.
+          </h2>
+        </div>
         
         <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-start mt-2">
           <div class="lg:col-span-7">
-            <h2 class="tw-h2">A practical builder, not a theory-first teacher.</h2>
-            <div class="mt-6 space-y-6 text-lg leading-relaxed text-gray-600">
+            <div class="space-y-6 text-lg leading-relaxed text-slate-400 font-light">
               <p>
                 My work sits at the intersection of technology, clarity, and execution. I have spent years building useful systems, leading product ideas from concept to reality, and learning how technology becomes valuable only when it helps real people solve real problems.
               </p>
@@ -257,44 +320,45 @@
             </div>
           </div>
           
-          <aside class="mt-12 lg:mt-0 lg:col-span-5">
-            <div class="rounded-3xl bg-gray-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden text-white">
-              <div class="absolute -right-20 -top-20 w-48 h-48 bg-brand-500 rounded-full blur-3xl opacity-30"></div>
+          <aside class="mt-12 lg:mt-0 lg:col-span-5 relative group">
+            <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+            <div class="rounded-[2rem] bg-[#0d1117] p-8 sm:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-white/10 relative overflow-hidden text-white z-10">
+              <div class="absolute -right-20 -top-20 w-48 h-48 bg-brand-500/20 rounded-full blur-3xl"></div>
               
-              <p class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-6">Builder profile</p>
-              <p class="text-xl font-heading font-medium leading-relaxed mb-10 italic">
+              <p class="text-xs font-mono font-bold uppercase tracking-widest text-brand-400 mb-6">Builder profile</p>
+              <p class="text-xl font-heading font-medium leading-relaxed mb-10 italic text-slate-300">
                 "Clarity matters more than noise. Once people learn how to think clearly and communicate properly with AI, they can begin to build far more than they thought possible."
               </p>
               
-              <div class="grid grid-cols-2 gap-6 mb-10">
+              <div class="grid grid-cols-2 gap-8 mb-10 border-t border-white/5 pt-8">
                 <div>
-                  <strong class="block text-2xl font-heading font-bold text-white mb-1">40,000+</strong>
-                  <span class="text-sm text-gray-400 leading-snug block">Users across platforms</span>
+                  <strong class="block text-3xl font-heading font-extrabold text-white mb-1">40k+</strong>
+                  <span class="text-xs text-slate-400 font-mono tracking-wide uppercase">Users</span>
                 </div>
                 <div>
-                  <strong class="block text-2xl font-heading font-bold text-white mb-1">500k+</strong>
-                  <span class="text-sm text-gray-400 leading-snug block">Annual web impressions</span>
+                  <strong class="block text-3xl font-heading font-extrabold text-white mb-1">500k+</strong>
+                  <span class="text-xs text-slate-400 font-mono tracking-wide uppercase">Impressions</span>
                 </div>
                 <div>
-                  <strong class="block text-2xl font-heading font-bold text-white mb-1">10,000+</strong>
-                  <span class="text-sm text-gray-400 leading-snug block">Play Store downloads</span>
+                  <strong class="block text-3xl font-heading font-extrabold text-white mb-1">10k+</strong>
+                  <span class="text-xs text-slate-400 font-mono tracking-wide uppercase">Downloads</span>
                 </div>
                 <div>
-                  <strong class="block text-2xl font-heading font-bold text-white mb-1">100k+</strong>
-                  <span class="text-sm text-gray-400 leading-snug block">Social followers</span>
+                  <strong class="block text-3xl font-heading font-extrabold text-white mb-1">100k+</strong>
+                  <span class="text-xs text-slate-400 font-mono tracking-wide uppercase">Followers</span>
                 </div>
               </div>
 
-              <div class="flex items-center gap-4 mb-8" aria-label="Social profiles">
-                <a href="https://www.facebook.com/tnkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors" aria-label="Facebook profile">
-                  <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.5 22v-8h2.7l.5-3.2h-3.2V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.5c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.4v2h-2.8V14h2.8v8h3.4z"/></svg>
+              <div class="flex items-center gap-4 mb-8">
+                <a href="https://www.facebook.com/tnkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors" aria-label="Facebook profile">
+                  <svg class="h-5 w-5 fill-current text-slate-300" viewBox="0 0 24 24"><path d="M13.5 22v-8h2.7l.5-3.2h-3.2V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.5c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.4v2h-2.8V14h2.8v8h3.4z"/></svg>
                 </a>
-                <a href="https://www.tiktok.com/@tochukwunkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors" aria-label="TikTok profile">
-                  <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 4c.7 1.6 1.9 2.8 3.4 3.5v2.9a8.2 8.2 0 0 1-3.3-.8v5.8c0 3.2-2.5 5.6-5.7 5.6S4.3 18.6 4.3 15.5 6.8 10 10 10c.2 0 .4 0 .6.1v3c-.2-.1-.4-.1-.6-.1-1.4 0-2.5 1.1-2.5 2.5S8.6 18 10 18s2.5-1.1 2.5-2.5V4h3.1z"/></svg>
+                <a href="https://www.tiktok.com/@tochukwunkwocha" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors" aria-label="TikTok profile">
+                  <svg class="h-5 w-5 fill-current text-slate-300" viewBox="0 0 24 24"><path d="M15.6 4c.7 1.6 1.9 2.8 3.4 3.5v2.9a8.2 8.2 0 0 1-3.3-.8v5.8c0 3.2-2.5 5.6-5.7 5.6S4.3 18.6 4.3 15.5 6.8 10 10 10c.2 0 .4 0 .6.1v3c-.2-.1-.4-.1-.6-.1-1.4 0-2.5 1.1-2.5 2.5S8.6 18 10 18s2.5-1.1 2.5-2.5V4h3.1z"/></svg>
                 </a>
               </div>
 
-              <a class="inline-flex items-center justify-center rounded-xl bg-white/10 px-6 py-3 text-sm font-bold text-white ring-1 ring-inset ring-white/20 hover:bg-white/20 transition-all w-full" href="/courses/">
+              <a class="inline-flex items-center justify-center rounded-xl bg-white/5 px-6 py-4 text-sm font-bold text-white border border-white/10 hover:bg-white/10 transition-all w-full" href="/courses/">
                 View Courses
               </a>
             </div>
@@ -302,342 +366,315 @@
         </div>
       </section>
 
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 reveal">
-        <div class="mb-12 text-center max-w-3xl mx-auto">
+      <section class="relative mx-auto max-w-7xl px-6 lg:px-8 py-24 reveal border-t border-white/5">
+        <div class="mb-16 text-center max-w-3xl mx-auto">
           <p class="tw-section-label">What I have built</p>
-          <h2 class="tw-h2">Real platforms. Real systems. Real-world experience.</h2>
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl">
+            Real platforms. Real systems. Real-world experience.
+          </h2>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
-            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="rounded-[2rem] bg-[#0d1117]/80 backdrop-blur-xl p-8 border border-white/10 shadow-lg transition-transform hover:-translate-y-2 group">
+            <div class="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-[0_0_15px_rgba(102,126,178,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
-            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Sure Imports & LineScout</h3>
-            <p class="text-sm leading-relaxed text-gray-600">
+            <h3 class="text-xl font-heading font-bold text-white mb-3 group-hover:text-brand-300 transition-colors">Sure Imports & LineScout</h3>
+            <p class="text-[15px] leading-relaxed text-slate-400 font-light">
               I built sourcing-focused systems that help users move from confusion to clarity when dealing with products, machinery, and structured workflows. Today, over 40,000 individuals and businesses use these platforms.
             </p>
           </article>
 
-          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
-            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="rounded-[2rem] bg-[#0d1117]/80 backdrop-blur-xl p-8 border border-white/10 shadow-lg transition-transform hover:-translate-y-2 group">
+            <div class="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             </div>
-            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Education Technology</h3>
-            <p class="text-sm leading-relaxed text-gray-600">
+            <h3 class="text-xl font-heading font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">Education Technology</h3>
+            <p class="text-[15px] leading-relaxed text-slate-400 font-light">
               I built the Effiko GPA Calculator and the Effikos.com website. Together, they have generated over 500,000 impressions annually, with the app recording over 10,000 downloads on the Play Store.
             </p>
           </article>
 
-          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md hover:-translate-y-1">
-            <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="rounded-[2rem] bg-[#0d1117]/80 backdrop-blur-xl p-8 border border-white/10 shadow-lg transition-transform hover:-translate-y-2 group">
+            <div class="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             </div>
-            <h3 class="text-xl font-heading font-bold text-gray-900 mb-3">Applied Financial Systems</h3>
-            <p class="text-sm leading-relaxed text-gray-600">
+            <h3 class="text-xl font-heading font-bold text-white mb-3 group-hover:text-cyan-300 transition-colors">Applied Financial Systems</h3>
+            <p class="text-[15px] leading-relaxed text-slate-400 font-light">
               My work includes enterprise banking applications and digital financial systems with leading technology companies like Zone. In the UK, I work as a Digital Marketing Executive with a tech consulting firm.
             </p>
           </article>
         </div>
       </section>
 
-      <section class="bg-gray-900 py-24 text-white reveal">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section class="relative bg-gradient-to-b from-[#060b14] to-[#0a0f1e] py-24 text-white reveal border-t border-white/5">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none"></div>
+        <div class="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
           <div class="mb-16 text-center max-w-3xl mx-auto">
-            <p class="inline-flex items-center gap-2 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-gray-300 mb-4">What I teach</p>
-            <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-4xl">
+            <p class="tw-section-label">What I teach</p>
+            <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
               Useful skills for people who want to think better and build better.
             </h2>
-            <p class="mt-6 text-lg text-gray-400">
+            <p class="mt-6 text-lg text-slate-400 font-light">
               My teaching is built around practical application. The goal is not to impress people with jargon. The goal is to help ordinary people use modern tools in a clear and useful way.
             </p>
           </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+            <article class="rounded-[2rem] bg-[#161b22]/50 backdrop-blur-md p-8 border border-white/5 hover:border-white/10 transition-colors">
               <h3 class="text-lg font-heading font-bold text-white mb-3">AI for Real Work</h3>
-              <p class="text-sm text-gray-400 leading-relaxed">Learn how to use AI as a tool for clarity, planning, problem-solving, and execution.</p>
+              <p class="text-sm text-slate-400 leading-relaxed font-light">Learn how to use AI as a tool for clarity, planning, problem-solving, and execution.</p>
             </article>
-            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+            <article class="rounded-[2rem] bg-[#161b22]/50 backdrop-blur-md p-8 border border-white/5 hover:border-white/10 transition-colors">
               <h3 class="text-lg font-heading font-bold text-white mb-3">Beginner-Friendly Building</h3>
-              <p class="text-sm text-gray-400 leading-relaxed">Start with simple websites and useful web tools before moving into more advanced systems later.</p>
+              <p class="text-sm text-slate-400 leading-relaxed font-light">Start with simple websites and useful web tools before moving into more advanced systems later.</p>
             </article>
-            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+            <article class="rounded-[2rem] bg-[#161b22]/50 backdrop-blur-md p-8 border border-white/5 hover:border-white/10 transition-colors">
               <h3 class="text-lg font-heading font-bold text-white mb-3">Business & Growth Thinking</h3>
-              <p class="text-sm text-gray-400 leading-relaxed">Understand how digital tools can support visibility, sales, business systems, and better decision-making.</p>
+              <p class="text-sm text-slate-400 leading-relaxed font-light">Understand how digital tools can support visibility, sales, business systems, and better decision-making.</p>
             </article>
-            <article class="rounded-3xl bg-gray-800 p-8 ring-1 ring-white/10">
+            <article class="rounded-[2rem] bg-[#161b22]/50 backdrop-blur-md p-8 border border-white/5 hover:border-white/10 transition-colors">
               <h3 class="text-lg font-heading font-bold text-white mb-3">Practical Learning</h3>
-              <p class="text-sm text-gray-400 leading-relaxed">Everything is designed to be useful, understandable, and tied to real output.</p>
+              <p class="text-sm text-slate-400 leading-relaxed font-light">Everything is designed to be useful, understandable, and tied to real output.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 reveal">
-        <div class="mb-8 text-center">
+      <section class="mx-auto max-w-7xl px-6 lg:px-8 py-24 reveal relative">
+        <div class="mb-12 text-center">
           <p class="tw-section-label">Start here</p>
         </div>
         
-        <div class="rounded-3xl bg-brand-50 border border-brand-200 p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-sm">
-          <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+        <div class="relative rounded-[3rem] bg-gradient-to-br from-[#0d1117] to-[#161b22] border border-brand-500/20 p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden group">
+          <div class="absolute inset-0 bg-brand-500/5 blur-[100px] pointer-events-none group-hover:bg-brand-500/10 transition-colors duration-700"></div>
+          
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center relative z-10">
             <div>
-              <h2 class="tw-h2 text-brand-900"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--heading" /></h2>
-              <h3 class="mt-4 text-xl font-heading font-bold text-brand-600 leading-snug">
-                A 5-day beginner-friendly intensive on how to use AI properly and build simple real-world websites and web tools.
+              <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-10 w-auto mb-6 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]" />
+              <h3 class="text-2xl lg:text-3xl font-heading font-bold text-white leading-snug">
+                A 5-day beginner-friendly intensive on how to use AI properly and build simple real-world websites.
               </h3>
-              <p class="mt-6 text-base text-gray-700 leading-relaxed">
-                This is the best place to start if you are new to AI, not very technical, or tired of hearing about AI without understanding how to actually use it. The course is designed to help you move from confusion to confidence in a practical way.
+              <p class="mt-6 text-base text-slate-400 leading-relaxed font-light">
+                This is the best place to start if you are new to AI, not very technical, or tired of hearing about AI without understanding how to actually use it. Move from confusion to confidence in a practical way.
               </p>
             </div>
             <div class="mt-10 lg:mt-0">
-              <ul class="space-y-4 mb-8">
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-gray-800 font-medium">5-day intensive</span>
+              <ul class="space-y-4 mb-10 text-slate-300">
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                  <span>5-day intensive</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-gray-800 font-medium">2 live sessions and 3 recorded training days</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                  <span>2 live sessions and 3 recorded training days</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-gray-800 font-medium">1-year replay access</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                  <span>1-year replay access</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-gray-800 font-medium">Built for complete beginners</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                  <span>Built for complete beginners</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-brand-600 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-gray-800 font-medium">Real project-based learning</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-brand-400 shadow-[0_0_8px_#667eb2]"></div>
+                  <span>Real project-based learning</span>
                 </li>
               </ul>
               <div class="flex flex-col sm:flex-row gap-4">
-                <a class="tw-btn-primary" href="/courses/prompt-to-profit">View Course Details</a>
-                <a class="tw-btn-outline" href="/courses">See All Courses</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-purple-600 shadow-[0_0_20px_rgba(102,126,178,0.4)] transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(102,126,178,0.6)]" href="/courses/prompt-to-profit">View Course Details</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-1" href="/courses">See All Courses</a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-24 reveal">
-        <div class="rounded-3xl bg-[#eaf7ef] border border-[#b8ddc5] p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-sm">
-          <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+      <section class="mx-auto max-w-7xl px-6 lg:px-8 pb-24 reveal relative">
+        <div class="relative rounded-[3rem] bg-gradient-to-br from-[#0d1117] to-[#0a1510] border border-emerald-500/20 p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden group">
+          <div class="absolute inset-0 bg-emerald-500/5 blur-[100px] pointer-events-none group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
+          
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center relative z-10">
             <div>
-              <h2 class="tw-h2 text-[#0f2a5f]"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--heading" /> Advanced</h2>
-              <h3 class="mt-4 text-xl font-heading font-bold text-brand-600 leading-snug">
-                The advanced path: build real apps with VS Code, AI coding assistants, debugging, and deployment.
+              <div class="flex items-center gap-3 mb-6">
+                 <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-8 w-auto filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] grayscale opacity-80" />
+                 <span class="font-heading font-extrabold text-2xl text-emerald-400">Advanced</span>
+              </div>
+              <h3 class="text-2xl lg:text-3xl font-heading font-bold text-white leading-snug">
+                Build real apps with VS Code, AI coding assistants, debugging, and deployment.
               </h3>
-              <p class="mt-6 text-base text-[#334155] leading-relaxed">
-                This is for learners ready to move beyond simple web pages into practical app-building workflows. You will learn how to structure projects, prompt AI for backend and frontend logic, fix errors, and ship confidently.
+              <p class="mt-6 text-base text-slate-400 leading-relaxed font-light">
+                For learners ready to move beyond simple web pages. You will learn how to structure projects, prompt AI for backend and frontend logic, fix errors, and ship confidently.
               </p>
             </div>
             <div class="mt-10 lg:mt-0">
-              <ul class="space-y-4 mb-8">
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#1f4b99] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#1e293b] font-medium">4-week hybrid program (live + recorded)</span>
+              <ul class="space-y-4 mb-10 text-slate-300">
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+                  <span>4-week hybrid program (live + recorded)</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#1f4b99] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#1e293b] font-medium">Professional workflow with VS Code, Git, and terminals</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+                  <span>Professional workflow with VS Code, Git, and terminals</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#1f4b99] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#1e293b] font-medium">Debugging and production deployment mastery</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+                  <span>Debugging and production deployment mastery</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#1f4b99] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#1e293b] font-medium">Built for serious execution, not theory</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+                  <span>Built for serious execution, not theory</span>
                 </li>
               </ul>
               <div class="flex flex-col sm:flex-row gap-4">
-                <a class="tw-btn-primary" href="/courses/prompt-to-production">View Course Details</a>
-                <a class="tw-btn-outline" href="/courses">See All Courses</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(16,185,129,0.6)]" href="/courses/prompt-to-production">View Course Details</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-1" href="/courses">See All Courses</a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-24 reveal">
-        <div class="rounded-3xl bg-[#fff4e8] border border-[#f4cfad] p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-sm">
-          <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+      <section class="mx-auto max-w-7xl px-6 lg:px-8 pb-24 reveal relative">
+        <div class="relative rounded-[3rem] bg-gradient-to-br from-[#0d1117] to-[#1a110a] border border-amber-500/20 p-8 sm:p-12 lg:p-16 max-w-5xl mx-auto shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden group">
+          <div class="absolute inset-0 bg-amber-500/5 blur-[100px] pointer-events-none group-hover:bg-amber-500/10 transition-colors duration-700"></div>
+          
+          <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center relative z-10">
             <div>
-              <h2 class="tw-h2 text-[#7a3b00]"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--heading" /> for Schools</h2>
-              <h3 class="mt-4 text-xl font-heading font-bold text-[#a14d00] leading-snug">
+              <div class="flex items-center gap-3 mb-6">
+                 <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-8 w-auto filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] grayscale opacity-80" />
+                 <span class="font-heading font-extrabold text-2xl text-amber-400">for Schools</span>
+              </div>
+              <h3 class="text-2xl lg:text-3xl font-heading font-bold text-white leading-snug">
                 A structured school-ready program that teaches students how to build websites with AI.
               </h3>
-              <p class="mt-6 text-base text-[#7c4a1d] leading-relaxed">
-                Designed for schools, this track helps students gain practical digital skills with guided lessons, project-based learning, and a clear path from beginner to confident website builder.
+              <p class="mt-6 text-base text-slate-400 leading-relaxed font-light">
+                Designed for schools, this track helps students gain practical digital skills with guided lessons, project-based learning, and a clear path from beginner to confident builder.
               </p>
             </div>
             <div class="mt-10 lg:mt-0">
-              <ul class="space-y-4 mb-8">
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#b45309] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#6b3b10] font-medium">Built for secondary school learners</span>
+              <ul class="space-y-4 mb-10 text-slate-300">
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></div>
+                  <span>Built for secondary school learners</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#b45309] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#6b3b10] font-medium">Beginner-friendly AI and website building workflow</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></div>
+                  <span>Beginner-friendly AI and website building workflow</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#b45309] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#6b3b10] font-medium">Project output students can present and publish</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></div>
+                  <span>Project output students can present and publish</span>
                 </li>
-                <li class="flex items-start">
-                  <svg class="h-6 w-6 text-[#b45309] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                  <span class="text-[#6b3b10] font-medium">Ideal for school leaders and parent groups</span>
+                <li class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></div>
+                  <span>Ideal for school leaders and parent groups</span>
                 </li>
               </ul>
               <div class="flex flex-col sm:flex-row gap-4">
-                <a class="tw-btn-primary" href="/courses/prompt-to-profit-schools">View Course Details</a>
-                <a class="tw-btn-outline" href="/courses">See All Courses</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-amber-600 to-orange-600 shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(245,158,11,0.6)]" href="/courses/prompt-to-profit-schools">View Course Details</a>
+                <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-1" href="/courses">See All Courses</a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="border-t border-gray-200 bg-white py-24 reveal">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="mb-12 text-center max-w-2xl mx-auto">
-            <p class="tw-section-label">Other courses</p>
-            <h2 class="tw-h2">More learning options</h2>
-            <p class="mt-4 text-gray-600 text-lg">These specialized courses are currently available through Selar.</p>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <article class="rounded-3xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 flex flex-col justify-between">
-              <div>
-                <span class="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">External Course</span>
-                <h3 class="text-xl font-heading font-bold text-gray-900 leading-snug">TikTok For Business Growth Fundamentals & Engineering</h3>
-                <p class="mt-4 text-sm text-gray-600 leading-relaxed">
-                  A practical training offer covering business growth on TikTok and a beginner-friendly introduction to engineering concepts.
-                </p>
-              </div>
-              <div class="mt-8 pt-6 border-t border-gray-200">
-                <a class="tw-btn-outline w-full" href="https://spreadit.selar.com/tiktokmastery" target="_blank" rel="noopener noreferrer">
-                  View on Selar
-                  <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                </a>
-              </div>
-            </article>
-
-            <article class="rounded-3xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 flex flex-col justify-between">
-              <div>
-                <span class="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">External Course</span>
-                <h3 class="text-xl font-heading font-bold text-gray-900 leading-snug">The Ultimate Facebook Ads Mastery Course</h3>
-                <p class="mt-4 text-sm text-gray-600 leading-relaxed">
-                  A practical training focused on helping people understand Facebook advertising in a clearer and more useful way.
-                </p>
-              </div>
-              <div class="mt-8 pt-6 border-t border-gray-200">
-                <a class="tw-btn-outline w-full" href="https://spreadit.selar.com/facebookadscourse" target="_blank" rel="noopener noreferrer">
-                  View on Selar
-                  <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                </a>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 reveal">
+      <section class="mx-auto max-w-7xl px-6 lg:px-8 py-24 reveal">
         <div class="mb-16 text-center max-w-3xl mx-auto">
           <p class="tw-section-label">Why learn from me</p>
-          <h2 class="tw-h2">Because this is built on real work, not recycled theory.</h2>
+          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl">
+            Because this is built on real work, not recycled theory.
+          </h2>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          <article class="text-center sm:text-left">
-            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="bg-[#0d1117] border border-white/5 p-8 rounded-[2rem] text-center sm:text-left hover:-translate-y-1 transition-transform">
+            <div class="mx-auto sm:mx-0 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-[0_0_15px_rgba(102,126,178,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             </div>
-            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Real-world experience</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">The teaching comes from years of building, testing, fixing, and learning through actual products and systems.</p>
+            <h3 class="text-lg font-heading font-bold text-white mb-3">Real-world experience</h3>
+            <p class="text-sm text-slate-400 leading-relaxed font-light">The teaching comes from years of building, testing, fixing, and learning through actual products and systems.</p>
           </article>
           
-          <article class="text-center sm:text-left">
-            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="bg-[#0d1117] border border-white/5 p-8 rounded-[2rem] text-center sm:text-left hover:-translate-y-1 transition-transform">
+            <div class="mx-auto sm:mx-0 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-[0_0_15px_rgba(102,126,178,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             </div>
-            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Clear explanations</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">The lessons are designed for people who need understanding, not unnecessary complexity or jargon.</p>
+            <h3 class="text-lg font-heading font-bold text-white mb-3">Clear explanations</h3>
+            <p class="text-sm text-slate-400 leading-relaxed font-light">The lessons are designed for people who need understanding, not unnecessary complexity or jargon.</p>
           </article>
           
-          <article class="text-center sm:text-left">
-            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="bg-[#0d1117] border border-white/5 p-8 rounded-[2rem] text-center sm:text-left hover:-translate-y-1 transition-transform">
+            <div class="mx-auto sm:mx-0 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-[0_0_15px_rgba(102,126,178,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
-            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Beginner-safe structure</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">The learning path is carefully designed to reduce intimidation and create exciting early wins.</p>
+            <h3 class="text-lg font-heading font-bold text-white mb-3">Beginner-safe structure</h3>
+            <p class="text-sm text-slate-400 leading-relaxed font-light">The learning path is carefully designed to reduce intimidation and create exciting early wins.</p>
           </article>
           
-          <article class="text-center sm:text-left">
-            <div class="mx-auto sm:mx-0 mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+          <article class="bg-[#0d1117] border border-white/5 p-8 rounded-[2rem] text-center sm:text-left hover:-translate-y-1 transition-transform">
+            <div class="mx-auto sm:mx-0 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-[0_0_15px_rgba(102,126,178,0.2)]">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
             </div>
-            <h3 class="text-lg font-heading font-bold text-gray-900 mb-2">Practical outcomes</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">The aim is always real output and tangible skills that you can use immediately, not passive inspiration.</p>
+            <h3 class="text-lg font-heading font-bold text-white mb-3">Practical outcomes</h3>
+            <p class="text-sm text-slate-400 leading-relaxed font-light">The aim is always real output and tangible skills that you can use immediately, not passive inspiration.</p>
           </article>
         </div>
       </section>
 
-      <section id="faq" class="border-t border-gray-200 bg-white py-24 reveal">
-        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div class="mb-12 text-center">
+      <section id="faq" class="relative overflow-hidden pt-16 pb-32 border-t border-white/5 reveal">
+        <div class="max-w-3xl mx-auto px-6 relative z-10">
+          <div class="text-center mb-16">
             <p class="tw-section-label">FAQ</p>
-            <h2 class="tw-h2">A few common questions</h2>
+            <h2 class="font-heading font-extrabold text-3xl sm:text-4xl lg:text-5xl text-white mb-4">A few common questions</h2>
           </div>
           
-          <div class="faq-wrap space-y-4">
-            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
-              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
-                <span>Do I need to know how to code before taking Prompt to Profit?</span>
-                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          <div class="faq-wrap flex flex-col gap-4">
+            <article class="faq-item bg-[#0d1117]/80 border border-white/10 hover:border-white/20 shadow-lg backdrop-blur-md rounded-2xl transition-all duration-300">
+              <button class="faq-question flex w-full items-center justify-between text-left px-6 py-5 text-white hover:text-brand-300 transition-colors font-heading font-bold" type="button" aria-expanded="false">
+                <span class="pr-4">Do I need to know how to code before taking Prompt to Profit?</span>
+                <span aria-hidden="true" class="bg-white/5 border border-white/10 text-brand-400 shrink-0 w-8 h-8 rounded-full flex items-center justify-center">+</span>
               </button>
-              <div class="faq-answer">
-                <p>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="mt-0 text-slate-400 text-[15px] leading-relaxed border-t border-white/5 pt-4">
                   No. The course is designed for complete beginners. It starts from the basics and focuses on helping students understand how to communicate properly with AI and use that guidance to build simple websites and web tools.
                 </p>
               </div>
             </article>
 
-            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
-              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
-                <span>Is this course only for young people?</span>
-                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <article class="faq-item bg-[#0d1117]/80 border border-white/10 hover:border-white/20 shadow-lg backdrop-blur-md rounded-2xl transition-all duration-300">
+              <button class="faq-question flex w-full items-center justify-between text-left px-6 py-5 text-white hover:text-brand-300 transition-colors font-heading font-bold" type="button" aria-expanded="false">
+                <span class="pr-4">Is this course only for young people?</span>
+                <span aria-hidden="true" class="bg-white/5 border border-white/10 text-brand-400 shrink-0 w-8 h-8 rounded-full flex items-center justify-center">+</span>
               </button>
-              <div class="faq-answer">
-                <p>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="mt-0 text-slate-400 text-[15px] leading-relaxed border-t border-white/5 pt-4">
                   No. It is designed for both younger learners and older adults who want a practical, non-intimidating entry into using AI and building simple things online.
                 </p>
               </div>
             </article>
 
-            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
-              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
-                <span>Will I still have access after the live sessions are over?</span>
-                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <article class="faq-item bg-[#0d1117]/80 border border-white/10 hover:border-white/20 shadow-lg backdrop-blur-md rounded-2xl transition-all duration-300">
+              <button class="faq-question flex w-full items-center justify-between text-left px-6 py-5 text-white hover:text-brand-300 transition-colors font-heading font-bold" type="button" aria-expanded="false">
+                <span class="pr-4">Will I still have access after the live sessions are over?</span>
+                <span aria-hidden="true" class="bg-white/5 border border-white/10 text-brand-400 shrink-0 w-8 h-8 rounded-full flex items-center justify-center">+</span>
               </button>
-              <div class="faq-answer">
-                <p>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="mt-0 text-slate-400 text-[15px] leading-relaxed border-t border-white/5 pt-4">
                   Yes. The course includes replay access, and both the recorded lessons and the live sessions can be rewatched.
                 </p>
               </div>
             </article>
 
-            <article class="faq-item rounded-2xl border border-gray-200 p-6 shadow-sm transition-all hover:border-brand-300">
-              <button class="faq-question flex w-full items-center justify-between text-left font-heading font-bold text-gray-900" type="button">
-                <span>Will there be more courses on this platform?</span>
-                <svg class="h-5 w-5 text-gray-400 shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <article class="faq-item bg-[#0d1117]/80 border border-white/10 hover:border-white/20 shadow-lg backdrop-blur-md rounded-2xl transition-all duration-300">
+              <button class="faq-question flex w-full items-center justify-between text-left px-6 py-5 text-white hover:text-brand-300 transition-colors font-heading font-bold" type="button" aria-expanded="false">
+                <span class="pr-4">Will there be more courses on this platform?</span>
+                <span aria-hidden="true" class="bg-white/5 border border-white/10 text-brand-400 shrink-0 w-8 h-8 rounded-full flex items-center justify-center">+</span>
               </button>
-              <div class="faq-answer">
-                <p>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="mt-0 text-slate-400 text-[15px] leading-relaxed border-t border-white/5 pt-4">
                   Yes. Prompt to Profit is the first course here, and more practical courses will be added over time.
                 </p>
               </div>
@@ -646,45 +683,117 @@
         </div>
       </section>
 
-      <section class="bg-brand-600 py-24 text-center reveal">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 class="text-3xl font-heading font-extrabold tracking-tight text-white sm:text-5xl mb-6">
-            Learn practical AI the useful way.
-          </h2>
-          <p class="text-lg text-brand-100 mb-10 max-w-2xl mx-auto">
-            If you want a clear, beginner-friendly path into using AI to build useful things, Prompt to Profit is the right place to start.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a class="inline-flex items-center justify-center rounded-xl bg-white px-8 py-4 text-sm font-bold text-brand-900 shadow-lg hover:bg-gray-50 hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-600" href="/courses/prompt-to-profit">
-              Start with Prompt to Profit
-            </a>
-            <a class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-8 py-4 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-brand-500 hover:bg-brand-800 transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-600" href="/courses">
-              Browse Courses
-            </a>
+      <section class="relative overflow-hidden pt-10 pb-32 reveal">
+        <div class="max-w-5xl mx-auto px-6 relative z-10">
+          <div class="text-center bg-gradient-to-br from-[#161b22] to-[#0a0f1e] p-12 md:p-20 rounded-[3rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 relative overflow-hidden group">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-full bg-gradient-to-r from-brand-500/20 via-purple-500/20 to-brand-500/20 blur-[100px] pointer-events-none group-hover:opacity-100 opacity-60 transition-opacity duration-700 -z-10"></div>
+            
+            <div class="relative z-10">
+              <h2 class="font-heading font-extrabold text-4xl md:text-5xl lg:text-6xl text-white mb-8 leading-[1.15]">
+                Learn practical AI the <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-[#a5d6ff] to-purple-400">useful way.</span>
+              </h2>
+              
+              <p class="text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+                If you want a clear, beginner-friendly path into using AI to build useful things, Prompt to Profit is the right place to start.
+              </p>
+              
+              <div class="flex flex-wrap justify-center items-center gap-5">
+                <a class="inline-flex items-center justify-center px-10 py-5 rounded-2xl font-bold text-white text-lg bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 shadow-[0_0_40px_rgba(102,126,178,0.5)] transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/courses/prompt-to-profit">
+                  Start with Prompt to Profit
+                  <svg class="w-6 h-6 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+                <a class="inline-flex items-center justify-center px-10 py-5 rounded-2xl font-bold text-slate-300 text-lg bg-white/5 border border-white/10 hover:bg-white/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/courses">
+                  Browse Courses
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
       
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
+
+      <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+        <div class="footer-logo mb-6">
+          <a href="/" class="block transition-transform hover:scale-105 duration-300">
+            <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+          </a>
         </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
+        
+        <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+          <span class="w-8 h-px bg-brand-500/30"></span>
+          Practical AI. Real-world building.
+          <span class="w-8 h-px bg-purple-500/30"></span>
+        </div>
+        
+        <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+          <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+          <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+          <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+          <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+          <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+          <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
         </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+        
+        <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+          <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+            &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+          </p>
+        </div>
       </div>
     </footer>
 
     <script src="/assets/site.js"></script>
+    <script>
+      // FAQ interaction matching the dark mode style
+      (function initFaqAccordion() {
+        var faq = document.getElementById("faq");
+        if (!faq) return;
+        var items = faq.querySelectorAll(".faq-item");
+
+        function closeAll() {
+          items.forEach(function (item) {
+            var q = item.querySelector(".faq-question");
+            var a = item.querySelector(".faq-answer");
+            var icon = q.querySelector("span:last-child");
+            if (!q || !a) return;
+            q.setAttribute("aria-expanded", "false");
+            a.hidden = true;
+            if (icon) {
+              icon.textContent = "+";
+              icon.classList.remove("!bg-brand-500", "!text-white");
+            }
+          });
+        }
+
+        function toggle(item) {
+          var q = item.querySelector(".faq-question");
+          var a = item.querySelector(".faq-answer");
+          var icon = q.querySelector("span:last-child");
+          if (!q || !a) return;
+          var isOpen = q.getAttribute("aria-expanded") === "true";
+          closeAll();
+          if (!isOpen) {
+            q.setAttribute("aria-expanded", "true");
+            a.hidden = false;
+            if (icon) {
+              icon.textContent = "−";
+              icon.classList.add("!bg-brand-500", "!text-white");
+            }
+          }
+        }
+
+        items.forEach(function (item) {
+          var q = item.querySelector(".faq-question");
+          if (!q) return;
+          q.addEventListener("click", function () { toggle(item); });
+        });
+      })();
+    </script>
   </body>
 </html>

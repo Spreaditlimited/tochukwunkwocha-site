@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260608-family" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260611-sticky-card-payment" />
     
     <style>
       /* Layout Container - Fixes the edge-touching issue */
@@ -266,7 +266,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -439,23 +439,43 @@
       </div>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
-        </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
+
+  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+    
+    <div class="footer-logo mb-6">
+      <a href="/" class="block transition-transform hover:scale-105 duration-300">
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+      </a>
+    </div>
+    
+    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+      <span class="w-8 h-px bg-brand-500/30"></span>
+      Practical AI. Real-world building.
+      <span class="w-8 h-px bg-purple-500/30"></span>
+    </div>
+    
+    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
+    </nav>
+    
+    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+      </p>
+    </div>
+    
+  </div>
+</footer>
+
 
     <script src="/assets/site.js" defer></script>
     <script src="/assets/recaptcha.js" defer></script>

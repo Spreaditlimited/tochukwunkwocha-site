@@ -32,7 +32,7 @@
         "@context": "https://schema.org",
         "@type": "Course",
         "name": "Prompt to Profit",
-        "description": "A beginner-friendly 5-day course that teaches complete beginners how to use AI to build real websites and position for website design jobs.",
+        "description": "A beginner-friendly 5-day course that teaches complete beginners how to use AI to build real websites and digital tools.",
         "provider": {
           "@type": "Organization",
           "name": "Tochukwu Tech and AI Academy",
@@ -126,7 +126,7 @@
         width: 60vw;
         height: 60vw;
         border-radius: 50%;
-        background: none;
+        background: radial-gradient(circle, rgba(223,231,247,0.5) 0%, rgba(248,246,241,0) 70%);
         z-index: -1;
       }
 
@@ -145,13 +145,18 @@
 
       .section-label {
         font-family: 'Fira Code', monospace;
-        font-weight: 500;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: #667eb2;
         font-size: 0.875rem;
         margin-bottom: 16px;
-        display: block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(102, 126, 178, 0.1);
+        padding: 6px 14px;
+        border-radius: 99px;
       }
 
       .section-headline {
@@ -175,23 +180,25 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 14px 22px;
+        padding: 16px 28px;
         border-radius: 14px;
-        font-size: 0.98rem;
+        font-size: 1rem;
         font-weight: 700;
         border: 1px solid transparent;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        transition: all 0.3s ease;
         text-decoration: none;
       }
       
       .btn-primary {
         background: #14213d;
         color: #f8f6f1 !important;
+        box-shadow: 0 10px 20px -10px rgba(20, 33, 61, 0.5);
       }
       
       .btn-primary:hover {
-        background: #22345f;
+        background: #0a101e;
         transform: translateY(-2px);
+        box-shadow: 0 15px 25px -10px rgba(20, 33, 61, 0.6);
       }
 
       .btn-outline {
@@ -201,7 +208,8 @@
       }
 
       .btn-outline:hover {
-        background: #eef2fb;
+        background: #14213d;
+        color: #f8f6f1 !important;
         transform: translateY(-2px);
       }
 
@@ -212,26 +220,27 @@
       }
       .feature-list li {
         position: relative;
-        padding-left: 32px;
+        padding-left: 36px;
         margin-bottom: 16px;
         font-size: 1.05rem;
         color: #334155;
+        line-height: 1.6;
       }
       .feature-list li::before {
         content: '✓';
         position: absolute;
         left: 0;
         top: 2px;
-        color: #22c55e;
+        color: #16a34a;
         font-weight: bold;
         background: #dcfce7;
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        font-size: 0.75rem;
+        font-size: 0.85rem;
       }
 
       /* Premium FAQ */
@@ -272,7 +281,8 @@
       }
 
       #faq .faq-question span:last-child {
-        background: #f1f5f9;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         width: 32px;
         height: 32px;
         display: flex;
@@ -286,6 +296,7 @@
 
       #faq .faq-question[aria-expanded="true"] span:last-child {
         background: #1a2849;
+        border-color: #1a2849;
         color: white;
         transform: rotate(180deg);
       }
@@ -304,6 +315,7 @@
         background: #fff;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
         max-width: 100%;
+        position: relative;
       }
 
       .browser-mockup iframe {
@@ -359,6 +371,20 @@
         overflow: hidden;
       }
 
+      /* Bento Grid Custom Styles */
+      .bento-card {
+        background: #ffffff;
+        border-radius: 1.5rem;
+        padding: 2rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .bento-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
       @media (max-width: 640px) {
         body.public-page--prompt-to-profit .site-header + main {
           padding-top: 0 !important;
@@ -395,14 +421,6 @@
           margin-bottom: 2rem;
         }
 
-        section[aria-label="Real project proof"] .grid {
-          gap: 2rem;
-        }
-
-        section[aria-label="Real project proof"] .browser-mockup iframe {
-          height: 420px !important;
-        }
-
         section[aria-label="Testimonials"] .hide-scrollbar {
           display: grid !important;
           grid-template-columns: 1fr;
@@ -417,15 +435,8 @@
           max-width: 100%;
         }
 
-        /* Keep student website embeds fully inside viewport on mobile */
-        .student-websites-section .browser-mockup,
         .student-websites-section .browser-mockup iframe {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-
-        .student-websites-section .browser-mockup iframe {
-          height: 420px !important;
+          height: 350px !important;
         }
 
         .browser-header {
@@ -439,10 +450,8 @@
           font-size: 0.72rem;
           padding: 0.4rem 0.65rem;
         }
-
       }
 
-      /* Remove unintended side borders on this page layout */
       body.public-page--prompt-to-profit main,
       body.public-page--prompt-to-profit main > section {
         border-left: 0 !important;
@@ -456,7 +465,15 @@
       }
 
       body.public-page--prompt-to-profit .site-header + main {
-        background: #f8f6f1;
+        background: #060b14;
+      }
+
+      body.public-page--prompt-to-profit {
+        background: #060b14;
+      }
+
+      body.public-page--prompt-to-profit .site-footer {
+        margin-top: 0 !important;
       }
     </style>
   </head>
@@ -464,7 +481,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -485,603 +502,1331 @@
     </header>
 
     <main>
-      <section class="course-hero reveal px-6 lg:px-8 max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-        <div class="course-hero-copy relative z-10">
-          <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="hero-brand-logo" />
-          <h1 class="font-heading font-extrabold text-5xl lg:text-6xl tracking-tight text-slate-900 leading-tight mb-6">
-            Build Simple Digital Tools With AI in 5 Days
-          </h1>
-          <p class="text-lg lg:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl">
-            In this <strong class="text-brand-600 font-semibold">beginner</strong> 5-day course, you will learn how to use AI to build real websites, create sample projects, and position yourself better in your industry and/or to start getting website design jobs even with <strong class="text-brand-600 font-semibold">zero coding skill</strong>.
-          </p>
-          <div class="flex flex-wrap gap-4">
-            <a class="btn btn-primary" href="/enrol-prompt-to-profit-holiday/">Join the Course</a>
-            <a class="btn btn-outline" href="#curriculum">See How It Works</a>
+      <section class="relative overflow-hidden bg-[#060b14] pt-32 pb-24 lg:pt-40 lg:pb-32 border-b border-white/5">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[100%] pointer-events-none opacity-40 z-0">
+          <div class="absolute top-[-20%] left-[10%] w-[40%] h-[60%] rounded-full bg-brand-500 blur-[120px] mix-blend-screen"></div>
+          <div class="absolute bottom-[-10%] right-[10%] w-[30%] h-[50%] rounded-full bg-purple-600 blur-[120px] mix-blend-screen opacity-50"></div>
+        </div>
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA0KSIvPjwvc3ZnPg==')] z-0"></div>
+        <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#060b14] to-transparent z-0"></div>
+      
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-12 gap-16 lg:gap-8 items-center relative z-10">
+          
+          <div class="lg:col-span-7 relative z-10">
+            <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-brand-300 font-semibold text-sm mb-8 shadow-2xl transition-transform hover:scale-105 cursor-default">
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+              </span>
+              <span class="tracking-wide uppercase text-xs">Registration Open</span>
+            </div>
+      
+            <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="w-48 lg:w-56 h-auto mb-8 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+            
+            <h1 class="font-heading font-extrabold text-5xl lg:text-6xl xl:text-7xl tracking-tight text-white leading-[1.1] mb-6">
+              Build Websites with <br/>
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-[#a5d6ff] to-purple-400">AI in 5 Days.</span>
+            </h1>
+            
+            <p class="text-lg lg:text-xl text-slate-400 mb-10 leading-relaxed max-w-xl font-light">
+              A practical, beginner-friendly course that teaches you how to use AI to build real websites and digital tools. <strong class="text-white font-medium">No coding experience required.</strong>
+            </p>
+            
+            <div class="flex flex-wrap items-center gap-5 mb-12">
+              <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-[0_0_30px_-5px_rgba(102,126,178,0.5)] transition-all duration-300 hover:-translate-y-1" href="/enrol-prompt-to-profit-holiday/">
+                Enroll Now
+                <svg class="w-5 h-5 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+              </a>
+              <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm" href="#next-section">
+                Learn More
+              </a>
+            </div>
+            
+            <div class="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 rounded-2xl inline-flex items-center gap-5 shadow-2xl">
+              <div class="flex -space-x-4">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/anuri.JPG" alt="Student">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/ekpere.JPG" alt="Student">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/michelle.png" alt="Student">
+                <div class="w-12 h-12 rounded-full border-2 border-slate-900 bg-brand-800 flex items-center justify-center text-xs font-bold text-brand-200">+350</div>
+              </div>
+              <div>
+                <div class="flex items-center gap-1 text-yellow-500 mb-1.5">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+                <p class="text-sm font-semibold text-white">350+ confident builders</p>
+                <p class="text-xs text-slate-400">across 3 successful cohorts.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lg:col-span-5 relative hidden sm:block w-full max-w-lg mx-auto lg:mx-0 lg:ml-auto mt-12 lg:mt-0 perspective-1000">
+            
+            <div class="absolute -top-8 -right-4 lg:-right-10 bg-gradient-to-br from-[#1a2849] to-[#0f182d] border border-brand-500/30 p-4 rounded-2xl shadow-2xl z-20 transform rotate-6 animate-pulse" style="animation-duration: 4s;">
+              <p class="text-xs text-brand-300 font-mono font-bold uppercase tracking-wider mb-1">Requirement</p>
+              <p class="text-white font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Zero Coding
+              </p>
+            </div>
+      
+            <div class="absolute -bottom-6 -left-4 lg:-left-12 bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] z-20 transform -rotate-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div>
+                   <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Outcome</p>
+                   <p class="text-sm text-white font-medium">Website Live</p>
+                </div>
+              </div>
+            </div>
+      
+            <div class="relative rounded-2xl bg-[#0d1117] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/10 overflow-hidden text-left flex flex-col transform transition-transform hover:-translate-y-2 duration-500 z-10">
+              <div class="h-12 bg-[#161b22] flex items-center px-4 gap-2 border-b border-white/5">
+                <div class="flex gap-2">
+                  <div class="h-3 w-3 rounded-full bg-[#ff5f56] shadow-[0_0_5px_#ff5f56]"></div>
+                  <div class="h-3 w-3 rounded-full bg-[#ffbd2e] shadow-[0_0_5px_#ffbd2e]"></div>
+                  <div class="h-3 w-3 rounded-full bg-[#27c93f] shadow-[0_0_5px_#27c93f]"></div>
+                </div>
+                <div class="flex-1 text-center">
+                  <span class="text-xs text-slate-500 font-mono font-medium">build-with-ai.js</span>
+                </div>
+              </div>
+              <div class="p-6 md:p-8 font-mono text-[13px] md:text-sm text-slate-300 leading-loose">
+                <p><span class="text-[#ff7b72]">const</span> <span class="text-[#79c0ff]">course</span> = {</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">name</span>: <span class="text-[#a5d6ff]">'Prompt to Profit'</span>,</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">duration</span>: <span class="text-[#79c0ff]">5</span> <span class="text-[#a5d6ff]">'Days'</span>,</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">format</span>: <span class="text-[#a5d6ff]">'Hybrid (Live + Recorded)'</span>,</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">tools</span>: [<span class="text-[#a5d6ff]">'AI'</span>, <span class="text-[#a5d6ff]">'Your Brain'</span>],</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">prerequisite</span>: <span class="text-[#79c0ff]">null</span> <span class="text-[#8b949e]">// Code-free zone</span>,</p>
+                <p class="ml-4"><span class="text-[#a5d6ff]">outcome</span>: <span class="text-[#d2a8ff]">()</span> <span class="text-[#ff7b72]">=></span> {</p>
+                <p class="ml-8"><span class="text-[#ff7b72]">return</span> [</p>
+                <p class="ml-12"><span class="text-[#a5d6ff]">'Real websites built'</span>,</p>
+                <p class="ml-12"><span class="text-[#a5d6ff]">'Digital tools published'</span>,</p>
+                <p class="ml-12"><span class="text-[#a5d6ff]">'Portfolio ready'</span></p>
+                <p class="ml-8">];</p>
+                <p class="ml-4">}</p>
+                <p>};</p>
+                <p class="mt-4"><span class="text-[#d2a8ff]">course</span>.<span class="text-[#79c0ff]">start</span>(); <span class="animate-pulse inline-block w-2 h-4 bg-brand-400 align-middle ml-1"></span></p>
+              </div>
+            </div>
+          </div>
+      
+        </div>
+      </section>
+
+      <section id="next-section" class="relative overflow-hidden bg-[#060b14] py-24 border-b border-white/5">
+        <div class="absolute top-0 left-0 w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none -translate-x-1/2 -translate-y-1/2 z-0"></div>
+        <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none translate-x-1/3 translate-y-1/3 z-0"></div>
+      
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          
+          <div class="text-center max-w-3xl mx-auto mb-20">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-400/20 text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest shadow-[0_0_15px_rgba(102,126,178,0.15)] backdrop-blur-md">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              The Big Promise
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-6 leading-[1.15]">
+              I make confusing technology <br class="hidden sm:block"/>
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-[#a5d6ff] to-purple-400">incredibly simple.</span>
+            </h2>
+            <p class="text-lg lg:text-xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
+              By the end of this course, you will not just "know about AI." You will know how to use AI to bring ideas to life. If you can type a message to a friend, you can learn this.
+            </p>
+          </div>
+      
+          <div class="grid lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-1 relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117]/80 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col z-10 overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-brand-500/10 rounded-bl-full -z-10 blur-2xl"></div>
+                
+                <h3 class="font-heading font-bold text-2xl text-white mb-4">Who This Course Is For</h3>
+                <p class="text-slate-400 mb-8 leading-relaxed text-[15px]">
+                  Whether you are a parent enrolling your child, a job seeker trying to stand out, a student learning future-ready skills, or a complete beginner, this course will show you the exact steps.
+                </p>
+                
+                <ul class="space-y-4 font-medium text-slate-300 mt-auto">
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brand-400 shadow-[0_0_10px_#667eb2]"></div> Complete Beginners
+                  </li>
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_10px_#c084fc]"></div> Kids & Teens (8+)
+                  </li>
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_10px_#4ade80]"></div> Parents
+                  </li>
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_10px_#60a5fa]"></div> Job Seekers
+                  </li>
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_#facc15]"></div> Career Switchers
+                  </li>
+                  <li class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></div> Small Business Owners
+                  </li>
+                </ul>
+              </div>
+            </div>
+      
+            <div class="lg:col-span-2 grid sm:grid-cols-2 gap-6">
+              
+              <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                <div class="relative h-full bg-[#0d1117]/80 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 z-10 flex flex-col">
+                  <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                  </div>
+                  <h4 class="font-heading font-bold text-2xl mb-3 text-white">For Beginners</h4>
+                  <p class="text-slate-400 text-[15px] leading-relaxed mt-auto">
+                    You do not need to be techy. We explain basics clearly and use AI to do the heavy lifting. You won't memorize code; you'll learn to guide AI and publish results.
+                  </p>
+                </div>
+              </div>
+              
+              <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-br from-green-400 to-emerald-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                <div class="relative h-full bg-[#0d1117]/80 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 z-10 flex flex-col">
+                  <div class="w-14 h-14 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <h4 class="font-heading font-bold text-2xl mb-3 text-white">For Job Seekers</h4>
+                  <p class="text-slate-400 text-[15px] leading-relaxed mt-auto">
+                    Stop only telling employers you can solve problems. Show them. Build simple tools that prove you can think, build, and solve practical business problems.
+                  </p>
+                </div>
+              </div>
+      
+              <div class="sm:col-span-2 relative">
+                <div class="relative h-full bg-gradient-to-br from-[#13192b] to-[#0a0f1e] p-8 rounded-[2rem] border border-brand-500/20 z-10 overflow-hidden">
+                  <div class="grid md:grid-cols-2 gap-8 items-center h-full">
+                    
+                    <div>
+                      <div class="w-14 h-14 rounded-2xl bg-brand-500/20 border border-brand-400/30 text-brand-300 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(102,126,178,0.3)]">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      </div>
+                      <h4 class="font-heading font-bold text-2xl mb-4 text-white">For Parents & Kids</h4>
+                      <p class="text-slate-300 text-[15px] leading-relaxed mb-0">
+                        Turn screen time into a productive skill. Instead of only consuming content, they learn how to build. They will see their ideas become real web pages in a gentle, practical introduction to AI.
+                      </p>
+                    </div>
+      
+                    <div class="bg-[#060b14] rounded-2xl border border-white/10 p-5 shadow-2xl relative overflow-hidden">
+                      <div class="flex items-center gap-2 mb-5 pb-3 border-b border-white/5">
+                        <div class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_5px_rgba(244,63,94,0.6)]"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.6)]"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></div>
+                        <span class="ml-2 text-xs text-slate-500 font-mono">kids_projects.exe</span>
+                      </div>
+                      
+                      <p class="text-xs text-brand-400 font-mono uppercase tracking-widest mb-4 font-semibold">// What Kids Build</p>
+                      <ul class="space-y-3 text-sm text-slate-300 font-mono">
+                        <li class="flex items-center gap-2">
+                          <span class="text-purple-400">></span> Personal profiles
+                        </li>
+                        <li class="flex items-center gap-2">
+                          <span class="text-purple-400">></span> School project websites
+                        </li>
+                        <li class="flex items-center gap-2">
+                          <span class="text-purple-400">></span> Simple online calculators
+                        </li>
+                        <li class="flex items-center gap-2">
+                          <span class="text-purple-400">></span> Creative portfolio pages
+                        </li>
+                      </ul>
+                      <div class="mt-4 flex items-center gap-2 text-sm text-slate-500 font-mono">
+                        <span class="text-brand-400">~</span> $ <span class="w-2 h-4 bg-white/50 animate-pulse block"></span>
+                      </div>
+                    </div>
+      
+                  </div>
+                </div>
+              </div>
+      
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="relative overflow-hidden bg-[#060b14] py-24 border-b border-white/5">
+        <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-brand-500/10 rounded-full blur-[100px] pointer-events-none translate-x-1/2 z-0"></div>
+        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none -translate-x-1/2 translate-y-1/3 z-0"></div>
+      
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0"></div>
+      
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-12 gap-16 lg:gap-12 relative z-10">
+          
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-400/20 text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest self-start backdrop-blur-md">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              Your New Skills
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-8">
+              What You Will Be Able To Do
+            </h2>
+            
+            <ul class="space-y-4 font-medium text-slate-300">
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Understand how to talk to AI so it gives you better results.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Build simple web pages from scratch using AI.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Create landing pages for ideas, products, services, or personal brands.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Build simple digital tools such as calculators, quote pages, or forms.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Improve the look and layout of your pages.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Ask AI to help you fix mistakes when something breaks.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Publish your website online so you can share it with others.</span>
+              </li>
+              <li class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all hover:bg-white/10 hover:border-white/10 group">
+                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span class="leading-relaxed">Create sample projects you can show parents, clients, or employers.</span>
+              </li>
+            </ul>
+      
+            <div class="mt-10 p-6 lg:p-8 bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-brand-500/30 rounded-[2rem] relative overflow-hidden shadow-2xl">
+              <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-400 to-purple-500"></div>
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h4 class="font-bold text-white text-lg">Why This Matters</h4>
+              </div>
+              <p class="text-slate-400 text-[15px] leading-relaxed">
+                The world is changing fast. You do not need to become a professional software engineer before you can create useful digital things. If you can think clearly, explain what you want, and guide AI properly, you can build websites and simple tools that would have felt impossible a few years ago.
+              </p>
+            </div>
+          </div>
+      
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-300 font-semibold text-sm mb-6 uppercase tracking-widest self-start backdrop-blur-md">
+              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+              Real Outcomes
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-4">
+              What Students Build
+            </h2>
+            <p class="text-slate-400 mb-10 text-lg font-light">The goal is not just to watch videos. <strong class="text-white font-medium">The goal is to build something real.</strong></p>
+            
+            <div class="grid grid-cols-2 gap-4 items-start">
+              
+              <div class="space-y-4">
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">A personal website</span>
+                  </div>
+                </div>
+                
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-purple-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Product/service page</span>
+                  </div>
+                </div>
+      
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-cyan-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Quote generator</span>
+                  </div>
+                </div>
+      
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-green-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">A simple game</span>
+                  </div>
+                </div>
+              </div>
+      
+              <div class="space-y-4 mt-8 lg:mt-12">
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-blue-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Business landing page</span>
+                  </div>
+                </div>
+                
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-rose-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Online calculator</span>
+                  </div>
+                </div>
+      
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-yellow-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Portfolio page</span>
+                  </div>
+                </div>
+      
+                <div class="relative group">
+                  <div class="absolute -inset-0.5 bg-gradient-to-br from-indigo-400 to-transparent rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+                  <div class="bg-[#0d1117] p-5 rounded-[1.5rem] border border-white/10 shadow-lg relative flex flex-col items-start gap-4 transition-transform group-hover:-translate-y-1">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <span class="font-semibold text-white">Planner or tracker</span>
+                  </div>
+                </div>
+              </div>
+      
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="curriculum" class="relative overflow-hidden bg-[#060b14] py-24 border-b border-white/5">
+        <div class="absolute top-0 left-1/2 w-[800px] h-[400px] bg-brand-600/10 rounded-[100%] blur-[120px] pointer-events-none -translate-x-1/2 -translate-y-1/2 z-0"></div>
+      
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          
+          <div class="text-center max-w-3xl mx-auto mb-20">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-400/20 text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest shadow-[0_0_15px_rgba(102,126,178,0.15)] backdrop-blur-md">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+              Curriculum
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-6 leading-[1.15]">
+              Your 5-Day Learning Plan
+            </h2>
+            <p class="text-lg lg:text-xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
+              We move fast, but we keep it incredibly simple. You can always pause the videos, rewind, and ask questions during our live calls.
+            </p>
+          </div>
+      
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <article class="relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-rose-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117]/90 backdrop-blur-xl p-8 lg:p-10 rounded-[2rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-1">
+                <div class="absolute -right-4 -top-8 text-[140px] font-heading font-extrabold text-white/[0.03] leading-none pointer-events-none select-none">1</div>
+                
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full text-xs font-mono font-semibold tracking-wide uppercase self-start mb-6">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]"></span>
+                  Live Video Call
+                </div>
+                
+                <h3 class="font-heading font-bold text-2xl text-white mb-4 relative z-10">Getting over the fear of AI</h3>
+                <p class="text-slate-400 leading-relaxed text-[15px] relative z-10 mt-auto">
+                  We start together in a live class. You will learn what AI can do, how to give it clear instructions, and how to think like a director instead of a confused beginner.
+                </p>
+              </div>
+            </article>
+      
+            <article class="relative group">
+               <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117]/90 backdrop-blur-xl p-8 lg:p-10 rounded-[2rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-1">
+                <div class="absolute -right-4 -top-8 text-[140px] font-heading font-extrabold text-white/[0.03] leading-none pointer-events-none select-none">2</div>
+                
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 text-brand-300 border border-brand-500/20 rounded-full text-xs font-mono font-semibold tracking-wide uppercase self-start mb-6">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  Recorded Video
+                </div>
+                
+                <h3 class="font-heading font-bold text-2xl text-white mb-4 relative z-10">The absolute basics of websites</h3>
+                <p class="text-slate-400 leading-relaxed text-[15px] relative z-10 mt-auto">
+                  You will understand what a webpage is, how websites are structured, and how AI can help you create your first simple page.
+                </p>
+              </div>
+            </article>
+      
+            <article class="relative group">
+               <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117]/90 backdrop-blur-xl p-8 lg:p-10 rounded-[2rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-1">
+                <div class="absolute -right-4 -top-8 text-[140px] font-heading font-extrabold text-white/[0.03] leading-none pointer-events-none select-none">3</div>
+                
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 text-brand-300 border border-brand-500/20 rounded-full text-xs font-mono font-semibold tracking-wide uppercase self-start mb-6">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  Recorded Video
+                </div>
+                
+                <h3 class="font-heading font-bold text-2xl text-white mb-4 relative z-10">Building your first real project</h3>
+                <p class="text-slate-400 leading-relaxed text-[15px] relative z-10 mt-auto">
+                  You will turn an idea into a real project. This could be a personal page, business page, student project, portfolio piece, or simple tool.
+                </p>
+              </div>
+            </article>
+      
+            <article class="relative group">
+               <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117]/90 backdrop-blur-xl p-8 lg:p-10 rounded-[2rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-1">
+                <div class="absolute -right-4 -top-8 text-[140px] font-heading font-extrabold text-white/[0.03] leading-none pointer-events-none select-none">4</div>
+                
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 text-brand-300 border border-brand-500/20 rounded-full text-xs font-mono font-semibold tracking-wide uppercase self-start mb-6">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  Recorded Video
+                </div>
+                
+                <h3 class="font-heading font-bold text-2xl text-white mb-4 relative z-10">Making it look good & going live</h3>
+                <p class="text-slate-400 leading-relaxed text-[15px] relative z-10 mt-auto">
+                  You will improve the design, fix spacing, adjust colors, make your page look better on phones and laptops, and publish it online.
+                </p>
+              </div>
+            </article>
+      
+            <article class="relative group md:col-span-2 lg:col-span-2">
+               <div class="absolute -inset-0.5 bg-gradient-to-br from-green-400 to-emerald-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-gradient-to-br from-[#0d1117] to-[#111827] backdrop-blur-xl p-8 lg:p-10 rounded-[2rem] border border-green-500/20 flex flex-col md:flex-row gap-8 items-center z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-1">
+                <div class="absolute -right-4 -top-8 text-[180px] font-heading font-extrabold text-green-500/[0.03] leading-none pointer-events-none select-none">5</div>
+                
+                <div class="flex-1 w-full relative z-10">
+                  <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full text-xs font-mono font-semibold tracking-wide uppercase self-start mb-6">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></span>
+                    Live Video Call
+                  </div>
+                  <h3 class="font-heading font-bold text-2xl lg:text-3xl text-white mb-4">Fixing mistakes & next steps</h3>
+                  <p class="text-slate-400 leading-relaxed text-[15px] lg:text-base">
+                    We meet live again to fix issues, answer questions, review projects, and show you how to use what you built for opportunities or personal growth.
+                  </p>
+                </div>
+      
+                <div class="hidden md:block w-full md:w-64 bg-[#060b14] rounded-xl border border-white/10 p-4 shadow-inner relative z-10 self-stretch flex flex-col justify-center">
+                  <div class="flex gap-1.5 mb-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                  </div>
+                  <p class="text-green-400 font-mono text-xs mb-2">> run deployment_check</p>
+                  <p class="text-slate-400 font-mono text-xs mb-2">All bugs fixed.</p>
+                  <p class="text-white font-mono text-xs">> Website is LIVE! 🚀</p>
+                </div>
+              </div>
+            </article>
+      
+          </div>
+        </div>
+      </section>
+
+      <section class="relative z-20 bg-[#060b14] px-6 py-24 border-b border-white/5">
+        <div class="max-w-6xl mx-auto bg-gradient-to-br from-[#161b22] to-[#0d1117] p-10 md:p-14 rounded-[2.5rem] border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col md:flex-row items-center gap-12 group">
+          <div class="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full blur-[100px] opacity-50 group-hover:opacity-80 transition-opacity duration-700 pointer-events-none -z-10"></div>
+          <div class="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-[80px] opacity-30 pointer-events-none -z-10"></div>
+          
+          <div class="flex-1 relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 text-green-400 font-mono font-bold text-xs uppercase tracking-wider rounded-full mb-6">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              Currently Enrolling
+            </div>
+            <h2 class="font-heading font-extrabold text-3xl md:text-4xl text-white mb-4 leading-tight">
+              New cohorts open <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-500">every month.</span>
+            </h2>
+            <p class="text-slate-400 text-lg leading-relaxed mb-8">
+              Prompt to Profit Basic runs every month, so you do not have to wait too long. Seats are opened for one cohort at a time so every group gets proper support during the live sessions.
+              <span class="mt-3 block rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-amber-200">
+                However, we have a special Summer program with 4 cohorts in August. So, we are skipping June and July cohorts.
+              </span>
+            </p>
+            
+            <ul class="space-y-4 text-slate-300 font-medium mb-10">
+              <li class="flex items-center gap-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-400"></div>
+                <strong class="text-white">Cohort starts:</strong> <span class="font-mono text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded text-sm">August. There are limited seats. So, the earlier you enroll the better.</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-400"></div>
+                <strong class="text-white">Format:</strong> Recorded lessons + live support
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-400"></div>
+                <strong class="text-white">Skill level:</strong> Complete beginner
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-400"></div>
+                <strong class="text-white">Access:</strong> 1 full year
+              </li>
+            </ul>
+            
+            <div class="flex flex-wrap gap-4">
+              <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-[0_0_20px_rgba(102,126,178,0.3)] transition-all duration-300 hover:-translate-y-1" href="/enrol-prompt-to-profit-holiday/">
+                Join the August Cohort
+              </a>
+              <a class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:-translate-y-1" href="/dashboard/">
+                Pay in Installments
+              </a>
+            </div>
+          </div>
+          
+          <div class="w-full md:w-[380px] bg-[#060b14]/60 backdrop-blur-xl rounded-[2rem] p-8 border border-white/5 shadow-inner relative z-10">
+            <h4 class="font-heading font-bold text-xl text-white mb-6 flex items-center gap-2">
+              <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              How It's Delivered
+            </h4>
+            <ul class="space-y-4 text-[15px] text-slate-400">
+              <li class="flex gap-3 items-center group">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+                Pre-recorded lessons
+              </li>
+              <li class="flex gap-3 items-center group">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                2 live Zoom classes
+              </li>
+              <li class="flex gap-3 items-center group">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
+                Dashboard access
+              </li>
+              <li class="flex gap-3 items-center group">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                Class recordings
+              </li>
+              <li class="flex gap-3 items-center group">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                </div>
+                Certificate of completion
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      
+      <section class="student-websites-section relative bg-[#060b14] overflow-hidden py-24 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          <div class="text-center max-w-3xl mx-auto mb-20">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest shadow-2xl">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+              Proof of Concept
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl tracking-tight text-white mb-6">
+              Real students have already built real websites.
+            </h2>
+            <p class="text-lg text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
+              Previous students have used this exact method to build business websites, personal projects, and portfolio pieces. This course works because it is highly practical.
+            </p>
+          </div>
+      
+          <div class="grid md:grid-cols-2 gap-10 lg:gap-14">
+            
+            <div class="relative group">
+              <div class="absolute -inset-1 bg-gradient-to-b from-white/10 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md"></div>
+              <div class="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:-translate-y-2">
+                <div class="h-12 bg-[#161b22] flex items-center px-4 gap-4 border-b border-white/5">
+                  <div class="flex gap-2 shrink-0">
+                    <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+                  </div>
+                  <div class="flex-1 flex justify-center">
+                    <div class="bg-[#0d1117] text-slate-400 text-xs font-mono py-1.5 px-4 rounded-md border border-white/5 w-full max-w-[240px] text-center truncate flex items-center justify-center gap-2">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                      www.loudnclearaudioservices.com.ng
+                    </div>
+                  </div>
+                  <div class="w-10 shrink-0"></div> </div>
+                <iframe src="https://www.loudnclearaudioservices.com.ng" title="Student website 1" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+              </div>
+            </div>
+      
+            <div class="relative group mt-0 md:mt-12">
+              <div class="absolute -inset-1 bg-gradient-to-b from-brand-500/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md"></div>
+              <div class="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:-translate-y-2">
+                <div class="h-12 bg-[#161b22] flex items-center px-4 gap-4 border-b border-white/5">
+                  <div class="flex gap-2 shrink-0">
+                    <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+                  </div>
+                  <div class="flex-1 flex justify-center">
+                    <div class="bg-[#0d1117] text-slate-400 text-xs font-mono py-1.5 px-4 rounded-md border border-white/5 w-full max-w-[240px] text-center truncate flex items-center justify-center gap-2">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                      olytribe.com.ng
+                    </div>
+                  </div>
+                  <div class="w-10 shrink-0"></div>
+                </div>
+                <iframe src="https://olytribe.com.ng" title="Student website 2" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+              </div>
+            </div>
+      
+            <div class="relative group">
+              <div class="absolute -inset-1 bg-gradient-to-b from-purple-500/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md"></div>
+              <div class="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:-translate-y-2">
+                <div class="h-12 bg-[#161b22] flex items-center px-4 gap-4 border-b border-white/5">
+                  <div class="flex gap-2 shrink-0">
+                    <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+                  </div>
+                  <div class="flex-1 flex justify-center">
+                    <div class="bg-[#0d1117] text-slate-400 text-xs font-mono py-1.5 px-4 rounded-md border border-white/5 w-full max-w-[240px] text-center truncate flex items-center justify-center gap-2">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                      themancavenaija.com
+                    </div>
+                  </div>
+                  <div class="w-10 shrink-0"></div>
+                </div>
+                <iframe src="https://themancavenaija.com" title="Student website 3" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+              </div>
+            </div>
+      
+            <div class="relative group mt-0 md:mt-12">
+              <div class="absolute -inset-1 bg-gradient-to-b from-green-500/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md"></div>
+              <div class="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:-translate-y-2">
+                <div class="h-12 bg-[#161b22] flex items-center px-4 gap-4 border-b border-white/5">
+                  <div class="flex gap-2 shrink-0">
+                    <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+                  </div>
+                  <div class="flex-1 flex justify-center">
+                    <div class="bg-[#0d1117] text-slate-400 text-xs font-mono py-1.5 px-4 rounded-md border border-white/5 w-full max-w-[240px] text-center truncate flex items-center justify-center gap-2">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                      naijakitchenflavor.netlify.app
+                    </div>
+                  </div>
+                  <div class="w-10 shrink-0"></div>
+                </div>
+                <iframe src="https://naijakitchenflavor.netlify.app" title="Student website 4" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+              </div>
+            </div>
+      
+          </div>
+        </div>
+      </section>
+
+      <section class="relative overflow-hidden bg-[#060b14] py-32 border-y border-white/5" aria-label="Testimonials">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-brand-900/20 blur-[120px] rounded-full pointer-events-none z-0"></div>
+      
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          <div class="text-center mb-20">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest shadow-2xl">
+              <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+              Student Success
+            </div>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl tracking-tight text-white mb-6">
+              What our builders are saying
+            </h2>
           </div>
         </div>
         
-        <aside class="relative z-10 w-full max-w-lg mx-auto lg:mx-0 lg:ml-auto">
-          <div class="absolute -inset-0.5 bg-gradient-to-tr from-brand-300 to-brand-500 rounded-2xl blur opacity-20 transform -rotate-1"></div>
-          <div class="relative rounded-2xl bg-[#0d1117] shadow-2xl ring-1 ring-white/10 overflow-hidden text-left flex flex-col">
-            <div class="h-10 bg-[#161b22] flex items-center px-4 gap-2 border-b border-white/5">
-              <div class="h-3 w-3 rounded-full bg-[#ff5f56]"></div>
-              <div class="h-3 w-3 rounded-full bg-[#ffbd2e]"></div>
-              <div class="h-3 w-3 rounded-full bg-[#27c93f]"></div>
-              <span class="ml-4 text-xs text-slate-400 font-mono">app.js - <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-3 inline-block ml-1 opacity-80" /></span>
-            </div>
-            <div class="p-6 md:p-8 font-mono text-sm md:text-base text-slate-300 leading-relaxed">
-              <p><span class="text-[#ff7b72]">const</span> <span class="text-[#79c0ff]">course</span> = {</p>
-              <p class="ml-4"><span class="text-[#a5d6ff]">name</span>: <span class="text-[#a5d6ff]">'<img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-4 inline-block align-middle" />'</span>,</p>
-              <p class="ml-4"><span class="text-[#a5d6ff]">weeks</span>: <span class="text-[#79c0ff]">1</span>,</p>
-              <p class="ml-4"><span class="text-[#a5d6ff]">format</span>: <span class="text-[#a5d6ff]">'Hybrid (Live + Recorded)'</span>,</p>
-              <p class="ml-4"><span class="text-[#a5d6ff]">focus</span>: [<span class="text-[#a5d6ff]">'Prompts'</span>, <span class="text-[#a5d6ff]">'Webpages'</span>, <span class="text-[#a5d6ff]">'Publishing'</span>],</p>
-              <p class="ml-4"><span class="text-[#a5d6ff]">outcome</span>: <span class="text-[#d2a8ff]">()</span> <span class="text-[#ff7b72]">=></span> {</p>
-              <p class="ml-8"><span class="text-[#ff7b72]">return</span> <span class="text-[#a5d6ff]">'First website launched'</span>, <span class="text-[#a5d6ff]">'Position for jobs'</span>;</p>
-              <p class="ml-4">}</p>
-              <p>};</p>
-              <p class="mt-4 animate-pulse text-brand-300">_</p>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      <section class="section reveal max-w-7xl mx-auto">
-        <div class="grid lg:grid-cols-2 gap-16 items-start">
-          <div>
-            <p class="section-label">My Promise to You</p>
-            <h2 class="section-headline">I make confusing stuff incredibly simple.</h2>
-            <p class="section-intro mb-8">
-              By the end of this course, you won't just "know about" AI. You will actually know how to use it to bring your ideas to life. If you can type a message to a friend, you can do this.
-            </p>
-            <ul class="feature-list">
-              <li>Stop feeling overwhelmed by technology</li>
-              <li>Learn the exact words to say to AI to get good results</li>
-              <li>Create beautiful web pages easily</li>
-              <li>Put your website on the internet for everyone to see</li>
-              <li>Build sample websites you can show potential clients</li>
-              <li>Learn how to position yourself to start attracting website design jobs</li>
-            </ul>
-          </div>
-          
-          <aside class="bg-white rounded-3xl p-8 md:p-10 shadow-premium border border-slate-100 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-bl-full -z-10"></div>
-            <p class="section-label text-brand-500 mb-2">Your 4 Big Wins</p>
-            <h3 class="font-heading font-bold text-2xl mb-8 text-slate-900">What changes for you</h3>
-            <div class="space-y-8">
-              <div class="flex gap-4">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold font-heading">1</div>
-                <div>
-                  <strong class="block text-lg text-slate-900 mb-1">Zero Confusion</strong>
-                  <span class="text-slate-600 leading-relaxed">You will finally understand how to talk to AI to get real work done.</span>
-                </div>
-              </div>
-              <div class="flex gap-4">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold font-heading">2</div>
-                <div>
-                  <strong class="block text-lg text-slate-900 mb-1">Real Skills</strong>
-                  <span class="text-slate-600 leading-relaxed">You will build real webpages, even if you've never typed a line of code.</span>
-                </div>
-              </div>
-              <div class="flex gap-4">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold font-heading">3</div>
-                <div>
-                  <strong class="block text-lg text-slate-900 mb-1">Going Live</strong>
-                  <span class="text-slate-600 leading-relaxed">You will learn the easiest way to put your new website on the internet.</span>
-                </div>
-              </div>
-              <div class="flex gap-4">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold font-heading">4</div>
-                <div>
-                  <strong class="block text-lg text-slate-900 mb-1">Real Opportunity</strong>
-                  <span class="text-slate-600 leading-relaxed">You will also learn how to turn this skill into income by creating sample websites, showing your work, and positioning yourself for website design jobs.</span>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section reveal bg-slate-50 border-y border-slate-100" aria-label="Real project proof">
-        <div class="max-w-7xl mx-auto">
-          <div class="text-center max-w-3xl mx-auto mb-16">
-            <p class="section-label">What I have built with AI</p>
-            <h2 class="section-headline text-gradient">Real websites I built recently using AI.</h2>
-            <p class="section-intro mx-auto">
-              While this basic course is about helping you build simple website and web tools (<a href="/courses/prompt-to-production/" class="text-brand-600 underline font-semibold hover:text-brand-800 transition-colors">not web apps</a>), the following web apps were built end to end with AI. And just so you know, this very website you are on was built from start to finish by working with AI, including the payment system and every other part of it.
-            </p>
-          </div>
-
-          <div class="grid lg:grid-cols-2 gap-10">
-            <div class="browser-mockup transition-transform duration-500 hover:-translate-y-2 lg:col-span-2 max-w-5xl mx-auto w-full">
-              <div class="browser-header">
-                <div class="browser-dots">
-                  <div class="browser-dot bg-[#ff5f56]"></div>
-                  <div class="browser-dot bg-[#ffbd2e]"></div>
-                  <div class="browser-dot bg-[#27c93f]"></div>
-                </div>
-                <div class="browser-url">linescout.sureimports.com</div>
-              </div>
-              <iframe
-                src="https://linescout.sureimports.com/"
-                title="LineScout website"
-                class="w-full h-[500px] md:h-[650px] bg-white border-0 block"
-                loading="lazy"
-              ></iframe>
-            </div>
-
-            <div class="browser-mockup transition-transform duration-500 hover:-translate-y-2">
-              <div class="browser-header">
-                <div class="browser-dots">
-                  <div class="browser-dot bg-[#ff5f56]"></div>
-                  <div class="browser-dot bg-[#ffbd2e]"></div>
-                  <div class="browser-dot bg-[#27c93f]"></div>
-                </div>
-                <div class="browser-url">www.smahope.org</div>
-              </div>
-              <iframe
-                src="https://www.smahope.org/"
-                title="SMAHope website"
-                class="w-full h-[450px] md:h-[550px] bg-white border-0 block"
-                loading="lazy"
-              ></iframe>
-            </div>
-
-            <div class="browser-mockup transition-transform duration-500 hover:-translate-y-2">
-              <div class="browser-header">
-                <div class="browser-dots">
-                  <div class="browser-dot bg-[#ff5f56]"></div>
-                  <div class="browser-dot bg-[#ffbd2e]"></div>
-                  <div class="browser-dot bg-[#27c93f]"></div>
-                </div>
-                <div class="browser-url">www.sureimports.com</div>
-              </div>
-              <iframe
-                src="https://www.sureimports.com/"
-                title="Sure Imports website"
-                class="w-full h-[450px] md:h-[550px] bg-white border-0 block"
-                loading="lazy"
-              ></iframe>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="curriculum" class="section reveal max-w-7xl mx-auto">
-        <div class="text-center max-w-3xl mx-auto mb-16">
-          <p class="section-label">How We Do It</p>
-          <h2 class="section-headline">A one-week plan made for total beginners.</h2>
-          <p class="section-intro mx-auto">
-            We move fast, but we keep it incredibly simple. You can always pause the videos, rewind, and ask questions during our live calls.
-          </p>
-        </div>
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <article class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-300 relative group">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-300 to-brand-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p class="text-brand-600 font-mono text-sm font-semibold tracking-wide uppercase mb-3">Day 1 • Live Video Call</p>
-            <h3 class="font-heading font-bold text-xl text-slate-900 mb-4">Getting over the fear of AI</h3>
-            <p class="text-slate-600 leading-relaxed">We kick things off together. You'll learn exactly what AI can do for you and how to give it clear instructions so it doesn't give you bad answers.</p>
-          </article>
-
-          <article class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-300 relative group">
-             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-300 to-brand-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p class="text-slate-500 font-mono text-sm font-semibold tracking-wide uppercase mb-3">Day 2 • Recorded Video</p>
-            <h3 class="font-heading font-bold text-xl text-slate-900 mb-4">The absolute basics of websites</h3>
-            <p class="text-slate-600 leading-relaxed">You'll get comfortable with the basics. We will use AI to build your very first simple webpage. It's easier than you think!</p>
-          </article>
-
-          <article class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-300 relative group">
-             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-300 to-brand-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p class="text-slate-500 font-mono text-sm font-semibold tracking-wide uppercase mb-3">Day 3 • Recorded Video</p>
-            <h3 class="font-heading font-bold text-xl text-slate-900 mb-4">Building your first real project</h3>
-            <p class="text-slate-600 leading-relaxed">Now we turn your ideas into reality. You will learn how to ask AI to help you build a small but highly useful webpage.</p>
-          </article>
-
-          <article class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-300 relative group">
-             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-300 to-brand-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p class="text-slate-500 font-mono text-sm font-semibold tracking-wide uppercase mb-3">Day 4 • Recorded Video</p>
-            <h3 class="font-heading font-bold text-xl text-slate-900 mb-4">Making it look great and going live</h3>
-            <p class="text-slate-600 leading-relaxed">We will add colors, fix the spacing, and make your site look professional. Then, I'll show you the easiest way to put it on the internet for free.</p>
-          </article>
-
-          <article class="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-300 relative group md:col-span-2 lg:col-span-1 bg-brand-50/50">
-             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-400 to-brand-600 rounded-t-2xl opacity-100 transition-opacity"></div>
-            <p class="text-brand-600 font-mono text-sm font-semibold tracking-wide uppercase mb-3">Day 5 • Live Video Call</p>
-            <h3 class="font-heading font-bold text-xl text-slate-900 mb-4">Fixing mistakes and positioning for jobs</h3>
-            <p class="text-slate-600 leading-relaxed">We meet live again! We will fix any problems you ran into, make sure your website works perfectly, and show you how to land your first job.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="reveal max-w-5xl mx-auto px-6 mb-24">
-        <div class="bg-gradient-to-br from-[#f0fdf4] to-[#e6f9ed] p-10 md:p-14 rounded-3xl border border-[#bbf7d0] shadow-lg text-center relative overflow-hidden">
-          <div class="absolute -top-10 -right-10 w-40 h-40 bg-[#dcfce7] rounded-full blur-2xl opacity-60"></div>
-          <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[#dcfce7] rounded-full blur-2xl opacity-60"></div>
-          <div class="relative z-10">
-            <h2 class="font-heading font-extrabold text-3xl md:text-4xl text-slate-900 mb-6">The "No-Stress" Learning Zone</h2>
-            <p class="text-lg md:text-xl text-slate-700 leading-relaxed max-w-3xl mx-auto font-medium">
-              I know technology can be scary. That is why this course is a safe space. No complex words. No rushing. If something breaks, I will show you how to ask AI to fix it for you. You are in safe hands.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section reveal bg-white border-y border-slate-100 py-20" aria-label="About the instructor">
-        <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center px-6">
-          <div class="order-2 md:order-1">
-            <p class="section-label">Your Teacher</p>
-            <h2 class="section-headline mb-6">Hi, I'm Tochukwu Nkwocha.</h2>
-            <p class="section-intro mb-8">
-              I build real tools for real businesses, but my passion is breaking down complex technology so anyone can understand and use it.
-            </p>
-            <a class="btn btn-outline" href="/#about">Read My Story</a>
-          </div>
-          <div class="order-1 md:order-2">
-            <div class="relative w-full max-w-md mx-auto">
-              <div class="absolute inset-0 bg-brand-100 rounded-[3rem] transform translate-x-4 translate-y-4"></div>
-              <img src="/assets/tochukwu.jpg" alt="Tochukwu Nkwocha" class="relative rounded-[3rem] shadow-xl border-8 border-white object-cover aspect-[4/5] w-full" loading="lazy" />
-              <div class="absolute -bottom-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-brand-100 flex items-center gap-4">
-                <div class="bg-brand-100 text-brand-600 p-3 rounded-full">
-                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Students Trained</p>
-                  <p class="text-2xl font-heading font-extrabold text-brand-900">350+ in 3 Cohorts</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section reveal bg-slate-50 py-24" aria-label="Testimonials">
-        <div class="max-w-7xl mx-auto px-6">
-          <div class="text-center mb-16">
-            <p class="section-label">Testimonials</p>
-            <h2 class="section-headline">What My Students are Saying</h2>
-          </div>
-          
-          <div class="flex overflow-x-auto gap-6 pb-12 px-2 snap-x snap-mandatory hide-scrollbar" style="scroll-padding: 32px;">
+        <div class="relative max-w-[100vw] mx-auto z-10">
+          <div class="absolute left-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-r from-[#060b14] to-transparent z-20 pointer-events-none"></div>
+          <div class="absolute right-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-l from-[#060b14] to-transparent z-20 pointer-events-none"></div>
+      
+          <div class="flex overflow-x-auto gap-6 pb-16 px-6 md:px-32 snap-x snap-mandatory hide-scrollbar" style="scroll-padding: 32px;">
             <style>
               .hide-scrollbar::-webkit-scrollbar { display: none; }
               .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             </style>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/anuri.JPG" alt="Photo of Anuri Okongwu" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Anuri Okongwu</h3>
-                  <p class="text-sm text-slate-500">Parent & Student Advocate</p>
+      
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  Your Prompt to Profit class was so good. Your teaching ability is topnotch. I registered the course for my two boys in secondary school, and they have now built their own websites by following the steps in the course.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/anuri.JPG" alt="Anuri Okongwu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Anuri Okongwu</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Parent & Advocate</p>
+                  </div>
                 </div>
               </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                Your Prompt to Profit class was so good. Your teaching ability is topnotch. I actually registered the course for my 2 boys in secondary school but because they were writing an exam last week, I had to attend the class, so that I would be their instructor. My two boys - one in JS1 and the other in SS1 have now built their own websites by following the steps in the course. Their dad was so happy that he enrolled them for the advanced course. I have referred 2 parents with your Facebook link, one has already paid yesterday for the next class. I actually got value for the money spent, reason why I am registering for the advance class. Thanks so much.
-              </p>
+            </article>
+      
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  I enrolled my 8-year-old in Prompt to Profit, and by Day 3 he had already built three practice websites on his own. He was so excited to show me everything he made.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/buchi.JPG" alt="Buchi Ileka" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Buchi Ileka</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Parent</p>
+                  </div>
+                </div>
+              </div>
             </article>
 
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/ekpere.JPG" alt="Photo of Ekpereamaka Blessings" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Ekpereamaka Blessings</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  My daughter is 8 years old. Last month, she built a landing page for her dream fashion business using what she picked up from Prompt to Profit. No coding. No prior experience. The proof that a course works is not in the certificate. It is in what the student builds when the class ends.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/marquis.jpeg" alt="Marquis Festus" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Marquis Festus</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Father of an 8-year old</p>
+                  </div>
                 </div>
               </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                Honestly I want to say a big thank you to our outstanding coach @⁨Tochukwu Nkwocha⁩. It's been an amazing week with the prompt to profit rehearsal. I just built a website for my company for $100 and my boss was impressed. I had more offers from his two friends but Electricity wahala in Nigeria is really frustrating.
-              </p>
             </article>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/michelle.png" alt="Photo of Michelle Emoghware" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Michelle Emoghware</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
+      
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  I built a website for my company for $100 and my boss was impressed. I had more offers from his two friends.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/ekpere.JPG" alt="Ekpereamaka Blessings" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Ekpereamaka Blessings</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
+                  </div>
                 </div>
               </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                I signed up for a 5 day AI prompt class and I built a beautiful, professional looking website using the knowledge gained on Day 1. My biggest take away was how to literally discuss the problems I was having with AI and prompt a solution. I cannot recommend this course highly enough. It is also unbelievably affordable.
-              </p>
+            </article>
+      
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  I built a beautiful, professional-looking website using the knowledge gained on Day 1. My biggest takeaway was how to literally discuss the problems I was having with AI and prompt a solution.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/michelle.png" alt="Michelle Emoghware" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Michelle Emoghware</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
+                  </div>
+                </div>
+              </div>
             </article>
             
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/emeka.JPG" alt="Photo of Emeka Nwankwo" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Emeka Nwankwo</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
+            <article class="flex-none w-[340px] md:w-[400px] snap-start relative group pr-6 md:pr-0">
+              <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+              <div class="relative h-full bg-[#0d1117] backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 flex flex-col transition-transform duration-500 group-hover:-translate-y-1">
+                <svg class="absolute top-8 right-8 w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
+                
+                <div class="flex gap-1 text-yellow-400 mb-6 relative z-10">
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                  <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                </div>
+      
+                <p class="testimonial-body text-slate-300 relative z-10 flex-grow text-[15px] md:text-base">
+                  When you double clicked the HTML file and the site came up, it first looked like magic. You are such an amazing teacher with a full dose of patience.
+                </p>
+      
+                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
+                  <img src="/assets/chinenye.JPG" alt="Charity Chinedu-Ogbu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <div>
+                    <h3 class="font-bold text-white text-sm">Charity Chinedu-Ogbu</h3>
+                    <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
+                  </div>
                 </div>
               </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                I am super excited mhen!!! You were conducting "AI Deliverance" for some of us yesterday. Thank you....thank you ......thank you....
-              </p>
             </article>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/chinenye.JPG" alt="Photo of Charity Chinedu-Ogbu" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Charity Chinedu-Ogbu</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
-                </div>
-              </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                Thank you Uncle T. Yesterday’s class was more than exceptional. When you double clicked the HTML file in the folder and the site came up, it first looked like magic. BTW: You are such an amazing teacher with a full dose of patience.
-              </p>
-            </article>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/audu.jpg" alt="Photo of Audu Ameh Emmanuel" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Audu Ameh Emmanuel</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
-                </div>
-              </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                Thank you so very much Sir, that was a very powerful and insightful opening session. Indeed, ANYTHING IS POSSIBLE, and what an awesome time to be alive.
-              </p>
-            </article>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-              <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/O-Key-Smart%20Tutors.jpg" alt="Photo of O-Smart-Key Tutors" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">O-Smart-Key Tutors</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
-                </div>
-              </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                I took your Prompt to Profit course, and I was truly impressed by how simple and practical you made everything. It was easy to follow and highly valuable. I’d confidently rate it 100%!
-              </p>
-            </article>
-
-            <article class="flex-none w-[350px] snap-start bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-               <div class="text-6xl text-brand-100 absolute top-4 right-6 font-serif leading-none">"</div>
-              <div class="flex items-center gap-4 mb-6 relative z-10">
-                <img src="/assets/Akinwunmi%20Shola.jpg" alt="Photo of Akinwunmi Shola" class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-slate-50">
-                <div>
-                  <h3 class="font-bold text-slate-900">Akinwunmi Shola</h3>
-                  <p class="text-sm text-slate-500">Beginner Student</p>
-                </div>
-              </div>
-              <p class="testimonial-body text-slate-600 relative z-10">
-                An amazing instructor when it comes to artificial intelligence. keep it up,
-              </p>
-            </article>
-
+      
           </div>
         </div>
       </section>
 
-      <section class="student-websites-section section reveal max-w-7xl mx-auto py-24">
-        <div class="text-center max-w-3xl mx-auto mb-16">
-          <p class="section-label">Batch 1 Student Websites</p>
-          <h2 class="section-headline">Look at what previous students already built.</h2>
-          <p class="section-intro mx-auto">
-            These are real website outcomes from previous students after applying the same Prompt to Profit workflow.
-          </p>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-8">
-          <div>
-            <div class="browser-mockup transform transition duration-500 hover:shadow-premium mb-6">
-              <div class="browser-header">
-                <div class="browser-dots">
-                  <div class="browser-dot bg-[#ff5f56]"></div>
-                  <div class="browser-dot bg-[#ffbd2e]"></div>
-                  <div class="browser-dot bg-[#27c93f]"></div>
-                </div>
-                <div class="browser-url">www.loudnclearaudioservices.com.ng</div>
-              </div>
-              <iframe
-                src="https://www.loudnclearaudioservices.com.ng"
-                title="Loud N Clear Audio Services website"
-                class="w-full h-[450px] md:h-[550px] bg-white border-0 block"
-                loading="lazy"
-              ></iframe>
-            </div>
-            <div class="flex justify-center">
-              <a href="https://www.loudnclearaudioservices.com.ng" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-800 transition-colors bg-white px-6 py-3 rounded-full shadow-sm border border-brand-100 hover:border-brand-300">
-                Open site in new tab
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <div class="browser-mockup transform transition duration-500 hover:shadow-premium mb-6">
-              <div class="browser-header">
-                <div class="browser-dots">
-                  <div class="browser-dot bg-[#ff5f56]"></div>
-                  <div class="browser-dot bg-[#ffbd2e]"></div>
-                  <div class="browser-dot bg-[#27c93f]"></div>
-                </div>
-                <div class="browser-url">olytribe.com.ng</div>
-              </div>
-              <iframe
-                src="https://olytribe.com.ng"
-                title="Oly Tribe website"
-                class="w-full h-[450px] md:h-[550px] bg-white border-0 block"
-                loading="lazy"
-              ></iframe>
-            </div>
-            <div class="flex justify-center">
-              <a href="https://olytribe.com.ng" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-800 transition-colors bg-white px-6 py-3 rounded-full shadow-sm border border-brand-100 hover:border-brand-300">
-                Open second site in new tab
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="max-w-6xl mx-auto px-6 py-10">
-        <div class="bg-brand-900 rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row items-center relative shadow-2xl">
-          <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 32px 32px;"></div>
+      <section class="relative overflow-hidden bg-[#060b14] py-24 border-t border-white/5" aria-label="About the instructor">
+        <div class="absolute top-1/2 right-0 w-[600px] h-[600px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none translate-x-1/3 -translate-y-1/2 z-0"></div>
+        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none -translate-x-1/2 translate-y-1/3 z-0"></div>
+      
+        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 lg:gap-20 items-center px-6 lg:px-8 relative z-10">
           
-          <div class="p-10 md:p-16 relative z-10 md:w-3/5 text-white">
-            <p class="section-label !text-brand-300">Easy Payments</p>
-            <h2 class="font-heading font-extrabold text-3xl md:text-4xl mb-4 text-white">Pay bit by bit if you need to.</h2>
-            <p class="text-brand-100 text-lg leading-relaxed mb-8">
-              Don't let the price stop you. You can save your seat today and pay in smaller chunks. As soon as you finish paying, you get full access to the course.
-            </p>
-            <div class="flex flex-wrap gap-4">
-              <a class="btn bg-white !text-brand-900 hover:bg-slate-50" href="/dashboard/">Pay in Installments</a>
-              <a class="btn !bg-transparent border border-white/30 !text-white hover:bg-white/10" href="/enrol-prompt-to-profit-holiday/">Pay in Full Now</a>
+          <div class="order-2 md:order-1 flex flex-col items-start">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-400/20 text-brand-300 font-semibold text-sm mb-6 uppercase tracking-widest backdrop-blur-md">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              Your Teacher
+            </div>
+            
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-6">
+              Hi, I'm <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-[#a5d6ff]">Tochukwu Nkwocha.</span>
+            </h2>
+            
+            <div class="space-y-5 text-lg text-slate-400 font-light leading-relaxed mb-10">
+              <p>
+                I build real digital tools for real businesses, but my passion is making complex technology simple enough for ordinary people to understand and use.
+              </p>
+              <p>
+                Before AI became popular, I had already built platforms like Sure Imports and Effiko. Sure Imports has grown to <strong class="text-white font-medium">over 40,000 users</strong>, and Effiko has crossed 10,000 app downloads with over 500,000 yearly Google impressions.
+              </p>
+              <p>
+                Today, I use AI to build even faster. I built LineScout and the learning platform on this website by working directly with AI. That is why this course is not theory. <strong class="text-brand-300 font-medium">I am teaching you a practical way to use AI to build real things.</strong>
+              </p>
+            </div>
+            
+            <div class="w-full bg-[#0d1117]/80 backdrop-blur-xl rounded-[2rem] p-8 border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] relative group">
+              <div class="absolute -inset-0.5 bg-gradient-to-r from-brand-500/30 to-purple-500/30 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur"></div>
+              <div class="relative z-10">
+                <h4 class="font-heading font-bold text-xl text-white mb-5 flex items-center gap-3">
+                  <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  What Makes This Course Different
+                </h4>
+                <ul class="space-y-3 text-[15px] text-slate-300">
+                  <li class="flex items-start gap-3">
+                    <div class="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shadow-[0_0_8px_#667eb2]"></div>
+                    <span>It is beginner-friendly and practical from the first day.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <div class="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shadow-[0_0_8px_#667eb2]"></div>
+                    <span>It is suitable for both young learners and adults.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <div class="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shadow-[0_0_8px_#667eb2]"></div>
+                    <span>It focuses on real projects, not empty theory.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <div class="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shadow-[0_0_8px_#667eb2]"></div>
+                    <span>It gives job seekers portfolio proof and kids confidence.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <div class="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shadow-[0_0_8px_#667eb2]"></div>
+                    <span>It gives business owners a way to test ideas quickly.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+      
+          <div class="order-1 md:order-2 relative w-full max-w-md mx-auto mt-10 md:mt-0">
+            <div class="relative group perspective-1000">
+              <div class="absolute -inset-2 bg-gradient-to-br from-brand-500 to-purple-600 rounded-[3rem] blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-700 -z-10"></div>
+              
+              <div class="relative rounded-[3rem] overflow-hidden border border-white/20 bg-[#161b22] z-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] transform transition-transform duration-700 group-hover:-translate-y-2">
+                <div class="absolute inset-0 border-2 border-white/5 rounded-[3rem] z-20 pointer-events-none"></div>
+                <img src="/assets/tochukwu.jpg" alt="Tochukwu Nkwocha" class="relative object-cover aspect-[4/5] w-full mix-blend-luminosity hover:mix-blend-normal transition-all duration-700 opacity-90 hover:opacity-100" loading="lazy" />
+                <div class="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-[#060b14]/90 to-transparent z-10 pointer-events-none"></div>
+              </div>
+      
+              <div class="absolute -left-6 top-1/4 bg-[#0d1117]/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl z-30 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                <p class="text-xs text-brand-400 font-mono font-bold uppercase tracking-wider mb-1">Built Platform</p>
+                <p class="text-white font-bold flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+                  40k+ Users
+                </p>
+              </div>
+      
+              <div class="absolute -right-8 bottom-1/4 bg-[#0d1117]/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-2xl z-30 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <p class="text-xs text-purple-400 font-mono font-bold uppercase tracking-wider mb-1">App Success</p>
+                <p class="text-white font-bold flex items-center gap-2">
+                  <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  10k+ Downloads
+                </p>
+              </div>
             </div>
           </div>
           
-          <div class="md:w-2/5 p-10 pt-0 md:p-10 relative z-10 flex justify-center">
-            <div class="relative w-full max-w-xs">
-              <div class="absolute inset-0 bg-brand-400 rounded-3xl blur-2xl opacity-40"></div>
-              <img src="/assets/wallet-illustration.svg" alt="Digital wallet illustration" loading="lazy" class="relative rounded-2xl shadow-2xl border border-white/10" />
+        </div>
+      </section>
+
+      <section class="relative overflow-hidden bg-[#060b14] py-24 border-t border-white/5">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0"></div>
+      
+        <div class="max-w-6xl mx-auto px-6 relative z-10 mb-16">
+          <div class="bg-gradient-to-br from-[#161b22] to-[#0a0f1e] rounded-[3rem] p-10 md:p-16 border border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col md:flex-row items-center gap-12 lg:gap-20 group">
+            
+            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-70 -z-10"></div>
+            <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-70 -z-10"></div>
+            
+            <div class="flex-1 relative z-10 w-full">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-300 font-mono font-bold text-xs uppercase tracking-wider rounded-full mb-6 backdrop-blur-md">
+                <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Start Building Today
+              </div>
+              
+              <h2 class="font-heading font-extrabold text-4xl md:text-5xl mb-6 text-white leading-tight">
+                Join Prompt to Profit
+              </h2>
+              
+              <p class="text-slate-400 text-lg leading-relaxed mb-10 max-w-xl font-light">
+                Get access to the 5-day beginner-friendly AI website and digital tools course. Join us today and turn your confusion into confidence.
+              </p>
+              
+              <ul class="space-y-4 mb-12 text-slate-300 font-medium">
+                <li class="flex items-center gap-4 group/item">
+                  <div class="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center shrink-0 transition-transform group-hover/item:scale-110 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  5-day guided learning path
+                </li>
+                <li class="flex items-center gap-4 group/item">
+                  <div class="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center shrink-0 transition-transform group-hover/item:scale-110 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  Pre-recorded lessons & 2 live Zoom classes
+                </li>
+                <li class="flex items-center gap-4 group/item">
+                  <div class="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center shrink-0 transition-transform group-hover/item:scale-110 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  Project-based assignments
+                </li>
+                <li class="flex items-center gap-4 group/item">
+                  <div class="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center shrink-0 transition-transform group-hover/item:scale-110 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  Community support & live recordings
+                </li>
+                <li class="flex items-center gap-4 group/item">
+                  <div class="w-6 h-6 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center shrink-0 transition-transform group-hover/item:scale-110 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  1 year access + Certificate of completion
+                </li>
+              </ul>
+      
+              <div class="flex flex-wrap items-center gap-4">
+                <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 shadow-[0_0_30px_rgba(102,126,178,0.4)] transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/enrol-prompt-to-profit-holiday/">
+                  Join Course Now
+                  <svg class="w-5 h-5 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </a>
+                <a class="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/dashboard/">
+                  Pay in Installments
+                </a>
+              </div>
+              
+              <div class="mt-6 flex items-center gap-2 text-sm text-slate-500 font-medium">
+                <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                Secure SSL Encrypted Checkout
+              </div>
             </div>
+            
+            <div class="w-full md:w-2/5 relative z-10 flex justify-center perspective-1000 mt-10 md:mt-0">
+              <div class="absolute -top-6 -right-4 md:-right-8 bg-[#0d1117]/90 backdrop-blur-xl border border-white/10 px-4 py-3 rounded-2xl shadow-2xl z-30 transform rotate-6 animate-pulse" style="animation-duration: 4s;">
+                <p class="text-white font-bold flex items-center gap-2 text-sm">
+                  <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  Instant Access
+                </p>
+              </div>
+      
+              <div class="relative w-full max-w-[320px] transform transition-transform duration-700 hover:rotate-y-[-5deg] hover:rotate-x-[5deg]">
+                <div class="absolute inset-0 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-3xl blur-2xl opacity-40"></div>
+                
+                <div class="relative bg-[#060b14]/50 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                  <div class="absolute inset-0 border-2 border-white/5 rounded-[2rem] pointer-events-none"></div>
+                  <img src="/assets/wallet-illustration.svg" alt="Digital checkout illustration" loading="lazy" class="relative w-full h-auto drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" />
+                </div>
+              </div>
+            </div>
+      
           </div>
         </div>
       </section>
 
-      <section id="faq" class="section reveal max-w-4xl mx-auto pt-32 pb-24">
-        <div class="text-center mb-16">
-          <p class="section-label">Got Questions?</p>
-          <h2 class="section-headline">Everything you need to know</h2>
-        </div>
-        <div class="faq-wrap">
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>I am completely non-techy. Can I really take this course?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>Yes, absolutely. You do not need a background in computer science or programming to succeed here. If you know how to use a web browser and can follow simple step-by-step instructions, I will teach you the rest. We use AI to do the heavy lifting of writing the complex code.</p>
+      <section id="faq" class="relative overflow-hidden bg-[#060b14] pt-16 pb-32 border-t border-white/5">
+        <div class="absolute top-1/4 left-0 w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none -translate-x-1/2 z-0"></div>
+        <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none translate-x-1/3 z-0"></div>
+      
+        <div class="max-w-3xl mx-auto px-6 relative z-10">
+          <div class="text-center mb-16">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-slate-300 font-semibold text-sm mb-6 uppercase tracking-widest shadow-2xl">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              FAQ
             </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>How are the classes delivered?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>This program is a hybrid model designed for flexibility. You will get high-quality, pre-recorded lessons that you can watch at your own pace inside your learning account. In addition to that, we will have 2 live classes via Zoom where I demonstrate how this works and also help you solve any issues you may have.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>What if I miss a live class?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>Don't worry, all live sessions are recorded and instantly made available inside your learning management system, so you can catch up anytime.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>How long do I have access to the course materials?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>You get full access to all pre-recorded lessons, live class recordings, and course materials for one full year after the program ends. You can always come back, log into your account, and review the lessons whenever you are building your next website or tool.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>What happens right after I pay or start my installment plan?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>The moment you complete your payment or start your installment plan, your secure learning account is instantly created and accessible. However, to ensure no one is left behind, the actual course videos and materials will remain locked until our official start date on May 25th.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>What if I get stuck or have questions during the course?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>You are never building alone. You can ask questions directly during our live Zoom classes, submit support questions privately right inside your learning dashboard, or post on our active student discussion board where I and your fellow builders will be there to help you out.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>What kind of computer or laptop do I need?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>You do not need an expensive, high-end "gaming" or "developer" laptop. Any standard Mac or Windows PC from the last few years will work perfectly. As long as you have a stable internet connection and a modern web browser, you have everything you need to build.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Is the course accessible for hearing-impaired students?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>Absolutely. Every pre-recorded video comes with clear captions. Additionally, you can request full text transcripts of the lessons to ensure you have a comfortable and complete learning experience.</p>
-            </div>
-          </article>
-
-          <article class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Will I get a certificate?</span>
-              <span aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" hidden>
-              <p>Yes! Once you complete the 5-day program and submit link to the website or digital tool you build, you will receive a verified certificate of completion. It is a great asset to showcase your new capabilities to potential clients, partners, or employers.</p>
-            </div>
-          </article>
+            <h2 class="font-heading font-extrabold text-4xl lg:text-5xl text-white mb-4">Everything you need to know</h2>
+            <p class="text-slate-400 text-lg font-light">Got questions? We've got answers.</p>
+          </div>
+          
+          <div class="faq-wrap flex flex-col gap-4">
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">I am completely non-techy. Can I really take this course?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">Yes. This course was created for complete beginners. If you can use a browser, type, and follow simple instructions, you can take this course.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">Is this course suitable for children?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">Yes. Children from about age 8 and above can take it, especially if they can read, type, and use a computer. Younger children may benefit from having a parent nearby.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">Do parents need to know coding to help their children?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">No. Parents do not need any coding knowledge. Some parents choose to learn alongside their children, but older children can follow the lessons independently.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">Is this only for job seekers?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">No. Job seekers are one audience, but the course is also useful for kids, students, parents, business owners, professionals, and complete beginners.</p>
+              </div>
+            </article>
+            
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">Will I learn full professional software development?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">No. This course teaches you how to use AI to build simple websites and digital tools. If you want to build more advanced applications, Prompt to Profit Advanced is the next step.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">How are the classes delivered?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">You get pre-recorded lessons inside your learning dashboard, plus live Zoom classes for demonstrations, questions, and support.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">What if I miss a live class?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">The live classes are recorded and made available inside your learning dashboard.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">How long do I have access?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">You get one year access to the lessons, recordings, and course materials.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">What kind of computer do I need?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">Any basic laptop or desktop computer with internet access and a modern browser should work. You do not need an expensive laptop.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">Will I get a certificate?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">Yes. After completing the course and submitting your project link, you will receive a verified certificate of completion.</p>
+              </div>
+            </article>
+      
+            <article class="faq-item !bg-[#0d1117]/80 !border-white/10 hover:!border-white/20 !shadow-lg backdrop-blur-md !rounded-2xl transition-all duration-300">
+              <button class="faq-question !px-6 !py-5 !text-white hover:!text-brand-300 transition-colors" type="button" aria-expanded="false">
+                <span class="pr-4">What if I get stuck?</span>
+                <span aria-hidden="true" class="!bg-white/5 !border-white/10 !text-brand-400 shrink-0">+</span>
+              </button>
+              <div class="faq-answer px-6 pb-6" hidden>
+                <p class="!mt-0 !text-slate-400 !text-[15px] !leading-relaxed border-t border-white/5 pt-4">You can ask questions during live classes, use the student support/discussion area, and review the recordings as many times as needed.</p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
-
-      <section class="section reveal pt-10 pb-32">
-        <div class="max-w-4xl mx-auto text-center bg-white p-12 md:p-16 rounded-[2.5rem] shadow-premium border border-slate-100 relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-b from-brand-50/50 to-transparent"></div>
-          <div class="relative z-10">
-            <h2 class="font-heading font-extrabold text-4xl md:text-5xl text-slate-900 mb-6">Ready to build your first website?</h2>
-            <p class="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
-              Join us today. Turn your confusion into confidence in just 5 days.
-            </p>
-            <div class="flex flex-wrap justify-center gap-4">
-              <a class="btn btn-primary" href="/enrol-prompt-to-profit-holiday/">Join Prompt to Profit</a>
-              <a class="btn btn-outline" href="/dashboard/">Pay in Installments</a>
+      
+      <section class="relative overflow-hidden bg-[#060b14] pt-10 pb-32">
+        <div class="max-w-5xl mx-auto px-6 relative z-10">
+          <div class="text-center bg-gradient-to-br from-[#161b22] to-[#0a0f1e] p-12 md:p-20 rounded-[3rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 relative overflow-hidden group">
+            
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-full bg-gradient-to-r from-brand-500/20 via-purple-500/20 to-brand-500/20 blur-[100px] pointer-events-none group-hover:opacity-100 opacity-60 transition-opacity duration-700 -z-10"></div>
+            
+            <div class="relative z-10">
+              <h2 class="font-heading font-extrabold text-4xl md:text-5xl lg:text-6xl text-white mb-8 leading-[1.15]">
+                Ready to build your first website or digital tool with <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-[#a5d6ff] to-purple-400">AI?</span>
+              </h2>
+              
+              <p class="text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+                In 5 days, you can move from confusion to confidence. Stop watching AI from the sidelines and start using it to build real things.
+              </p>
+              
+              <div class="flex flex-wrap justify-center items-center gap-5">
+                <a class="inline-flex items-center justify-center px-10 py-5 rounded-2xl font-bold text-white text-lg bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 shadow-[0_0_40px_rgba(102,126,178,0.5)] transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/enrol-prompt-to-profit-holiday/">
+                  Join Prompt to Profit
+                  <svg class="w-6 h-6 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+                <a class="inline-flex items-center justify-center px-10 py-5 rounded-2xl font-bold text-slate-300 text-lg bg-white/5 border border-white/10 hover:bg-white/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto" href="/dashboard/">
+                  Pay in Installments
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
-        </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-          <a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
+
+  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+    
+    <div class="footer-logo mb-6">
+      <a href="/" class="block transition-transform hover:scale-105 duration-300">
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+      </a>
+    </div>
+    
+    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+      <span class="w-8 h-px bg-brand-500/30"></span>
+      Practical AI. Real-world building.
+      <span class="w-8 h-px bg-purple-500/30"></span>
+    </div>
+    
+    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
+    </nav>
+    
+    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+      </p>
+    </div>
+    
+  </div>
+</footer>
+
 
     <script src="/assets/site.js"></script>
     <script src="/assets/recaptcha.js"></script>
@@ -1097,8 +1842,7 @@
 
           var toggle = document.createElement("button");
           toggle.type = "button";
-          // Styling updated for premium look
-          toggle.className = "mt-3 border-0 bg-transparent p-0 text-sm font-bold text-brand-600 hover:text-brand-800 hover:underline cursor-pointer transition-colors relative z-10";
+          toggle.className = "mt-3 border-0 bg-transparent p-0 text-sm font-bold text-brand-400 hover:text-brand-300 hover:underline cursor-pointer transition-colors relative z-10";
           toggle.textContent = "Read more";
           toggle.setAttribute("aria-expanded", "false");
           toggle.addEventListener("click", function () {

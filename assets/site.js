@@ -319,6 +319,13 @@
       const expanded = navToggle.getAttribute("aria-expanded") === "true";
       navToggle.setAttribute("aria-expanded", String(!expanded));
       navLinks.classList.toggle("open");
+      if (expanded) {
+        navDropdowns.forEach(function (item) {
+          item.classList.remove("open");
+          const itemToggle = item.querySelector(".nav-dropdown-toggle");
+          if (itemToggle) itemToggle.setAttribute("aria-expanded", "false");
+        });
+      }
     });
   }
 

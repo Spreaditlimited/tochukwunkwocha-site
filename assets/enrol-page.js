@@ -462,7 +462,7 @@
     };
     if (holidayBatchMeta) {
       if (!chosen) {
-        holidayBatchMeta.textContent = "Select one of the available holiday batches.";
+        holidayBatchMeta.textContent = "Select one of the available summer batches.";
         holidayBatchMeta.hidden = false;
         holidayBatchMeta.classList.remove("hidden");
       } else {
@@ -600,7 +600,7 @@
       if (batchEl) {
         batchEl.innerHTML = [
           '<span class="status-pill status-pending_verification">',
-          "Holiday Batches: Unavailable",
+          "Summer Batches: Unavailable",
           "</span>",
         ].join("");
       }
@@ -622,7 +622,7 @@
     if (batchEl) {
       batchEl.innerHTML = [
         '<span class="status-pill status-approved">',
-        "Open Holiday Batches: " + String(batches.length),
+        "Open Summer Batches: " + String(batches.length),
         "</span>",
       ].join("");
     }
@@ -657,7 +657,7 @@
       } else {
         if (waitlistCopyEl) {
           waitlistCopyEl.textContent = !batches.length
-            ? "All holiday batches are currently full. Join a waitlist below to get priority when a seat opens."
+            ? "All summer batches are currently full. Join a waitlist below to get priority when a seat opens."
             : "Only the batches listed below are full. Join a waitlist to get priority when a seat opens.";
         }
         holidayWaitlistRows.innerHTML = fullBatches.map(function (item) {
@@ -680,7 +680,7 @@
     }
     if (!batches.length && submitBtn) {
       submitBtn.disabled = true;
-      setError("All holiday batches are currently full. Join the waitlist below.");
+      setError("All summer batches are currently full. Join the waitlist below.");
     }
   }
 
@@ -864,10 +864,10 @@
     section.innerHTML = [
       '<label class="family-toggle">',
       '<input id="familyEnrollmentEnabled" type="checkbox" class="family-toggle__input" />',
-      '<span class="family-toggle__copy"><strong>Enrolling more than one person?</strong><span>Buy seats now, then assign them from your dashboard.</span></span>',
+      '<span class="family-toggle__copy"><strong>Enrolling a group?</strong><span>Buy multiple seats now, then assign them from your dashboard.</span></span>',
       "</label>",
       '<div id="familyChildrenPanel" class="family-children-panel hidden" hidden>',
-      '<p id="familyPaymentSummary" class="family-payment-summary">Turn this on to buy multiple family seats under one parent account.</p>',
+      '<p id="familyPaymentSummary" class="family-payment-summary">Turn this on to buy multiple seats under one account.</p>',
       '<label class="family-seat-count"><span class="form-label">Number of seats</span><span class="family-seat-stepper"><button type="button" class="family-seat-stepper__button" data-family-seat-decrement aria-label="Decrease seats">-</button><input id="familySeatCountInput" type="number" min="2" step="1" value="2" class="form-input family-input family-seat-stepper__input" /><button type="button" class="family-seat-stepper__button" data-family-seat-increment aria-label="Increase seats">+</button></span></label>',
       '<p class="family-payment-summary">After payment, seats become available in your dashboard. You can assign them to the right learners there.</p>',
       '<div id="familyChildrenWrap" class="family-children-wrap hidden" hidden></div>',
@@ -943,6 +943,14 @@
     if (pageFamilyToggle === "false" || pageFamilyToggle === "0" || pageFamilyToggle === "no") {
       familyEnrollmentEnabled = false;
       if (familySection) familySection.hidden = true;
+      return;
+    }
+    if (pageFamilyToggle === "true" || pageFamilyToggle === "1" || pageFamilyToggle === "yes") {
+      familyEnrollmentEnabled = true;
+      familyMaxChildren = Math.max(1, Number(cfg.maxChildren || familyMaxChildren || 500));
+      buildFamilySection();
+      if (familySection) familySection.hidden = false;
+      if (familySeatCountInput) familySeatCountInput.setAttribute("max", String(familyMaxChildren));
       return;
     }
     if (cfg.enabled === false) {

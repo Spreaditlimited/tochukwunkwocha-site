@@ -31,190 +31,360 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      /* Base Resets */
+      body {
+        background-color: #060b14;
+        color: #cbd5e1;
+      }
+      
+      /* Ambient Backgrounds */
+      .ambient-glow-1 {
+        position: absolute;
+        top: -10%;
+        left: -10%;
+        width: 60%;
+        height: 50%;
+        background: rgba(37, 99, 235, 0.1);
+        border-radius: 50%;
+        filter: blur(150px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .ambient-glow-2 {
+        position: absolute;
+        bottom: 10%;
+        right: -10%;
+        width: 50%;
+        height: 60%;
+        background: rgba(124, 58, 237, 0.08);
+        border-radius: 50%;
+        filter: blur(150px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .tech-grid {
+        position: absolute;
+        inset: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      /* Premium Legal Copy Styling */
+      .legal-copy {
+        position: relative;
+        z-index: 10;
+      }
+      .legal-copy h2 {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800;
+        font-size: 1.35rem;
+        color: #ffffff;
+        margin-top: 3.5rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        letter-spacing: -0.01em;
+      }
+      .legal-copy p {
+        color: #94a3b8;
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+        font-weight: 300;
+        font-size: 1rem;
+      }
+      .legal-copy p:first-of-type {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+      }
+      .legal-copy ul {
+        margin-bottom: 2rem;
+        list-style: none;
+        padding: 0;
+      }
+      .legal-copy li {
+        position: relative;
+        padding-left: 1.75rem;
+        color: #94a3b8;
+        line-height: 1.7;
+        margin-bottom: 0.85rem;
+        font-weight: 300;
+        font-size: 0.95rem;
+      }
+      .legal-copy li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.6rem;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #60a5fa;
+        box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+      }
+      .legal-copy a {
+        color: #60a5fa;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid transparent;
+      }
+      .legal-copy a:hover {
+        color: #93c5fd;
+        border-bottom-color: #93c5fd;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#060b14] font-sans antialiased min-h-screen flex flex-col text-slate-300">
+    
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Tech and AI Academy" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-<a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/build/">Build</a>
-          
-          <a href="/#about">About</a>
-          <a href="/#faq">FAQ</a>
-          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
         </nav>
       </div>
     </header>
 
-    <main>
-      <section class="page-hero">
-        <p class="section-label">Legal</p>
-        <h1>Privacy Policy</h1>
-        <p>Last updated: March 17, 2026</p>
+    <main class="flex-1 w-full relative overflow-hidden">
+      <div class="ambient-glow-1"></div>
+      <div class="ambient-glow-2"></div>
+      <div class="tech-grid"></div>
+
+      <section class="relative z-10 pt-24 pb-12 text-center px-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 font-mono font-bold text-xs uppercase tracking-widest rounded-full mb-6 backdrop-blur-md">
+          <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          Legal
+        </div>
+        <h1 class="font-heading font-extrabold text-4xl sm:text-5xl text-white mb-4">Privacy Policy</h1>
+        <p class="text-slate-500 font-mono text-sm tracking-wide">Last updated: March 17, 2026</p>
       </section>
 
-      <section class="section legal-copy">
-        <p>
-          This Privacy Policy explains how Tochukwu Tech and AI Academy and tochukwunkwocha.com ("we", "us", "our") collect,
-          use, disclose, and protect your personal information when you visit our website, enrol in courses, make a
-          payment, upload payment proof for manual verification, or join our email lists.
-        </p>
+      <section class="relative z-10 max-w-4xl mx-auto px-6 lg:px-8 pb-32">
+        <div class="bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 sm:p-12 md:p-16 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div class="legal-copy">
+            <p>
+              This Privacy Policy explains how Tochukwu Tech and AI Academy and tochukwunkwocha.com ("we", "us", "our") collect,
+              use, disclose, and protect your personal information when you visit our website, enrol in courses, make a
+              payment, upload payment proof for manual verification, or join our email lists.
+            </p>
 
-        <h2>1. Information We Collect</h2>
-        <p>We may collect the following categories of personal information:</p>
-        <ul>
-          <li>Identity and contact information: first name, email address, country, and related profile details.</li>
-          <li>Transaction information: order ID, course, payment status, currency, amount, and payment channel.</li>
-          <li>Manual transfer information: proof-of-payment files and transfer metadata you submit for verification.</li>
-          <li>Technical information: device/browser information, IP address, pages viewed, and event logs.</li>
-          <li>Marketing and communication information: subscription preferences and campaign interactions.</li>
-        </ul>
+            <h2>1. Information We Collect</h2>
+            <p>We may collect the following categories of personal information:</p>
+            <ul>
+              <li>Identity and contact information: first name, email address, country, and related profile details.</li>
+              <li>Transaction information: order ID, course, payment status, currency, amount, and payment channel.</li>
+              <li>Manual transfer information: proof-of-payment files and transfer metadata you submit for verification.</li>
+              <li>Technical information: device/browser information, IP address, pages viewed, and event logs.</li>
+              <li>Marketing and communication information: subscription preferences and campaign interactions.</li>
+            </ul>
 
-        <h2>2. How We Collect Information</h2>
-        <ul>
-          <li>Directly from you when you fill forms, enrol, pay, or contact us.</li>
-          <li>Automatically through site technologies (for example, server logs and conversion/event tools).</li>
-          <li>From payment partners when a transaction is processed or verified.</li>
-        </ul>
+            <h2>2. How We Collect Information</h2>
+            <ul>
+              <li>Directly from you when you fill forms, enrol, pay, or contact us.</li>
+              <li>Automatically through site technologies (for example, server logs and conversion/event tools).</li>
+              <li>From payment partners when a transaction is processed or verified.</li>
+            </ul>
 
-        <h2>3. How We Use Information</h2>
-        <ul>
-          <li>Provide and manage course enrolment and course-related communication.</li>
-          <li>Process payments and confirm transaction status.</li>
-          <li>Handle manual transfer verification and enrolment queue management.</li>
-          <li>Send onboarding, transactional, and marketing emails (where permitted).</li>
-          <li>Maintain security, prevent abuse/fraud, and resolve disputes.</li>
-          <li>Improve website performance, content quality, and learner experience.</li>
-          <li>Comply with legal obligations and enforce our terms.</li>
-        </ul>
+            <h2>3. How We Use Information</h2>
+            <ul>
+              <li>Provide and manage course enrolment and course-related communication.</li>
+              <li>Process payments and confirm transaction status.</li>
+              <li>Handle manual transfer verification and enrolment queue management.</li>
+              <li>Send onboarding, transactional, and marketing emails (where permitted).</li>
+              <li>Maintain security, prevent abuse/fraud, and resolve disputes.</li>
+              <li>Improve website performance, content quality, and learner experience.</li>
+              <li>Comply with legal obligations and enforce our terms.</li>
+            </ul>
 
-        <h2>4. Payment Processing</h2>
-        <p>
-          We use third-party payment processors including Paystack and PayPal. Card/payment account details are handled
-          by those processors under their own privacy policies and compliance controls. We do not store full payment
-          card details on our servers.
-        </p>
+            <h2>4. Payment Processing</h2>
+            <p>
+              We use third-party payment processors including Paystack and PayPal. Card/payment account details are handled
+              by those processors under their own privacy policies and compliance controls. We do not store full payment
+              card details on our servers.
+            </p>
 
-        <h2>5. Manual Bank Transfer Verification</h2>
-        <p>
-          Where you choose manual bank transfer, we collect the payment proof you upload to verify your transfer before
-          full enrolment. On submission, your contact may be added to a pre-enrolment communication segment. After
-          payment is manually confirmed, your contact may be moved to the main enrolment segment.
-        </p>
+            <h2>5. Manual Bank Transfer Verification</h2>
+            <p>
+              Where you choose manual bank transfer, we collect the payment proof you upload to verify your transfer before
+              full enrolment. On submission, your contact may be added to a pre-enrolment communication segment. After
+              payment is manually confirmed, your contact may be moved to the main enrolment segment.
+            </p>
 
-        <h2>6. Email and CRM Providers</h2>
-        <p>
-          We use third-party email/CRM providers (including Flodesk) to manage enrolment communication, updates, and
-          announcements. Your data is processed by these providers under their own terms and privacy notices.
-        </p>
+            <h2>6. Email and CRM Providers</h2>
+            <p>
+              We use third-party email/CRM providers (including Flodesk) to manage enrolment communication, updates, and
+              announcements. Your data is processed by these providers under their own terms and privacy notices.
+            </p>
 
-        <h2>7. Analytics and Advertising</h2>
-        <p>
-          We may use analytics and event tracking tools to understand page usage and campaign performance. These tools
-          may use cookies or similar technologies. You can restrict cookies in your browser settings, though some site
-          features may be affected.
-        </p>
+            <h2>7. Analytics and Advertising</h2>
+            <p>
+              We may use analytics and event tracking tools to understand page usage and campaign performance. These tools
+              may use cookies or similar technologies. You can restrict cookies in your browser settings, though some site
+              features may be affected.
+            </p>
 
-        <h2>8. Legal Bases (UK/EU Users)</h2>
-        <p>Where applicable, we process personal data under one or more lawful bases:</p>
-        <ul>
-          <li>Performance of a contract (for enrolment and payment fulfilment).</li>
-          <li>Legitimate interests (security, service improvement, fraud prevention, operations).</li>
-          <li>Consent (for certain marketing communications or optional tracking, where required).</li>
-          <li>Legal obligation (recordkeeping, compliance, and law-enforcement requests).</li>
-        </ul>
+            <h2>8. Legal Bases (UK/EU Users)</h2>
+            <p>Where applicable, we process personal data under one or more lawful bases:</p>
+            <ul>
+              <li>Performance of a contract (for enrolment and payment fulfilment).</li>
+              <li>Legitimate interests (security, service improvement, fraud prevention, operations).</li>
+              <li>Consent (for certain marketing communications or optional tracking, where required).</li>
+              <li>Legal obligation (recordkeeping, compliance, and law-enforcement requests).</li>
+            </ul>
 
-        <h2>9. Data Sharing</h2>
-        <p>We may share personal data with:</p>
-        <ul>
-          <li>Payment processors and financial service providers.</li>
-          <li>Cloud hosting/storage and infrastructure providers.</li>
-          <li>Email delivery/CRM/marketing providers.</li>
-          <li>Professional advisers, regulators, and authorities when legally required.</li>
-        </ul>
-        <p>We do not sell personal data in exchange for monetary consideration.</p>
+            <h2>9. Data Sharing</h2>
+            <p>We may share personal data with:</p>
+            <ul>
+              <li>Payment processors and financial service providers.</li>
+              <li>Cloud hosting/storage and infrastructure providers.</li>
+              <li>Email delivery/CRM/marketing providers.</li>
+              <li>Professional advisers, regulators, and authorities when legally required.</li>
+            </ul>
+            <p>We do not sell personal data in exchange for monetary consideration.</p>
 
-        <h2>10. International Transfers</h2>
-        <p>
-          Because our service providers may operate in multiple countries, your data may be processed outside your home
-          jurisdiction. Where required, we rely on appropriate safeguards under applicable law.
-        </p>
+            <h2>10. International Transfers</h2>
+            <p>
+              Because our service providers may operate in multiple countries, your data may be processed outside your home
+              jurisdiction. Where required, we rely on appropriate safeguards under applicable law.
+            </p>
 
-        <h2>11. Data Retention</h2>
-        <p>
-          We retain data only for as long as reasonably necessary for the purposes in this policy, including legal,
-          tax, accounting, operational, and dispute-resolution requirements.
-        </p>
+            <h2>11. Data Retention</h2>
+            <p>
+              We retain data only for as long as reasonably necessary for the purposes in this policy, including legal,
+              tax, accounting, operational, and dispute-resolution requirements.
+            </p>
 
-        <h2>12. Security</h2>
-        <p>
-          We use reasonable administrative, technical, and organizational safeguards to protect personal data. No
-          internet or storage system is guaranteed to be 100% secure.
-        </p>
+            <h2>12. Security</h2>
+            <p>
+              We use reasonable administrative, technical, and organizational safeguards to protect personal data. No
+              internet or storage system is guaranteed to be 100% secure.
+            </p>
 
-        <h2>13. Your Rights</h2>
-        <p>Depending on your location, you may have rights to:</p>
-        <ul>
-          <li>Access, correct, update, or delete your personal data.</li>
-          <li>Object to or restrict certain processing.</li>
-          <li>Withdraw consent where processing depends on consent.</li>
-          <li>Request portability of data where applicable.</li>
-          <li>Complain to a data protection authority.</li>
-        </ul>
+            <h2>13. Your Rights</h2>
+            <p>Depending on your location, you may have rights to:</p>
+            <ul>
+              <li>Access, correct, update, or delete your personal data.</li>
+              <li>Object to or restrict certain processing.</li>
+              <li>Withdraw consent where processing depends on consent.</li>
+              <li>Request portability of data where applicable.</li>
+              <li>Complain to a data protection authority.</li>
+            </ul>
 
-        <h2>14. Children’s Privacy</h2>
-        <p>
-          Our services are not directed to children under 13. We do not knowingly collect personal data from children
-          under 13 without appropriate authorization.
-        </p>
+            <h2>14. Children’s Privacy</h2>
+            <p>
+              Our services are not directed to children under 13. We do not knowingly collect personal data from children
+              under 13 without appropriate authorization.
+            </p>
 
-        <h2>15. Third-Party Links</h2>
-        <p>
-          Our site may link to third-party websites/platforms. We are not responsible for the privacy practices of
-          third-party services.
-        </p>
+            <h2>15. Third-Party Links</h2>
+            <p>
+              Our site may link to third-party websites/platforms. We are not responsible for the privacy practices of
+              third-party services.
+            </p>
 
-        <h2>16. Changes to This Policy</h2>
-        <p>
-          We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last
-          updated" date and publishing the revised version on this page.
-        </p>
+            <h2>16. Changes to This Policy</h2>
+            <p>
+              We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last
+              updated" date and publishing the revised version on this page.
+            </p>
 
-        <h2>17. Contact</h2>
-        <p>
-          For privacy questions or requests, contact:
-          <a href="mailto:support@tochukwunkwocha.com">support@tochukwunkwocha.com</a>
-        </p>
+            <h2>17. Contact</h2>
+            <p>
+              For privacy questions or requests, contact:
+              <a href="mailto:support@tochukwunkwocha.com">support@tochukwunkwocha.com</a>
+            </p>
+          </div>
+        </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Tech and AI Academy" class="footer-logo-image" />
-        </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
+
+  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+    
+    <div class="footer-logo mb-6">
+      <a href="/" class="block transition-transform hover:scale-105 duration-300">
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+      </a>
+    </div>
+    
+    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+      <span class="w-8 h-px bg-brand-500/30"></span>
+      Practical AI. Real-world building.
+      <span class="w-8 h-px bg-purple-500/30"></span>
+    </div>
+    
+    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
+    </nav>
+    
+    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+      </p>
+    </div>
+    
+  </div>
+</footer>
 
     <script src="/assets/site.js"></script>
   </body>

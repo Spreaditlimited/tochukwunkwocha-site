@@ -31,184 +31,353 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#14213d',
+                900: '#0f1a33',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      /* Base Resets */
+      body {
+        background-color: #060b14;
+        color: #cbd5e1;
+      }
+      
+      /* Ambient Backgrounds */
+      .ambient-glow-1 {
+        position: absolute;
+        top: -10%;
+        left: -10%;
+        width: 60%;
+        height: 50%;
+        background: rgba(124, 58, 237, 0.1); /* Subtle purple glow */
+        border-radius: 50%;
+        filter: blur(150px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .ambient-glow-2 {
+        position: absolute;
+        bottom: 10%;
+        right: -10%;
+        width: 50%;
+        height: 60%;
+        background: rgba(37, 99, 235, 0.08); /* Subtle blue glow */
+        border-radius: 50%;
+        filter: blur(150px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .tech-grid {
+        position: absolute;
+        inset: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      /* Premium Legal Copy Styling */
+      .legal-copy {
+        position: relative;
+        z-index: 10;
+      }
+      .legal-copy h2 {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800;
+        font-size: 1.35rem;
+        color: #ffffff;
+        margin-top: 3.5rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        letter-spacing: -0.01em;
+      }
+      .legal-copy p {
+        color: #94a3b8;
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+        font-weight: 300;
+        font-size: 1rem;
+      }
+      .legal-copy p:first-of-type {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+      }
+      .legal-copy ul {
+        margin-bottom: 2rem;
+        list-style: none;
+        padding: 0;
+      }
+      .legal-copy li {
+        position: relative;
+        padding-left: 1.75rem;
+        color: #94a3b8;
+        line-height: 1.7;
+        margin-bottom: 0.85rem;
+        font-weight: 300;
+        font-size: 0.95rem;
+      }
+      .legal-copy li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.6rem;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #c084fc; /* Purple accent for T&C */
+        box-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+      }
+      .legal-copy a {
+        color: #c084fc;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid transparent;
+      }
+      .legal-copy a:hover {
+        color: #d8b4fe;
+        border-bottom-color: #d8b4fe;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#060b14] font-sans antialiased min-h-screen flex flex-col text-slate-300">
+    
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Tech and AI Academy" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-<a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/build/">Build</a>
-          
-          <a href="/#about">About</a>
-          <a href="/#faq">FAQ</a>
-          <a href="/courses/prompt-to-profit" class="nav-cta">Enrol Now</a>
+          <a href="/services/domain-registration/">Domains</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-toggle nav-cta" aria-haspopup="true" aria-expanded="false">Sign in</button>
+            <div class="nav-dropdown-menu">
+              <a href="/schools/login/">School</a>
+              <a href="/dashboard/">Individual</a>
+            </div>
+          </div>
         </nav>
       </div>
     </header>
 
-    <main>
-      <section class="page-hero">
-        <p class="section-label">Legal</p>
-        <h1>Terms & Conditions</h1>
-        <p>Last updated: March 17, 2026</p>
+    <main class="flex-1 w-full relative overflow-hidden">
+      <div class="ambient-glow-1"></div>
+      <div class="ambient-glow-2"></div>
+      <div class="tech-grid"></div>
+
+      <section class="relative z-10 pt-24 pb-12 text-center px-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 font-mono font-bold text-xs uppercase tracking-widest rounded-full mb-6 backdrop-blur-md">
+          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Legal
+        </div>
+        <h1 class="font-heading font-extrabold text-4xl sm:text-5xl text-white mb-4">Terms & Conditions</h1>
+        <p class="text-slate-500 font-mono text-sm tracking-wide">Last updated: March 17, 2026</p>
       </section>
 
-      <section class="section legal-copy">
-        <p>
-          These Terms & Conditions ("Terms") govern your use of tochukwunkwocha.com and related course offerings,
-          content, products, and services (collectively, the "Services"). By using the Services, you agree to these
-          Terms.
-        </p>
+      <section class="relative z-10 max-w-4xl mx-auto px-6 lg:px-8 pb-32">
+        <div class="bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 sm:p-12 md:p-16 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div class="legal-copy">
+            <p>
+              These Terms & Conditions ("Terms") govern your use of tochukwunkwocha.com and related course offerings,
+              content, products, and services (collectively, the "Services"). By using the Services, you agree to these
+              Terms.
+            </p>
 
-        <h2>1. Eligibility and Acceptance</h2>
-        <ul>
-          <li>You must be at least 18 years old, or use the Services with parental/guardian authorization.</li>
-          <li>You agree to provide accurate information during enrolment and payment.</li>
-          <li>If you do not agree with these Terms, do not use the Services.</li>
-        </ul>
+            <h2>1. Eligibility and Acceptance</h2>
+            <ul>
+              <li>You must be at least 18 years old, or use the Services with parental/guardian authorization.</li>
+              <li>You agree to provide accurate information during enrolment and payment.</li>
+              <li>If you do not agree with these Terms, do not use the Services.</li>
+            </ul>
 
-        <h2>2. Services and Course Access</h2>
-        <ul>
-          <li>We provide educational content, live sessions, recorded content, and related course resources.</li>
-          <li>Course structure, release schedule, and support format may evolve to improve learner outcomes.</li>
-          <li>Access periods (for example, replay windows) are described on the applicable course sales page.</li>
-        </ul>
+            <h2>2. Services and Course Access</h2>
+            <ul>
+              <li>We provide educational content, live sessions, recorded content, and related course resources.</li>
+              <li>Course structure, release schedule, and support format may evolve to improve learner outcomes.</li>
+              <li>Access periods (for example, replay windows) are described on the applicable course sales page.</li>
+            </ul>
 
-        <h2>3. Pricing, Taxes, and Payment</h2>
-        <ul>
-          <li>Prices displayed at checkout are the prices due for the selected payment method/currency.</li>
-          <li>Payment processors (including Paystack and PayPal) handle payment execution and security.</li>
-          <li>Where manual bank transfer is offered, enrolment is subject to manual verification of payment proof.</li>
-          <li>Submission to pre-enrolment does not guarantee full enrolment until payment is confirmed.</li>
-        </ul>
+            <h2>3. Pricing, Taxes, and Payment</h2>
+            <ul>
+              <li>Prices displayed at checkout are the prices due for the selected payment method/currency.</li>
+              <li>Payment processors (including Paystack and PayPal) handle payment execution and security.</li>
+              <li>Where manual bank transfer is offered, enrolment is subject to manual verification of payment proof.</li>
+              <li>Submission to pre-enrolment does not guarantee full enrolment until payment is confirmed.</li>
+            </ul>
 
-        <h2>4. Refunds and Cancellations</h2>
-        <ul>
-          <li>Any specific refund terms shown on a course checkout/sales page form part of these Terms.</li>
-          <li>Unless otherwise stated, digital course purchases are generally non-refundable once access is granted.</li>
-          <li>Nothing in these Terms overrides mandatory consumer protection rights that apply by law.</li>
-        </ul>
+            <h2>4. Refunds and Cancellations</h2>
+            <ul>
+              <li>Any specific refund terms shown on a course checkout/sales page form part of these Terms.</li>
+              <li>Unless otherwise stated, digital course purchases are generally non-refundable once access is granted.</li>
+              <li>Nothing in these Terms overrides mandatory consumer protection rights that apply by law.</li>
+            </ul>
 
-        <h2>5. Intellectual Property</h2>
-        <ul>
-          <li>
-            All course materials, text, videos, files, branding, and site content are owned by us or our licensors and
-            protected by applicable intellectual property laws.
-          </li>
-          <li>
-            You receive a limited, non-exclusive, non-transferable license for personal learning use only.
-          </li>
-          <li>
-            You must not copy, resell, republish, distribute, record, share login access, or create derivative
-            commercial products from course materials without prior written permission.
-          </li>
-        </ul>
+            <h2>5. Intellectual Property</h2>
+            <ul>
+              <li>
+                All course materials, text, videos, files, branding, and site content are owned by us or our licensors and
+                protected by applicable intellectual property laws.
+              </li>
+              <li>
+                You receive a limited, non-exclusive, non-transferable license for personal learning use only.
+              </li>
+              <li>
+                You must not copy, resell, republish, distribute, record, share login access, or create derivative
+                commercial products from course materials without prior written permission.
+              </li>
+            </ul>
 
-        <h2>6. Acceptable Use</h2>
-        <p>You agree not to:</p>
-        <ul>
-          <li>Use the Services for unlawful, fraudulent, abusive, or deceptive purposes.</li>
-          <li>Attempt unauthorized access to systems, data, or user accounts.</li>
-          <li>Upload malicious code or interfere with platform availability/security.</li>
-          <li>Harass, threaten, or infringe the rights of instructors, staff, or other learners.</li>
-        </ul>
+            <h2>6. Acceptable Use</h2>
+            <p>You agree not to:</p>
+            <ul>
+              <li>Use the Services for unlawful, fraudulent, abusive, or deceptive purposes.</li>
+              <li>Attempt unauthorized access to systems, data, or user accounts.</li>
+              <li>Upload malicious code or interfere with platform availability/security.</li>
+              <li>Harass, threaten, or infringe the rights of instructors, staff, or other learners.</li>
+            </ul>
 
-        <h2>7. User Content and Submissions</h2>
-        <p>
-          If you submit feedback, messages, files, or other materials, you grant us a limited right to use that content
-          for providing and improving the Services. You remain responsible for the legality and ownership of content you
-          submit.
-        </p>
+            <h2>7. User Content and Submissions</h2>
+            <p>
+              If you submit feedback, messages, files, or other materials, you grant us a limited right to use that content
+              for providing and improving the Services. You remain responsible for the legality and ownership of content you
+              submit.
+            </p>
 
-        <h2>8. Communications</h2>
-        <p>
-          By enrolling or transacting, you agree to receive service-related communications such as enrolment updates,
-          payment confirmations, schedule information, and access instructions. Marketing communications are managed in
-          accordance with applicable law and opt-out controls.
-        </p>
+            <h2>8. Communications</h2>
+            <p>
+              By enrolling or transacting, you agree to receive service-related communications such as enrolment updates,
+              payment confirmations, schedule information, and access instructions. Marketing communications are managed in
+              accordance with applicable law and opt-out controls.
+            </p>
 
-        <h2>9. Third-Party Services</h2>
-        <p>
-          The Services may integrate with third-party providers (including payment processors, hosting, and email/CRM
-          tools). We are not responsible for third-party outages, policy changes, or actions outside our control.
-        </p>
+            <h2>9. Third-Party Services</h2>
+            <p>
+              The Services may integrate with third-party providers (including payment processors, hosting, and email/CRM
+              tools). We are not responsible for third-party outages, policy changes, or actions outside our control.
+            </p>
 
-        <h2>10. Disclaimers</h2>
-        <ul>
-          <li>Educational content is provided for information and skills development purposes.</li>
-          <li>We do not guarantee specific business, financial, or career outcomes from course participation.</li>
-          <li>
-            Services are provided on an "as is" and "as available" basis to the maximum extent permitted by law.
-          </li>
-        </ul>
+            <h2>10. Disclaimers</h2>
+            <ul>
+              <li>Educational content is provided for information and skills development purposes.</li>
+              <li>We do not guarantee specific business, financial, or career outcomes from course participation.</li>
+              <li>
+                Services are provided on an "as is" and "as available" basis to the maximum extent permitted by law.
+              </li>
+            </ul>
 
-        <h2>11. Limitation of Liability</h2>
-        <p>
-          To the fullest extent permitted by law, we are not liable for indirect, incidental, consequential, special, or
-          punitive damages, including loss of profits, data, goodwill, or opportunity, arising from or related to your
-          use of the Services.
-        </p>
+            <h2>11. Limitation of Liability</h2>
+            <p>
+              To the fullest extent permitted by law, we are not liable for indirect, incidental, consequential, special, or
+              punitive damages, including loss of profits, data, goodwill, or opportunity, arising from or related to your
+              use of the Services.
+            </p>
 
-        <h2>12. Indemnity</h2>
-        <p>
-          You agree to indemnify and hold us harmless from claims, liabilities, damages, and expenses arising from your
-          misuse of the Services or breach of these Terms.
-        </p>
+            <h2>12. Indemnity</h2>
+            <p>
+              You agree to indemnify and hold us harmless from claims, liabilities, damages, and expenses arising from your
+              misuse of the Services or breach of these Terms.
+            </p>
 
-        <h2>13. Suspension or Termination</h2>
-        <p>
-          We may suspend or terminate access where there is suspected abuse, fraud, unlawful activity, non-payment, or
-          breach of these Terms.
-        </p>
+            <h2>13. Suspension or Termination</h2>
+            <p>
+              We may suspend or terminate access where there is suspected abuse, fraud, unlawful activity, non-payment, or
+              breach of these Terms.
+            </p>
 
-        <h2>14. Changes to These Terms</h2>
-        <p>
-          We may revise these Terms from time to time. Updated Terms will be posted on this page with a revised "Last
-          updated" date. Continued use of the Services after updates means you accept the revised Terms.
-        </p>
+            <h2>14. Changes to These Terms</h2>
+            <p>
+              We may revise these Terms from time to time. Updated Terms will be posted on this page with a revised "Last
+              updated" date. Continued use of the Services after updates means you accept the revised Terms.
+            </p>
 
-        <h2>15. Governing Law</h2>
-        <p>
-          These Terms are governed by applicable laws in the operating jurisdiction of the Services, subject to any
-          mandatory consumer rights under local law.
-        </p>
+            <h2>15. Governing Law</h2>
+            <p>
+              These Terms are governed by applicable laws in the operating jurisdiction of the Services, subject to any
+              mandatory consumer rights under local law.
+            </p>
 
-        <h2>16. Contact</h2>
-        <p>
-          For legal or terms-related questions, contact:
-          <a href="mailto:support@tochukwunkwocha.com">support@tochukwunkwocha.com</a>
-        </p>
+            <h2>16. Contact</h2>
+            <p>
+              For legal or terms-related questions, contact:
+              <a href="mailto:support@tochukwunkwocha.com">support@tochukwunkwocha.com</a>
+            </p>
+          </div>
+        </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Tech and AI Academy" class="footer-logo-image" />
-        </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
 
-    <script src="/assets/site.js"></script>
+  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+    
+    <div class="footer-logo mb-6">
+      <a href="/" class="block transition-transform hover:scale-105 duration-300">
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+      </a>
+    </div>
+    
+    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+      <span class="w-8 h-px bg-brand-500/30"></span>
+      Practical AI. Real-world building.
+      <span class="w-8 h-px bg-purple-500/30"></span>
+    </div>
+    
+    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
+    </nav>
+    
+    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+      </p>
+    </div>
+    
+  </div>
+</footer>
+
   </body>
 </html>

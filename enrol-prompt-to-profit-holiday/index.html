@@ -3,42 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Enrol | Prompt to Profit Holiday</title>
+    <title>Enrol | Prompt to Profit Summer</title>
     <meta
       name="description"
-      content="Complete your enrolment for Prompt to Profit Holiday and secure your child's seat to learn website building with AI this holiday."
+      content="Complete your enrolment for Prompt to Profit Summer and secure your child's seat to learn website building with AI this summer."
     />
     <link rel="canonical" href="https://tochukwunkwocha.com/enrol-prompt-to-profit-holiday/" />
     <meta property="og:type" content="website" />
     <meta property="fb:app_id" content="1321030133272444" />
     <meta property="og:site_name" content="Tochukwu Tech and AI Academy" />
-    <meta property="og:title" content="Enrol | Prompt to Profit Holiday" />
+    <meta property="og:title" content="Enrol | Prompt to Profit Summer" />
     <meta
       property="og:description"
-      content="Complete your enrolment for Prompt to Profit Holiday and secure your child's seat to learn website building with AI this holiday."
+      content="Complete your enrolment for Prompt to Profit Summer and secure your child's seat to learn website building with AI this summer."
     />
     <meta property="og:url" content="https://tochukwunkwocha.com/enrol-prompt-to-profit-holiday/" />
     <meta property="og:image" content="https://tochukwunkwocha.com/assets/og.png" />
     <meta property="og:image:alt" content="Tochukwu Tech and AI Academy website preview" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Enrol | Prompt to Profit Holiday" />
+    <meta name="twitter:title" content="Enrol | Prompt to Profit Summer" />
     <meta
       name="twitter:description"
-      content="Complete your enrolment for Prompt to Profit Holiday and secure your child's seat to learn website building with AI this holiday."
+      content="Complete your enrolment for Prompt to Profit Summer and secure your child's seat to learn website building with AI this summer."
     />
     <meta name="twitter:image" content="https://tochukwunkwocha.com/assets/og.png" />
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260609-seat-stepper" />
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260611-sticky-card-payment" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
-      /* Layout Container - Fixes the edge-touching issue */
+      /* Layout Container */
       .checkout-container {
-        width: var(--container);
-        margin: 40px auto 60px auto;
+        width: 100%;
+        max-width: 1280px;
+        margin: 40px auto 80px auto;
+        padding: 0 24px;
         box-sizing: border-box;
+        position: relative;
+        z-index: 10;
       }
       
       @media (min-width: 768px) {
@@ -56,7 +90,7 @@
       
       @media (min-width: 992px) {
         .checkout-grid {
-          grid-template-columns: 1fr 1.1fr; /* Switches to 2 columns on desktop */
+          grid-template-columns: 1fr 1.1fr;
           gap: 64px;
           align-items: start;
         }
@@ -67,19 +101,20 @@
         font-family: 'Manrope', sans-serif;
         font-size: 2.1rem;
         font-weight: 800;
-        line-height: 1.2;
-        color: #111827;
+        line-height: 1.15;
+        color: #ffffff;
         margin-bottom: 16px;
       }
       @media (min-width: 768px) {
-        .trust-column h1 { font-size: 2.75rem; }
+        .trust-column h1 { font-size: 3rem; }
       }
       
       .trust-column p.lead {
         font-size: 1.05rem;
-        color: #4b5563;
+        color: #94a3b8;
         margin-bottom: 32px;
-        line-height: 1.6;
+        line-height: 1.7;
+        font-weight: 300;
       }
       @media (min-width: 768px) {
         .trust-column p.lead { font-size: 1.15rem; }
@@ -90,8 +125,13 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 24px;
+        gap: 16px;
+        margin-bottom: 32px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 12px 16px;
+        border-radius: 99px;
+        display: inline-flex;
       }
       .social-proof-avatars {
         display: flex;
@@ -100,95 +140,115 @@
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        border: 2px solid #f8f6f1;
+        border: 2px solid #060b14;
         margin-left: -12px;
-        background-color: #e5e7eb;
+        background-color: #1e293b;
+        object-fit: cover;
       }
       .social-proof-avatars img:first-child { margin-left: 0; }
       .social-proof-text {
         font-size: 0.9rem;
-        color: #374151;
+        color: #e2e8f0;
         font-weight: 600;
       }
-      .social-proof-stars { color: #f59e0b; letter-spacing: 2px; }
+      .social-proof-stars { color: #fbbf24; letter-spacing: 2px; }
 
-      /* Trust Boxes */
+      /* Trust Boxes (Glassmorphic) */
       .trust-box {
         display: flex;
         align-items: flex-start;
-        gap: 16px;
-        background-color: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        gap: 20px;
+        background-color: rgba(13, 17, 23, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease, border-color 0.3s ease;
+      }
+      .trust-box:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.15);
       }
       
       .trust-box-icon {
         flex-shrink: 0;
-        width: 44px;
-        height: 44px;
-        background-color: #f0fdf4;
-        color: #16a34a;
-        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        background-color: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 0 15px rgba(74, 222, 128, 0.1);
       }
       .trust-box-icon.blue {
-        background-color: #eff6ff;
-        color: #2563eb;
+        background-color: rgba(96, 165, 250, 0.1);
+        color: #60a5fa;
+        border-color: rgba(96, 165, 250, 0.2);
+        box-shadow: 0 0 15px rgba(96, 165, 250, 0.1);
       }
       .trust-box-content h3 {
+        font-family: 'Manrope', sans-serif;
         font-weight: 700;
-        color: #111827;
-        font-size: 1.05rem;
-        margin-bottom: 4px;
+        color: #ffffff;
+        font-size: 1.1rem;
+        margin-bottom: 6px;
       }
       .trust-box-content p {
-        color: #4b5563;
+        color: #94a3b8;
         font-size: 0.95rem;
-        line-height: 1.5;
+        line-height: 1.6;
         margin: 0;
       }
 
       /* Form Column (Right) */
       .checkout-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 24px;
-        padding: 24px 20px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        background: rgba(22, 27, 34, 0.7);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 32px;
+        padding: 28px 24px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
         box-sizing: border-box;
       }
       @media (min-width: 600px) {
-        .checkout-card { padding: 40px; }
+        .checkout-card { padding: 48px; }
       }
       
-      .form-input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 14px 16px;
-        border: 1px solid #d1d5db;
-        border-radius: 10px;
-        margin-top: 6px;
-        margin-bottom: 20px;
-        font-family: 'Inter', sans-serif;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        background-color: #f9fafb;
-      }
-      .form-input:focus {
-        outline: none;
-        border-color: #2563eb;
-        background-color: #fff;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-      }
       .form-label {
         font-weight: 600;
         font-size: 0.9rem;
-        color: #374151;
+        color: #e2e8f0;
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .form-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        color: #ffffff;
+        background-color: rgba(13, 17, 23, 0.6);
+        transition: all 0.3s ease;
+      }
+      .form-input::placeholder {
+        color: #64748b;
+      }
+      .form-input:focus {
+        outline: none;
+        border-color: #60a5fa;
+        background-color: rgba(13, 17, 23, 0.9);
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
       }
 
       /* Installment Banner */
@@ -196,11 +256,11 @@
         display: flex;
         flex-direction: column;
         gap: 16px;
-        background: linear-gradient(to right, #f0fdfa, #ecfeff);
-        border: 1px solid #ccfbf1;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 16px 0 6px;
+        background: linear-gradient(to right, rgba(13, 148, 136, 0.1), rgba(15, 23, 42, 0.5));
+        border: 1px solid rgba(20, 184, 166, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 24px 0 16px;
       }
       @media (min-width: 500px) {
         .installment-banner {
@@ -211,105 +271,282 @@
       }
       
       .installment-banner h4 {
-        color: #0f766e;
+        color: #5eead4;
+        font-family: 'Manrope', sans-serif;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 1.05rem;
         margin-bottom: 4px;
       }
       .installment-banner p {
-        color: #0d9488;
-        font-size: 0.85rem;
+        color: #94a3b8;
+        font-size: 0.9rem;
         margin: 0;
       }
       .installment-btn {
         display: block;
         width: 100%;
         box-sizing: border-box;
-        background: #fff;
-        color: #0f766e;
-        border: 1px solid #99f6e4;
-        padding: 12px 16px;
-        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px 20px;
+        border-radius: 10px;
         font-size: 0.9rem;
         font-weight: 600;
         text-align: center;
         text-decoration: none;
-        transition: background 0.2s;
+        transition: all 0.3s ease;
         white-space: nowrap;
+        backdrop-filter: blur(4px);
       }
       @media (min-width: 500px) {
-        .installment-btn { width: auto; padding: 10px 16px; }
+        .installment-btn { width: auto; }
       }
-      .installment-btn:hover { background: #f0fdfa; }
+      .installment-btn:hover { 
+        background: rgba(255, 255, 255, 0.1); 
+        border-color: rgba(255, 255, 255, 0.2);
+      }
 
       /* Primary Button */
       .btn-primary-checkout {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 10px;
         width: 100%;
         box-sizing: border-box;
-        padding: 16px;
-        font-size: 1.1rem;
-        border-radius: 12px;
+        padding: 18px;
+        font-family: 'Manrope', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 800;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: white;
+        border: none;
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
       }
+      .btn-primary-checkout:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px -5px rgba(99, 102, 241, 0.5);
+      }
+      .checkout-card .enrol-form__actions {
+        background: rgba(22, 27, 34, 0.92);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom-left-radius: 32px;
+        border-bottom-right-radius: 32px;
+        box-shadow: 0 -18px 32px rgba(6, 11, 20, 0.72);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+      }
+
       .coupon-apply-btn {
-        padding: 10px 14px;
-        min-height: 42px;
-        font-size: 0.88rem;
+        padding: 0 20px;
+        height: 56px;
+        font-size: 0.9rem;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #fff;
+        font-weight: 600;
+        transition: all 0.3s;
       }
+      .coupon-apply-btn:hover {
+        background: rgba(255,255,255,0.1);
+      }
+
+      /* Custom Dropdown */
       .batch-select-premium {
         appearance: none;
         width: 100%;
-        border: 1px solid #d1d5db;
-        background-color: #f9fafb;
-        border-radius: 0.9rem;
-        padding: 0.85rem 2.8rem 0.85rem 0.95rem;
-        font-size: 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(13, 17, 23, 0.6);
+        border-radius: 12px;
+        padding: 16px 48px 16px 16px;
+        font-size: 1rem;
         font-weight: 600;
-        color: #111827;
-        transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-        background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
-        background-position: calc(100% - 22px) calc(50% - 2px), calc(100% - 16px) calc(50% - 2px);
+        color: #ffffff;
+        transition: all 0.3s ease;
+        background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+        background-position: calc(100% - 24px) calc(50% - 2px), calc(100% - 18px) calc(50% - 2px);
         background-size: 6px 6px, 6px 6px;
         background-repeat: no-repeat;
       }
-      .batch-select-premium:hover {
-        border-color: #93c5fd;
-        background-color: #fff;
+      .batch-select-premium option {
+        background-color: #0d1117;
+        color: #fff;
       }
       .batch-select-premium:focus {
         outline: none;
-        border-color: #0f172a;
-        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.14);
-        background-color: #fff;
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+        background-color: rgba(13, 17, 23, 0.9);
       }
+      
       .batch-meta-premium {
-        margin-top: 0.65rem;
-        border: 1px solid #dbe7ff;
-        background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-        color: #1e3a8a;
-        border-radius: 0.75rem;
-        padding: 0.6rem 0.75rem;
-        font-size: 0.76rem;
-        font-weight: 600;
-        line-height: 1.45;
+        margin-top: 12px;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        background: rgba(59, 130, 246, 0.05);
+        color: #93c5fd;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        line-height: 1.5;
+      }
+
+      /* Custom Radio Options */
+      .payment-options {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
+      @media (max-width: 500px) {
+        .payment-options { flex-direction: column; }
+      }
+      
+      .payment-option {
+        flex: 1;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .payment-option.is-active {
+        border-color: #60a5fa;
+        background: rgba(59, 130, 246, 0.08);
+        box-shadow: inset 0 0 0 1px #60a5fa;
+      }
+      .payment-option__title {
+        display: block;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+      }
+      .payment-option__meta {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+
+      /* Waitlist overrides */
+      #holidayWaitlistTableWrap {
+        background: rgba(245, 158, 11, 0.05) !important;
+        border-color: rgba(245, 158, 11, 0.2) !important;
+      }
+      #holidayWaitlistTableWrap p.text-amber-700 { color: #fbbf24 !important; }
+      #holidayWaitlistTableWrap p.text-amber-800 { color: #fcd34d !important; opacity: 0.8; }
+      #holidayWaitlistTableWrap th { color: #fbbf24 !important; border-bottom: 1px solid rgba(245, 158, 11, 0.2); }
+      #holidayWaitlistTableWrap tbody.text-amber-900 { color: #fde68a !important; }
+      
+      /* Breakdown/Manual boxes overrides */
+      .manual-transfer {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.05) !important;
+      }
+      .manual-transfer__title { color: #e2e8f0 !important; }
+      .manual-transfer p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.8; }
+
+      /* Group enrollment overrides */
+      .family-enrollment {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .family-toggle__copy strong,
+      .family-enrollment .form-label {
+        color: #f8fafc;
+      }
+      .family-toggle__copy span {
+        color: #94a3b8;
+      }
+      .family-children-panel {
+        border-top-color: rgba(255, 255, 255, 0.1);
+      }
+      .family-payment-summary {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.05);
+        color: #bfdbfe;
+      }
+      .family-seat-stepper {
+        background: rgba(13, 17, 23, 0.8);
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+      .family-seat-stepper__button {
+        background: rgba(255, 255, 255, 0.06);
+        color: #f8fafc;
+      }
+      .family-seat-stepper__button:hover,
+      .family-seat-stepper__button:focus-visible {
+        background: rgba(96, 165, 250, 0.16);
+      }
+      .family-enrollment .family-seat-stepper__input.form-input.family-input {
+        min-height: 44px !important;
+        padding: 0 10px !important;
+        background: rgba(2, 6, 23, 0.72) !important;
+        border-left-color: rgba(255, 255, 255, 0.12) !important;
+        border-right-color: rgba(255, 255, 255, 0.12) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-size: 1rem !important;
+        line-height: 44px !important;
+        opacity: 1 !important;
+      }
+      
+      /* Ambient Backgrounds */
+      body.bg-\[\#060b14\] {
+        background-color: #060b14 !important;
+      }
+      .ambient-glow-1 {
+        position: absolute;
+        top: -10%;
+        left: -10%;
+        width: 50%;
+        height: 50%;
+        background: rgba(37, 99, 235, 0.15);
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .ambient-glow-2 {
+        position: absolute;
+        bottom: 20%;
+        right: -10%;
+        width: 60%;
+        height: 40%;
+        background: rgba(124, 58, 237, 0.1);
+        border-radius: 50%;
+        filter: blur(150px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .tech-grid {
+        position: absolute;
+        inset: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIvPjwvc3ZnPg==');
+        z-index: 0;
+        pointer-events: none;
       }
     </style>
   </head>
-  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+  <body class="bg-[#060b14] font-sans antialiased min-h-screen flex flex-col text-slate-300">
     
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/courses">Courses</a>
-<a href="/courses/prompt-to-profit-schools/">Schools</a>
+          <a href="/courses/prompt-to-profit-schools/">Schools</a>
           <a href="/build/">Build</a>
           <a href="/services/domain-registration/">Domains</a>
           <div class="nav-dropdown">
@@ -323,12 +560,20 @@
       </div>
     </header>
 
-    <main class="flex-1 w-full">
+    <main class="flex-1 w-full relative overflow-x-hidden">
+      <div class="ambient-glow-1"></div>
+      <div class="ambient-glow-2"></div>
+      <div class="tech-grid"></div>
+
       <div class="checkout-container">
         <div class="checkout-grid">
           
-          <div class="trust-column">
-            <p class="text-xs font-bold uppercase tracking-wider text-brand-600 mb-3"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit Holiday logo" class="ptp-logo-inline" /> • Holiday Batch</p>
+          <div class="trust-column relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-300 border border-brand-500/20 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-6">
+              <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit Summer logo" class="h-3" style="filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));" />
+              <span>• Summer Batch</span>
+            </div>
+            
             <h1>Join 350+ beginners who just built their first websites with AI.</h1>
             
             <div class="social-proof">
@@ -345,21 +590,21 @@
             </div>
 
             <p class="lead">
-              Join hundreds of parents turning holiday screen time into a tech superpower. Children with zero coding experience are building real, functional websites in just days. Adults attend these classes too and go on to build amazing stuff. Enroll now.
+              We are seeing incredible transformations across the board! From 8-year-olds building their first fun web projects, to job seekers launching standout career portfolios, to adults building websites for their new businesses. Starting with absolutely zero coding experience, our students are executing fast and going live. You (or your child) are next.
             </p>
             
-            <div class="trust-box">
-              <div class="trust-box-icon">
+            <div class="trust-box group">
+              <div class="trust-box-icon group-hover:scale-110 transition-transform duration-300">
                 <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
               </div>
               <div class="trust-box-content">
-                <h3>The Perfect Holiday Activity in 5 Days</h3>
-                <p>Over 5 days, I teach adults and children how to act as a "Director" for AI. Through live sessions and simple videos, they’ll learn exactly what to say to bring their imagination to life—with zero tech stress.</p>
+                <h3>Everything you need in 5 Days</h3>
+                <p>Over 5 days, I will teach you the exact framework to command AI to build whatever you need. Whether it's a career portfolio, a business site, or a fun summer project, you get step-by-step videos, live support, and zero tech stress. Absolutely no coding required.</p>
               </div>
             </div>
 
-            <div class="trust-box">
-              <div class="trust-box-icon blue">
+            <div class="trust-box group">
+              <div class="trust-box-icon blue group-hover:scale-110 transition-transform duration-300">
                 <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
               </div>
               <div class="trust-box-content">
@@ -369,41 +614,46 @@
             </div>
           </div>
 
-          <section class="checkout-card">
-            <h2 class="text-2xl font-heading font-extrabold text-gray-900">Secure their holiday spot</h2>
-            <p id="enrolIntro" class="mt-2 text-sm text-gray-600">Fill in your details below to join the upcoming holiday batch.</p>
+          <section class="checkout-card relative z-10">
+            <h2 class="text-3xl font-heading font-extrabold text-white mb-2">Secure your spot</h2>
+            <p id="enrolIntro" class="text-sm text-slate-400 mb-8">Fill in your details below to join the upcoming summer batch.</p>
             
-          <div class="mt-4 mb-6">
-            <div id="enrolActiveBatch">
-              <span class="status-pill status-approved">Holiday Batches: Loading...</span>
-            </div>
-            <div id="holidayBatchPickerWrap" class="mt-3 hidden" hidden>
-              <label for="holidayBatchSelect" class="form-label">Choose your preferred batch</label>
-              <select id="holidayBatchSelect" class="batch-select-premium" required>
-                <option value="">Select a batch</option>
-              </select>
-              <p id="holidayBatchMeta" class="batch-meta-premium">Select one of the available holiday batches.</p>
-            </div>
-            <div id="holidayWaitlistTableWrap" class="mt-4 hidden rounded-xl border border-amber-200 bg-amber-50/70 p-3" hidden>
-              <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Waitlist</p>
-              <p id="holidayWaitlistCopy" class="mt-1 text-xs text-amber-800">Only the batches listed below are full. Join a waitlist to get priority when a seat opens.</p>
-              <div class="mt-3 overflow-x-auto">
-                <table class="min-w-full text-xs">
-                  <thead class="text-amber-700">
-                    <tr>
-                      <th class="text-left py-1 pr-3">Batch</th>
-                      <th class="text-left py-1 pr-3">Start Date (WAT)</th>
-                      <th class="text-left py-1 pr-3">Status</th>
-                      <th class="text-right py-1">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody id="holidayWaitlistRows" class="text-amber-900"></tbody>
-                </table>
+            <div class="mb-8">
+              <div id="enrolActiveBatch">
+                <span class="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full text-xs font-semibold tracking-wide">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Summer Batches: Loading...
+                </span>
+              </div>
+              
+              <div id="holidayBatchPickerWrap" class="mt-5 hidden" hidden>
+                <label for="holidayBatchSelect" class="form-label">Choose your preferred batch</label>
+                <select id="holidayBatchSelect" class="batch-select-premium" required>
+                  <option value="">Select a batch</option>
+                </select>
+                <p id="holidayBatchMeta" class="batch-meta-premium">Select one of the available summer batches.</p>
+              </div>
+              
+              <div id="holidayWaitlistTableWrap" class="mt-5 hidden rounded-xl border p-4" hidden>
+                <p class="text-xs font-bold uppercase tracking-widest text-amber-700 mb-1">Waitlist</p>
+                <p id="holidayWaitlistCopy" class="text-xs text-amber-800 mb-4">Only the batches listed below are full. Join a waitlist to get priority when a seat opens.</p>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-xs">
+                    <thead class="text-amber-700 text-left">
+                      <tr>
+                        <th class="py-2 pr-4 font-semibold uppercase tracking-wider text-[10px]">Batch</th>
+                        <th class="py-2 pr-4 font-semibold uppercase tracking-wider text-[10px]">Start Date (WAT)</th>
+                        <th class="py-2 pr-4 font-semibold uppercase tracking-wider text-[10px]">Status</th>
+                        <th class="py-2 text-right font-semibold uppercase tracking-wider text-[10px]">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="holidayWaitlistRows" class="text-amber-900 font-medium"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
 
-            <form id="enrolPageForm" data-course-slug="prompt-to-profit-holiday" data-family-enrollment="true" class="enrol-form m-0" novalidate>
+            <form id="enrolPageForm" data-course-slug="prompt-to-profit-holiday" data-family-enrollment="true" class="m-0" novalidate>
               
               <div>
                 <label for="enrolFirstName" class="form-label">Your full name</label>
@@ -420,63 +670,66 @@
                 <input id="enrolPhone" name="phone" type="tel" class="form-input" autocomplete="tel" placeholder="e.g. +2348012345678" required />
               </div>
 
-              <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+              <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-4 mb-6 cursor-pointer hover:bg-white/10 transition-colors">
                 <input
                   type="checkbox"
                   id="whatsappOptIn"
                   name="whatsappOptIn"
-                  class="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                  class="mt-1 h-4 w-4 rounded border-gray-600 bg-gray-800 text-brand-500 focus:ring-brand-500 focus:ring-offset-gray-900"
                   checked
                 />
-                <span>
+                <span class="text-sm text-slate-300 leading-relaxed">
                   I agree to receive waitlist updates on WhatsApp from Tochukwu Tech. Reply STOP anytime to opt out.
                 </span>
               </label>
 
               <div>
                 <label for="couponCodeInput" class="form-label">Coupon code (optional)</label>
-                <div class="flex items-center gap-2">
-                  <input id="couponCodeInput" name="couponCode" type="text" class="form-input mb-0" placeholder="Enter coupon code if available" />
-                  <button id="applyCouponBtn" type="button" class="btn btn-outline coupon-apply-btn shrink-0">Apply</button>
+                <div class="flex items-start gap-2">
+                  <input id="couponCodeInput" name="couponCode" type="text" class="form-input flex-1 !mb-0" placeholder="Enter code" />
+                  <button id="applyCouponBtn" type="button" class="coupon-apply-btn shrink-0">Apply</button>
                 </div>
                 <p id="couponStatus" class="text-xs mt-2 hidden"></p>
-                <p id="couponSummary" class="text-xs mt-1 text-gray-600 hidden"></p>
+                <p id="couponSummary" class="text-xs mt-1 text-brand-300 hidden font-medium"></p>
               </div>
 
-
-              <div class="mt-2">
+              <div class="mt-8">
+                <label class="form-label mb-3">Payment Method</label>
                 <input id="enrolProvider" name="provider" type="hidden" value="paystack" />
                 
                 <div class="payment-options" role="radiogroup" aria-label="Payment method">
                   <button type="button" class="payment-option is-active" data-provider="paystack" role="radio" aria-checked="true">
                     <span class="payment-option__title">Paystack</span>
-                    <span class="payment-option__meta" id="paystackOptionMeta">Pay in full</span>
+                    <span class="payment-option__meta" id="paystackOptionMeta">Pay in full securely</span>
                   </button>
                   <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">
-                    <span class="payment-option__title">Manual bank transfer</span>
-                    <span class="payment-option__meta" id="manualOptionMeta">Transfer and upload proof</span>
+                    <span class="payment-option__title">Bank Transfer</span>
+                    <span class="payment-option__meta" id="manualOptionMeta">Upload payment proof</span>
                   </button>
                 </div>
               </div>
 
-              <section id="paystackBreakdown" class="manual-transfer mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50 hidden" hidden>
-                <div class="manual-transfer__bank mb-4" id="paystackBreakdownDetails">
-                  <p class="manual-transfer__title font-bold text-sm text-gray-900">Payment information</p>
-                  <p><strong>Actual course price:</strong> <span id="breakdownCoursePrice">-</span></p>
-                  <p><strong>VAT:</strong> <span id="breakdownVat">-</span></p>
-                  <p><strong>Paystack processing fee:</strong> <span id="breakdownPaystackFee">-</span></p>
-                  <p><strong>Total (You pay):</strong> <span id="breakdownTotal">-</span></p>
+              <section id="paystackBreakdown" class="manual-transfer mt-2 p-5 rounded-xl hidden" hidden>
+                <div class="mb-2" id="paystackBreakdownDetails">
+                  <p class="manual-transfer__title font-bold text-sm mb-3">Payment Summary</p>
+                  <div class="space-y-2 text-sm text-slate-400">
+                    <p class="flex justify-between"><span>Course price:</span> <strong class="text-white" id="breakdownCoursePrice">-</strong></p>
+                    <p class="flex justify-between"><span>VAT:</span> <strong class="text-white" id="breakdownVat">-</strong></p>
+                    <p class="flex justify-between"><span>Processing fee:</span> <strong class="text-white" id="breakdownPaystackFee">-</strong></p>
+                    <div class="h-px bg-white/10 my-2"></div>
+                    <p class="flex justify-between text-brand-300 font-bold"><span>Total:</span> <span id="breakdownTotal">-</span></p>
+                  </div>
                 </div>
               </section>
 
-              <section id="manualTransferBlock" class="manual-transfer mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50" hidden>
-                <div class="manual-transfer__bank mb-4" id="manualBankDetails">
-                  <p class="manual-transfer__title font-bold text-sm text-gray-900">Bank details</p>
-                  <p class="text-sm text-gray-600">Bank details will appear here.</p>
+              <section id="manualTransferBlock" class="manual-transfer mt-2 p-5 rounded-xl" hidden>
+                <div class="mb-5" id="manualBankDetails">
+                  <p class="manual-transfer__title font-bold text-sm mb-2">Bank details</p>
+                  <p class="text-sm text-slate-400">Bank details will appear here.</p>
                 </div>
-                <label for="manualProofFile" class="form-label">Payment proof (image/PDF)</label>
-                <input id="manualProofFile" name="manualProofFile" type="file" accept="image/*,.pdf" class="form-input mb-0" />
-                <p class="manual-transfer__hint text-xs text-gray-500 mt-2">After upload and confirm, you will be added to pre-enrolment while payment is manually verified.</p>
+                <label for="manualProofFile" class="form-label">Upload Payment Proof (Image/PDF)</label>
+                <input id="manualProofFile" name="manualProofFile" type="file" accept="image/*,.pdf" class="form-input !mb-0 !p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-500/20 file:text-brand-300 hover:file:bg-brand-500/30" />
+                <p class="text-xs text-slate-500 mt-3 leading-relaxed">After upload and confirm, you will be added to pre-enrolment while payment is manually verified.</p>
               </section>
 
               <div class="installment-banner">
@@ -487,46 +740,66 @@
                 <a href="https://tochukwunkwocha.com/dashboard/" class="installment-btn">Open Installment Wallet</a>
               </div>
 
-              <p id="enrolError" class="enrol-form__error hidden text-red-600 text-sm mt-4 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert"></p>
-              <p id="enrolSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 hidden mt-4"></p>
+              <p id="enrolError" class="hidden text-rose-400 text-sm mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl" role="alert"></p>
+              <p id="enrolSuccess" class="hidden text-emerald-400 text-sm mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"></p>
               
-            <div class="enrol-form__actions mt-3">
-              <button id="enrolSubmit" class="btn btn-primary btn-primary-checkout" type="submit">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Complete Secure Enrolment
-              </button>
-            </div>
-            <p class="text-center text-xs text-gray-500 mt-3">
-              By enrolling, you agree to our
-              <a href="/terms-and-conditions" class="font-semibold text-blue-700 hover:text-blue-800" style="text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;">Terms &amp; Conditions</a>.
-            </p>
-          </form>
-        </section>
+              <div class="enrol-form__actions mt-8">
+                <button id="enrolSubmit" class="btn-primary-checkout" type="submit">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  Complete Secure Enrolment
+                </button>
+              </div>
+              <p class="text-center text-xs text-slate-500 mt-5">
+                By enrolling, you agree to our
+                <a href="/terms-and-conditions" class="font-medium text-brand-400 hover:text-brand-300 transition-colors underline underline-offset-4 decoration-white/20">Terms &amp; Conditions</a>.
+              </p>
+            </form>
+          </section>
 
         </div>
       </div>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
-        </div>
-        <div class="footer-tagline">Practical AI. Real-world building.</div>
-        <nav class="footer-links" aria-label="Footer links">
-          <a href="/">Home</a>
-          <a href="/courses">Courses</a>
-          <a href="/blog/">Blog</a>
-<a href="/privacy-policy">Privacy</a>
-          <a href="/terms-and-conditions">Terms</a>
-          <a href="/contact">Contact</a>
-        </nav>
-        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
+
+  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+    
+    <div class="footer-logo mb-6">
+      <a href="/" class="block transition-transform hover:scale-105 duration-300">
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+      </a>
+    </div>
+    
+    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
+      <span class="w-8 h-px bg-brand-500/30"></span>
+      Practical AI. Real-world building.
+      <span class="w-8 h-px bg-purple-500/30"></span>
+    </div>
+    
+    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
+      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
+      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
+      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
+      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
+      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
+      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
+    </nav>
+    
+    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
+      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
+        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
+      </p>
+    </div>
+    
+  </div>
+</footer>
+
 
     <script src="/assets/site.js" defer></script>
     <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/enrol-page.js?v=20260609-seat-stepper" defer></script>
+    <script src="/assets/enrol-page.js?v=20260611-group-enrollment" defer></script>
   </body>
 </html>
