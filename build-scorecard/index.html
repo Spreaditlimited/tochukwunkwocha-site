@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Build Scorecard | Tochukwu Nkwocha</title>
-    <meta name="robots" content="noindex, nofollow" /> <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <meta name="robots" content="noindex, nofollow" /> 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -16,14 +17,20 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
               heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
             },
             colors: {
-              build: {
-                ink: '#1f2328',
-                warm: '#f7f3ed',
-                panel: '#fffdf9',
-                soft: '#ede6dd',
-                accent: '#2d4a3d',
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
               }
             }
           }
@@ -31,23 +38,52 @@
       }
     </script>
 
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .input-premium {
+          @apply block w-full rounded-xl border border-white/10 py-4 px-5 text-white bg-[#060b14]/50 shadow-inner transition-all duration-300;
+          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#060b14]/80 focus:bg-[#060b14] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 sm:text-sm outline-none backdrop-blur-sm;
+        }
+
+        .radio-card-body {
+          @apply flex items-center p-5 rounded-xl border border-white/10 bg-white/5 transition-all duration-300 hover:bg-white/10 hover:border-white/20 cursor-pointer;
+        }
+
+        .radio-indicator {
+          @apply h-5 w-5 rounded-full border-2 border-slate-600 mr-4 flex-shrink-0 transition-all duration-300;
+        }
+
+        /* Active Radio States */
+        .radio-card-input:checked + .radio-card-body {
+          @apply border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.15)];
+        }
+        .radio-card-input:checked + .radio-card-body .radio-indicator {
+          @apply bg-emerald-400 border-emerald-400 shadow-[0_0_8px_#34d399];
+        }
+        .radio-card-input:focus-visible + .radio-card-body {
+          @apply outline outline-2 outline-emerald-400 outline-offset-2;
+        }
+
+        .btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-8 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] hover:-translate-y-0.5 focus:outline-none border-none;
+        }
+        
+        .btn-outline {
+          @apply inline-flex items-center justify-center text-sm font-bold text-slate-400 transition-colors duration-300 hover:text-white;
+        }
+      }
+    </style>
+
     <style>
       body {
-        background: #f7f3ed;
-        color: #1f2328;
+        background: #060b14;
+        color: #cbd5e1;
       }
 
-      /* Subtle dot background for premium feel */
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image: radial-gradient(rgba(31, 35, 40, 0.09) 0.6px, transparent 0.6px);
-        background-size: 14px 14px;
-        opacity: 0.4;
-        pointer-events: none;
-        z-index: -1;
-      }
+      /* Deep Space Backgrounds */
+      .ambient-glow-1 { position: fixed; top: -10%; left: -10%; width: 60%; height: 50%; background: rgba(16, 185, 129, 0.15); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .ambient-glow-2 { position: fixed; bottom: -10%; right: -10%; width: 50%; height: 60%; background: rgba(6, 182, 212, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .tech-grid { position: fixed; inset: 0; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg=='); pointer-events: none; z-index: 0; }
 
       /* Form Step Transitions */
       .step-container {
@@ -62,331 +98,309 @@
         opacity: 1;
         transform: translateY(0);
       }
-
-      /* Premium Form Elements */
-      .input-premium {
-        width: 100%;
-        background: #fffdf9;
-        border: 1px solid #ede6dd;
-        border-radius: 0.75rem;
-        padding: 1rem 1.25rem;
-        font-size: 1rem;
-        color: #1f2328;
-        transition: all 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-      }
-      
-      .input-premium:focus {
-        outline: none;
-        border-color: #2d4a3d;
-        box-shadow: 0 0 0 3px rgba(45, 74, 61, 0.1);
-      }
-
-      /* Custom Radio Cards */
-      .radio-card-input:checked + .radio-card-body {
-        border-color: #2d4a3d;
-        background-color: rgba(45, 74, 61, 0.03);
-        box-shadow: 0 0 0 1px #2d4a3d;
-      }
-      .radio-card-input:checked + .radio-card-body .radio-indicator {
-        background-color: #2d4a3d;
-        border-color: #2d4a3d;
-      }
-      .radio-card-input:focus-visible + .radio-card-body {
-        outline: 2px solid #2d4a3d;
-        outline-offset: 2px;
-      }
     </style>
   </head>
-  <body class="font-sans antialiased min-h-screen flex flex-col selection:bg-build-accent selection:text-white">
+  <body class="font-sans antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
 
-    <header class="w-full py-6 px-6 lg:px-8 flex items-center justify-between z-10 relative">
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+    <div class="tech-grid"></div>
+
+    <header class="w-full py-6 px-6 lg:px-8 flex items-center justify-between z-20 relative">
       <a href="/" class="transition hover:opacity-70">
-        <img src="/assets/logo.png" alt="Tochukwu Nkwocha" class="h-8 object-contain" onerror="this.outerHTML='<span class=\'font-heading font-extrabold text-xl tracking-tight\'>TN<span class=\'text-build-accent\'>.</span></span>'" />
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="h-8 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" onerror="this.outerHTML='<span class=\'font-heading font-extrabold text-xl tracking-tight text-white\'>TN<span class=\'text-emerald-400\'>.</span></span>'" />
       </a>
-      <a href="/build/" class="text-xs font-bold uppercase tracking-widest text-build-ink/50 hover:text-build-ink transition">Cancel</a>
+      <a href="/build/" class="text-xs font-mono font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors duration-300">Cancel</a>
     </header>
 
-    <div class="fixed top-0 left-0 w-full h-1 bg-build-soft z-50">
-      <div id="progressBar" class="h-full bg-build-accent transition-all duration-500 ease-out" style="width: 10%;"></div>
+    <div class="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
+      <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(16,185,129,0.8)]" style="width: 10%;"></div>
     </div>
 
     <main class="flex-1 w-full flex items-center justify-center py-12 px-4 sm:px-6 relative z-10">
-      <div class="w-full max-w-2xl">
+      <div class="w-full max-w-3xl">
         
-        <form id="scorecardForm" class="relative" novalidate onsubmit="event.preventDefault(); submitForm();">
-          
-          <div id="introStep" class="step-container active text-center pt-8 pb-16">
-            <span class="inline-flex items-center rounded-full border border-build-soft bg-white/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-build-accent mb-6 shadow-sm">
-              <span class="mr-1.5 flex h-1.5 w-1.5 rounded-full bg-build-accent animate-pulse"></span>
-              Application
-            </span>
-            <h1 class="text-4xl sm:text-5xl font-heading font-extrabold text-build-ink tracking-tight mb-4">Let’s Understand What You’re Building.</h1>
-            <p class="text-lg text-build-ink/70 max-w-lg mx-auto mb-10">This short scorecard helps determine whether your project fits the Build implementation model.</p>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm font-semibold text-build-ink/60 mb-10">
-              <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 3–5 minutes</span>
-              <span class="hidden sm:block h-1 w-1 rounded-full bg-build-soft"></span>
-              <span>Automatically Scored</span>
-            </div>
-            <button type="button" onclick="nextStep(1)" class="rounded-xl bg-build-ink px-10 py-4 text-sm font-bold text-white transition-all hover:bg-black hover:shadow-xl hover:-translate-y-0.5">
-              Start Application
-            </button>
-          </div>
+        <div class="bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 sm:p-10 lg:p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500"></div>
 
-          <div class="step-container" data-step="1">
-            <h2 class="text-2xl font-heading font-extrabold mb-6">The Basics</h2>
-            <div class="space-y-5">
-              <div class="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label class="block text-sm font-bold text-build-ink mb-2">Full Name</label>
-                  <input id="fullName" type="text" required class="input-premium" placeholder="John Doe">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-build-ink mb-2">Company Name</label>
-                  <input id="companyName" type="text" required class="input-premium" placeholder="Acme Corp">
-                </div>
-              </div>
-              <div class="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label class="block text-sm font-bold text-build-ink mb-2">Email Address</label>
-                  <input id="emailAddress" type="email" required class="input-premium" placeholder="john@company.com">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-build-ink mb-2">Phone Number</label>
-                  <input id="phoneNumber" type="tel" required class="input-premium" placeholder="+234 ...">
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-2">Website <span class="text-build-ink/40 font-normal">(Optional)</span></label>
-                <input id="websiteUrl" type="url" class="input-premium" placeholder="https://">
-              </div>
-            </div>
-            <div class="mt-8 flex justify-end">
-              <button type="button" onclick="nextStep(2)" class="rounded-xl bg-build-ink px-8 py-3.5 text-sm font-bold text-white transition hover:bg-black">Continue</button>
-            </div>
-          </div>
-
-          <div class="step-container" data-step="2">
-            <h2 class="text-2xl font-heading font-extrabold mb-2">The Project</h2>
-            <p class="text-build-ink/60 text-sm mb-6">Be specific. Vague requests are harder to qualify.</p>
-            <div class="space-y-6">
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-2">What exactly do you want to build?</label>
-                <textarea id="buildDesc" required rows="3" class="input-premium resize-none" placeholder="e.g., A customer portal for our logistics clients..."></textarea>
-              </div>
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-2">Describe the problem you are solving.</label>
-                <p class="text-xs text-build-ink/50 mb-3">Hint: The more detail on your current pain points, the better.</p>
-                <textarea id="problemDesc" required rows="4" class="input-premium resize-none" placeholder="e.g., We currently onboard drivers through WhatsApp and manually track documents across spreadsheets..."></textarea>
-              </div>
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-2">Who will use this system?</label>
-                <input id="systemUsers" type="text" required class="input-premium" placeholder="Internal staff, external clients, etc.">
-              </div>
-            </div>
-            <div class="mt-8 flex justify-between items-center">
-              <button type="button" onclick="prevStep(1)" class="text-sm font-bold text-build-ink/50 hover:text-build-ink">Back</button>
-              <button type="button" onclick="nextStep(3)" class="rounded-xl bg-build-ink px-8 py-3.5 text-sm font-bold text-white transition hover:bg-black">Continue</button>
-            </div>
-          </div>
-
-          <div class="step-container" data-step="3">
-            <h2 class="text-2xl font-heading font-extrabold mb-6">Current Operations</h2>
-            <label class="block text-sm font-bold text-build-ink mb-4">How do you currently handle this process?</label>
-            <div class="space-y-3">
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="currentProcess" value="chaos" required class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 transition"></div>
-                  <span class="text-sm font-semibold">Spreadsheets & WhatsApp (Chaos)</span>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="currentProcess" value="combo" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 transition"></div>
-                  <span class="text-sm font-semibold">A combination of unlinked tools</span>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="currentProcess" value="paper" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 transition"></div>
-                  <span class="text-sm font-semibold">Mostly Paper / Manual entry</span>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="currentProcess" value="existing" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 transition"></div>
-                  <span class="text-sm font-semibold">We use existing software, but it's limiting</span>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="currentProcess" value="none" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 transition"></div>
-                  <span class="text-sm font-semibold">No process currently (Exploring new idea)</span>
-                </div>
-              </label>
-            </div>
-            <div class="mt-8 flex justify-between items-center">
-              <button type="button" onclick="prevStep(2)" class="text-sm font-bold text-build-ink/50 hover:text-build-ink">Back</button>
-              <button type="button" onclick="nextStep(4)" class="rounded-xl bg-build-ink px-8 py-3.5 text-sm font-bold text-white transition hover:bg-black">Continue</button>
-            </div>
-          </div>
-
-          <div class="step-container" data-step="4">
-            <h2 class="text-2xl font-heading font-extrabold mb-6">Technical Scope</h2>
-            <label class="block text-sm font-bold text-build-ink mb-4">Which category best describes your project?</label>
-            <div class="space-y-3">
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="complexity" value="simple" required class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 flex-shrink-0 transition"></div>
-                  <div>
-                    <span class="text-sm font-semibold block">Focused Systems</span>
-                    <span class="text-xs text-build-ink/60">Dashboards, internal tools, customer portals, booking systems, e-commerce websites.</span>
-                  </div>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="complexity" value="medium" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 flex-shrink-0 transition"></div>
-                  <div>
-                    <span class="text-sm font-semibold block">Medium Complexity Workflow</span>
-                    <span class="text-xs text-build-ink/60">Custom logic integrating multiple business rules.</span>
-                  </div>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="complexity" value="dq_marketplace" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 flex-shrink-0 transition"></div>
-                  <div>
-                    <span class="text-sm font-semibold block">Mass Consumer Apps</span>
-                    <span class="text-xs text-build-ink/60">Uber clones, Social Networks, B2B/B2C Marketplaces.</span>
-                  </div>
-                </div>
-              </label>
-              <label class="relative block cursor-pointer group">
-                <input type="radio" name="complexity" value="dq_fintech" class="peer sr-only radio-card-input">
-                <div class="radio-card-body flex items-center p-4 rounded-xl border border-build-soft bg-white transition group-hover:border-build-ink/20">
-                  <div class="radio-indicator h-4 w-4 rounded-full border-2 border-build-soft mr-4 flex-shrink-0 transition"></div>
-                  <div>
-                    <span class="text-sm font-semibold block">Heavy Infrastructure</span>
-                    <span class="text-xs text-build-ink/60">Deep AI infrastructure or Core Fintech platforms.</span>
-                  </div>
-                </div>
-              </label>
-            </div>
-            <div class="mt-8 flex justify-between items-center">
-              <button type="button" onclick="prevStep(3)" class="text-sm font-bold text-build-ink/50 hover:text-build-ink">Back</button>
-              <button type="button" onclick="nextStep(5)" class="rounded-xl bg-build-ink px-8 py-3.5 text-sm font-bold text-white transition hover:bg-black">Continue</button>
-            </div>
-          </div>
-
-          <div class="step-container" data-step="5">
-            <h2 class="text-2xl font-heading font-extrabold mb-6">Logistics & Budget</h2>
+          <form id="scorecardForm" class="relative" novalidate onsubmit="event.preventDefault(); submitForm();">
             
-            <div class="space-y-8">
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-3">Allocated Budget Range</label>
-                <p class="mb-3 text-xs text-build-ink/50">USD equivalents calculated at ₦1,400 per $1.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_1m_3m" required class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦1m – ₦3m<br><span class="text-xs font-normal text-build-ink/50">Approx. $714 – $2,143</span></div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_3m_5m" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦3m – ₦5m<br><span class="text-xs font-normal text-build-ink/50">Approx. $2,143 – $3,571</span></div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_5m_plus" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">₦5m+<br><span class="text-xs font-normal text-build-ink/50">Approx. $3,571+</span></div></label>
+            <div id="introStep" class="step-container active text-center pt-6 pb-6">
+              <span class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 mb-8 shadow-sm backdrop-blur-md">
+                <span class="mr-2 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                Application
+              </span>
+              <h1 class="text-4xl sm:text-5xl font-heading font-extrabold text-white tracking-tight mb-6 leading-tight">Let’s Understand What You’re Building.</h1>
+              <p class="text-lg text-slate-400 max-w-lg mx-auto mb-10 font-light">This short scorecard helps determine whether your project fits the Build implementation model.</p>
+              
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs font-mono font-semibold text-slate-500 mb-10 uppercase tracking-widest">
+                <span class="flex items-center gap-2"><svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 3–5 minutes</span>
+                <span class="hidden sm:block h-1.5 w-1.5 rounded-full bg-white/20"></span>
+                <span>Automatically Scored</span>
+              </div>
+              
+              <button type="button" onclick="nextStep(1)" class="btn-primary">
+                Start Application
+              </button>
+            </div>
+
+            <div class="step-container" data-step="1">
+              <h2 class="text-2xl font-heading font-extrabold text-white mb-8">The Basics</h2>
+              <div class="space-y-6">
+                <div class="grid sm:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Full Name</label>
+                    <input id="fullName" type="text" required class="input-premium" placeholder="John Doe">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Company Name</label>
+                    <input id="companyName" type="text" required class="input-premium" placeholder="Acme Corp">
+                  </div>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Email Address</label>
+                    <input id="emailAddress" type="email" required class="input-premium" placeholder="john@company.com">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-bold text-slate-300 mb-2">Phone Number</label>
+                    <input id="phoneNumber" type="tel" required class="input-premium" placeholder="+234 ...">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-2">Website <span class="text-slate-500 font-normal font-mono text-xs ml-1">(Optional)</span></label>
+                  <input id="websiteUrl" type="url" class="input-premium" placeholder="https://">
                 </div>
               </div>
+              <div class="mt-10 flex justify-end border-t border-white/5 pt-6">
+                <button type="button" onclick="nextStep(2)" class="btn-primary">Continue</button>
+              </div>
+            </div>
 
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-3">Are you the final decision maker for this project?</label>
-                <div class="flex gap-4">
-                  <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="10" required class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Yes</div></label>
-                  <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="5" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Partially</div></label>
-                  <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="0" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">No</div></label>
+            <div class="step-container" data-step="2">
+              <h2 class="text-2xl font-heading font-extrabold text-white mb-2">The Project</h2>
+              <p class="text-slate-400 text-sm mb-8 font-light">Be specific. Vague requests are harder to qualify.</p>
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-2">What exactly do you want to build?</label>
+                  <textarea id="buildDesc" required rows="3" class="input-premium resize-none" placeholder="e.g., A customer portal for our logistics clients..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-1">Describe the problem you are solving.</label>
+                  <p class="text-xs text-slate-500 mb-3 font-mono">Hint: The more detail on your current pain points, the better.</p>
+                  <textarea id="problemDesc" required rows="4" class="input-premium resize-none" placeholder="e.g., We currently onboard drivers through WhatsApp and manually track documents across spreadsheets..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-2">Who will use this system?</label>
+                  <input id="systemUsers" type="text" required class="input-premium" placeholder="Internal staff, external clients, etc.">
                 </div>
               </div>
+              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+                <button type="button" onclick="prevStep(1)" class="btn-outline">Back</button>
+                <button type="button" onclick="nextStep(3)" class="btn-primary">Continue</button>
+              </div>
+            </div>
 
-              <div>
-                <label class="block text-sm font-bold text-build-ink mb-3">Expected Delivery Timeline</label>
-                <div class="grid grid-cols-2 gap-3">
-                  <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="dq_immediate" required class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Need in 7 days</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="10" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Start immediately (30 Days)</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="5" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">1 – 3 months</div></label>
-                  <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="dq_exploring" class="peer sr-only radio-card-input"><div class="radio-card-body p-3 rounded-xl border border-build-soft bg-white text-center text-sm font-semibold transition group-hover:border-build-ink/20">Still exploring ideas</div></label>
+            <div class="step-container" data-step="3">
+              <h2 class="text-2xl font-heading font-extrabold text-white mb-6">Current Operations</h2>
+              <label class="block text-sm font-bold text-slate-300 mb-4">How do you currently handle this process?</label>
+              <div class="space-y-4">
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="currentProcess" value="chaos" required class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <span class="text-sm font-semibold text-white">Spreadsheets & WhatsApp (Chaos)</span>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="currentProcess" value="combo" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <span class="text-sm font-semibold text-white">A combination of unlinked tools</span>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="currentProcess" value="paper" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <span class="text-sm font-semibold text-white">Mostly Paper / Manual entry</span>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="currentProcess" value="existing" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <span class="text-sm font-semibold text-white">We use existing software, but it's limiting</span>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="currentProcess" value="none" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <span class="text-sm font-semibold text-white">No process currently (Exploring new idea)</span>
+                  </div>
+                </label>
+              </div>
+              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+                <button type="button" onclick="prevStep(2)" class="btn-outline">Back</button>
+                <button type="button" onclick="nextStep(4)" class="btn-primary">Continue</button>
+              </div>
+            </div>
+
+            <div class="step-container" data-step="4">
+              <h2 class="text-2xl font-heading font-extrabold text-white mb-6">Technical Scope</h2>
+              <label class="block text-sm font-bold text-slate-300 mb-4">Which category best describes your project?</label>
+              <div class="space-y-4">
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="complexity" value="simple" required class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <div>
+                      <span class="text-sm font-bold text-white block mb-1">Focused Systems</span>
+                      <span class="text-xs text-slate-400 font-light leading-relaxed block">Dashboards, internal tools, customer portals, booking systems, e-commerce websites.</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="complexity" value="medium" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <div>
+                      <span class="text-sm font-bold text-white block mb-1">Medium Complexity Workflow</span>
+                      <span class="text-xs text-slate-400 font-light leading-relaxed block">Custom logic integrating multiple business rules.</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="complexity" value="dq_marketplace" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <div>
+                      <span class="text-sm font-bold text-white block mb-1">Mass Consumer Apps</span>
+                      <span class="text-xs text-slate-400 font-light leading-relaxed block">Uber clones, Social Networks, B2B/B2C Marketplaces.</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="relative block cursor-pointer group">
+                  <input type="radio" name="complexity" value="dq_fintech" class="peer sr-only radio-card-input">
+                  <div class="radio-card-body">
+                    <div class="radio-indicator"></div>
+                    <div>
+                      <span class="text-sm font-bold text-white block mb-1">Heavy Infrastructure</span>
+                      <span class="text-xs text-slate-400 font-light leading-relaxed block">Deep AI infrastructure or Core Fintech platforms.</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+                <button type="button" onclick="prevStep(3)" class="btn-outline">Back</button>
+                <button type="button" onclick="nextStep(5)" class="btn-primary">Continue</button>
+              </div>
+            </div>
+
+            <div class="step-container" data-step="5">
+              <h2 class="text-2xl font-heading font-extrabold text-white mb-8">Logistics & Budget</h2>
+              
+              <div class="space-y-10">
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-2">Allocated Budget Range</label>
+                  <p class="mb-4 text-xs font-mono text-slate-500">USD equivalents calculated at ₦1,400 per $1.</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_1m_3m" required class="peer sr-only radio-card-input"><div class="radio-card-body justify-center text-center !flex-col"><span class="text-[15px] font-bold text-white mb-1">₦1m – ₦3m</span><span class="text-[11px] font-light text-slate-400">Approx. $714 – $2,143</span></div></label>
+                    <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_3m_5m" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center text-center !flex-col"><span class="text-[15px] font-bold text-white mb-1">₦3m – ₦5m</span><span class="text-[11px] font-light text-slate-400">Approx. $2,143 – $3,571</span></div></label>
+                    <label class="relative block cursor-pointer group"><input type="radio" name="budget" value="ngn_5m_plus" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center text-center !flex-col"><span class="text-[15px] font-bold text-white mb-1">₦5m+</span><span class="text-[11px] font-light text-slate-400">Approx. $3,571+</span></div></label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-4">Are you the final decision maker for this project?</label>
+                  <div class="flex flex-col sm:flex-row gap-4">
+                    <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="10" required class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">Yes</span></div></label>
+                    <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="5" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">Partially</span></div></label>
+                    <label class="relative block cursor-pointer group flex-1"><input type="radio" name="decision" value="0" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">No</span></div></label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-4">Expected Delivery Timeline</label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="dq_immediate" required class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">Need in 7 days</span></div></label>
+                    <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="10" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">Start immediately (30 Days)</span></div></label>
+                    <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="5" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">1 – 3 months</span></div></label>
+                    <label class="relative block cursor-pointer group"><input type="radio" name="timeline" value="dq_exploring" class="peer sr-only radio-card-input"><div class="radio-card-body justify-center"><span class="text-sm font-bold text-white">Still exploring ideas</span></div></label>
+                  </div>
+                </div>
+
+                <label class="flex items-start mt-8 cursor-pointer group p-5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
+                  <input id="discoveryAcknowledgement" type="checkbox" required class="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 cursor-pointer">
+                  <span class="ml-4 text-sm text-slate-300 leading-relaxed font-light">
+                    I understand that discovery sessions are paid, implementation slots are strictly limited to one per month, and submission does not guarantee selection.
+                  </span>
+                </label>
+
+              </div>
+              
+              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+                <button type="button" onclick="prevStep(4)" class="btn-outline">Back</button>
+                <button type="submit" class="btn-primary w-full sm:w-auto">Submit Scorecard</button>
+              </div>
+            </div>
+          </form>
+
+          <div id="resultSuccess" class="hidden text-center pt-6 pb-6">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-8 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+              <svg class="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h2 class="text-3xl font-heading font-extrabold text-white mb-4">Great fit.</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-md mx-auto font-light">Based on your responses, your project aligns perfectly with the Build methodology. You can now book your paid discovery session.</p>
+            
+            <div class="mx-auto mb-10 max-w-md rounded-2xl border border-white/10 bg-[#161b22]/50 p-8 text-left shadow-inner">
+              <p class="mb-5 text-[10px] font-mono font-bold uppercase tracking-[0.16em] text-slate-500">Discovery Call Fee Breakdown</p>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between text-sm text-slate-300">
+                  <span>Discovery call fee</span>
+                  <span id="feeBaseAmount" class="font-bold text-white">₦100,000</span>
+                </div>
+                <div class="flex items-center justify-between text-sm text-slate-300">
+                  <span id="feeVatLabel">VAT</span>
+                  <span id="feeVatAmount" class="font-bold text-white">—</span>
+                </div>
+                <div class="flex items-center justify-between text-sm text-slate-300">
+                  <span>Processing fee</span>
+                  <span id="feePaystackAmount" class="font-bold text-white">—</span>
                 </div>
               </div>
-
-              <label class="flex items-start mt-6 cursor-pointer group">
-                <input id="discoveryAcknowledgement" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-build-accent focus:ring-build-accent cursor-pointer">
-                <span class="ml-3 text-sm text-build-ink/80 leading-relaxed">
-                  I understand that discovery sessions are paid, implementation slots are strictly limited to one per month, and submission does not guarantee selection.
-                </span>
-              </label>
-
+              <div class="mt-6 border-t border-white/10 pt-6">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold uppercase tracking-[0.1em] text-emerald-400">Total Payable</span>
+                  <span id="feeTotalAmount" class="text-2xl font-heading font-extrabold text-white">—</span>
+                </div>
+              </div>
             </div>
             
-            <div class="mt-10 pt-6 border-t border-build-soft flex justify-between items-center">
-              <button type="button" onclick="prevStep(4)" class="text-sm font-bold text-build-ink/50 hover:text-build-ink">Back</button>
-              <button type="submit" class="rounded-xl bg-build-accent px-10 py-4 text-sm font-bold text-white transition hover:bg-[#223a2f] shadow-lg shadow-build-accent/20">Submit Scorecard</button>
+            <a id="bookPaidDiscoveryCallBtn" href="#" class="btn-primary w-full sm:w-auto">
+              Book Paid Discovery Call
+            </a>
+          </div>
+
+          <div id="resultReview" class="hidden text-center pt-6 pb-6">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-8 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+              <svg class="h-10 w-10 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
+            <h2 class="text-3xl font-heading font-extrabold text-white mb-4">Application Received.</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-md mx-auto font-light leading-relaxed">Thanks for applying. Your project structure requires manual review before proceeding to discovery.</p>
+            <p class="inline-block px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-mono font-bold text-slate-300 uppercase tracking-widest">We will reach out via email.</p>
           </div>
-        </form>
 
-        <div id="resultSuccess" class="hidden text-center pt-8 pb-16">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-6">
-            <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <h2 class="text-3xl font-heading font-extrabold text-build-ink mb-4">Great fit.</h2>
-          <p class="text-lg text-build-ink/70 mb-10 max-w-md mx-auto">Based on your responses, your project aligns perfectly with the Build methodology. You can now book your paid discovery session.</p>
-          <div class="mx-auto mb-8 max-w-lg rounded-2xl border border-build-soft bg-white/90 p-6 text-left shadow-sm">
-            <p class="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-build-ink/50">Discovery Call Fee Breakdown</p>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between text-sm text-build-ink/80">
-                <span>Discovery call fee</span>
-                <span id="feeBaseAmount" class="font-semibold text-build-ink">₦100,000</span>
-              </div>
-              <div class="flex items-center justify-between text-sm text-build-ink/80">
-                <span id="feeVatLabel">VAT</span>
-                <span id="feeVatAmount" class="font-semibold text-build-ink">—</span>
-              </div>
-              <div class="flex items-center justify-between text-sm text-build-ink/80">
-                <span>Paystack fee</span>
-                <span id="feePaystackAmount" class="font-semibold text-build-ink">—</span>
-              </div>
+          <div id="resultDecline" class="hidden text-center pt-6 pb-6">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-500/10 border border-slate-500/20 mb-8">
+              <svg class="h-10 w-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </div>
-            <div class="mt-4 border-t border-build-soft pt-4">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-bold uppercase tracking-[0.1em] text-build-ink/60">Total Payable</span>
-                <span id="feeTotalAmount" class="text-xl font-heading font-extrabold text-build-ink">—</span>
-              </div>
-            </div>
+            <h2 class="text-3xl font-heading font-extrabold text-white mb-4">Thank you for your interest.</h2>
+            <p class="text-lg text-slate-400 max-w-md mx-auto font-light leading-relaxed">Based on your responses, this project may not currently fit the specialized implementation model used for Build.</p>
           </div>
-          <a id="bookPaidDiscoveryCallBtn" href="#" class="inline-flex rounded-xl bg-build-ink px-10 py-4 text-sm font-bold text-white transition hover:bg-black">
-            Book Paid Discovery Call
-          </a>
-        </div>
 
-        <div id="resultReview" class="hidden text-center pt-8 pb-16">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 mb-6">
-            <svg class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <h2 class="text-3xl font-heading font-extrabold text-build-ink mb-4">Application Received.</h2>
-          <p class="text-lg text-build-ink/70 mb-8 max-w-md mx-auto">Thanks for applying. Your project structure requires manual review before proceeding to discovery.</p>
-          <p class="text-sm font-bold text-build-ink/50 uppercase tracking-widest">We will reach out via email.</p>
         </div>
-
-        <div id="resultDecline" class="hidden text-center pt-8 pb-16">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-build-soft mb-6">
-            <svg class="h-8 w-8 text-build-ink/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </div>
-          <h2 class="text-3xl font-heading font-extrabold text-build-ink mb-4">Thank you for your interest.</h2>
-          <p class="text-lg text-build-ink/70 max-w-md mx-auto">Based on your responses, this project may not currently fit the specialized implementation model used for Build.</p>
-        </div>
-
       </div>
     </main>
 
