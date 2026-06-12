@@ -18,7 +18,7 @@ function slugTokenFromBatchKey(value) {
   const raw = String(value || "").trim().toLowerCase();
   const compact = raw.replace(/[^a-z0-9]/g, "");
   if (!compact) return "";
-  if (compact.includes("ptprod")) return "ptprod";
+  if (compact.includes("ptprod") || compact.includes("ptpprod")) return "ptprod";
   if (compact.includes("ptp")) return "ptp";
   return "";
 }

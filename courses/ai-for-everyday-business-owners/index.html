@@ -31,16 +31,73 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/assets/styles.css" />
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2fb',
+                100: '#dfe7f7',
+                200: '#ccd3e6',
+                300: '#99a9cc',
+                400: '#667eb2',
+                500: '#22345f',
+                600: '#1a2849',
+                700: '#14213d',
+                800: '#0f182d',
+                900: '#0a101e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer base {
+        main *, main ::before, main ::after {
+          box-sizing: border-box;
+          border-width: 0;
+          border-style: solid;
+          border-color: rgba(255,255,255,0.1);
+        }
+        main h1, main h2, main h3, main p, main label {
+          margin: 0;
+        }
+      }
+
+      @layer utilities {
+        .glass-card {
+          @apply bg-[#0d1117]/80 backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)];
+        }
+        .btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-500 to-orange-600 px-8 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:-translate-y-1 focus:outline-none border-none cursor-pointer;
+        }
+        .btn-outline {
+          @apply inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-8 py-4 text-sm font-bold text-slate-300 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-1 focus:outline-none cursor-pointer;
+        }
+      }
+    </style>
     <style>
       body {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        background-color: #060b14;
+        color: #cbd5e1;
       }
 
       main {
@@ -52,9 +109,14 @@
       .site-footer {
         margin-top: 0 !important;
       }
+
+      /* Scoped Ambient Backgrounds strictly inside <main> */
+      .ambient-glow-1 { position: absolute; top: 0%; left: -10%; width: 60%; height: 50%; background: rgba(244, 63, 94, 0.15); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .ambient-glow-2 { position: absolute; bottom: -10%; right: -10%; width: 50%; height: 60%; background: rgba(249, 115, 22, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .tech-grid { position: absolute; inset: 0; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg=='); pointer-events: none; z-index: 0; }
     </style>
   </head>
-  <body class="bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">
+  <body class="bg-[#060b14] font-sans antialiased min-h-screen flex flex-col text-slate-300">
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
@@ -78,58 +140,69 @@
       </div>
     </header>
 
-    <main class="flex-1">
-      <section class="relative pt-24 pb-20 lg:pt-32 lg:pb-28 overflow-hidden">
-        <div class="max-w-5xl mx-auto px-6 text-center">
-          <div class="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold text-[#0f1e3c] bg-blue-50 border border-blue-100 mb-8">
+    <main class="flex-1 w-full relative overflow-hidden bg-[#060b14] text-slate-300">
+      <div class="ambient-glow-1"></div>
+      <div class="ambient-glow-2"></div>
+      <div class="tech-grid"></div>
+
+      <section class="relative pt-24 pb-20 lg:pt-32 lg:pb-32 z-10 border-b border-white/5">
+        <div class="max-w-5xl mx-auto px-6 text-center relative z-10">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 font-mono font-bold text-xs uppercase tracking-widest rounded-full mb-8 backdrop-blur-md shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]"></span>
             Practical AI for the Real World
           </div>
-          <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold font-['Manrope'] tracking-tight text-gray-900 mb-8 leading-[1.1]">
-            AI for Everyday <br class="hidden md:block"/> Business Owners
+          
+          <h1 class="text-4xl sm:text-5xl lg:text-7xl font-heading font-extrabold tracking-tight text-white mb-8 leading-[1.1]">
+            AI for Everyday <br class="hidden md:block"/> 
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-500">Business Owners</span>
           </h1>
-          <p class="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-10 font-['Inter']">
-            How to use ChatGPT to save time, write better, think clearly, and work faster. <span class="font-medium text-gray-800">No coding. No fluff. Just useful work.</span>
+          
+          <p class="text-lg md:text-xl lg:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed mb-12 font-light">
+            How to use ChatGPT to save time, write better, think clearly, and work faster. <br class="hidden sm:block"/><strong class="text-white font-medium">No coding. No fluff. Just useful work.</strong>
           </p>
+          
           <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <a href="/enrol-ai-for-everyday-business-owners/" class="w-full sm:w-auto px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-lg text-lg transition-all shadow-lg hover:shadow-xl">
+            <a href="/enrol-ai-for-everyday-business-owners/" class="btn-primary w-full sm:w-auto text-lg !px-10 !py-5">
               Start the Course
             </a>
-            <a href="#curriculum" class="w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-gray-900 font-semibold rounded-lg text-lg transition-all border border-gray-200">
+            <a href="#curriculum" class="btn-outline w-full sm:w-auto text-lg !px-10 !py-5">
               See What You'll Learn
             </a>
           </div>
         </div>
       </section>
 
-      <section class="py-20 bg-white border-y border-gray-100">
-        <div class="max-w-4xl mx-auto px-6">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
+      <section class="py-24 relative z-10 border-b border-white/5 bg-[#0a0f1e]/50">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 class="text-3xl md:text-4xl font-bold font-['Manrope'] mb-6 text-gray-900">
+              <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-white mb-6 leading-tight">
                 The problem isn't that AI is useless.
               </h2>
-              <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+              <p class="text-lg text-slate-400 mb-8 leading-relaxed font-light">
                 The problem is that people do not know how to use it well. They ask weak questions. They give no context. They expect too much too quickly.
               </p>
-              <div class="pl-6 border-l-4 border-[#0f1e3c] bg-[#f8f6f1] p-6 rounded-r-lg">
-                <p class="text-lg text-gray-800 font-medium italic">
+              <div class="border-l-4 border-rose-500 bg-white/5 p-8 rounded-r-2xl backdrop-blur-md shadow-lg">
+                <p class="text-lg text-white font-medium italic leading-relaxed">
                   "Think of ChatGPT as a capable assistant. Not a prophet. Not a magician. The quality of your direction directly affects the quality of the output."
                 </p>
               </div>
             </div>
+            
             <div class="space-y-6">
-              <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center font-bold text-xl">✕</div>
+              <div class="glass-card p-6 sm:p-8 flex items-start gap-6 group hover:border-rose-500/30 transition-colors">
+                <div class="flex-shrink-0 w-12 h-12 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl flex items-center justify-center font-bold text-xl shadow-[0_0_15px_rgba(244,63,94,0.2)]">✕</div>
                 <div>
-                  <h3 class="font-bold text-gray-900 text-xl mb-1">What ChatGPT is NOT</h3>
-                  <p class="text-gray-600">A magic wand that automatically knows your business. Discover the widespread misconceptions that lead to robotic, frustrating results, and why most people get it completely wrong.</p>
+                  <h3 class="font-heading font-bold text-white text-xl mb-2">What ChatGPT is NOT</h3>
+                  <p class="text-slate-400 font-light leading-relaxed text-[15px]">A magic wand that automatically knows your business. Discover the widespread misconceptions that lead to robotic, frustrating results, and why most people get it completely wrong.</p>
                 </div>
               </div>
-              <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center font-bold text-xl">✓</div>
+              
+              <div class="glass-card p-6 sm:p-8 flex items-start gap-6 group hover:border-emerald-500/30 transition-colors">
+                <div class="flex-shrink-0 w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center font-bold text-xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">✓</div>
                 <div>
-                  <h3 class="font-bold text-gray-900 text-xl mb-1">What ChatGPT IS Good At</h3>
-                  <p class="text-gray-600">Acting as a high-speed assistant for your heavy lifting. Find out which everyday tasks you should be handing off right now to clear your mind and instantly multiply your output.</p>
+                  <h3 class="font-heading font-bold text-white text-xl mb-2">What ChatGPT IS Good At</h3>
+                  <p class="text-slate-400 font-light leading-relaxed text-[15px]">Acting as a high-speed assistant for your heavy lifting. Find out which everyday tasks you should be handing off right now to clear your mind and instantly multiply your output.</p>
                 </div>
               </div>
             </div>
@@ -137,145 +210,141 @@
         </div>
       </section>
 
-      <section class="py-24">
-        <div class="max-w-5xl mx-auto px-6 text-center">
-          <h2 class="text-3xl md:text-4xl font-bold font-['Manrope'] mb-12 text-gray-900">Who is this course for?</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-lg font-medium text-gray-800">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              💼 Business Owners
+      <section class="py-24 relative z-10 border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 text-slate-300 font-mono font-bold text-xs uppercase tracking-widest rounded-full mb-6 backdrop-blur-md shadow-sm">
+            Target Audience
+          </div>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-heading font-extrabold text-white mb-16">Who is this course for?</h2>
+          
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-lg font-bold text-white">
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">💼</span> Business Owners
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              💻 Freelancers
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">💻</span> Freelancers
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              🤝 Service Providers
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">🤝</span> Service Providers
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              🛒 Online Sellers
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">🛒</span> Online Sellers
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              🎨 Creators
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">🎨</span> Creators
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-3">
-              📊 Working Professionals
+            <div class="glass-card !p-6 flex items-center justify-center gap-4 transition-transform hover:-translate-y-1 hover:border-white/20">
+              <span class="text-2xl drop-shadow-md">📊</span> Professionals
             </div>
           </div>
-          <p class="mt-12 text-xl text-gray-600 max-w-2xl mx-auto">
-            If you do serious work and want practical help from AI to get more done with less friction, you are in the right place.
+          
+          <p class="mt-16 text-xl text-slate-400 font-light max-w-2xl mx-auto leading-relaxed">
+            If you do serious work and want practical help from AI to get more done with less friction, <strong class="text-white font-medium">you are in the right place.</strong>
           </p>
         </div>
       </section>
 
-      <section id="curriculum" class="py-24 bg-white border-y border-gray-100">
-        <div class="max-w-6xl mx-auto px-6">
-          <div class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold font-['Manrope'] text-gray-900 mb-4">Inside the Course</h2>
-            <p class="text-xl text-gray-600">7 practical modules designed for immediate application.</p>
+      <section id="curriculum" class="py-24 relative z-10 border-b border-white/5 bg-[#0a0f1e]/50">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+          <div class="text-center mb-16 lg:mb-20">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-heading font-extrabold text-white mb-6">Inside the Course</h2>
+            <p class="text-lg text-slate-400 font-light">7 practical modules designed for immediate application.</p>
           </div>
           
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 1</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">How to Talk to AI So It Actually Helps You</h3>
-              <p class="text-gray-600">Stop asking vague questions. Learn a simple, repeatable prompt structure that significantly improves AI output immediately.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-rose-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 1</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-rose-300 transition-colors">How to Talk to AI So It Actually Helps You</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">Stop asking vague questions. Learn a simple, repeatable prompt structure that significantly improves AI output immediately.</p>
             </div>
             
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 2</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">Using AI to Write Faster in Your Business</h3>
-              <p class="text-gray-600">Turn rough thoughts into usable drafts. Perfect for product descriptions, emails, captions, and WhatsApp broadcasts.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-orange-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 2</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-orange-300 transition-colors">Using AI to Write Faster in Your Business</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">Turn rough thoughts into usable drafts. Perfect for product descriptions, emails, captions, and WhatsApp broadcasts.</p>
             </div>
 
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 3</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">Using AI to Think More Clearly</h3>
-              <p class="text-gray-600">AI isn't just for writing; it's for thinking. Learn to organize loose notes, break down big tasks, and compare options when you feel scattered.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-rose-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 3</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-rose-300 transition-colors">Using AI to Think More Clearly</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">AI isn't just for writing; it's for thinking. Learn to organize loose notes, break down big tasks, and compare options when you feel scattered.</p>
             </div>
 
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 4</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">Using AI for Customer Communication</h3>
-              <p class="text-gray-600">Build standard templates for repetitive situations: payment reminders, delayed deliveries, and handling price objections without losing your warmth.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-orange-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 4</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-orange-300 transition-colors">Using AI for Customer Communication</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">Build standard templates for repetitive situations: payment reminders, delayed deliveries, and handling price objections without losing your warmth.</p>
             </div>
 
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 5</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">Content & Marketing Support</h3>
-              <p class="text-gray-600">Content feels heavy. Learn how to stretch one raw idea into Facebook posts, Instagram captions, and video hooks while protecting your unique voice.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-rose-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 5</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-rose-300 transition-colors">Content & Marketing Support</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">Content feels heavy. Learn how to stretch one raw idea into Facebook posts, Instagram captions, and video hooks while protecting your unique voice.</p>
             </div>
 
-            <div class="p-8 rounded-2xl bg-[#f8f6f1] border border-gray-100 hover:shadow-md transition-shadow">
-              <span class="text-sm font-bold tracking-wider text-[#0f1e3c] uppercase mb-3 block">Module 6</span>
-              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-snug">Planning and Daily Productivity</h3>
-              <p class="text-gray-600">Prepare for supplier calls, build basic daily checklists, and create simple weekly action plans to reduce operational friction.</p>
+            <div class="glass-card p-8 group transition-all duration-300 hover:border-orange-500/30 hover:-translate-y-1">
+              <span class="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase mb-4">Module 6</span>
+              <h3 class="text-xl font-heading font-bold text-white mb-3 leading-snug group-hover:text-orange-300 transition-colors">Planning and Daily Productivity</h3>
+              <p class="text-slate-400 font-light text-[15px] leading-relaxed">Prepare for supplier calls, build basic daily checklists, and create simple weekly action plans to reduce operational friction.</p>
             </div>
           </div>
           
-          <div class="mt-8 max-w-lg mx-auto">
-             <div class="p-8 rounded-2xl bg-[#0f1e3c] text-white shadow-lg">
-              <span class="text-sm font-bold tracking-wider text-blue-200 uppercase mb-3 block">Module 7</span>
-              <h3 class="text-xl font-bold mb-3 leading-snug text-blue-50">Mistakes to Avoid When Using AI</h3>
-              <p class="text-blue-100">Don't let convenience make you careless. Discover the common traps that make businesses look unprofessional and learn the essential guardrails to protect your brand's voice and reputation.</p>
+          <div class="mt-12 max-w-2xl mx-auto">
+             <div class="relative overflow-hidden bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-rose-500/30 p-8 sm:p-10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] group">
+              <div class="absolute -right-20 -top-20 w-48 h-48 bg-rose-500/20 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-60"></div>
+              
+              <div class="relative z-10">
+                <span class="inline-block px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg text-[10px] font-mono font-bold tracking-widest text-rose-400 uppercase mb-4">Module 7</span>
+                <h3 class="text-2xl font-heading font-bold text-white mb-3 leading-snug">Mistakes to Avoid When Using AI</h3>
+                <p class="text-slate-300 font-light text-base leading-relaxed">Don't let convenience make you careless. Discover the common traps that make businesses look unprofessional and learn the essential guardrails to protect your brand's voice and reputation.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="enroll" class="py-24 bg-[#0f1e3c] text-white">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-          <h2 class="text-4xl md:text-5xl font-extrabold font-['Manrope'] mb-6 text-blue-50">
-            Ready to work smarter?
-          </h2>
-          <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            AI is not here to replace serious business people. It is here to help serious business people work better. Learn how to use it properly today.
-          </p>
-          <a href="/enrol-ai-for-everyday-business-owners/" class="inline-block px-10 py-5 bg-white text-[#0f1e3c] font-bold rounded-lg text-xl hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1">
-            Enroll in the Course
-          </a>
-          <p class="mt-6 text-sm text-blue-200">Instant access. Start learning immediately.</p>
+      <section id="enroll" class="py-32 relative z-10 text-center">
+        <div class="max-w-4xl mx-auto px-6">
+          <div class="bg-gradient-to-br from-[#161b22] to-[#0a0f1e] rounded-[3rem] p-12 sm:p-20 border border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-full blur-[120px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-60 z-0"></div>
+
+            <div class="relative z-10">
+              <h2 class="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold text-white mb-6 leading-tight">
+                Ready to work smarter?
+              </h2>
+              <p class="text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+                AI is not here to replace serious business people. It is here to help serious business people work better. Learn how to use it properly today.
+              </p>
+              <a href="/enrol-ai-for-everyday-business-owners/" class="btn-primary text-lg !px-12 !py-5">
+                Enroll in the Course
+                <svg class="w-6 h-6 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              </a>
+              <p class="mt-8 text-sm text-slate-500 font-mono tracking-wide uppercase">Instant access. Start learning immediately.</p>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer relative overflow-hidden bg-[#060b14] pt-20 pb-10 border-t border-white/5 mt-auto">
-  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
-  
-  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] z-0 pointer-events-none" style="mask-image: linear-gradient(to top, transparent, black);"></div>
-
-  <div class="footer-inner relative z-10 max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
-    
-    <div class="footer-logo mb-6">
-      <a href="/" class="block transition-transform hover:scale-105 duration-300">
-        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
-      </a>
-    </div>
-    
-    <div class="footer-tagline text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400 font-mono font-bold tracking-widest uppercase text-[11px] mb-12 flex items-center gap-4">
-      <span class="w-8 h-px bg-brand-500/30"></span>
-      Practical AI. Real-world building.
-      <span class="w-8 h-px bg-purple-500/30"></span>
-    </div>
-    
-    <nav class="footer-links flex flex-wrap justify-center gap-x-10 gap-y-4 mb-12" aria-label="Footer links">
-      <a href="/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Home</a>
-      <a href="/courses" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Courses</a>
-      <a href="/blog/" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Blog</a>
-      <a href="/privacy-policy" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Privacy</a>
-      <a href="/terms-and-conditions" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Terms</a>
-      <a href="/contact" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Contact</a>
-    </nav>
-    
-    <div class="w-full max-w-3xl border-t border-white/5 pt-8 flex flex-col items-center justify-center">
-      <p class="footer-note text-slate-500 text-xs font-light tracking-wide">
-        &copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.
-      </p>
-    </div>
-    
-  </div>
-</footer>
-
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image" />
+        </div>
+        <div class="footer-tagline">Practical AI. Real-world building.</div>
+        <nav class="footer-links" aria-label="Footer links">
+          <a href="/">Home</a>
+          <a href="/courses">Courses</a>
+          <a href="/blog/">Blog</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="/contact">Contact</a>
+        </nav>
+        <p class="footer-note">&copy; 2026 Tochukwu Tech and AI Academy. All rights reserved.</p>
+      </div>
+    </footer>
 
     <script src="/assets/site.js"></script>
-    <script src="/assets/recaptcha.js"></script>
   </body>
 </html>

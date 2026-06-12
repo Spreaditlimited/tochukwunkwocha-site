@@ -492,6 +492,24 @@
     }).format(date);
   }
 
+  function formatDateOnly(date, timeZone) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }
+
+  function formatShortDate(date, timeZone) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      day: "numeric",
+      month: "long",
+    }).format(date);
+  }
+
   function formatGbpMinor(minor) {
     const amount = Number(minor || 0) / 100;
     if (!Number.isFinite(amount) || amount <= 0) return "";
@@ -503,6 +521,40 @@
     if (!startDate) return "";
     const lagos = formatDayTime(startDate, "Africa/Lagos");
     return `Launch is ${lagos} WAT.`;
+  }
+
+  function activeBatchText(active, field) {
+    const label = String((active && active.batchLabel) || "Current Batch").trim() || "Current Batch";
+    const startDate = parseBatchStart(active && active.batchStartAt);
+    const fullStart = startDate ? formatDayTime(startDate, "Africa/Lagos") + " WAT" : "";
+    const dateOnly = startDate ? formatDateOnly(startDate, "Africa/Lagos") : "";
+    const shortDate = startDate ? formatShortDate(startDate, "Africa/Lagos") : "";
+    const key = String(field || "").trim();
+    if (key === "label") return label;
+    if (key === "active-pill") return label + " Enrolling Now";
+    if (key === "start") return fullStart || dateOnly || "";
+    if (key === "start-date") return dateOnly || fullStart || "";
+    if (key === "start-short") return shortDate || dateOnly || "";
+    if (key === "start-sentence") return fullStart ? "Classes begin " + fullStart + "." : "";
+    if (key === "cohort-starts-copy") {
+      return fullStart
+        ? fullStart + ". There are limited seats. So, the earlier you enroll the better."
+        : label + ". There are limited seats. So, the earlier you enroll the better.";
+    }
+    if (key === "cta-label") return "Join " + label;
+    return "";
+  }
+
+  function applyActiveBatchPageFields(courseSlug, active) {
+    const slug = String(courseSlug || "").trim();
+    if (!slug || !active) return;
+    document.querySelectorAll("[data-active-batch-course][data-active-batch-field]").forEach(function (el) {
+      if (String(el.getAttribute("data-active-batch-course") || "").trim() !== slug) return;
+      const field = el.getAttribute("data-active-batch-field");
+      const value = activeBatchText(active, field);
+      if (!value) return;
+      el.textContent = value;
+    });
   }
 
   function applyCourseLabels() {
@@ -563,10 +615,12 @@
       if (active && active.batchKey) activeCourseBatchKey = String(active.batchKey);
       activeCourseBatchStartAt = String((active && active.batchStartAt) || "").trim();
       if (enrolActiveBatchEl && active) {
+        const schedule = launchScheduleText();
         enrolActiveBatchEl.innerHTML =
           '<span class="status-pill status-approved">Active Batch: ' +
           String(active.batchLabel || "Current Batch") +
-          "</span>";
+          "</span>" +
+          (schedule ? '<p class="mt-2 text-xs text-slate-500">' + schedule + "</p>" : "");
       }
       const paypalLabel = formatGbpMinor(active && active.paypalAmountMinor);
       if (paypalOptionMeta) {
@@ -575,6 +629,7 @@
           : "International checkout (PayPal)";
       }
       updateLaunchCopy();
+      applyActiveBatchPageFields(cfg.slug, active);
     } catch (_error) {
       return;
     }

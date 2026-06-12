@@ -719,10 +719,12 @@
       finalAmountMinor: paystackMinor,
     };
     if (batchEl) {
+      var schedule = launchScheduleText();
       batchEl.innerHTML = [
         '<span class="status-pill status-approved">',
         "Active Batch: " + String(active.batchLabel || "Current Batch"),
         "</span>",
+        schedule ? '<p class="mt-2 text-xs text-slate-400">' + schedule + "</p>" : "",
       ].join("");
     }
     if (enrollmentLocked) renderEnrollmentClosedPill();
