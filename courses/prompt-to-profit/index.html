@@ -324,23 +324,6 @@
         max-width: 100%;
       }
 
-      .student-site-frame {
-        height: 400px;
-        overflow: hidden;
-        background: #ffffff;
-      }
-
-      .student-site-frame iframe {
-        border: 0;
-        transform-origin: top left;
-      }
-
-      @media (min-width: 768px) {
-        .student-site-frame {
-          height: 450px;
-        }
-      }
-
       .browser-header {
         display: flex;
         align-items: center;
@@ -452,8 +435,31 @@
           max-width: 100%;
         }
 
-        .student-site-frame {
-          height: 350px;
+        .student-websites-section > div {
+          width: 100%;
+          max-width: 100%;
+          padding-left: 0.5rem !important;
+          padding-right: 0.5rem !important;
+        }
+
+        .student-websites-section .grid,
+        .student-websites-section .grid > div,
+        .student-websites-section .grid > div > div {
+          min-width: 0;
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .student-websites-section .grid > div > div {
+          overflow: hidden;
+        }
+
+        .student-websites-section iframe {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          height: 350px !important;
+          border: 0;
         }
 
         .browser-header {
@@ -1200,9 +1206,7 @@
                     </div>
                   </div>
                   <div class="w-10 shrink-0"></div> </div>
-                <div class="student-site-frame">
-                  <iframe src="https://moonlit-madeleine-c0b82e.netlify.app/" title="Student website 1" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
-                </div>
+                <iframe src="https://moonlit-madeleine-c0b82e.netlify.app/" title="Student website 1" class="w-full h-[400px] md:h-[450px] bg-white block border-0" loading="lazy"></iframe>
               </div>
             </div>
       
@@ -1223,9 +1227,7 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <div class="student-site-frame">
-                  <iframe src="https://olytribe.com.ng" title="Student website 2" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
-                </div>
+                <iframe src="https://olytribe.com.ng" title="Student website 2" class="w-full h-[400px] md:h-[450px] bg-white block border-0" loading="lazy"></iframe>
               </div>
             </div>
       
@@ -1246,9 +1248,7 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <div class="student-site-frame">
-                  <iframe src="https://themancavenaija.com" title="Student website 3" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
-                </div>
+                <iframe src="https://themancavenaija.com" title="Student website 3" class="w-full h-[400px] md:h-[450px] bg-white block border-0" loading="lazy"></iframe>
               </div>
             </div>
       
@@ -1269,9 +1269,7 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <div class="student-site-frame">
-                  <iframe src="https://naijakitchenflavor.netlify.app" title="Student website 4" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
-                </div>
+                <iframe src="https://naijakitchenflavor.netlify.app" title="Student website 4" class="w-full h-[400px] md:h-[450px] bg-white block border-0" loading="lazy"></iframe>
               </div>
             </div>
       
@@ -2012,37 +2010,6 @@
           });
           body.insertAdjacentElement("afterend", toggle);
         });
-      })();
-
-      (function initStudentSitePreviews() {
-        var frames = Array.prototype.slice.call(document.querySelectorAll(".student-site-frame"));
-        if (!frames.length) return;
-        var previewWidth = 1024;
-
-        function fitPreviews() {
-          var isMobile = window.matchMedia("(max-width: 640px)").matches;
-          frames.forEach(function (frame) {
-            var iframe = frame.querySelector(".student-site-preview");
-            if (!iframe) return;
-            if (!isMobile) {
-              iframe.style.width = "";
-              iframe.style.height = "";
-              iframe.style.transform = "";
-              return;
-            }
-
-            var frameWidth = Math.max(1, frame.clientWidth);
-            var frameHeight = Math.max(1, frame.clientHeight);
-            var scale = Math.min(1, frameWidth / previewWidth);
-            iframe.style.width = previewWidth + "px";
-            iframe.style.height = Math.ceil(frameHeight / scale) + "px";
-            iframe.style.transform = "scale(" + scale + ")";
-          });
-        }
-
-        fitPreviews();
-        window.addEventListener("resize", fitPreviews);
-        window.addEventListener("orientationchange", fitPreviews);
       })();
 
       (function initFaqAccordion() {
