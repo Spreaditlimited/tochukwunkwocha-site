@@ -55,6 +55,7 @@
     },
   ];
   let COURSE_CATALOG = DEFAULT_COURSE_CATALOG.slice();
+  let BATCH_SWITCH_ENROLLMENTS = [];
 
   function escapeHtml(value) {
     return String(value || "")
@@ -432,6 +433,79 @@
     return json;
   }
 
+  async function loadBatchSwitchOptions() {
+    try {
+      const res = await fetch("/.netlify/functions/user-batch-switch-options", {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const json = await res.json().catch(function () {
+        return null;
+      });
+      if (!res.ok || !json || !json.ok) return [];
+      return Array.isArray(json.enrollments) ? json.enrollments : [];
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  function switchOptionForCourseItem(item) {
+    const source = normalizeSlug(item && item.source);
+    if (source !== "order" && source !== "manual-payment" && source !== "manual_payment") return null;
+    const courseSlug = normalizeSlug(item && item.courseSlug);
+    const batchKey = normalizeSlug(item && item.batchKey);
+    return (BATCH_SWITCH_ENROLLMENTS || []).find(function (row) {
+      const rowSource = normalizeSlug(row && row.sourceType);
+      return (
+        normalizeSlug(row && row.courseSlug) === courseSlug &&
+        normalizeSlug(row && row.batchKey) === batchKey &&
+        (rowSource === source || (rowSource === "manual-payment" && source === "manual_payment") || (rowSource === "manual_payment" && source === "manual-payment")) &&
+        row &&
+        row.canSwitch &&
+        Array.isArray(row.options) &&
+        row.options.length > 0
+      );
+    }) || null;
+  }
+
+  function renderBatchSwitchBlock(item) {
+    const sw = switchOptionForCourseItem(item);
+    if (!sw) return "";
+    const selectId = "batchSwitch_" + escapeHtml(sw.sourceType) + "_" + escapeHtml(sw.sourceId).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const options = (sw.options || []).map(function (option) {
+      const remaining = option.remainingSeats !== null && option.remainingSeats !== undefined
+        ? " - " + String(option.remainingSeats) + " seat" + (Number(option.remainingSeats) === 1 ? "" : "s") + " left"
+        : "";
+      return `<option value="${escapeHtml(option.batchKey)}">${escapeHtml(option.batchLabel || option.batchKey)}${option.batchStartText ? " - Starts " + escapeHtml(option.batchStartText) : ""}${escapeHtml(remaining)}</option>`;
+    }).join("");
+    return [
+      '<div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3" data-batch-switch-wrap>',
+      '<p class="text-xs font-bold uppercase tracking-wide text-amber-800">Change Batch</p>',
+      '<p class="mt-1 text-xs text-amber-800/80">Available because your current batch has not started.</p>',
+      '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
+      `<select id="${selectId}" data-batch-switch-select class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 sm:flex-1">${options}</select>`,
+      `<button type="button" data-batch-switch-submit data-source-type="${escapeHtml(sw.sourceType)}" data-source-id="${escapeHtml(sw.sourceId)}" data-select-id="${selectId}" class="inline-flex items-center justify-center rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600">Change Batch</button>`,
+      "</div>",
+      '<p data-batch-switch-status class="mt-2 text-xs text-amber-800/80"></p>',
+      "</div>",
+    ].join("");
+  }
+
+  async function submitBatchSwitch(sourceType, sourceId, targetBatchKey) {
+    const res = await fetch("/.netlify/functions/user-batch-switch", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ sourceType, sourceId, targetBatchKey }),
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not change batch.");
+    return json;
+  }
+
   function renderPurchasedCourses(items, account) {
       const certificateNameNeedsConfirmation = !!(account && account.certificateNameNeedsConfirmation);
       const ownedSlugs = items.map(function (item) {
@@ -593,6 +667,7 @@
               `<div class="mt-3"><span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${timing.css}">${escapeHtml(
                 timing.label
               )}</span></div>`,
+              renderBatchSwitchBlock(item),
               certificateBlock,
               resumeDetail ? `<p class="mt-2 text-xs text-gray-600">${resumeDetail}</p>` : "",
               '<div class="mt-4 flex flex-wrap gap-2">',
@@ -626,6 +701,7 @@
       }
 
       const items = Array.isArray(json.items) ? json.items : [];
+      BATCH_SWITCH_ENROLLMENTS = await loadBatchSwitchOptions();
       renderPurchasedCourses(items, json.account || null);
     } catch (error) {
       if (metaEl) metaEl.textContent = "Could not load courses.";
@@ -642,7 +718,50 @@
     listEl.addEventListener("click", function (event) {
       const target = event.target && event.target.closest ? event.target.closest("[data-submit-school-website]") : null;
       const proofTarget = event.target && event.target.closest ? event.target.closest("[data-submit-certificate-proof]") : null;
-      if (!target && !proofTarget) return;
+      const batchSwitchTarget = event.target && event.target.closest ? event.target.closest("[data-batch-switch-submit]") : null;
+      if (!target && !proofTarget && !batchSwitchTarget) return;
+      if (batchSwitchTarget) {
+        const wrap = batchSwitchTarget.closest("[data-batch-switch-wrap]");
+        const status = wrap ? wrap.querySelector("[data-batch-switch-status]") : null;
+        const selectId = String(batchSwitchTarget.getAttribute("data-select-id") || "");
+        const select = selectId ? document.getElementById(selectId) : (wrap ? wrap.querySelector("[data-batch-switch-select]") : null);
+        const targetBatchKey = String(select && select.value || "").trim();
+        if (!targetBatchKey) {
+          if (status) status.textContent = "Choose a batch.";
+          return;
+        }
+        batchSwitchTarget.disabled = true;
+        const prevText = batchSwitchTarget.textContent;
+        batchSwitchTarget.textContent = "Changing...";
+        if (status) {
+          status.textContent = "";
+          status.className = "mt-2 text-xs text-amber-800/80";
+        }
+        submitBatchSwitch(
+          batchSwitchTarget.getAttribute("data-source-type"),
+          batchSwitchTarget.getAttribute("data-source-id"),
+          targetBatchKey
+        )
+          .then(function (json) {
+            if (status) {
+              const label = json && json.newBatch && json.newBatch.batchLabel ? json.newBatch.batchLabel : "new batch";
+              status.textContent = "Batch changed to " + label + ". Refreshing...";
+              status.className = "mt-2 text-xs text-emerald-700";
+            }
+            return load();
+          })
+          .catch(function (error) {
+            if (status) {
+              status.textContent = error.message || "Could not change batch.";
+              status.className = "mt-2 text-xs text-red-700";
+            }
+          })
+          .finally(function () {
+            batchSwitchTarget.disabled = false;
+            batchSwitchTarget.textContent = prevText || "Change Batch";
+          });
+        return;
+      }
       if (proofTarget) {
         const enabled = String(proofTarget.getAttribute("data-certificate-proof-enabled") || "0") === "1";
         const courseSlug = String(proofTarget.getAttribute("data-submit-certificate-proof") || "").trim().toLowerCase();

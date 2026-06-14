@@ -1,10 +1,10 @@
-async function brevoRequest(path, payload) {
+async function brevoRequest(path, payload, method) {
   const apiKey = process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.trim();
   if (!apiKey) return { ok: false, error: "Missing BREVO_API_KEY" };
 
   try {
     const res = await fetch(`https://api.brevo.com/v3${path}`, {
-      method: "POST",
+      method: method || "POST",
       headers: {
         "Content-Type": "application/json",
         "api-key": apiKey,
@@ -55,4 +55,14 @@ async function syncBrevoSubscriber({ fullName, email, listId, phone, attributes 
   return brevoRequest("/contacts", payload);
 }
 
-module.exports = { syncBrevoSubscriber };
+async function removeBrevoSubscriberFromList({ email, listId }) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  if (!cleanEmail) return { ok: false, error: "Missing email" };
+  const listIdNum = Number(listId || 0);
+  if (!Number.isFinite(listIdNum) || listIdNum <= 0) {
+    return { ok: false, error: "Missing listId" };
+  }
+  return brevoRequest(`/contacts/lists/${listIdNum}/contacts/remove`, { emails: [cleanEmail] });
+}
+
+module.exports = { syncBrevoSubscriber, removeBrevoSubscriberFromList };

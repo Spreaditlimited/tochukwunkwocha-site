@@ -696,16 +696,20 @@ exports.handler = async function (event) {
            e.course_slug,
            e.batch_key,
            e.batch_label,
+           DATE_FORMAT(b.batch_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at,
            DATE_FORMAT(e.paid_at, '%Y-%m-%d %H:%i:%s') AS paid_at,
-           DATE_FORMAT(DATE_ADD(COALESCE(e.paid_at, e.updated_at, e.created_at), INTERVAL 1 YEAR), '%Y-%m-%d %H:%i:%s') AS access_expires_at
+           DATE_FORMAT(DATE_ADD(COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at), INTERVAL 1 YEAR), '%Y-%m-%d %H:%i:%s') AS access_expires_at
          FROM family_children c
          JOIN family_accounts f ON f.id = c.family_id
          JOIN family_child_enrollments e ON e.child_id = c.id
+         LEFT JOIN course_batches b
+           ON b.course_slug COLLATE utf8mb4_general_ci = e.course_slug COLLATE utf8mb4_general_ci
+          AND b.batch_key COLLATE utf8mb4_general_ci = e.batch_key COLLATE utf8mb4_general_ci
          WHERE c.account_id = ?
            AND c.status = 'active'
            AND f.status = 'active'
            AND e.status = 'active'
-           AND DATE_ADD(COALESCE(e.paid_at, e.updated_at, e.created_at), INTERVAL 1 YEAR) >= NOW()`,
+           AND DATE_ADD(COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at), INTERVAL 1 YEAR) >= NOW()`,
         [Number(session.account.id || 0)]
       );
       (familyAccessRows || []).forEach(function (row) {
@@ -714,7 +718,7 @@ exports.handler = async function (event) {
             course_slug: row.course_slug,
             batch_key: row.batch_key || "family",
             batch_label: row.batch_label || "Family Access",
-            batch_start_at: null,
+            batch_start_at: row.batch_start_at || null,
             paid_at: row.paid_at || null,
             access_expires_at: row.access_expires_at || null,
           },

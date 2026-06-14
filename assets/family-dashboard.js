@@ -25,6 +25,7 @@
   var loadingEnrollmentOptions = false;
   var familySeatBalances = [];
   var preferredSeatBalance = null;
+  var batchSwitchEnrollments = [];
 
   var dashboardCourses = [
     { slug: "prompt-to-profit-holiday", label: "Prompt to Profit Holiday", explicitBatch: true },
@@ -94,6 +95,80 @@
 
   function displayBatchLabel(_batch, index) {
     return "Batch " + String(index + 1);
+  }
+
+  function switchOptionForSeat(row) {
+    var courseSlug = String(row && row.courseSlug || "").trim().toLowerCase();
+    var batchKey = String(row && row.batchKey || "").trim().toLowerCase();
+    return (batchSwitchEnrollments || []).find(function (item) {
+      return (
+        String(item && item.sourceType || "").trim().toLowerCase() === "family" &&
+        String(item && item.courseSlug || "").trim().toLowerCase() === courseSlug &&
+        String(item && item.batchKey || "").trim().toLowerCase() === batchKey &&
+        item &&
+        item.canSwitch &&
+        Array.isArray(item.options) &&
+        item.options.length > 0
+      );
+    }) || null;
+  }
+
+  function safeId(value) {
+    return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+  }
+
+  function renderBatchSwitchControl(row) {
+    var sw = switchOptionForSeat(row);
+    if (!sw) return "";
+    var id = "familyBatchSwitch_" + safeId(sw.sourceId || sw.batchKey);
+    var options = sw.options.map(function (option) {
+      var remaining = option.remainingSeats !== null && option.remainingSeats !== undefined
+        ? " - " + String(option.remainingSeats) + " seat" + (Number(option.remainingSeats) === 1 ? "" : "s") + " left"
+        : "";
+      return '<option value="' + escapeHtml(option.batchKey) + '">' + escapeHtml(option.batchLabel || option.batchKey) + (option.batchStartText ? " - Starts " + escapeHtml(option.batchStartText) : "") + escapeHtml(remaining) + "</option>";
+    }).join("");
+    return [
+      '<div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3" data-family-batch-switch-wrap>',
+      '<p class="text-xs font-bold uppercase tracking-wide text-amber-800">Change Batch</p>',
+      '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
+      '<select id="' + escapeHtml(id) + '" data-family-batch-switch-select class="picker-select bg-white text-xs">' + options + "</select>",
+      '<button type="button" data-family-batch-switch-submit data-source-type="' + escapeHtml(sw.sourceType) + '" data-source-id="' + escapeHtml(sw.sourceId) + '" data-select-id="' + escapeHtml(id) + '" class="inline-flex items-center justify-center rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600">Change</button>',
+      "</div>",
+      '<p data-family-batch-switch-status class="mt-2 text-xs text-amber-800/80"></p>',
+      "</div>",
+    ].join("");
+  }
+
+  function loadBatchSwitchOptions() {
+    return fetch("/.netlify/functions/user-batch-switch-options", {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (json) {
+          if (!res.ok || !json || !json.ok) return [];
+          return Array.isArray(json.enrollments) ? json.enrollments : [];
+        });
+      })
+      .catch(function () {
+        return [];
+      });
+  }
+
+  function submitBatchSwitch(sourceType, sourceId, targetBatchKey) {
+    return fetch("/.netlify/functions/user-batch-switch", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ sourceType: sourceType, sourceId: sourceId, targetBatchKey: targetBatchKey }),
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (json) {
+          if (!res.ok || !json || !json.ok) throw new Error((json && json.error) || "Could not change batch.");
+          return json;
+        });
+      });
   }
 
   function setEnrollmentMessage(message, tone) {
@@ -262,6 +337,7 @@
               '<div class="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">',
               '<div><p class="text-sm font-bold text-gray-900">' + escapeHtml(courseName(row.courseSlug)) + '</p><p class="text-xs font-medium text-gray-500">' + escapeHtml(batch) + "</p></div>",
               '<p class="text-sm font-semibold text-gray-700"><span class="text-emerald-700">' + String(available) + " available</span> <span class=\"text-gray-400\">/</span> " + String(used) + " assigned <span class=\"text-gray-400\">/</span> " + String(purchased) + " purchased</p>",
+              renderBatchSwitchControl(row),
               "</div>",
             ].join("");
           }).join(""),
@@ -647,18 +723,73 @@
 
   resetEnrollmentChildren();
 
-  fetch("/.netlify/functions/family-dashboard", { headers: { Accept: "application/json" } })
-    .then(function (res) {
-      return res.json().catch(function () { return null; }).then(function (json) {
+  if (contentEl) {
+    contentEl.addEventListener("click", function (event) {
+      var button = event.target && event.target.closest ? event.target.closest("[data-family-batch-switch-submit]") : null;
+      if (!button) return;
+      var wrap = button.closest("[data-family-batch-switch-wrap]");
+      var status = wrap ? wrap.querySelector("[data-family-batch-switch-status]") : null;
+      var selectId = String(button.getAttribute("data-select-id") || "");
+      var select = selectId ? document.getElementById(selectId) : null;
+      var targetBatchKey = String(select && select.value || "").trim();
+      if (!targetBatchKey) {
+        if (status) status.textContent = "Choose a batch.";
+        return;
+      }
+      button.disabled = true;
+      var previous = button.textContent;
+      button.textContent = "Changing...";
+      if (status) {
+        status.textContent = "";
+        status.className = "mt-2 text-xs text-amber-800/80";
+      }
+      submitBatchSwitch(button.getAttribute("data-source-type"), button.getAttribute("data-source-id"), targetBatchKey)
+        .then(function (json) {
+          if (status) {
+            var label = json && json.newBatch && json.newBatch.batchLabel ? json.newBatch.batchLabel : "new batch";
+            status.textContent = "Batch changed to " + label + ". Refreshing...";
+            status.className = "mt-2 text-xs text-emerald-700";
+          }
+          return Promise.all([
+            fetch("/.netlify/functions/family-dashboard", { headers: { Accept: "application/json" } }).then(function (res) { return res.json().catch(function () { return null; }); }),
+            loadBatchSwitchOptions(),
+          ]);
+        })
+        .then(function (results) {
+          var fresh = results[0];
+          batchSwitchEnrollments = results[1] || [];
+          if (fresh && fresh.ok) render(fresh);
+        })
+        .catch(function (error) {
+          if (status) {
+            status.textContent = error.message || "Could not change batch.";
+            status.className = "mt-2 text-xs text-red-700";
+          }
+        })
+        .finally(function () {
+          button.disabled = false;
+          button.textContent = previous || "Change";
+        });
+    });
+  }
+
+  Promise.all([
+    fetch("/.netlify/functions/family-dashboard", { headers: { Accept: "application/json" } })
+      .then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (json) {
         if (!res.ok || !json || !json.ok) {
           var error = new Error((json && json.error) || "Could not load group enrollment dashboard.");
           error.status = res.status;
           throw error;
         }
         return json;
-      });
-    })
-    .then(function (json) {
+        });
+      }),
+    loadBatchSwitchOptions(),
+  ])
+    .then(function (results) {
+      var json = results[0];
+      batchSwitchEnrollments = results[1] || [];
       setVisible(loadingEl, false);
       render(json);
     })

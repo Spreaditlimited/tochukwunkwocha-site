@@ -230,10 +230,11 @@ async function resolveCourseActiveBatchKey(pool, courseSlug) {
   return clean(rows && rows[0] && rows[0].batch_key ? rows[0].batch_key : "", 64).toLowerCase();
 }
 
-async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
+async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug, accountId) {
   const email = clean(accountEmail, 220).toLowerCase();
   const slug = clean(courseSlug, 120).toLowerCase();
   if (!email || !slug) return { batch_key: "", batch_start_ms: NaN };
+  const accountIdNum = Number(accountId || 0);
   const orderWindowStartSql = `COALESCE(
     CASE
       WHEN b.batch_start_at IS NOT NULL THEN b.batch_start_at
@@ -252,7 +253,7 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
     m.updated_at,
     m.created_at
   )`;
-  const [rows] = await pool.query(
+  const [individualRows] = await pool.query(
     `SELECT x.batch_key,
             DATE_FORMAT(x.window_start_at, '%Y-%m-%d %H:%i:%s') AS batch_start_at
      FROM (
@@ -286,6 +287,33 @@ async function resolveLearnerActiveBatch(pool, accountEmail, courseSlug) {
      LIMIT 1`,
     [email, slug, email, slug]
   );
+  let rows = individualRows || [];
+  if (Number.isFinite(accountIdNum) && accountIdNum > 0) {
+    try {
+      const [familyRows] = await pool.query(
+        `SELECT b.batch_key,
+                DATE_FORMAT(COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at), '%Y-%m-%d %H:%i:%s') AS batch_start_at
+       FROM family_child_enrollments e
+       JOIN family_children c ON c.id = e.child_id
+       JOIN family_accounts f ON f.id = e.family_id
+       JOIN course_batches b
+         ON b.course_slug COLLATE utf8mb4_general_ci = e.course_slug COLLATE utf8mb4_general_ci
+        AND b.batch_key COLLATE utf8mb4_general_ci = e.batch_key COLLATE utf8mb4_general_ci
+       WHERE c.account_id = ?
+         AND e.course_slug = ?
+         AND e.status = 'active'
+         AND c.status = 'active'
+         AND f.status = 'active'
+         AND COALESCE(TRIM(e.batch_key), '') <> ''
+         AND COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at) <= NOW()
+         AND DATE_ADD(COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at), INTERVAL 1 YEAR) >= NOW()
+       ORDER BY COALESCE(b.batch_start_at, e.paid_at, e.updated_at, e.created_at) DESC
+       LIMIT 1`,
+        [accountIdNum, slug]
+      );
+      rows = (familyRows && familyRows.length) ? familyRows : rows;
+    } catch (_error) {}
+  }
   const batchKey = clean(rows && rows[0] && rows[0].batch_key ? rows[0].batch_key : "", 64).toLowerCase();
   const batchStartMs = parseSqlDateMs(rows && rows[0] && rows[0].batch_start_at ? rows[0].batch_start_at : "");
   return { batch_key: batchKey, batch_start_ms: batchStartMs };
@@ -352,7 +380,7 @@ async function getLearnerDripContext(pool, accountEmail, courseSlug, accountId) 
   const [courseAnchorStartMs, courseActiveBatchKey, learnerBatch, schoolAccess] = await Promise.all([
     resolveCourseDripAnchorStartMs(pool, courseSlug).catch(function () { return NaN; }),
     resolveCourseActiveBatchKey(pool, courseSlug).catch(function () { return ""; }),
-    resolveLearnerActiveBatch(pool, accountEmail, courseSlug).catch(function () { return { batch_key: "", batch_start_ms: NaN }; }),
+    resolveLearnerActiveBatch(pool, accountEmail, courseSlug, accountIdNum).catch(function () { return { batch_key: "", batch_start_ms: NaN }; }),
     hasSchoolCourseAccess(pool, {
       accountId: Number.isFinite(accountIdNum) && accountIdNum > 0 ? accountIdNum : null,
       email: accountEmail,
