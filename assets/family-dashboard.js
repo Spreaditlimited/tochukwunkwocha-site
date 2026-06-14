@@ -128,13 +128,13 @@
       return '<option value="' + escapeHtml(option.batchKey) + '">' + escapeHtml(option.batchLabel || option.batchKey) + (option.batchStartText ? " - Starts " + escapeHtml(option.batchStartText) : "") + escapeHtml(remaining) + "</option>";
     }).join("");
     return [
-      '<div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3" data-family-batch-switch-wrap>',
-      '<p class="text-xs font-bold uppercase tracking-wide text-amber-800">Change Batch</p>',
+      '<div class="mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3" data-family-batch-switch-wrap>',
+      '<p class="text-xs font-bold uppercase tracking-wide text-amber-100">Change Batch</p>',
       '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
-      '<select id="' + escapeHtml(id) + '" data-family-batch-switch-select class="picker-select bg-white text-xs">' + options + "</select>",
+      '<select id="' + escapeHtml(id) + '" data-family-batch-switch-select class="picker-select text-xs">' + options + "</select>",
       '<button type="button" data-family-batch-switch-submit data-source-type="' + escapeHtml(sw.sourceType) + '" data-source-id="' + escapeHtml(sw.sourceId) + '" data-select-id="' + escapeHtml(id) + '" class="inline-flex items-center justify-center rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600">Change</button>',
       "</div>",
-      '<p data-family-batch-switch-status class="mt-2 text-xs text-amber-800/80"></p>',
+      '<p data-family-batch-switch-status class="mt-2 text-xs text-amber-100/80"></p>',
       "</div>",
     ].join("");
   }
@@ -327,16 +327,16 @@
     });
     var programHtml = programRows.length
       ? [
-          '<div class="mt-4 overflow-hidden rounded-lg border border-gray-200">',
+          '<div class="mt-4 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">',
           programRows.map(function (row) {
             var purchased = Math.max(0, Number(row && row.seatsPurchased || 0));
             var used = Math.max(0, Number(row && row.seatsUsed || 0));
             var available = Math.max(0, Number(row && row.seatsAvailable || 0));
             var batch = row.batchLabel || row.batchKey || "Current batch";
             return [
-              '<div class="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">',
-              '<div><p class="text-sm font-bold text-gray-900">' + escapeHtml(courseName(row.courseSlug)) + '</p><p class="text-xs font-medium text-gray-500">' + escapeHtml(batch) + "</p></div>",
-              '<p class="text-sm font-semibold text-gray-700"><span class="text-emerald-700">' + String(available) + " available</span> <span class=\"text-gray-400\">/</span> " + String(used) + " assigned <span class=\"text-gray-400\">/</span> " + String(purchased) + " purchased</p>",
+              '<div class="flex flex-col gap-1 border-b border-white/10 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">',
+              '<div><p class="text-sm font-bold text-white">' + escapeHtml(courseName(row.courseSlug)) + '</p><p class="text-xs font-medium text-slate-400">' + escapeHtml(batch) + "</p></div>",
+              '<p class="text-sm font-semibold text-slate-300"><span class="text-emerald-200">' + String(available) + " available</span> <span class=\"text-slate-500\">/</span> " + String(used) + " assigned <span class=\"text-slate-500\">/</span> " + String(purchased) + " purchased</p>",
               renderBatchSwitchControl(row),
               "</div>",
             ].join("");
@@ -345,21 +345,21 @@
         ].join("")
       : "";
     seatSummaryEl.innerHTML = [
-      '<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">',
-      "<div>",
-      '<p class="text-xs font-bold uppercase tracking-wide text-brand-600">Seat Balance</p>',
-      '<h1 class="mt-1 font-heading text-2xl font-extrabold text-gray-900">Your learners</h1>',
-      '<p class="mt-1 text-sm text-gray-600">' + (hasSeats ? "Seats reduce automatically as you assign learners." : "Purchase seats from the enrollment page, then assign learners here.") + "</p>",
+      '<div class="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-[#0d1117]/80 px-6 py-6 text-center shadow-[0_20px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-7 sm:text-left">',
+      '<div class="flex-1">',
+      '<p class="text-xs font-bold uppercase tracking-wide text-indigo-300">Seat Balance</p>',
+      '<h1 class="mt-1 font-heading text-2xl font-extrabold text-white">Your learners</h1>',
+      '<p class="mt-1 text-sm text-slate-300">' + (hasSeats ? "Seats reduce automatically as you assign learners." : "Purchase seats from the enrollment page, then assign learners here.") + "</p>",
       "</div>",
-      '<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">',
+      '<div class="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row sm:items-center">',
       '<button type="button" data-family-seat-assign class="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-500 sm:w-auto">Assign Learners</button>',
-      '<a href="/dashboard/courses/" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100 sm:w-auto">My own courses</a>',
+      '<a href="/dashboard/courses/" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-100 hover:bg-emerald-500/20 sm:w-auto">My own courses</a>',
       "</div>",
       "</div>",
-      '<div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">',
-      '<article class="rounded-xl border border-blue-200 bg-blue-50 p-4"><p class="text-xs font-bold uppercase tracking-wide text-blue-700">Purchased</p><p class="mt-1 text-2xl font-extrabold text-blue-950">' + String(totals.purchased) + "</p></article>",
-      '<article class="rounded-xl border border-amber-200 bg-amber-50 p-4"><p class="text-xs font-bold uppercase tracking-wide text-amber-700">Assigned</p><p class="mt-1 text-2xl font-extrabold text-amber-950">' + String(totals.used) + "</p></article>",
-      '<article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Available</p><p class="mt-1 text-2xl font-extrabold text-emerald-950">' + String(totals.available) + "</p></article>",
+      '<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">',
+      '<article class="rounded-xl border border-blue-400/25 bg-blue-500/10 p-4"><p class="text-xs font-bold uppercase tracking-wide text-blue-200">Purchased</p><p class="mt-1 text-2xl font-extrabold text-white">' + String(totals.purchased) + "</p></article>",
+      '<article class="rounded-xl border border-amber-400/25 bg-amber-500/10 p-4"><p class="text-xs font-bold uppercase tracking-wide text-amber-200">Assigned</p><p class="mt-1 text-2xl font-extrabold text-white">' + String(totals.used) + "</p></article>",
+      '<article class="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-4"><p class="text-xs font-bold uppercase tracking-wide text-emerald-200">Available</p><p class="mt-1 text-2xl font-extrabold text-white">' + String(totals.available) + "</p></article>",
       "</div>",
       programHtml,
     ].join("");
@@ -436,17 +436,17 @@
     var nextIndex = enrollmentSeatCount() + 1;
     if (nextIndex > maxChildren) return;
     var row = document.createElement("div");
-    row.className = "rounded-lg border border-gray-200 bg-white p-4";
+    row.className = "rounded-xl border border-white/10 bg-white/[0.04] p-4";
     row.setAttribute("data-family-enroll-child", "true");
     row.innerHTML = [
       '<div class="flex items-center justify-between gap-3">',
-      '<h4 class="text-sm font-bold text-gray-900">Learner ' + String(nextIndex) + "</h4>",
-      '<button type="button" data-family-enroll-remove class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50">Remove</button>',
+      '<h4 class="text-sm font-bold text-white">Learner ' + String(nextIndex) + "</h4>",
+      '<button type="button" data-family-enroll-remove class="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs font-bold text-slate-200 hover:bg-white/10">Remove</button>',
       "</div>",
       '<div class="mt-3 grid gap-3 md:grid-cols-3">',
-      '<label class="block md:col-span-1"><span class="text-xs font-bold text-gray-700">Learner full name</span><input data-family-enroll-name class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100" autocomplete="off" placeholder="E.g. Ada Johnson" /></label>',
-      '<label class="block"><span class="text-xs font-bold text-gray-700">Age</span><input data-family-enroll-age class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100" inputmode="numeric" placeholder="10" /></label>',
-      '<label class="block"><span class="text-xs font-bold text-gray-700">Class / level</span><input data-family-enroll-class class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100" autocomplete="off" placeholder="Primary 5, JSS 1" /></label>',
+      '<label class="block md:col-span-1"><span class="text-xs font-bold text-slate-300">Learner full name</span><input data-family-enroll-name class="mt-1 w-full rounded-lg border border-white/15 bg-[#060b14]/70 px-3 py-2.5 text-sm font-semibold text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" autocomplete="off" placeholder="E.g. Ada Johnson" /></label>',
+      '<label class="block"><span class="text-xs font-bold text-slate-300">Age</span><input data-family-enroll-age class="mt-1 w-full rounded-lg border border-white/15 bg-[#060b14]/70 px-3 py-2.5 text-sm font-semibold text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" inputmode="numeric" placeholder="10" /></label>',
+      '<label class="block"><span class="text-xs font-bold text-slate-300">Class / level</span><input data-family-enroll-class class="mt-1 w-full rounded-lg border border-white/15 bg-[#060b14]/70 px-3 py-2.5 text-sm font-semibold text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" autocomplete="off" placeholder="Primary 5, JSS 1" /></label>',
       "</div>",
     ].join("");
     enrollChildrenEl.appendChild(row);
@@ -579,25 +579,25 @@
     var course = escapeHtml(courseName(child.courseSlug));
     var batch = escapeHtml(child.batchLabel || child.batchKey || "Current program");
     var enrollmentStatus = escapeHtml(statusLabel(child.enrollmentStatus || child.status));
-    var age = child.age ? '<span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">Age ' + escapeHtml(child.age) + "</span>" : "";
-    var classLevel = child.classLevel ? '<span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">' + escapeHtml(child.classLevel) + "</span>" : "";
+    var age = child.age ? '<span class="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-100">Age ' + escapeHtml(child.age) + "</span>" : "";
+    var classLevel = child.classLevel ? '<span class="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-100">' + escapeHtml(child.classLevel) + "</span>" : "";
     return [
-      '<article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">',
+      '<article class="rounded-xl border border-white/10 bg-white/[0.04] p-5 shadow-sm">',
       '<div class="flex items-start justify-between gap-3">',
       "<div>",
-      '<h2 class="font-heading text-lg font-bold text-gray-900">' + name + "</h2>",
-      '<p class="mt-1 text-sm text-gray-600">' + course + "</p>",
+      '<h2 class="font-heading text-lg font-bold text-white">' + name + "</h2>",
+      '<p class="mt-1 text-sm text-slate-300">' + course + "</p>",
       "</div>",
-      '<span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">' + enrollmentStatus + "</span>",
+      '<span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-100">' + enrollmentStatus + "</span>",
       "</div>",
       '<div class="mt-3 flex flex-wrap gap-2">' + age + classLevel + "</div>",
-      '<div class="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-4">',
-      '<p class="text-xs font-bold uppercase tracking-wide text-brand-600">Learner Access Code</p>',
-      '<p class="mt-1 font-mono text-2xl font-extrabold tracking-wide text-brand-800">' + accessCode + "</p>",
+      '<div class="mt-5 rounded-lg border border-indigo-400/25 bg-indigo-500/10 p-4">',
+      '<p class="text-xs font-bold uppercase tracking-wide text-indigo-200">Learner Access Code</p>',
+      '<p class="mt-1 font-mono text-2xl font-extrabold tracking-wide text-white">' + accessCode + "</p>",
       "</div>",
       '<dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">',
-      "<div><dt class=\"font-semibold text-gray-500\">Batch</dt><dd class=\"mt-1 text-gray-900\">" + batch + "</dd></div>",
-      "<div><dt class=\"font-semibold text-gray-500\">Progress</dt><dd class=\"mt-1 text-gray-900\">Available soon</dd></div>",
+      "<div><dt class=\"font-semibold text-slate-400\">Batch</dt><dd class=\"mt-1 text-slate-100\">" + batch + "</dd></div>",
+      "<div><dt class=\"font-semibold text-slate-400\">Progress</dt><dd class=\"mt-1 text-slate-100\">Available soon</dd></div>",
       "</dl>",
       "</article>",
     ].join("");

@@ -7,277 +7,467 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: { sans: ["Inter", "sans-serif"], heading: ["Manrope", "sans-serif"] },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              heading: ["Manrope", "sans-serif"],
+              mono: ["Fira Code", "monospace"]
+            },
             colors: {
               brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#ccd3e6",
-                300: "#99a9cc",
-                400: "#667eb2",
-                500: "#22345f",
-                600: "#1a2849",
-                700: "#14213d",
-                800: "#0f182d",
-                900: "#0a101e",
+                50: "#eef2fb", 100: "#dfe7f7", 200: "#ccd3e6", 300: "#99a9cc", 400: "#667eb2",
+                500: "#22345f", 600: "#1a2849", 700: "#14213d", 800: "#0f182d", 900: "#0a101e",
               },
             },
           },
         },
       };
     </script>
-  </head>
-  <body class="bg-slate-100 text-gray-900 font-sans antialiased md:h-screen md:overflow-hidden">
-    <section class="flex min-h-screen w-full md:h-full">
-      <button id="schoolMobileMenuOverlay" type="button" aria-label="Close menu" class="fixed inset-0 bg-brand-900/40 z-40 hidden md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></button>
+    <style>
+      [hidden] { display: none !important; }
 
-      <aside id="schoolSidebar" class="absolute top-0 left-0 z-50 h-dvh w-72 overflow-y-auto bg-brand-800 text-white flex flex-col transform -translate-x-full md:inset-y-0 md:left-0 md:h-screen md:overflow-visible md:translate-x-0 md:sticky md:top-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
-        <div class="h-16 flex items-center px-6 border-b border-white/10">
-          <img src="/assets/Prompt to Profit_icon.png" alt="Prompt to Profit icon" class="h-8 w-8 rounded object-cover mr-3" />
+      /* Base Dark Mode Settings for Main Container */
+      body {
+        background-color: #060b14;
+        color: #cbd5e1;
+      }
+
+      body.school-dashboard-page {
+        min-height: 100dvh;
+        padding-top: 0;
+        overflow-x: hidden;
+      }
+
+      .school-dashboard-shell {
+        min-height: 100dvh;
+        overflow-x: hidden;
+      }
+
+      .school-dashboard-topbar {
+        height: 3.5rem !important;
+        min-height: 3.5rem !important;
+        max-height: 3.5rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        align-items: center !important;
+        line-height: 1.1;
+      }
+
+      .school-dashboard-topbar h1,
+      .school-dashboard-topbar p {
+        margin: 0 !important;
+        line-height: 1.12 !important;
+      }
+
+      #schoolSidebar {
+        min-height: 100dvh;
+        position: fixed;
+        flex: 0 0 18rem;
+      }
+
+      #schoolSidebar > [data-school-sidebar-brand] {
+        height: 3.5rem !important;
+        min-height: 3.5rem !important;
+        max-height: 3.5rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+
+      .school-dashboard-main {
+        min-height: calc(100dvh - 3.5rem);
+        padding-bottom: max(4rem, env(safe-area-inset-bottom)) !important;
+      }
+
+      .school-dashboard-hero h2 {
+        line-height: 1.08;
+      }
+
+      @media (max-width: 639px) {
+        .school-dashboard-hero {
+          border-radius: 1.25rem !important;
+          padding: 1.5rem !important;
+        }
+
+        .school-dashboard-hero h2 {
+          font-size: 2rem !important;
+          line-height: 1.08 !important;
+        }
+
+        .school-dashboard-hero p:last-child {
+          font-size: 0.95rem !important;
+          line-height: 1.65 !important;
+        }
+      }
+
+      @media (min-width: 768px) {
+        body.school-dashboard-page {
+          height: auto;
+          overflow-y: auto;
+        }
+
+        #schoolSidebar {
+          position: sticky;
+          min-height: 100dvh;
+          height: 100dvh;
+          overflow: visible;
+        }
+      }
+
+      /* Ambient Deep Space Elements Scoped to Main */
+      .ambient-glow-1 { position: fixed; top: -10%; left: -10%; width: 60%; height: 50%; background: rgba(37, 99, 235, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .ambient-glow-2 { position: fixed; bottom: 10%; right: -10%; width: 50%; height: 60%; background: rgba(16, 185, 129, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
+      .tech-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg=='); }
+
+      /* Modal Deep Space Resets */
+      div[role="dialog"] {
+        background: rgba(13, 17, 23, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-color: rgba(255,255,255,0.1) !important;
+        color: #e2e8f0 !important;
+      }
+      div[role="dialog"] h3 { color: #fff !important; }
+      div[role="dialog"] .border-b, div[role="dialog"] .border-t { border-color: rgba(255,255,255,0.1) !important; }
+      div[role="dialog"] p span { color: #94a3b8 !important; }
+      div[role="dialog"] p strong { color: #fff !important; }
+
+      /* Modal Inputs & Formatting (used in Advanced Learn modal body) */
+      #advancedLearnModalBody {
+        color: #cbd5e1 !important;
+      }
+      #advancedLearnModalBody h4 { color: #fff !important; }
+    </style>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        /* Glassmorphic Panel Component */
+        .glass-panel {
+          @apply bg-[#0d1117]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-300;
+        }
+
+        /* Input Overrides */
+        input[type="text"], input[type="email"], input[type="number"], textarea {
+          @apply bg-[#060b14]/50 border-white/10 text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-500/20 transition-all shadow-inner outline-none !important;
+        }
+
+        /* Native File Input Dark Mode Override */
+        input[type="file"] {
+          @apply file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 text-slate-400 cursor-pointer !important;
+        }
+
+        /* Shared Buttons */
+        .btn-primary {
+          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-sm font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 border-none cursor-pointer;
+        }
+        .btn-outline {
+          @apply inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-6 py-3 text-sm font-bold text-slate-300 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-0.5 cursor-pointer;
+        }
+
+        /* JS Injected Elements Interceptor */
+
+        /* Candidates List */
+        #advancedCandidatesList > div {
+          @apply border-white/5 hover:bg-white/5 text-slate-300 transition-colors !important;
+        }
+
+        /* Table Interceptors */
+        #schoolStudentsRows tr {
+          @apply border-t border-white/5 text-slate-300 font-light hover:bg-white/5 transition-colors !important;
+        }
+        #schoolStudentsRows td {
+          @apply py-4 !important;
+        }
+        #schoolStudentsRows p,
+        #schoolStudentsRows span,
+        #schoolStudentsRows code {
+          @apply text-slate-300 !important;
+        }
+        #schoolStudentsRows p.text-xs,
+        #schoolStudentsRows span.text-slate-400 {
+          @apply text-slate-500 !important;
+        }
+        #schoolStudentsRows a {
+          @apply text-sky-300 hover:text-sky-200 underline !important;
+        }
+        /* Buttons inside table */
+        #schoolStudentsRows button, #schoolStudentsRows a[class*="rounded"] {
+          @apply bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors !important;
+        }
+        /* Status Pills inside table */
+        #schoolStudentsRows span[class*="bg-"] {
+          @apply bg-[#161b22] border border-white/10 text-slate-300 font-mono tracking-widest text-[10px] uppercase rounded px-2 py-1 inline-block !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="school-dashboard-page bg-[#060b14] text-slate-300 font-sans antialiased selection:bg-blue-500 selection:text-white">
+    <section class="school-dashboard-shell flex w-full relative">
+      <button id="schoolMobileMenuOverlay" type="button" aria-label="Close menu" class="fixed inset-0 bg-[#060b14]/80 z-40 hidden md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></button>
+
+      <aside id="schoolSidebar" class="fixed top-0 left-0 z-50 h-dvh w-72 overflow-y-auto bg-[#060b14]/95 backdrop-blur-2xl border-r border-white/5 text-white flex flex-col transform -translate-x-full md:sticky md:top-0 md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div data-school-sidebar-brand class="h-16 flex items-center px-6 border-b border-white/10">
+          <img src="/assets/Prompt to Profit_icon.png" alt="Prompt to Profit icon" class="h-8 w-8 rounded object-cover bg-white/10 border border-white/20 p-0.5 mr-3" />
           <span class="font-heading font-bold text-lg" data-brand-label="1">School Portal</span>
         </div>
         <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2" data-menu-label="1">Menu</p>
-          <a href="/schools/dashboard/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium transition-colors">Overview</a>
-          <a href="#studentsSection" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">Students</a>
-          <a href="#uploadSection" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">Bulk Enroll</a>
-          <a href="/schools/reset-password-request/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium transition-colors">Reset Password</a>
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2" data-menu-label="1">Menu</p>
+          <a href="/schools/dashboard/" class="flex items-center gap-3 px-3 py-2.5 bg-white/10 text-white rounded-lg font-medium transition-colors ring-1 ring-white/10">Overview</a>
+          <a href="#studentsSection" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Students</a>
+          <a href="#uploadSection" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Bulk Enroll</a>
+          <a href="/schools/reset-password-request/" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Reset Password</a>
         </nav>
         <div class="p-4 border-t border-white/10">
           <button type="button" data-school-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
         </div>
       </aside>
 
-      <div class="flex-1 flex flex-col min-w-0">
-        <header class="min-h-16 sm:h-16 bg-white/90 backdrop-blur border-b border-gray-200 flex items-start sm:items-center justify-between px-4 sm:px-6 py-2 sm:py-0 gap-3">
-          <div class="flex items-start sm:items-center gap-3 min-w-0">
-            <button id="schoolMobileMenuButton" type="button" aria-controls="schoolSidebar" aria-expanded="false" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
+      <div class="flex-1 flex min-w-0 flex-col">
+        <header class="school-dashboard-topbar sticky top-0 h-14 shrink-0 bg-[#060b14]/90 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 sm:px-6 gap-3 z-20">
+          <div class="flex items-center gap-3 min-w-0">
+            <button id="schoolMobileMenuButton" type="button" aria-controls="schoolSidebar" aria-expanded="false" class="md:hidden p-2 -ml-2 text-slate-400 hover:text-white cursor-pointer rounded-lg hover:bg-white/10">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
             <div class="min-w-0">
-              <h1 class="text-base sm:text-xl font-heading font-extrabold text-gray-900 truncate">School Dashboard</h1>
-              <p id="schoolDashboardMeta" class="text-xs text-gray-500 leading-tight sm:truncate">Loading school account...</p>
+              <h1 class="text-base sm:text-xl font-heading font-extrabold text-white truncate">School Dashboard</h1>
+              <p id="schoolDashboardMeta" class="truncate text-xs text-slate-400 leading-tight">Loading school account...</p>
             </div>
           </div>
-          <button id="schoolLogoutBtn" type="button" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-white px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Sign out</button>
+          <button id="schoolLogoutBtn" type="button" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-white/5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-200 ring-1 ring-inset ring-white/10 hover:bg-white/10 hover:text-white transition-colors">Sign out</button>
         </header>
 
-        <main class="flex-1 overflow-visible md:overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div class="max-w-7xl mx-auto space-y-6">
-            <section id="schoolWelcomeNotice" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"></section>
+        <main class="school-dashboard-main flex-1 p-4 sm:p-6 lg:p-10 relative bg-[#060b14] text-slate-300">
+          <div class="ambient-glow-1"></div>
+          <div class="ambient-glow-2"></div>
+          <div class="tech-grid"></div>
 
-            <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 p-5 sm:p-7 text-white shadow-xl ring-1 ring-white/15">
-              <div class="absolute -right-10 -top-16 h-44 w-44 rounded-full bg-white/15 blur-2xl"></div>
-              <div class="absolute -left-8 -bottom-16 h-36 w-36 rounded-full bg-brand-200/30 blur-2xl"></div>
-              <div class="relative">
-                <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-100"><img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="ptp-logo-inline ptp-logo-inline--heading" /> for Schools</p>
-                <h2 class="mt-1 text-2xl sm:text-3xl font-heading font-extrabold text-white">Manage seats, students, progress, and certificates</h2>
-                <p class="mt-2 text-sm sm:text-base text-white/90 max-w-3xl">All school enrollments and student outcomes in one workspace.</p>
+          <div class="max-w-7xl mx-auto space-y-8 relative z-10">
+
+            <section id="schoolWelcomeNotice" class="hidden rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm font-mono tracking-wide text-emerald-400"></section>
+
+            <section class="school-dashboard-hero relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#161b22] to-[#0a0f1e] p-8 sm:p-10 text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] border border-white/10 group">
+              <div class="absolute -right-10 -top-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px] pointer-events-none group-hover:opacity-100 opacity-60 transition-opacity duration-700"></div>
+              <div class="absolute -left-8 -bottom-16 h-64 w-64 rounded-full bg-cyan-500/10 blur-[80px] pointer-events-none group-hover:opacity-100 opacity-60 transition-opacity duration-700"></div>
+
+              <div class="relative z-10">
+                <p class="inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-4 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+                  <img src="/assets/Prompt to Profit_bkgrd.png" alt="Prompt to Profit logo" class="h-3 w-auto filter grayscale opacity-70" />
+                  for Schools
+                </p>
+                <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-white mb-2 tracking-tight">Manage seats, students, <br class="hidden sm:block"/>progress, and certificates</h2>
+                <p class="text-[15px] text-slate-400 font-light max-w-3xl leading-relaxed">All school enrollments and student outcomes in one secure workspace.</p>
               </div>
             </section>
 
-            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <article class="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Seats</p>
-                <p id="metricSeats" class="mt-1 text-2xl font-extrabold text-sky-950">0 / 0</p>
-                <p id="metricSeatsSub" class="text-xs text-sky-700/80 mt-1">Available: 0</p>
+            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+              <article class="rounded-2xl border border-white/5 bg-[#161b22]/50 p-5 hover:bg-[#161b22]/80 transition-colors">
+                <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-sky-400">Seats</p>
+                <p id="metricSeats" class="mt-2 text-3xl font-heading font-extrabold text-white">0 / 0</p>
+                <p id="metricSeatsSub" class="text-[11px] font-mono text-slate-500 mt-1 uppercase tracking-widest">Available: 0</p>
               </article>
-              <article class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Avg Completion</p>
-                <p id="metricAvgCompletion" class="mt-1 text-2xl font-extrabold text-emerald-950">0%</p>
+              <article class="rounded-2xl border border-white/5 bg-[#161b22]/50 p-5 hover:bg-[#161b22]/80 transition-colors">
+                <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">Avg Completion</p>
+                <p id="metricAvgCompletion" class="mt-2 text-3xl font-heading font-extrabold text-white">0%</p>
               </article>
-              <article class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-violet-700">Active in 7 Days</p>
-                <p id="metricActive7" class="mt-1 text-2xl font-extrabold text-violet-950">0</p>
+              <article class="rounded-2xl border border-white/5 bg-[#161b22]/50 p-5 hover:bg-[#161b22]/80 transition-colors">
+                <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-violet-400">Active in 7 Days</p>
+                <p id="metricActive7" class="mt-2 text-3xl font-heading font-extrabold text-white">0</p>
               </article>
-              <article class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Course Access Ends</p>
-                <p id="metricExpiry" class="mt-1 text-sm font-bold text-amber-950">-</p>
+              <article class="rounded-2xl border border-white/5 bg-[#161b22]/50 p-5 hover:bg-[#161b22]/80 transition-colors">
+                <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">Course Access Ends</p>
+                <p id="metricExpiry" class="mt-2 text-xl font-heading font-bold text-white">-</p>
               </article>
             </section>
 
-            <section id="advancedSection" class="rounded-3xl bg-white border border-gray-200 p-5 sm:p-6 shadow-sm">
-              <div class="flex flex-wrap items-center justify-between gap-3">
+            <section id="advancedSection" class="glass-panel p-6 sm:p-8">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
                 <div>
-                  <h2 class="text-lg sm:text-xl font-heading font-extrabold text-gray-900">Prompt to Profit Advanced</h2>
-                  <p class="mt-1 text-sm text-gray-600">Buy advanced seats, then upgrade eligible students.</p>
+                  <h2 class="text-xl sm:text-2xl font-heading font-extrabold text-white">Prompt to Profit Advanced</h2>
+                  <p class="mt-1 text-[13px] text-slate-400 font-light">Buy advanced seats, then upgrade eligible students.</p>
                 </div>
-                <p id="advancedStatusText" class="text-sm font-semibold text-gray-700">Loading…</p>
+                <p id="advancedStatusText" class="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full inline-flex">Loading…</p>
               </div>
-              <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <article class="rounded-xl border border-blue-200 bg-blue-50 p-3">
-                  <p class="text-xs uppercase font-semibold text-blue-700">Purchased</p>
-                  <p id="advancedSeatsPurchased" class="text-xl font-extrabold text-blue-950">0</p>
+
+              <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <article class="rounded-xl border border-white/5 bg-[#060b14]/50 p-4">
+                  <p class="text-[10px] uppercase font-mono font-bold tracking-widest text-blue-400 mb-1">Purchased</p>
+                  <p id="advancedSeatsPurchased" class="text-2xl font-heading font-extrabold text-white">0</p>
                 </article>
-                <article class="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <p class="text-xs uppercase font-semibold text-amber-700">Used</p>
-                  <p id="advancedSeatsUsed" class="text-xl font-extrabold text-amber-950">0</p>
+                <article class="rounded-xl border border-white/5 bg-[#060b14]/50 p-4">
+                  <p class="text-[10px] uppercase font-mono font-bold tracking-widest text-amber-400 mb-1">Used</p>
+                  <p id="advancedSeatsUsed" class="text-2xl font-heading font-extrabold text-white">0</p>
                 </article>
-                <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                  <p class="text-xs uppercase font-semibold text-emerald-700">Available</p>
-                  <p id="advancedSeatsAvailable" class="text-xl font-extrabold text-emerald-950">0</p>
+                <article class="rounded-xl border border-white/5 bg-[#060b14]/50 p-4">
+                  <p class="text-[10px] uppercase font-mono font-bold tracking-widest text-emerald-400 mb-1">Available</p>
+                  <p id="advancedSeatsAvailable" class="text-2xl font-heading font-extrabold text-white">0</p>
                 </article>
               </div>
-              <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3 items-end">
+
+              <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
                 <div>
-                  <label for="advancedSeatCount" class="block text-xs font-semibold text-gray-700 uppercase tracking-wide">Seats to buy</label>
-                  <input id="advancedSeatCount" type="number" min="1" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm" value="5" />
+                  <label for="advancedSeatCount" class="block text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-2">Seats to buy</label>
+                  <input id="advancedSeatCount" type="number" min="1" class="w-full" value="5" />
                 </div>
-                <button id="advancedBuyBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-600">Buy Advanced Seats</button>
-                <button id="advancedUpgradeAllBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-600">Upgrade All Eligible</button>
+                <button id="advancedBuyBtn" type="button" class="btn-primary !px-4">Buy Advanced Seats</button>
+                <button id="advancedUpgradeAllBtn" type="button" class="btn-outline !border-indigo-500/30 !bg-indigo-500/10 !text-indigo-300 hover:!bg-indigo-500/20 hover:!text-white">Upgrade All Eligible</button>
               </div>
-              <div class="mt-3">
-                <button id="advancedLearnMoreBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-700 hover:bg-brand-100">Learn about Prompt to Profit Advanced</button>
+
+              <div class="mt-5">
+                <button id="advancedLearnMoreBtn" type="button" class="btn-outline w-full sm:w-auto !text-xs !py-2.5">Learn about Prompt to Profit Advanced</button>
               </div>
-              <div class="mt-4">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <h3 class="text-sm font-bold text-gray-900">Upgrade Selected Students</h3>
-                  <button id="advancedUpgradeSelectedBtn" type="button" class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm sm:text-xs font-semibold text-gray-700 hover:bg-gray-50">Upgrade Selected</button>
+
+              <div class="mt-8 pt-6 border-t border-white/5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <h3 class="text-base font-heading font-bold text-white">Upgrade Selected Students</h3>
+                  <button id="advancedUpgradeSelectedBtn" type="button" class="btn-outline w-full sm:w-auto !text-xs !py-2 !px-4">Upgrade Selected</button>
                 </div>
-                <div id="advancedCandidatesList" class="mt-2 max-h-48 overflow-auto rounded-xl border border-gray-200 p-2 text-sm"></div>
-                <p id="advancedActionStatus" class="mt-2 text-sm text-gray-600 min-h-[1.25rem]"></p>
+                <div id="advancedCandidatesList" class="max-h-48 overflow-auto rounded-xl border border-white/5 bg-[#060b14]/30 p-2 text-sm hide-scrollbar"></div>
+                <p id="advancedActionStatus" class="mt-3 text-xs text-rose-400 min-h-[1.25rem]"></p>
               </div>
             </section>
 
-            <section id="uploadSection" class="rounded-3xl bg-white border border-gray-200 p-5 sm:p-6 shadow-sm">
-              <div class="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-white p-4 sm:p-5 mb-5">
-                <h3 class="text-base sm:text-lg font-heading font-bold text-gray-900">Add Individual Student</h3>
-                <p class="mt-1 text-sm text-gray-600">Enroll one student quickly without uploading CSV.</p>
-                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-                  <input id="singleStudentName" type="text" class="w-full min-w-0 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-indigo-400 lg:col-span-5" placeholder="Full name" />
-                  <input id="singleStudentEmail" type="email" class="w-full min-w-0 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-indigo-400 lg:col-span-5" placeholder="Email address (optional)" />
-                  <button id="singleStudentAddBtn" type="button" class="w-full lg:w-auto inline-flex items-center justify-center rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-600 whitespace-nowrap lg:col-span-2">Add Student</button>
+            <section id="uploadSection" class="glass-panel p-6 sm:p-8">
+              <div class="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5 sm:p-6 mb-8 shadow-inner relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                <div class="relative z-10">
+                  <h3 class="text-lg font-heading font-bold text-white">Add Individual Student</h3>
+                  <p class="mt-1 text-[13px] text-slate-400 font-light">Enroll one student quickly without uploading CSV.</p>
+                  <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-stretch">
+                    <input id="singleStudentName" type="text" class="lg:col-span-5 !py-3" placeholder="Full name" />
+                    <input id="singleStudentEmail" type="email" class="lg:col-span-5 !py-3" placeholder="Email address (optional)" />
+                    <button id="singleStudentAddBtn" type="button" class="btn-primary lg:col-span-2 !px-4 !py-3 w-full whitespace-nowrap">Add Student</button>
+                  </div>
                 </div>
               </div>
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-lg sm:text-xl font-heading font-extrabold text-gray-900">Bulk Enroll Students (CSV)</h2>
-                <a href="/.netlify/functions/school-students-template" class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Download CSV Template</a>
+
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-5">
+                <h2 class="text-xl sm:text-2xl font-heading font-extrabold text-white">Bulk Enroll Students (CSV)</h2>
+                <a href="/.netlify/functions/school-students-template" class="btn-outline !py-2 !px-4 !text-xs">Download CSV Template</a>
               </div>
-              <p class="mt-2 text-sm text-gray-600">Upload `full_name` rows, with optional `email`. Seat cap is enforced automatically.</p>
-              <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <p class="mt-4 text-[13px] text-slate-400 font-light">Upload <code class="bg-[#060b14] px-1.5 py-0.5 rounded border border-white/10 text-amber-400 font-mono text-[11px]">full_name</code> rows, with optional <code class="bg-[#060b14] px-1.5 py-0.5 rounded border border-white/10 text-amber-400 font-mono text-[11px]">email</code>. Seat cap is enforced automatically.</p>
+
+              <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2">
-                  <textarea id="studentsCsvInput" rows="7" class="w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm font-mono focus:border-brand-400 focus:ring-brand-400" placeholder="full_name,email&#10;Jane Doe,&#10;John Doe,john@example.com"></textarea>
+                  <textarea id="studentsCsvInput" rows="7" class="w-full font-mono text-[13px] text-slate-300 leading-relaxed resize-y" placeholder="full_name,email&#10;Jane Doe,&#10;John Doe,john@example.com"></textarea>
                 </div>
-                <div class="space-y-3">
-                  <label class="block text-sm">
-                    <span class="font-semibold text-gray-700">Or select CSV file</span>
-                    <input id="studentsCsvFile" type="file" accept=".csv,text/csv" class="mt-1 block w-full text-sm" />
+                <div class="space-y-4">
+                  <label class="block">
+                    <span class="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 mb-2">Or select CSV file</span>
+                    <input id="studentsCsvFile" type="file" accept=".csv,text/csv" class="w-full" />
                   </label>
-                  <button id="studentsUploadBtn" type="button" class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-600">Upload Students</button>
-                  <p id="studentsUploadStatus" class="text-sm text-gray-600 min-h-[1.25rem]"></p>
+                  <button id="studentsUploadBtn" type="button" class="btn-outline w-full !py-3 mt-2">Upload Students</button>
+                  <p id="studentsUploadStatus" class="text-xs text-rose-400 min-h-[1.25rem] text-center"></p>
                 </div>
               </div>
             </section>
 
-            <section id="studentsSection" class="rounded-3xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-              <div class="px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
-                <h2 class="text-lg sm:text-xl font-heading font-extrabold text-gray-900">Students</h2>
+            <section id="studentsSection" class="glass-panel !p-0 overflow-hidden">
+              <div class="px-6 py-5 border-b border-white/5 bg-[#161b22]/50">
+                <h2 class="text-xl sm:text-2xl font-heading font-extrabold text-white">Students Roster</h2>
               </div>
-              <div class="overflow-x-auto">
+              <div class="overflow-x-auto bg-[#060b14]/30">
                 <table class="min-w-full text-sm">
-                  <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                  <thead class="bg-white/5 border-b border-white/10">
                     <tr>
-                      <th class="text-left px-4 py-3">Student</th>
-                      <th class="text-left px-4 py-3">Code</th>
-                      <th class="text-left px-4 py-3">Progress</th>
-                      <th class="text-left px-4 py-3">Last Activity</th>
-                      <th class="text-left px-4 py-3">Website</th>
-                      <th class="text-left px-4 py-3">Submitted</th>
-                      <th class="text-left px-4 py-3">Status</th>
-                      <th class="text-right px-4 py-3">Actions</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Student</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Code</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Progress</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Last Activity</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Website</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Submitted</th>
+                      <th class="text-left px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Status</th>
+                      <th class="text-right px-5 py-4 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="schoolStudentsRows" class="divide-y divide-gray-100 bg-white"></tbody>
+                  <tbody id="schoolStudentsRows" class="divide-y divide-white/5"></tbody>
                 </table>
               </div>
             </section>
+
           </div>
         </main>
       </div>
     </section>
 
     <div id="advancedPurchaseModal" class="fixed inset-0 z-[120] hidden" aria-hidden="true">
-      <button id="advancedPurchaseModalOverlay" type="button" class="absolute -inset-px bg-gray-900/70 backdrop-blur-sm" aria-label="Close"></button>
+      <button id="advancedPurchaseModalOverlay" type="button" class="absolute -inset-px bg-[#060b14]/80 backdrop-blur-sm" aria-label="Close"></button>
       <div class="relative z-10 mx-auto flex h-full w-full max-w-2xl items-center justify-center p-4 sm:p-6">
-        <section class="w-full rounded-2xl border border-gray-200 bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="advancedPurchaseModalTitle">
-          <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+        <section class="w-full rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#161b22] to-[#0a0f1e] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="advancedPurchaseModalTitle">
+          <div class="flex items-start justify-between border-b border-white/5 px-6 py-6 sm:px-8">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Advanced Purchase</p>
-              <h3 id="advancedPurchaseModalTitle" class="mt-1 text-xl font-heading font-bold text-gray-900">Transaction Summary</h3>
-              <p class="mt-1 text-sm text-gray-500">Review your discounted school-only advanced seat purchase.</p>
+              <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-blue-400 mb-1">Advanced Purchase</p>
+              <h3 id="advancedPurchaseModalTitle" class="text-2xl font-heading font-bold text-white">Transaction Summary</h3>
+              <p class="mt-1 text-[13px] text-slate-400 font-light">Review your discounted school-only advanced seat purchase.</p>
             </div>
-            <button id="advancedPurchaseModalCloseBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" aria-label="Close dialog">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 6l12 12M6 18L18 6"/></svg>
+            <button id="advancedPurchaseModalCloseBtn" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Close dialog">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div class="px-5 py-5 sm:px-6">
-            <div class="space-y-2 text-sm text-gray-700">
-              <p class="flex justify-between"><span>Number of students</span><strong id="advancedModalSeats">0</strong></p>
-              <p class="flex justify-between"><span>Cost per student</span><strong id="advancedModalBasePrice">₦0</strong></p>
-              <p class="flex justify-between"><span>Automatic discount</span><strong id="advancedModalDiscount">-₦0</strong></p>
-              <p class="flex justify-between"><span>Discounted price per student</span><strong id="advancedModalDiscountedPrice">₦0</strong></p>
-              <p class="flex justify-between border-t border-gray-200 pt-2"><span>Total (incl. VAT)</span><strong id="advancedModalTotal">₦0</strong></p>
+          <div class="px-6 py-6 sm:px-8 bg-[#060b14]/50">
+            <div class="space-y-4 text-sm text-slate-300 font-light">
+              <p class="flex justify-between"><span>Number of students</span><strong id="advancedModalSeats" class="text-white">0</strong></p>
+              <p class="flex justify-between"><span>Cost per student</span><strong id="advancedModalBasePrice" class="text-white">₦0</strong></p>
+              <p class="flex justify-between"><span>Automatic discount</span><strong id="advancedModalDiscount" class="text-emerald-400">-₦0</strong></p>
+              <p class="flex justify-between"><span>Discounted price per student</span><strong id="advancedModalDiscountedPrice" class="text-white">₦0</strong></p>
+              <p class="flex justify-between border-t border-white/10 pt-4 mt-2"><span>Total (incl. VAT)</span><strong id="advancedModalTotal" class="text-2xl font-heading font-bold text-white">₦0</strong></p>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 sm:px-6">
-            <button id="advancedModalCancelBtn" type="button" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
-            <button id="advancedModalContinueBtn" type="button" class="rounded-lg bg-brand-700 px-3 py-2 text-sm font-bold text-white hover:bg-brand-600">Continue to Payment</button>
+          <div class="flex items-center justify-end gap-3 border-t border-white/5 px-6 py-5 sm:px-8 bg-white/5">
+            <button id="advancedModalCancelBtn" type="button" class="btn-outline !py-2.5">Cancel</button>
+            <button id="advancedModalContinueBtn" type="button" class="btn-primary !py-2.5">Continue to Payment</button>
           </div>
         </section>
       </div>
     </div>
 
     <div id="advancedPaymentStatusModal" class="fixed inset-0 z-[120] hidden" aria-hidden="true">
-      <button id="advancedPaymentStatusModalOverlay" type="button" class="absolute -inset-px bg-gray-900/70 backdrop-blur-sm" aria-label="Close"></button>
-      <div class="relative z-10 mx-auto flex h-full w-full max-w-2xl items-center justify-center p-4 sm:p-6">
-        <section class="w-full rounded-2xl border border-gray-200 bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="advancedPaymentStatusModalTitle">
-          <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+      <button id="advancedPaymentStatusModalOverlay" type="button" class="absolute -inset-px bg-[#060b14]/80 backdrop-blur-sm" aria-label="Close"></button>
+      <div class="relative z-10 mx-auto flex h-full w-full max-w-xl items-center justify-center p-4 sm:p-6">
+        <section class="w-full rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#161b22] to-[#0a0f1e] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="advancedPaymentStatusModalTitle">
+          <div class="flex items-start justify-between border-b border-white/5 px-6 py-6 sm:px-8">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Advanced Payment</p>
-              <h3 id="advancedPaymentStatusModalTitle" class="mt-1 text-xl font-heading font-bold text-gray-900">Payment Cancelled</h3>
-              <p id="advancedPaymentStatusModalBody" class="mt-1 text-sm text-gray-500">No payment was recorded, and no advanced seats were added.</p>
+              <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 mb-1">Advanced Payment</p>
+              <h3 id="advancedPaymentStatusModalTitle" class="text-2xl font-heading font-bold text-white">Payment Cancelled</h3>
+              <p id="advancedPaymentStatusModalBody" class="mt-1 text-[13px] text-slate-400 font-light">No payment was recorded, and no advanced seats were added.</p>
             </div>
-            <button id="advancedPaymentStatusModalCloseBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" aria-label="Close dialog">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 6l12 12M6 18L18 6"/></svg>
+            <button id="advancedPaymentStatusModalCloseBtn" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Close dialog">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 sm:px-6">
-            <button id="advancedPaymentStatusModalOkBtn" type="button" class="rounded-lg bg-brand-700 px-3 py-2 text-sm font-bold text-white hover:bg-brand-600">OK</button>
+          <div class="flex items-center justify-end gap-3 border-t border-white/5 px-6 py-5 sm:px-8 bg-white/5">
+            <button id="advancedPaymentStatusModalOkBtn" type="button" class="btn-primary !py-2.5 !px-8">OK</button>
           </div>
         </section>
       </div>
     </div>
 
     <div id="advancedLearnModal" class="fixed inset-0 z-[120] hidden" aria-hidden="true">
-      <button id="advancedLearnModalOverlay" type="button" class="absolute -inset-px bg-gray-900/70 backdrop-blur-sm" aria-label="Close"></button>
-      <div class="relative z-10 mx-auto flex h-full w-full items-center justify-center p-3 sm:p-5">
-        <section class="w-full max-w-3xl h-[88vh] max-h-[760px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl flex flex-col" role="dialog" aria-modal="true" aria-labelledby="advancedLearnModalTitle">
-          <div class="shrink-0 flex items-start justify-between border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
+      <button id="advancedLearnModalOverlay" type="button" class="absolute -inset-px bg-[#060b14]/80 backdrop-blur-sm" aria-label="Close"></button>
+      <div class="relative z-10 mx-auto flex h-full w-full items-center justify-center p-4 sm:p-6">
+        <section class="w-full max-w-3xl h-[88vh] max-h-[760px] overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#161b22] to-[#0a0f1e] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="advancedLearnModalTitle">
+          <div class="shrink-0 flex items-start justify-between border-b border-white/5 px-6 py-6 sm:px-8 bg-white/5">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Program Overview</p>
-              <h3 id="advancedLearnModalTitle" class="mt-1 text-xl font-heading font-bold text-gray-900">Prompt to Profit Advanced</h3>
+              <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-blue-400 mb-1">Program Overview</p>
+              <h3 id="advancedLearnModalTitle" class="text-2xl font-heading font-bold text-white">Prompt to Profit Advanced</h3>
             </div>
-            <button id="advancedLearnModalCloseBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700" aria-label="Close dialog">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 6l12 12M6 18L18 6"/></svg>
+            <button id="advancedLearnModalCloseBtn" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Close dialog">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div id="advancedLearnModalBody" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4 sm:space-y-5 text-sm text-gray-700">
-            <p class="text-gray-500">Loading program details…</p>
+          <div id="advancedLearnModalBody" class="flex-1 min-h-0 overflow-y-auto px-6 py-6 sm:px-8 space-y-5 text-[15px] font-light hide-scrollbar">
+            <p class="text-slate-400">Loading program details…</p>
           </div>
-          <div class="shrink-0 flex items-center justify-end gap-2 border-t border-gray-200 px-4 py-3 sm:px-6 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button id="advancedLearnModalOkBtn" type="button" class="rounded-lg bg-brand-700 px-3 py-2 text-sm font-bold text-white hover:bg-brand-600">Close</button>
+          <div class="shrink-0 flex items-center justify-end gap-3 border-t border-white/5 px-6 py-5 sm:px-8 bg-[#060b14]/50 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <button id="advancedLearnModalOkBtn" type="button" class="btn-primary !py-2.5 !px-8">Close</button>
           </div>
         </section>
       </div>
     </div>
-    <script src="/assets/school-nav.js?v=20260410c" defer></script>
-    <script src="/assets/school-dashboard.js?v=20260502a" defer></script>
+
+    <script src="/assets/school-nav.js?v=20260614-rail-fix" defer></script>
+    <script src="/assets/school-dashboard.js?v=20260614-dark-shell" defer></script>
   </body>
 </html>

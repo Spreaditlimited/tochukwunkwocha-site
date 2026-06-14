@@ -28,6 +28,77 @@
       "  height: 0 !important;",
       "  display: none !important;",
       "}",
+      "body.user-dashboard-page,",
+      "body.user-dashboard-page .user-dashboard-main {",
+      "  background-color: #060b14 !important;",
+      "}",
+      "body.user-dashboard-page .user-dashboard-topbar {",
+      "  background-color: rgba(6, 11, 20, 0.92) !important;",
+      "}",
+      "body.user-dashboard-page aside {",
+      "  background-color: rgba(6, 11, 20, 0.96) !important;",
+      "}",
+      "body.user-dashboard-page [data-sidebar-rail-toggle] {",
+      "  background: rgba(255, 255, 255, 0.08) !important;",
+      "  border-color: rgba(255, 255, 255, 0.16) !important;",
+      "  color: #e2e8f0 !important;",
+      "  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;",
+      "}",
+      "body.user-dashboard-page [data-sidebar-rail-toggle]:hover {",
+      "  background: rgba(255, 255, 255, 0.14) !important;",
+      "  color: #fff !important;",
+      "}",
+      "body.user-dashboard-page {",
+      "  --student-dashboard-page-bg: #060b14;",
+      "  --student-dashboard-card-bg: #0d1117;",
+      "}",
+      "body.user-dashboard-page,",
+      "body.user-dashboard-page > section,",
+      "body.user-dashboard-page .user-dashboard-main,",
+      "body.user-dashboard-page main {",
+      "  background-color: var(--student-dashboard-page-bg) !important;",
+      "}",
+      "body.user-dashboard-page .ambient-glow-1 {",
+      "  background: rgba(37, 99, 235, 0.08) !important;",
+      "}",
+      "body.user-dashboard-page .ambient-glow-2 {",
+      "  background: rgba(6, 182, 212, 0.05) !important;",
+      "}",
+      "body.user-dashboard-page .tech-grid {",
+      "  opacity: 1 !important;",
+      "}",
+      "body.user-dashboard-page .premium-card,",
+      "body.user-dashboard-page .premium-inner-card,",
+      "body.user-dashboard-page .wallet-plan,",
+      "body.user-dashboard-page .glass-panel,",
+      "body.user-dashboard-page #walletPlanCard,",
+      "body.user-dashboard-page #coursesList > article,",
+      "body.user-dashboard-page #coursesList > div,",
+      "body.user-dashboard-page #discoverCoursesList > article,",
+      "body.user-dashboard-page #discoverCoursesList > div,",
+      "body.user-dashboard-page #discoverCoursesList > a,",
+      "body.user-dashboard-page #familySeatSummary > div,",
+      "body.user-dashboard-page #familyEnrollPanel,",
+      "body.user-dashboard-page #familyEmpty,",
+      "body.user-dashboard-page #familyChildrenGrid > article,",
+      "body.user-dashboard-page #familyChildrenGrid > div,",
+      "body.user-dashboard-page #familyEnrollChildren > div,",
+      "body.user-dashboard-page #domainSuggestions > div,",
+      "body.user-dashboard-page #domainsList > article,",
+      "body.user-dashboard-page #domainsList > div,",
+      "body.user-dashboard-page #domainOrdersList > article,",
+      "body.user-dashboard-page #domainOrdersList > div,",
+      "body.user-dashboard-page #domainRegisterSection,",
+      "body.user-dashboard-page #domainCheckoutCard,",
+      "body.user-dashboard-page #domainQuoteCard,",
+      "body.user-dashboard-page [data-dns-panel],",
+      "body.user-dashboard-page [data-dns-section],",
+      "body.user-dashboard-page [data-netlify-section],",
+      "body.user-dashboard-page [data-dns-row],",
+      "body.user-dashboard-page .student-dashboard-card {",
+      "  background-color: var(--student-dashboard-card-bg) !important;",
+      "  background-image: none !important;",
+      "}",
     ].join("\n");
 
     document.head.appendChild(style);
@@ -100,6 +171,16 @@
       links.forEach(function (link) {
         if (link.querySelector("[data-nav-label]")) return;
 
+        var existingLabel = Array.prototype.slice.call(link.children).find(function (child) {
+          return child && String(child.tagName || "").toLowerCase() === "span" && String(child.textContent || "").trim();
+        });
+        if (existingLabel) {
+          var existingText = String(existingLabel.textContent || "").replace(/\s+/g, " ").trim();
+          existingLabel.setAttribute("data-nav-label", "1");
+          link.setAttribute("title", existingText);
+          return;
+        }
+
         var labelText = "";
         Array.prototype.slice.call(link.childNodes).forEach(function (node) {
           if (node.nodeType === Node.TEXT_NODE) labelText += String(node.textContent || "");
@@ -132,6 +213,10 @@
       if (signout && !signout.querySelector("[data-signout-label]")) {
         var txt = String(signout.textContent || "").replace(/\s+/g, " ").trim() || "Sign out";
         signout.textContent = "";
+        signout.insertAdjacentHTML(
+          "afterbegin",
+          '<svg data-signout-icon="1" class="hidden h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3H9.75m9 0l-3-3m3 3l-3 3" /></svg>'
+        );
         var s = document.createElement("span");
         s.setAttribute("data-signout-label", "1");
         s.className = "w-full text-center";
@@ -146,11 +231,15 @@
     var brandLabel = aside.querySelector("[data-brand-label]");
     var menuLabel = aside.querySelector("[data-menu-label]");
     var signoutLabel = aside.querySelector("[data-signout-label]");
+    var signoutIcon = aside.querySelector("[data-signout-icon]");
+    var brandRow = brandLabel ? brandLabel.parentElement : null;
+    var brandLogo = brandRow ? brandRow.querySelector("img") : null;
     var navLinksInAside = Array.prototype.slice.call(aside.querySelectorAll('a[href^="/dashboard/"]'));
     var signout = aside.querySelector("[data-user-signout]");
 
     if (!collapsed || !isDesktop()) {
       aside.style.width = "";
+      aside.style.flexBasis = "";
       navLinksInAside.forEach(function (link) {
         link.classList.remove("justify-center");
         link.style.paddingLeft = "";
@@ -158,12 +247,15 @@
       });
       labels.forEach(function (el) { el.style.display = ""; });
       if (brandLabel) brandLabel.style.display = "";
+      if (brandRow) brandRow.style.justifyContent = "";
+      if (brandLogo) brandLogo.style.marginRight = "";
       if (menuLabel) menuLabel.style.display = "";
       if (signoutLabel) {
         signoutLabel.style.display = "";
         signoutLabel.style.fontSize = "";
         signoutLabel.style.whiteSpace = "";
       }
+      if (signoutIcon) signoutIcon.classList.add("hidden");
       if (signout) {
         signout.classList.remove("justify-center");
         signout.style.paddingLeft = "";
@@ -175,6 +267,7 @@
     }
 
     aside.style.width = "5.5rem";
+    aside.style.flexBasis = "5.5rem";
     navLinksInAside.forEach(function (link) {
       link.classList.add("justify-center");
       link.style.paddingLeft = "0.5rem";
@@ -182,12 +275,13 @@
     });
     labels.forEach(function (el) { el.style.display = "none"; });
     if (brandLabel) brandLabel.style.display = "none";
+    if (brandRow) brandRow.style.justifyContent = "center";
+    if (brandLogo) brandLogo.style.marginRight = "0";
     if (menuLabel) menuLabel.style.display = "none";
     if (signoutLabel) {
-      signoutLabel.style.display = "";
-      signoutLabel.style.fontSize = "0.65rem";
-      signoutLabel.style.whiteSpace = "nowrap";
+      signoutLabel.style.display = "none";
     }
+    if (signoutIcon) signoutIcon.classList.remove("hidden");
     if (signout) {
       signout.classList.add("justify-center");
       signout.style.paddingLeft = "0.5rem";

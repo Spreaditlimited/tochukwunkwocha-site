@@ -48,13 +48,13 @@
   function setPayoutMsg(text, type) {
     if (!payoutMsg) return;
     payoutMsg.textContent = String(text || "");
-    payoutMsg.className = "mt-2 text-sm " + (type === "error" ? "text-rose-700" : "text-emerald-700");
+    payoutMsg.className = "mt-2 text-sm " + (type === "error" ? "text-rose-300" : "text-emerald-300");
   }
 
   function clearPayoutSuccessMsg() {
     if (!payoutMsg) return;
     var klass = String(payoutMsg.className || "");
-    if (klass.indexOf("text-emerald-700") !== -1) {
+    if (klass.indexOf("text-emerald-300") !== -1) {
       setPayoutMsg("", "ok");
     }
   }
@@ -97,7 +97,7 @@
     if (!target) return;
     var items = Array.isArray(rows) ? rows : [];
     if (!items.length) {
-      target.innerHTML = '<tr><td class="py-3 text-gray-500" colspan="' + String(colSpan || 1) + '">' + String(emptyText || "No data") + "</td></tr>";
+      target.innerHTML = '<tr><td class="py-3 text-slate-400" colspan="' + String(colSpan || 1) + '">' + String(emptyText || "No data") + "</td></tr>";
       return;
     }
     target.innerHTML = items.map(renderItem).join("");
@@ -337,10 +337,10 @@
         var url = String(item && item.link || "").trim();
         var label = humanizeCourseSlug(slug);
         return [
-          "<tr class='border-b border-gray-100'>",
+          "<tr class='border-b border-white/10'>",
           "<td class='py-2 pr-3'>" + String(label || slug) + "</td>",
-          "<td class='py-2 pr-3 break-all'><a class='text-brand-700 hover:text-brand-600 underline' href='" + url + "' target='_blank' rel='noopener'>" + url + "</a></td>",
-          "<td class='py-2 pr-3'><button type='button' class='inline-flex items-center justify-center rounded-md bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100' data-copy-direct-link='" + url + "'>Copy</button></td>",
+          "<td class='py-2 pr-3 break-all'><a href='" + url + "' target='_blank' rel='noopener'>" + url + "</a></td>",
+          "<td class='py-2 pr-3'><button type='button' class='inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 hover:text-white' data-copy-direct-link='" + url + "'>Copy</button></td>",
           "</tr>",
         ].join("");
       },
@@ -354,7 +354,7 @@
       function (item) {
         var label = humanizeCourseSlug(item.courseSlug);
         return [
-          "<tr class='border-b border-gray-100'>",
+          "<tr class='border-b border-white/10'>",
           "<td class='py-2 pr-3'>" + String(label || item.courseSlug || "") + "</td>",
           "<td class='py-2 pr-3'>" + formatCommissionForRow(item) + "</td>",
           "<td class='py-2 pr-3'>" + formatMoney(item.minOrderAmountMinor || 0, item.commissionCurrency || "NGN") + "</td>",
@@ -371,7 +371,7 @@
       referralsRows,
       function (item) {
         return [
-          "<tr class='border-b border-gray-100'>",
+          "<tr class='border-b border-white/10'>",
           "<td class='py-2 pr-3'>" + safeDate(item.createdAt) + "</td>",
           "<td class='py-2 pr-3'>" + String(humanizeCourseSlug(item.courseSlug) || item.courseSlug || "") + "</td>",
           "<td class='py-2 pr-3'>" + String(item.buyerEmailMasked || "") + "</td>",
@@ -390,7 +390,7 @@
       payoutRows,
       function (item) {
         return [
-          "<tr class='border-b border-gray-100'>",
+          "<tr class='border-b border-white/10'>",
           "<td class='py-2 pr-3'>" + String(item.batchUuid || "") + "</td>",
           "<td class='py-2 pr-3'>" + safeDate(item.periodStart) + " - " + safeDate(item.periodEnd) + "</td>",
           "<td class='py-2 pr-3'>" + formatMoney(item.totalAmountMinor, item.currency) + "</td>",
@@ -450,7 +450,7 @@
       setPayoutMsg(error.message || "Could not save payout account", "error");
     } finally {
       payoutSaveBtn.disabled = false;
-      payoutSaveBtn.textContent = "Save Account";
+      payoutSaveBtn.textContent = "Save Account Details";
     }
   }
 

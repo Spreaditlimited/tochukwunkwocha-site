@@ -37,6 +37,23 @@
       }
     </script>
     <style>[hidden]{display:none!important;}</style>
+    <style>
+      /* Dashboard mobile footer trim: mirror the overview page behavior. */
+      @media (max-width: 767px) {
+        body.user-dashboard-page,
+        body.user-dashboard-page > section {
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+        }
+
+        body.user-dashboard-page .user-dashboard-main {
+          min-height: 0 !important;
+          overflow: visible !important;
+          padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+        }
+      }
+    </style>
   </head>
   <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
     <section class="flex h-full w-full">
@@ -63,7 +80,7 @@
       </div>
     </section>
     <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260420b" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
     <script src="/assets/dashboard-business-plans.js" defer></script>
   </body>
 </html>

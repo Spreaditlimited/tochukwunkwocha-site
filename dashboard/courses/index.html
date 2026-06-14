@@ -7,7 +7,7 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -17,6 +17,7 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
               heading: ['Manrope', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
             },
             colors: {
               brand: {
@@ -38,60 +39,310 @@
     </script>
     <style>
       [hidden] { display: none !important; }
+
+      /* Ambient Deep Space Elements Scoped to Main */
+      .ambient-glow-1 {
+        position: fixed; top: -10%; left: -10%; width: 60%; height: 50%;
+        background: rgba(37, 99, 235, 0.15); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0;
+      }
+      .ambient-glow-2 {
+        position: fixed; bottom: -10%; right: -10%; width: 50%; height: 60%;
+        background: rgba(16, 185, 129, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0;
+      }
+      .tech-grid {
+        position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
+      }
+    </style>
+    <style>
+      #coursesList > article,
+      #coursesList > div,
+      #discoverCoursesList > article,
+      #discoverCoursesList > div,
+      #discoverCoursesList > a {
+        background: rgba(22, 27, 34, 0.82) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 1rem !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+        padding: 1.5rem !important;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+        backdrop-filter: blur(12px);
+      }
+      #coursesList > article:hover,
+      #coursesList > div:hover,
+      #discoverCoursesList > article:hover,
+      #discoverCoursesList > div:hover,
+      #discoverCoursesList > a:hover {
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+        transform: none !important;
+      }
+
+      #coursesList h3,
+      #coursesList h4,
+      #discoverCoursesList h3,
+      #discoverCoursesList h4 {
+        color: #ffffff !important;
+        font-family: "Manrope", sans-serif;
+        font-size: 1.25rem !important;
+        font-weight: 800 !important;
+        margin: 0.5rem 0 0.75rem !important;
+      }
+
+      #coursesList p,
+      #discoverCoursesList p {
+        color: #cbd5e1 !important;
+        font-size: 0.9375rem !important;
+        font-weight: 400 !important;
+        line-height: 1.7 !important;
+      }
+
+      #coursesList article > div.rounded-xl.border-gray-200 {
+        background: rgba(6, 11, 20, 0.72) !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+        color: #dbeafe !important;
+      }
+
+      #coursesList article > div.rounded-xl.border-gray-200 p {
+        color: #dbeafe !important;
+      }
+
+      #coursesList input,
+      #coursesList select {
+        background: #060b14 !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+      }
+
+      #coursesList input:disabled,
+      #coursesList button:disabled {
+        opacity: 0.72 !important;
+        cursor: not-allowed !important;
+      }
+
+      #coursesList input:disabled {
+        background: rgba(6, 11, 20, 0.78) !important;
+        color: #cbd5e1 !important;
+      }
+
+      #coursesList button:disabled {
+        background: rgba(100, 116, 139, 0.38) !important;
+        color: #e2e8f0 !important;
+      }
+      #coursesList input::placeholder {
+        color: #94a3b8 !important;
+      }
+
+      #coursesList a[class*="rounded"],
+      #discoverCoursesList a[class*="rounded"],
+      #coursesList > article > div:last-child a,
+      #discoverCoursesList button {
+        align-items: center !important;
+        border-radius: 0.75rem !important;
+        display: inline-flex !important;
+        font-size: 0.875rem !important;
+        font-weight: 800 !important;
+        justify-content: center !important;
+        margin-top: 1.25rem !important;
+        padding: 0.875rem 1.5rem !important;
+        transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
+      }
+
+      #coursesList a[class*="bg-brand-600"],
+      #coursesList a.text-white,
+      #discoverCoursesList a[class*="bg-brand-600"],
+      #discoverCoursesList a.text-white {
+        background: linear-gradient(90deg, #2563eb, #06b6d4) !important;
+        border: 0 !important;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4) !important;
+        color: #ffffff !important;
+      }
+
+      #coursesList a[class*="bg-brand-50"],
+      #coursesList a[class*="bg-white"],
+      #discoverCoursesList a[class*="bg-brand-50"],
+      #discoverCoursesList a[class*="bg-white"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #cbd5e1 !important;
+        box-shadow: none !important;
+      }
+
+      #discoverCoursesList span[class*="bg-"] {
+        background: rgba(59, 130, 246, 0.1) !important;
+        border: 1px solid rgba(59, 130, 246, 0.2) !important;
+        border-radius: 0.375rem !important;
+        color: #60a5fa !important;
+        display: inline-block !important;
+        font-family: "Fira Code", monospace;
+        font-size: 0.625rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.08em !important;
+        margin-bottom: 0.75rem !important;
+        padding: 0.375rem 0.75rem !important;
+        text-transform: uppercase !important;
+      }
+
+      #coursesList .status-approved,
+      #coursesList .status-paid {
+        background: rgba(16, 185, 129, 0.1) !important;
+        border: 1px solid rgba(16, 185, 129, 0.25) !important;
+        border-radius: 0.375rem !important;
+        color: #6ee7b7 !important;
+        display: inline-block !important;
+        font-family: "Fira Code", monospace;
+        font-size: 0.625rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.08em !important;
+        padding: 0.375rem 0.75rem !important;
+        text-transform: uppercase !important;
+      }
+
+      #coursesList .status-pending_verification {
+        background: rgba(245, 158, 11, 0.1) !important;
+        border: 1px solid rgba(245, 158, 11, 0.25) !important;
+        border-radius: 0.375rem !important;
+        color: #fcd34d !important;
+        display: inline-block !important;
+        font-family: "Fira Code", monospace;
+        font-size: 0.625rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.08em !important;
+        padding: 0.375rem 0.75rem !important;
+        text-transform: uppercase !important;
+      }
+
+      #coursesList [data-batch-switch-wrap],
+      #coursesList [data-batch-switch-wrap] p,
+      #coursesList [data-batch-switch-wrap] button,
+      #coursesList [data-batch-switch-wrap] select {
+        margin-top: 0 !important;
+      }
+
+      @media (max-width: 767px) {
+        body.user-dashboard-page,
+        body.user-dashboard-page > section {
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+        }
+
+        body.user-dashboard-page > section,
+        body.user-dashboard-page > section > div {
+          display: block !important;
+        }
+
+        body.user-dashboard-page .user-dashboard-main {
+          min-height: 0 !important;
+          overflow: visible !important;
+          padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+        }
+
+        body.user-dashboard-page .user-dashboard-main > section {
+          margin-bottom: 0 !important;
+        }
+
+        #coursesList,
+        #discoverCoursesList {
+          margin-bottom: 0 !important;
+        }
+
+        #coursesList > :last-child,
+        #discoverCoursesList > :last-child {
+          margin-bottom: 0 !important;
+        }
+
+        #discoverCoursesList > article,
+        #discoverCoursesList > div,
+        #discoverCoursesList > a {
+          min-height: 0 !important;
+        }
+      }
+
+      @media (min-width: 640px) {
+        #coursesList > article,
+        #coursesList > div,
+        #discoverCoursesList > article,
+        #discoverCoursesList > div,
+        #discoverCoursesList > a {
+          padding: 2rem !important;
+        }
+      }
     </style>
   </head>
-  <body class="user-dashboard-page bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden selection:bg-brand-100">
-    <section class="flex h-full w-full">
+  <body class="user-dashboard-page bg-[#060b14] text-slate-300 font-sans antialiased h-screen overflow-hidden selection:bg-brand-500 selection:text-white">
+    <section class="flex h-full w-full relative overflow-hidden">
       <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
-      <label for="mobile-menu-toggle" class="fixed inset-0 bg-brand-900/40 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
-      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
-        <div class="h-16 flex items-center px-6 border-b border-white/10">
-          <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="h-8 w-8 rounded object-contain bg-white p-0.5 mr-3" />
-          <span class="font-heading font-bold text-lg">Student Dashboard</span>
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-[#060b14]/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0f1e]/95 backdrop-blur-2xl border-r border-white/5 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div class="h-16 flex items-center px-6 border-b border-white/5">
+          <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="h-8 w-8 rounded object-contain bg-white/10 border border-white/20 p-0.5 mr-3" />
+          <span class="font-heading font-bold text-lg text-white">Student Dashboard</span>
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-          <!-- Sidebar links rendered by /assets/student-sidebar.js -->
-        </nav>
-        <div class="p-4 border-t border-white/10">
-          <button type="button" class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors" data-user-signout>Sign out</button>
+          </nav>
+        <div class="p-4 border-t border-white/5">
+          <button type="button" class="w-full inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-300" data-user-signout>Sign out</button>
         </div>
       </aside>
-      <div class="flex-1 min-w-0 flex flex-col">
-        <header class="user-dashboard-topbar h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
+
+      <div class="flex-1 min-w-0 flex flex-col relative z-10">
+        <header class="user-dashboard-topbar h-16 bg-[#060b14]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 sm:px-6 z-20">
           <div class="flex items-center gap-4">
-            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-brand-700 cursor-pointer rounded-lg hover:bg-gray-100">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-slate-400 hover:text-white cursor-pointer rounded-lg hover:bg-white/10 transition-colors">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </label>
-            <h1 class="text-lg font-heading font-bold text-gray-900">My Courses</h1>
+            <h1 class="text-lg font-heading font-bold text-white">My Courses</h1>
           </div>
-          <button type="button" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" data-user-signout>Sign out</button>
+          <button type="button" class="inline-flex items-center justify-center rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300" data-user-signout>Sign out</button>
         </header>
-        <main class="user-dashboard-main flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <section class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200 max-w-5xl">
-            <div class="mb-6">
-              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">User Dashboard</p>
-              <h2 class="text-2xl font-heading font-extrabold text-gray-900">My Courses</h2>
-              <p id="coursesMeta" class="mt-2 text-sm text-gray-600">Loading your paid courses...</p>
+
+        <main class="user-dashboard-main flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-10 relative bg-[#060b14] text-slate-300">
+
+          <div class="ambient-glow-1"></div>
+          <div class="ambient-glow-2"></div>
+          <div class="tech-grid"></div>
+
+          <section class="relative z-10 bg-[#0d1117]/80 backdrop-blur-2xl rounded-[2rem] p-6 sm:p-10 border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] max-w-5xl mx-auto">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-500"></div>
+
+            <div class="mb-8 border-b border-white/5 pb-6">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold text-[10px] uppercase tracking-widest rounded-full mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]"></span>
+                Workspace
+              </div>
+              <h2 class="text-3xl sm:text-4xl font-heading font-extrabold text-white tracking-tight">My Courses</h2>
+              <p id="coursesMeta" class="mt-2 text-sm text-slate-400 font-light">Loading your paid courses...</p>
             </div>
+
             <div
               id="coursesWelcomeNotice"
-              class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 hidden"
+              class="mb-8 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-300 hidden"
               role="status"
               aria-live="polite"
             ></div>
-            <div id="coursesList" class="space-y-4"></div>
-            <div class="mt-10 pt-8 border-t border-gray-200">
-              <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Discover</p>
-              <h3 class="mt-1 text-xl font-heading font-extrabold text-gray-900">Other Courses You Can Purchase</h3>
-              <p class="mt-2 text-sm text-gray-600">Explore more programs and keep building your practical AI skills.</p>
-              <div id="discoverCoursesList" class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+
+            <div id="coursesList" class="space-y-6 relative z-10"></div>
+
+            <div class="mt-16 pt-10 border-t border-white/5 relative z-10">
+              <div class="absolute -right-20 -top-20 w-48 h-48 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
+              <div class="relative z-10">
+                <p class="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400 mb-2">Discover</p>
+                <h3 class="mt-1 text-2xl font-heading font-extrabold text-white mb-2">Other Courses You Can Purchase</h3>
+                <p class="text-sm text-slate-400 font-light mb-8">Explore more programs and keep building your practical AI skills.</p>
+
+                <div id="discoverCoursesList" class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+              </div>
             </div>
           </section>
+
         </main>
       </div>
     </section>
+
     <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260420b" defer></script>
-    <script src="/assets/dashboard-courses.js?v=20260502a" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
+    <script src="/assets/dashboard-courses.js?v=20260614-holiday-card" defer></script>
   </body>
 </html>

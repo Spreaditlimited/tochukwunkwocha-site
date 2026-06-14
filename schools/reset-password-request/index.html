@@ -5,27 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>School Admin Password Reset</title>
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              heading: ["Manrope", "sans-serif"],
+              mono: ["Fira Code", "monospace"],
+            },
+            colors: {
+              brand: {
+                50: "#eef2fb",
+                100: "#dfe7f7",
+                200: "#ccd3e6",
+                300: "#99a9cc",
+                400: "#667eb2",
+                500: "#22345f",
+                600: "#1a2849",
+                700: "#14213d",
+                800: "#0f182d",
+                900: "#0f1a33",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .premium-input {
+          @apply block w-full rounded-xl border border-white/10 py-3.5 px-4 text-white bg-[#0d1117]/60 shadow-inner transition-all duration-300;
+          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#0d1117]/80 focus:bg-[#060b14] focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 sm:text-sm outline-none backdrop-blur-sm;
+        }
+        .premium-label {
+          @apply block text-sm font-bold text-slate-300 mb-2;
+        }
+      }
+    </style>
+    <style>
+      .ambient-glow-1 {
+        position: absolute; top: -10%; left: -20%; width: 70%; height: 70%;
+        background: rgba(245, 158, 11, 0.12); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0;
+      }
+      .ambient-glow-2 {
+        position: absolute; bottom: -20%; right: -20%; width: 70%; height: 70%;
+        background: rgba(249, 115, 22, 0.1); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0;
+      }
+      .tech-grid {
+        position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
+      }
+    </style>
   </head>
-  <body class="bg-slate-100 text-slate-900 min-h-screen flex items-center justify-center p-4">
-    <section class="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
-      <h1 class="text-2xl font-extrabold">Reset School Admin Password</h1>
-      <p class="mt-2 text-sm text-slate-600">Enter your school admin email to receive a reset link.</p>
-      <form id="schoolResetRequestForm" class="mt-5 space-y-4">
-        <label class="block">
-          <span class="text-sm font-semibold text-slate-700">Email</span>
-          <input id="schoolResetRequestEmail" type="email" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
-        </label>
-        <p id="schoolResetRequestStatus" class="text-sm text-slate-600"></p>
-        <button id="schoolResetRequestBtn" type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-700">
-          Send Reset Link
-        </button>
+  <body class="bg-[#060b14] text-slate-300 font-sans antialiased min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-amber-500 selection:text-white">
+    
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+    <div class="tech-grid"></div>
+
+    <section class="relative z-10 w-full max-w-md bg-[#0d1117]/80 backdrop-blur-2xl rounded-[2rem] border border-white/10 p-8 sm:p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden group">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600"></div>
+      
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-[10px] uppercase tracking-widest rounded-full mb-5 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]"></span>
+          Secure Portal
+        </div>
+        <h1 class="text-3xl font-heading font-extrabold text-white">Reset School Password</h1>
+        <p class="mt-2 text-sm text-slate-400 font-light">Enter your school admin email to receive a reset link.</p>
+      </div>
+
+      <form id="schoolResetRequestForm" class="space-y-5" novalidate>
+        <div>
+          <label for="schoolResetRequestEmail" class="premium-label">Email Address</label>
+          <input id="schoolResetRequestEmail" type="email" required class="premium-input" placeholder="admin@school.edu" />
+        </div>
+        
+        <p id="schoolResetRequestStatus" class="text-sm text-center font-medium"></p>
+        
+        <div class="pt-2">
+          <button id="schoolResetRequestBtn" type="submit" class="w-full inline-flex justify-center items-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] hover:-translate-y-0.5 border-none">
+            Send Reset Link
+          </button>
+        </div>
       </form>
-      <p class="mt-4 text-sm">
-        <a href="/schools/login/" class="font-semibold text-slate-700 hover:text-slate-900">Back to login</a>
-      </p>
+      
+      <div class="mt-6 border-t border-white/5 pt-6 text-center">
+        <a href="/schools/login/" class="inline-flex items-center text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors group/link">
+          <svg class="w-4 h-4 mr-1 transform group-hover/link:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to login
+        </a>
+      </div>
     </section>
+    
     <script src="/assets/school-reset-password-request.js?v=20260404a" defer></script>
   </body>
 </html>

@@ -10,6 +10,17 @@
   };
   const DEFAULT_COURSE_CATALOG = [
     {
+      slug: "prompt-to-profit-holiday",
+      name: "Prompt to Profit Holiday",
+      subtitle: "A beginner-friendly summer cohort for students and young builders to use AI to create real websites and digital projects.",
+      href: "/courses/prompt-to-profit-holiday/",
+      theme: {
+        card: "bg-gradient-to-br from-[#eef4ff] via-[#f5f9ff] to-[#ffffff] ring-[#bfdbfe]",
+        badge: "bg-[#dbeafe] text-[#1d4ed8]",
+        button: "bg-[#1d4ed8] text-white hover:bg-[#1e40af]",
+      },
+    },
+    {
       slug: "prompt-to-profit",
       name: "Prompt to Profit",
       subtitle: "A 5-day beginner-friendly intensive to use AI properly and build practical websites and web tools.",
@@ -101,6 +112,14 @@
       return item.slug === normalized;
     });
     return (found && found.name) || prettifySlug(normalized) || "this course";
+  }
+
+  function courseSubtitleForSlug(slug) {
+    const normalized = normalizeSlug(slug);
+    const found = COURSE_CATALOG.find(function (item) {
+      return item.slug === normalized;
+    });
+    return (found && found.subtitle) || "";
   }
 
 
@@ -546,11 +565,12 @@
               ? '<span class="status-pill status-pending_verification">Pending verification</span>'
               : '<span class="status-pill status-approved">Paid</span>';
             const theme = themeForSlug(item.courseSlug);
+            const courseDescription = courseSubtitleForSlug(item.courseSlug);
             const timing = batchTimingMeta(item);
             const resumeLessonId = Number(item.resumeLessonId || 0);
             const resumeSource = String(item.resumeSource || "").toLowerCase();
             const hasResume = resumeSource === "last_watched" && Number.isFinite(resumeLessonId) && resumeLessonId > 0;
-            const resumeLabel = hasResume ? "Resume where you stopped" : "Open Course Player";
+            const resumeLabel = hasResume ? "Resume" : "Open Course Player";
             const resumeDetail = hasResume && item.lastActivityAt
               ? `Last watched: ${escapeHtml(new Date(item.lastActivityAt).toLocaleString())}`
               : "";
@@ -656,6 +676,7 @@
               `<article class="rounded-2xl p-5 shadow-sm ring-1 ${theme.card}">`,
               '<div class="flex items-start justify-between gap-3">',
               `<div><p class="text-sm font-bold text-gray-900">${escapeHtml(item.courseName || item.courseSlug)}</p>`,
+              courseDescription ? `<p class="mt-1 max-w-2xl text-sm leading-6 text-gray-700">${escapeHtml(courseDescription)}</p>` : "",
               `<div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                 <span>Batch: ${escapeHtml(item.batchLabel || item.batchKey || "N/A")}</span>
                 ${statusBadge}

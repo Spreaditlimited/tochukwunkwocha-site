@@ -165,6 +165,7 @@
 
     if (!collapsed || !isDesktop()) {
       aside.style.width = "";
+      aside.style.flexBasis = "";
       navLinks.forEach(function (link) {
         link.classList.remove("justify-center");
         link.style.paddingLeft = "";
@@ -185,6 +186,7 @@
     }
 
     aside.style.width = "5.5rem";
+    aside.style.flexBasis = "5.5rem";
     navLinks.forEach(function (link) {
       link.classList.add("justify-center");
       link.style.paddingLeft = "0.5rem";
@@ -239,7 +241,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("data-sidebar-rail-toggle", "1");
-      btn.className = "hidden md:inline-flex absolute top-20 -right-3 z-20 h-7 w-7 items-center justify-center rounded-full border border-brand-200 bg-white text-brand-700 shadow-sm hover:bg-brand-50 transition-colors";
+      btn.className = "hidden md:inline-flex absolute top-20 -right-3 z-[70] h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#f8fafc] text-slate-800 shadow-[0_10px_25px_rgba(0,0,0,0.35)] ring-1 ring-slate-900/10 hover:bg-white transition-colors";
       btn.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();

@@ -141,7 +141,7 @@
   function setUploadStatus(text, bad) {
     if (!uploadStatusEl) return;
     uploadStatusEl.textContent = clean(text);
-    uploadStatusEl.className = "text-sm " + (bad ? "text-red-600" : "text-gray-600");
+    uploadStatusEl.className = "text-sm " + (bad ? "text-rose-300" : "text-emerald-300");
   }
 
   var toastWrap = null;
@@ -158,8 +158,8 @@
       var wrap = ensureToastWrap();
       var classes = "rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur transition-all duration-300";
       classes += bad
-        ? " border-red-200 bg-red-50/95 text-red-800"
-        : " border-emerald-200 bg-emerald-50/95 text-emerald-800";
+        ? " border-rose-500/30 bg-rose-500/15 text-rose-100"
+        : " border-emerald-500/30 bg-emerald-500/15 text-emerald-100";
 
       var toast = document.createElement("div");
       toast.className = classes + " opacity-0 translate-y-[-6px]";
@@ -227,31 +227,31 @@
       return [
         "<tr>",
         '<td class="px-4 py-3">',
-        '<p class="font-semibold text-slate-900">' + escapeHtml(student.full_name || "Student") + "</p>",
+        '<p class="font-semibold text-white">' + escapeHtml(student.full_name || "Student") + "</p>",
         '<p class="text-xs text-slate-500">' + escapeHtml(isSyntheticStudentEmail(student.email) ? "" : (student.email || "")) + "</p>",
         "</td>",
         '<td class="px-4 py-3">',
         '<div class="flex items-center gap-2">',
-        '<code class="rounded bg-slate-100 px-2 py-1 text-xs font-bold text-slate-800">' + escapeHtml(student.student_code || "-") + "</code>",
-        '<button type="button" data-student-code-copy="' + escapeHtml(student.student_code || "") + '" class="inline-flex items-center justify-center rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Copy</button>',
+        '<code class="rounded border border-white/10 bg-white/5 px-2 py-1 text-xs font-bold text-slate-200">' + escapeHtml(student.student_code || "-") + "</code>",
+        '<button type="button" data-student-code-copy="' + escapeHtml(student.student_code || "") + '" class="inline-flex items-center justify-center rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-white/10 hover:text-white">Copy</button>',
         "</div>",
         "</td>",
-        '<td class="px-4 py-3 text-slate-700">' + String(student.completion_percent || 0) + "%</td>",
-        '<td class="px-4 py-3 text-slate-600">' + escapeHtml(fmtDate(student.last_activity_at)) + "</td>",
-        '<td class="px-4 py-3 text-slate-700">' + (hasWebsite
-          ? ('<a class="text-brand-700 underline hover:text-brand-900" target="_blank" rel="noopener noreferrer" href="' + escapeHtml(student.website_url) + '">View site</a>')
+        '<td class="px-4 py-3 text-slate-300">' + String(student.completion_percent || 0) + "%</td>",
+        '<td class="px-4 py-3 text-slate-400">' + escapeHtml(fmtDate(student.last_activity_at)) + "</td>",
+        '<td class="px-4 py-3 text-slate-300">' + (hasWebsite
+          ? ('<a class="text-sky-300 underline hover:text-sky-200" target="_blank" rel="noopener noreferrer" href="' + escapeHtml(student.website_url) + '">View site</a>')
           : '<span class="text-slate-400">Not submitted</span>') + "</td>",
-        '<td class="px-4 py-3 text-slate-600">' + escapeHtml(fmtDate(student.website_submitted_at)) + "</td>",
+        '<td class="px-4 py-3 text-slate-400">' + escapeHtml(fmtDate(student.website_submitted_at)) + "</td>",
         '<td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ' +
-          (String(student.status || "").toLowerCase() === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700") +
+          (String(student.status || "").toLowerCase() === "active" ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" : "bg-white/5 text-slate-300 border border-white/10") +
           '">' + escapeHtml(student.status || "active") + "</span></td>",
         '<td class="px-4 py-3">',
         '<div class="flex min-w-[9rem] flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">',
-        '<button type="button" data-student-toggle="' + String(student.id) + '" data-next-active="' + (String(student.status || "").toLowerCase() === "active" ? "0" : "1") + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap">' +
+        '<button type="button" data-student-toggle="' + String(student.id) + '" data-next-active="' + (String(student.status || "").toLowerCase() === "active" ? "0" : "1") + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white whitespace-nowrap">' +
           (String(student.status || "").toLowerCase() === "active" ? "Disable" : "Enable") +
           "</button>",
-        '<button type="button" data-student-code-reset="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap">Reset code</button>',
-        '<button type="button" data-student-cert="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 whitespace-nowrap ' + (canIssue ? "" : "opacity-40 cursor-not-allowed") + '"' + (canIssue ? "" : " disabled") + ">" + certBtnLabel + "</button>",
+        '<button type="button" data-student-code-reset="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white whitespace-nowrap">Reset code</button>',
+        '<button type="button" data-student-cert="' + String(student.id) + '" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white whitespace-nowrap ' + (canIssue ? "" : "opacity-40 cursor-not-allowed") + '"' + (canIssue ? "" : " disabled") + ">" + certBtnLabel + "</button>",
         "</div>",
         "</td>",
         "</tr>",
@@ -314,28 +314,28 @@
   function setAdvancedStatus(text, bad) {
     if (!advancedActionStatusEl) return;
     advancedActionStatusEl.textContent = clean(text);
-    advancedActionStatusEl.className = "mt-2 text-sm min-h-[1.25rem] " + (bad ? "text-red-600" : "text-gray-600");
+    advancedActionStatusEl.className = "mt-2 text-sm min-h-[1.25rem] " + (bad ? "text-rose-300" : "text-emerald-300");
   }
 
   function renderAdvancedCandidates(students) {
     if (!advancedCandidatesListEl) return;
     if (!students.length) {
-      advancedCandidatesListEl.innerHTML = '<p class="text-gray-500">No students found.</p>';
+      advancedCandidatesListEl.innerHTML = '<p class="text-slate-500">No students found.</p>';
       return;
     }
     advancedCandidatesListEl.innerHTML = students.map(function (student) {
       var disabled = !student.eligible;
       var note = student.already_upgraded ? "Already upgraded" : (student.ineligible_reason === "inactive_student" ? "Inactive" : "");
       return [
-        '<label class="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-gray-50">',
+        '<label class="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-white/5">',
         '<span class="flex items-center gap-2">',
         '<input type="checkbox" data-advanced-student="' + String(student.id) + '"' + (disabled ? " disabled" : "") + " />",
         '<span>',
-        '<span class="font-medium text-gray-900">' + escapeHtml(student.full_name || "Student") + "</span>",
-        '<span class="ml-2 text-xs text-gray-500">' + escapeHtml(student.student_code || "") + "</span>",
+        '<span class="font-medium text-slate-100">' + escapeHtml(student.full_name || "Student") + "</span>",
+        '<span class="ml-2 text-xs text-slate-500">' + escapeHtml(student.student_code || "") + "</span>",
         "</span>",
         "</span>",
-        '<span class="text-xs ' + (disabled ? "text-gray-500" : "text-emerald-700") + '">' + escapeHtml(disabled ? note : "Eligible") + "</span>",
+        '<span class="text-xs ' + (disabled ? "text-slate-500" : "text-emerald-300") + '">' + escapeHtml(disabled ? note : "Eligible") + "</span>",
         "</label>",
       ].join("");
     }).join("");
@@ -412,7 +412,7 @@
 
   function toListHtml(items) {
     if (!items || !items.length) return "";
-    return '<ul class="space-y-2 list-disc pl-5 text-gray-700">' +
+    return '<ul class="space-y-2 list-disc pl-5 text-slate-300">' +
       items.map(function (item) { return "<li>" + escapeHtml(item) + "</li>"; }).join("") +
       "</ul>";
   }
@@ -420,7 +420,7 @@
   async function loadAdvancedLearnContentFromPublicPage() {
     if (!advancedLearnModalBodyEl) return;
     if (advancedLearnContentLoaded) return;
-    advancedLearnModalBodyEl.innerHTML = '<p class="text-gray-500">Loading program details…</p>';
+    advancedLearnModalBodyEl.innerHTML = '<p class="text-slate-400">Loading program details…</p>';
     try {
       var response = await fetch("/courses/prompt-to-production/", { credentials: "same-origin" });
       if (!response.ok) throw new Error("Could not load course page.");
@@ -448,21 +448,21 @@
       var weekTitles = Array.prototype.slice.call(doc.querySelectorAll("#curriculum article h3")).map(function (h) { return clean(h.textContent); }).filter(Boolean).slice(0, 4);
 
       var blocks = [
-        '<article class="rounded-2xl border border-brand-100 bg-brand-50 p-4">',
-        '<h4 class="text-lg font-heading font-extrabold text-brand-900">' + escapeHtml(title || "Build a real Web & Mobile App with AI") + "</h4>",
-        '<p class="mt-2 text-sm text-brand-900/90 leading-relaxed">' + escapeHtml(intro || "") + "</p>",
+        '<article class="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">',
+        '<h4 class="text-lg font-heading font-extrabold text-white">' + escapeHtml(title || "Build a real Web & Mobile App with AI") + "</h4>",
+        '<p class="mt-2 text-sm text-slate-300 leading-relaxed">' + escapeHtml(intro || "") + "</p>",
         "</article>",
-        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
-        '<h5 class="text-base font-heading font-bold text-gray-900">' + escapeHtml(projectHeading || "Learn by building a real SaaS product.") + "</h5>",
-        '<p class="mt-2 text-sm text-gray-700 leading-relaxed">' + escapeHtml(projectIntro || "") + "</p>",
+        '<article class="rounded-2xl border border-white/10 bg-white/5 p-4">',
+        '<h5 class="text-base font-heading font-bold text-white">' + escapeHtml(projectHeading || "Learn by building a real SaaS product.") + "</h5>",
+        '<p class="mt-2 text-sm text-slate-300 leading-relaxed">' + escapeHtml(projectIntro || "") + "</p>",
         "</article>",
-        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
-        '<h5 class="text-base font-heading font-bold text-gray-900">4-Week Blueprint</h5>',
+        '<article class="rounded-2xl border border-white/10 bg-white/5 p-4">',
+        '<h5 class="text-base font-heading font-bold text-white">4-Week Blueprint</h5>',
         toListHtml(weekTitles),
         "</article>",
-        '<article class="rounded-2xl border border-gray-200 bg-white p-4">',
-        '<h5 class="text-base font-heading font-bold text-gray-900">' + escapeHtml(whoHeading) + "</h5>",
-        '<p class="mt-2 text-sm text-gray-700">Best fit learners for this course:</p>',
+        '<article class="rounded-2xl border border-white/10 bg-white/5 p-4">',
+        '<h5 class="text-base font-heading font-bold text-white">' + escapeHtml(whoHeading) + "</h5>",
+        '<p class="mt-2 text-sm text-slate-300">Best fit learners for this course:</p>',
         toListHtml((function () {
           if (whoCards.length && whoDescriptions.length) {
             return whoCards.slice(0, 4).map(function (title, idx) {
@@ -472,13 +472,13 @@
           }
           return whoCards.slice(0, 4);
         })()),
-        '<div class="mt-4"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100">Open Full Public Course Page</a></div>',
+        '<div class="mt-4"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white">Open Full Public Course Page</a></div>',
         "</article>",
       ];
       advancedLearnModalBodyEl.innerHTML = blocks.join("");
       advancedLearnContentLoaded = true;
     } catch (_error) {
-      advancedLearnModalBodyEl.innerHTML = '<p class="text-red-600">Could not load course details right now. Please open the public course page directly.</p><p class="mt-3"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100">Open Public Course Page</a></p>';
+      advancedLearnModalBodyEl.innerHTML = '<p class="text-rose-300">Could not load course details right now. Please open the public course page directly.</p><p class="mt-3"><a href="/courses/prompt-to-production/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white">Open Public Course Page</a></p>';
     }
   }
 

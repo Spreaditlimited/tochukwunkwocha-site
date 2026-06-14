@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
-    
+
     <link rel="stylesheet" href="/assets/styles.css" />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -49,7 +49,7 @@
         }
       }
     </script>
-    
+
     <style type="text/tailwindcss">
       /* Scoped reset specifically for the main dashboard area */
       @layer base {
@@ -75,7 +75,7 @@
         .premium-card {
           @apply bg-white rounded-3xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200/60 transition-shadow hover:shadow-md;
         }
-        
+
         .premium-input {
           @apply block w-full rounded-xl border-0 py-3 px-4 text-gray-900 bg-gray-50 shadow-sm ring-1 ring-inset ring-gray-200 transition-all;
           @apply placeholder:text-gray-400 hover:ring-gray-300 focus:bg-white focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6;
@@ -92,11 +92,28 @@
         .dashboard-events-scroll {
           @apply max-h-[300px] overflow-y-auto pr-2 text-sm text-gray-600 leading-relaxed space-y-3;
         }
-        
+
         /* Custom scrollbar for activity feed */
         .dashboard-events-scroll::-webkit-scrollbar { width: 4px; }
         .dashboard-events-scroll::-webkit-scrollbar-track { background: transparent; }
         .dashboard-events-scroll::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+      }
+    </style>
+    <style>
+      /* Dashboard mobile footer trim: mirror the overview page behavior. */
+      @media (max-width: 767px) {
+        body.user-dashboard-page,
+        body.user-dashboard-page > section {
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+        }
+
+        body.user-dashboard-page .user-dashboard-main {
+          min-height: 0 !important;
+          overflow: visible !important;
+          padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+        }
       }
     </style>
   </head>
@@ -128,7 +145,7 @@
         </header>
         <main class="user-dashboard-main flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8">
           <div class="max-w-6xl mx-auto">
-      
+
       <section class="reveal mb-10 text-center sm:text-left">
         <p class="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-600 mb-4">
           Client Workspace
@@ -181,12 +198,12 @@
       </section>
 
       <section class="grid grid-cols-1 lg:grid-cols-12 gap-8 reveal mb-10">
-        
+
         <article class="lg:col-span-7 premium-card flex flex-col justify-between relative overflow-hidden">
           <div class="absolute -right-10 -top-10 text-brand-50/50 pointer-events-none">
             <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          
+
           <div class="relative z-10">
             <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
               <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
@@ -217,7 +234,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="relative z-10 pt-4 border-t border-gray-100 flex items-center justify-between">
             <span class="text-sm font-bold text-gray-700">Published URL:</span>
             <div id="dashboardPublishedUrl" class="text-sm font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg">--</div>
@@ -279,7 +296,7 @@
         </div>
 
         <div class="premium-card p-0 overflow-hidden">
-          
+
           <div class="bg-gray-900 px-6 py-8 sm:px-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 class="text-2xl font-heading font-extrabold text-white">Edit Page Content</h2>
@@ -290,7 +307,7 @@
 
           <form id="dashboardContentForm" class="px-6 py-8 sm:p-10" novalidate>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              
+
               <div class="space-y-6">
                 <div>
                   <label class="premium-label">Headline</label>
@@ -319,7 +336,7 @@
                   <label class="premium-label">Contact Note <span class="font-normal text-gray-400">(Optional)</span></label>
                   <textarea class="premium-input" name="contactNote" rows="2" placeholder="e.g. We usually reply within 24 hours."></textarea>
                 </div>
-                
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div>
                     <label class="premium-label">Facebook Pixel ID</label>
@@ -335,7 +352,7 @@
 
             <div class="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p id="dashboardFormError" class="text-sm font-bold text-red-600 empty:hidden"></p>
-              
+
               <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
                 <button id="dashboardSaveBtn" type="submit" class="inline-flex justify-center items-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
                   Save Draft
@@ -351,7 +368,7 @@
 
       <section class="reveal">
         <div class="premium-card border-brand-200 bg-brand-50/30">
-          
+
           <div class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
             <div class="max-w-xl">
               <div class="flex items-center gap-3 mb-2">
@@ -367,7 +384,7 @@
                 Domain registration and renewal are billed services managed in this dashboard. Hosting and email billing stay on your Netlify and Brevo accounts.
               </p>
               <p id="dashboardDomainModeBadge" class="mb-4 text-xs font-bold uppercase tracking-wider text-gray-600"></p>
-              
+
               <div class="flex flex-wrap items-center gap-3">
                 <span class="status-badge bg-white text-gray-600 ring-gray-200">Status: <span id="dashboardDomainStatus" class="ml-1 text-gray-900">--</span></span>
                 <span class="status-badge bg-white text-gray-600 ring-gray-200">Provider: <span id="dashboardDomainProvider" class="ml-1 text-gray-900">--</span></span>
@@ -378,7 +395,7 @@
             <div class="w-full lg:max-w-md bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-200">
               <label class="premium-label">Search Domain</label>
               <input id="dashboardDomainInput" class="premium-input mb-4" type="text" placeholder="e.g. yourbrand.com" />
-              
+
               <div class="grid grid-cols-3 gap-2">
                 <button id="dashboardSuggestDomainBtn" type="button" class="inline-flex justify-center items-center rounded-xl bg-white px-2 py-2.5 text-xs font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Suggest</button>
                 <button id="dashboardCheckDomainBtn" type="button" class="inline-flex justify-center items-center rounded-xl bg-white px-2 py-2.5 text-xs font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Check</button>
@@ -387,7 +404,7 @@
               <p id="dashboardDomainMessage" class="mt-3 text-xs font-bold text-brand-600 empty:hidden"></p>
             </div>
           </div>
-          
+
         </div>
       </section>
 
@@ -396,7 +413,7 @@
       </div>
     </section>
     <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260420b" defer></script>
+    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
     <script src="/assets/password-visibility.js?v=20260410a" defer></script>
     <script src="/assets/dashboard-client.js" defer></script>
   </body>

@@ -166,10 +166,10 @@
     }).filter(Boolean);
 
     var html = [
-      '<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Notes</p>',
+      '<p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Notes</p>',
     ];
     paragraphs.forEach(function (paragraph) {
-      html.push('<p class="mt-1 text-sm text-gray-700 whitespace-pre-line">' + escapeHtml(paragraph) + "</p>");
+      html.push('<p class="mt-1 text-sm text-slate-200 whitespace-pre-line">' + escapeHtml(paragraph) + "</p>");
     });
     lessonNotesEl.innerHTML = html.join("");
     lessonNotesEl.hidden = false;
@@ -285,7 +285,7 @@
   function setStatus(text, bad) {
     if (!statusEl) return;
     statusEl.textContent = clean(text);
-    statusEl.className = "text-sm font-medium mb-3 " + (bad ? "text-red-600" : "text-gray-600");
+    statusEl.className = "text-sm font-medium mb-3 " + (bad ? "text-red-300" : "text-slate-300");
   }
 
   function setCourseMetaText(text) {
@@ -838,7 +838,7 @@
   function renderSidebar() {
     if (!sidebarEl) return;
     if (!state.modules.length) {
-      sidebarEl.innerHTML = '<p class="text-sm text-gray-500">No modules yet.</p>';
+      sidebarEl.innerHTML = '<p class="text-sm text-slate-400">No modules yet.</p>';
       return;
     }
 
@@ -850,19 +850,19 @@
             var done = !!(lesson.progress && lesson.progress.is_completed);
             return [
               '<button type="button" class="player-lesson w-full text-left rounded-xl border px-3 py-2 transition-colors ' +
-                (active ? "active border-brand-300" : "border-gray-200 hover:bg-gray-50") +
+                (active ? "active border-blue-400/40" : "border-white/10 hover:bg-white/5") +
                 '" data-lesson-id="' +
                 String(lesson.id) +
                 '">',
               '<div class="flex items-start gap-2">',
               '<span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ' +
-                (done ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600") +
+                (done ? "bg-emerald-400/15 text-emerald-200" : "bg-white/10 text-slate-300") +
                 '">' +
                 (done ? "✓" : String(lessonIndex + 1)) +
                 '</span>',
               '<span class="min-w-0">',
-              '<span class="block text-xs text-gray-500">Lesson ' + String(lesson.order || lessonIndex + 1) + "</span>",
-              '<span class="block text-sm font-semibold text-gray-900 truncate">' + escapeHtml(lesson.title) + "</span>",
+              '<span class="block text-xs text-slate-400">Lesson ' + String(lesson.order || lessonIndex + 1) + "</span>",
+              '<span class="block text-sm font-semibold text-white truncate">' + escapeHtml(lesson.title) + "</span>",
               "</span>",
               "</div>",
               "</button>",
@@ -871,9 +871,9 @@
           .join("");
 
         return [
-          '<div class="rounded-xl border border-gray-200 p-3">',
-          '<p class="text-xs font-bold uppercase tracking-wide text-brand-600">Module ' + String(moduleIndex + 1) + "</p>",
-          '<h3 class="text-sm font-heading font-bold text-gray-900 mt-1">' + escapeHtml(moduleRow.title) + "</h3>",
+          '<div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">',
+          '<p class="text-xs font-bold uppercase tracking-wide text-blue-300">Module ' + String(moduleIndex + 1) + "</p>",
+          '<h3 class="text-sm font-heading font-bold text-white mt-1">' + escapeHtml(moduleRow.title) + "</h3>",
           '<div class="mt-2 space-y-2">' + lessonRows + "</div>",
           "</div>",
         ].join("");
@@ -1249,7 +1249,7 @@
   function setAssignmentMessage(text, bad) {
     if (!assignmentMessageEl) return;
     assignmentMessageEl.textContent = clean(text);
-    assignmentMessageEl.className = "text-xs " + (bad ? "text-red-600" : "text-gray-500");
+    assignmentMessageEl.className = "text-xs " + (bad ? "text-red-300" : "text-slate-300");
   }
 
   function assignmentEnabled() {
@@ -1268,16 +1268,16 @@
     if (!assignmentRowsEl) return;
     var items = Array.isArray(state.assignmentItems) ? state.assignmentItems : [];
     if (!items.length) {
-      assignmentRowsEl.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs text-gray-500">No submissions yet.</td></tr>';
+      assignmentRowsEl.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs text-slate-300">No submissions yet.</td></tr>';
       return;
     }
     assignmentRowsEl.innerHTML = items.map(function (item) {
       return [
         "<tr>",
-        '<td class="px-3 py-2 text-xs text-gray-600">' + escapeHtml(fmtDate(item.created_at)) + "</td>",
-        '<td class="px-3 py-2 text-xs text-gray-700">' + escapeHtml(clean(item.submission_kind, 24)) + "</td>",
-        '<td class="px-3 py-2 text-xs"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-gray-700">' + escapeHtml(clean(item.status, 32) || "submitted") + "</span></td>",
-        '<td class="px-3 py-2 text-xs text-gray-600">' + escapeHtml(clean(item.admin_feedback, 300) || "-") + "</td>",
+        '<td class="px-3 py-2 text-xs text-slate-300">' + escapeHtml(fmtDate(item.created_at)) + "</td>",
+        '<td class="px-3 py-2 text-xs text-slate-200">' + escapeHtml(clean(item.submission_kind, 24)) + "</td>",
+        '<td class="px-3 py-2 text-xs"><span class="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2 py-0.5 font-semibold text-slate-200">' + escapeHtml(clean(item.status, 32) || "submitted") + "</span></td>",
+        '<td class="px-3 py-2 text-xs text-slate-300">' + escapeHtml(clean(item.admin_feedback, 300) || "-") + "</td>",
         "</tr>",
       ].join("");
     }).join("");
@@ -1293,8 +1293,8 @@
     assignmentScreenshotPreviewEl.innerHTML = items.map(function (item) {
       var url = clean(item && item.url, 1500);
       return [
-        '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-gray-200 p-1">',
-        '<img src="' + escapeHtml(url) + '" alt="Screenshot" class="h-20 w-full rounded-md object-cover bg-gray-100" />',
+        '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-white/10 bg-white/5 p-1">',
+        '<img src="' + escapeHtml(url) + '" alt="Screenshot" class="h-20 w-full rounded-md object-cover bg-white/10" />',
         "</a>",
       ].join("");
     }).join("");
@@ -1303,7 +1303,7 @@
   function setCommunityMessage(text, bad) {
     if (!communityMessageEl) return;
     communityMessageEl.textContent = clean(text);
-    communityMessageEl.className = "text-xs " + (bad ? "text-red-600" : "text-gray-500");
+    communityMessageEl.className = "text-xs " + (bad ? "text-red-300" : "text-slate-300");
   }
 
   function closeConfirmModal(result) {
@@ -1423,7 +1423,7 @@
     if (!communityThreadListEl) return;
     var items = filteredCommunityThreads();
     if (!items.length) {
-      communityThreadListEl.innerHTML = '<div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-4 text-xs text-gray-500">No threads yet. Ask the first question for this course.</div>';
+      communityThreadListEl.innerHTML = '<div class="rounded-lg border border-dashed border-white/15 bg-white/5 px-3 py-4 text-xs text-slate-300">No threads yet. Ask the first question for this course.</div>';
       return;
     }
     communityThreadListEl.innerHTML = items.map(function (item) {
@@ -1431,8 +1431,8 @@
       var type = clean(item && item.question_type, 24).toLowerCase() || "peer";
       var owned = isOwnedByCurrentAccount(item);
       var typeChip = type === "tutor"
-        ? '<span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Tutor Question</span>'
-        : '<span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800">Peer Question</span>';
+        ? '<span class="inline-flex items-center rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">Tutor Question</span>'
+        : '<span class="inline-flex items-center rounded-full border border-blue-400/25 bg-blue-400/10 px-2 py-0.5 text-[11px] font-semibold text-blue-200">Peer Question</span>';
       var replies = state.communityRepliesByThread && state.communityRepliesByThread.get(id)
         ? state.communityRepliesByThread.get(id)
         : [];
@@ -1454,18 +1454,18 @@
       function renderReplyCard(reply, idx, isChild) {
         var replyId = Number(reply && reply.id || 0);
         var replyOwned = isOwnedByCurrentAccount(reply);
-        var tint = ["bg-blue-50 border-blue-100", "bg-emerald-50 border-emerald-100", "bg-amber-50 border-amber-100", "bg-slate-50 border-slate-200"][idx % 4];
+        var tint = ["bg-blue-500/10 border-blue-400/20", "bg-emerald-500/10 border-emerald-400/20", "bg-amber-500/10 border-amber-400/20", "bg-slate-500/10 border-slate-400/20"][idx % 4];
         var mentionLabel = clean(reply && reply.mention_name) || clean(reply && reply.mention_email);
         var bodyText = clean(reply && reply.body, 20000);
         return [
           '<div class="rounded-lg border ' + tint + ' px-3 py-2 ' + (isChild ? 'ml-4 sm:ml-6' : '') + '">',
-          '<p class="text-xs font-semibold text-gray-800">' + escapeHtml(replyDisplayName(reply)) + '</p>',
-          '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + (mentionLabel ? '<span class="font-semibold text-brand-700">@' + escapeHtml(mentionLabel) + '</span> ' : '') + escapeHtml(bodyText) + "</p>",
+          '<p class="text-xs font-semibold text-white">' + escapeHtml(replyDisplayName(reply)) + '</p>',
+          '<p class="mt-1 text-xs text-slate-200 whitespace-pre-wrap">' + (mentionLabel ? '<span class="font-semibold text-blue-200">@' + escapeHtml(mentionLabel) + '</span> ' : '') + escapeHtml(bodyText) + "</p>",
           '<div class="mt-1 flex flex-wrap items-center justify-between gap-2">',
-          '<p class="text-[11px] text-gray-500">' + escapeHtml(fmtDate(reply.created_at)) + "</p>",
-          '<div class="flex items-center gap-1"><button type="button" data-community-reply-to-reply="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Reply</button>' +
+          '<p class="text-[11px] text-slate-400">' + escapeHtml(fmtDate(reply.created_at)) + "</p>",
+          '<div class="flex items-center gap-1"><button type="button" data-community-reply-to-reply="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10">Reply</button>' +
             (replyOwned
-              ? '<button type="button" data-community-reply-edit="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Edit</button><button type="button" data-community-reply-delete="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</button>'
+              ? '<button type="button" data-community-reply-edit="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10">Edit</button><button type="button" data-community-reply-delete="' + String(replyId) + '" data-community-thread-id="' + String(id) + '" class="inline-flex items-center justify-center rounded-md border border-red-400/25 bg-red-500/10 px-2 py-1 text-[11px] font-semibold text-red-200 hover:bg-red-500/20">Delete</button>'
               : '') + '</div>',
           "</div>",
           "</div>",
@@ -1485,26 +1485,26 @@
           .join("");
       }).join("");
       return [
-        '<article class="rounded-lg border border-gray-200 bg-white p-3">',
+        '<article class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-sm">',
         '<div class="flex flex-wrap items-center justify-between gap-2">',
         typeChip,
-        '<span class="text-[11px] text-gray-500">' + escapeHtml(fmtDate(item.created_at)) + "</span>",
+        '<span class="text-[11px] text-slate-400">' + escapeHtml(fmtDate(item.created_at)) + "</span>",
         "</div>",
-        '<h4 class="mt-2 text-sm font-semibold text-gray-900">' + escapeHtml(clean(item.title, 220)) + "</h4>",
-        '<p class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">' + escapeHtml(clean(item.body, 20000)) + "</p>",
-        '<p class="mt-2 text-[11px] text-gray-500">Posted by ' + escapeHtml(clean(item.author_name) || clean(item.author_email) || "Student") + " • " + escapeHtml(String(Number(item.replies_count || 0))) + " repl" + (Number(item.replies_count || 0) === 1 ? "y" : "ies") + "</p>",
+        '<h4 class="mt-2 text-sm font-semibold text-white">' + escapeHtml(clean(item.title, 220)) + "</h4>",
+        '<p class="mt-1 text-xs text-slate-200 whitespace-pre-wrap">' + escapeHtml(clean(item.body, 20000)) + "</p>",
+        '<p class="mt-2 text-[11px] text-slate-400">Posted by ' + escapeHtml(clean(item.author_name) || clean(item.author_email) || "Student") + " • " + escapeHtml(String(Number(item.replies_count || 0))) + " repl" + (Number(item.replies_count || 0) === 1 ? "y" : "ies") + "</p>",
         '<div class="mt-2 flex flex-wrap items-center gap-2">',
-        '<button type="button" data-community-load-replies="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">View Replies</button>',
+        '<button type="button" data-community-load-replies="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-white/10">View Replies</button>',
         (owned
-          ? '<button type="button" data-community-thread-edit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">Edit Post</button><button type="button" data-community-thread-delete="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Delete Post</button>'
+          ? '<button type="button" data-community-thread-edit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-white/10">Edit Post</button><button type="button" data-community-thread-delete="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/20">Delete Post</button>'
           : ""),
         "</div>",
         '<div class="mt-2 space-y-2" data-community-replies-wrap="' + String(id) + '">' + (replyItems || "") + "</div>",
         (replyDraft && replyDraft.parent_reply_id
-          ? '<div class="mt-2 rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-[11px] text-brand-800">Replying to @' + escapeHtml(clean(replyDraft.mention_name) || clean(replyDraft.mention_email) || "Student") + ' <button type="button" data-community-reply-cancel="' + String(id) + '" class="ml-2 font-semibold underline">Cancel</button></div>'
+          ? '<div class="mt-2 rounded-md border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-[11px] text-blue-100">Replying to @' + escapeHtml(clean(replyDraft.mention_name) || clean(replyDraft.mention_email) || "Student") + ' <button type="button" data-community-reply-cancel="' + String(id) + '" class="ml-2 font-semibold underline">Cancel</button></div>'
           : ''),
         '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
-        '<textarea rows="2" data-community-reply-input="' + String(id) + '" placeholder="Write a reply..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-900 focus:border-brand-500 focus:ring-brand-500"></textarea>',
+        '<textarea rows="2" data-community-reply-input="' + String(id) + '" placeholder="Write a reply..." class="w-full rounded-lg border border-white/15 bg-[#060b14]/70 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-500/50"></textarea>',
         '<button type="button" data-community-reply-submit="' + String(id) + '" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Reply</button>',
         "</div>",
         "</article>",
@@ -1855,7 +1855,7 @@
       assignmentCardEl.hidden = !enabled;
       if (assignmentStatusChipEl) {
         assignmentStatusChipEl.textContent = enabled ? "Enabled" : "Disabled";
-        assignmentStatusChipEl.className = "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold " + (enabled ? "bg-brand-50 text-brand-700" : "bg-gray-100 text-gray-600");
+        assignmentStatusChipEl.className = "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold " + (enabled ? "border-blue-400/25 bg-blue-500/10 text-blue-200" : "border-white/15 bg-white/10 text-slate-300");
       }
     }
     if (assignmentSubmitBtnEl) assignmentSubmitBtnEl.disabled = !assignmentEnabled();
@@ -1871,7 +1871,7 @@
       communityCardEl.hidden = !communityIsEnabled;
       if (communityStatusChipEl) {
         communityStatusChipEl.textContent = communityIsEnabled ? "Enabled" : "Disabled";
-        communityStatusChipEl.className = "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold " + (communityIsEnabled ? "bg-brand-50 text-brand-700" : "bg-gray-100 text-gray-600");
+        communityStatusChipEl.className = "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold " + (communityIsEnabled ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200" : "border-white/15 bg-white/10 text-slate-300");
       }
     }
     if (communityPostBtnEl) communityPostBtnEl.disabled = !communityEnabled();

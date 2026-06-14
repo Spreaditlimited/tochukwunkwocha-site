@@ -693,11 +693,11 @@
           const hasPendingRegistrationOrder = !!pendingOrder;
           const pendingOrderUuid = String((pendingOrder && pendingOrder.orderUuid) || "").trim();
           listEl.innerHTML = [
-            '<article class="rounded-2xl border border-gray-200 bg-gray-50 p-6">',
-            `<p class="text-base font-semibold text-gray-900">${
+            '<article class="rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">',
+            `<p class="text-base font-semibold text-white">${
               hasPendingRegistrationOrder ? "Domain registration is being processed." : "No domain purchased yet."
             }</p>`,
-            `<p class="mt-2 text-sm text-gray-600">${
+            `<p class="mt-2 text-sm text-slate-300">${
               hasPendingRegistrationOrder
                 ? "Your payment is confirmed. Once registration completes, your domain will appear here."
                 : "Register your first domain to see renewal tracking here."
@@ -714,27 +714,27 @@
         listEl.innerHTML = domains
           .map(function (item) {
             return [
-              '<article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">',
-              `<p class="text-base font-bold text-gray-900">${escapeHtml(item.domainName)}</p>`,
-              `<p class="mt-1 text-xs text-gray-500">Provider: ${escapeHtml(item.provider || "-")} • Status: ${escapeHtml(
+              '<article class="rounded-2xl border border-white/10 bg-[#0d1117] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">',
+              `<p class="text-base font-bold text-white">${escapeHtml(item.domainName)}</p>`,
+              `<p class="mt-1 text-xs text-slate-400">Provider: ${escapeHtml(item.provider || "-")} • Status: ${escapeHtml(
                 item.status || "-"
               )}</p>`,
-              '<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">',
-              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Registered:</span> ${escapeHtml(
+              '<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300">',
+              `<div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10"><span class="font-semibold text-white">Registered:</span> ${escapeHtml(
                 formatDate(item.registeredAt || item.createdAt)
               )}</div>`,
-              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Renewal due:</span> ${escapeHtml(
+              `<div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10"><span class="font-semibold text-white">Renewal due:</span> ${escapeHtml(
                 deriveRenewalDate(item)
               )}</div>`,
-              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Amount:</span> ${escapeHtml(
+              `<div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10"><span class="font-semibold text-white">Amount:</span> ${escapeHtml(
                 formatMoney(item.purchaseCurrency, item.purchaseAmountMinor)
               )}</div>`,
               "</div>",
-              '<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-600">',
-              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Add-ons:</span> ${escapeHtml(
+              '<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">',
+              `<div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10"><span class="font-semibold text-white">Add-ons:</span> ${escapeHtml(
                 renderServices(item.selectedServices)
               )}</div>`,
-              `<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200"><span class="font-semibold text-gray-700">Auto-renew:</span> ${
+              `<div class="rounded-lg bg-white/5 px-3 py-2 ring-1 ring-white/10"><span class="font-semibold text-white">Auto-renew:</span> ${
                 item.autoRenewEnabled ? "On" : "Off"
               }</div>`,
               "</div>",
@@ -744,12 +744,12 @@
               )}" class="inline-flex items-center justify-center rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors">Renew (1 year)</button>`,
               `<button type="button" data-dns-toggle="${escapeAttr(
                 item.domainName
-              )}" class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">Manage DNS</button>`,
+              )}" class="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition-colors">Manage DNS</button>`,
               `<button type="button" data-netlify-toggle="${escapeAttr(
                 item.domainName
               )}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-500 transition-colors">Netlify Details</button>`,
               "</div>",
-              '<p class="mt-2 text-xs text-gray-500">Prompt to Profit students: use <span class="font-semibold">Netlify Details</span> to submit your connection information.</p>',
+              '<p class="mt-2 text-xs text-slate-400">Prompt to Profit students: use <span class="font-semibold text-slate-200">Netlify Details</span> to submit your connection information.</p>',
               dnsPanelHtml(item.domainName),
               "</article>",
             ].join("");
@@ -759,7 +759,7 @@
 
       if (!orders.length) {
         if (ordersEl) {
-          ordersEl.innerHTML = '<p class="text-sm text-gray-500">No order records yet.</p>';
+          ordersEl.innerHTML = '<p class="text-sm text-slate-400">No order records yet.</p>';
         }
         return;
       }
@@ -770,15 +770,15 @@
             const status = String(item.status || "").toLowerCase();
             const canRetry = status === "registration_in_progress" || status === "registration_failed";
             return [
-              '<article class="rounded-xl border border-gray-200 bg-white p-4">',
-              `<p class="text-sm font-semibold text-gray-900">${escapeHtml(item.domainName)}</p>`,
-              `<p class="text-xs text-gray-500 mt-1">Order: ${escapeHtml(item.orderUuid || "-")} • Status: ${escapeHtml(
+              '<article class="rounded-xl border border-white/10 bg-[#0d1117] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.25)]">',
+              `<p class="text-sm font-semibold text-white">${escapeHtml(item.domainName)}</p>`,
+              `<p class="text-xs text-slate-400 mt-1">Order: ${escapeHtml(item.orderUuid || "-")} • Status: ${escapeHtml(
                 item.status || "-"
               )}</p>`,
-              `<p class="text-xs text-gray-500 mt-1">Placed: ${escapeHtml(formatDate(item.createdAt))} • Amount: ${escapeHtml(
+              `<p class="text-xs text-slate-400 mt-1">Placed: ${escapeHtml(formatDate(item.createdAt))} • Amount: ${escapeHtml(
                 formatMoney(item.purchaseCurrency, item.purchaseAmountMinor)
               )}</p>`,
-              `<p class="text-xs text-gray-500 mt-1">Add-ons: ${escapeHtml(renderServices(item.selectedServices))} • Auto-renew: ${
+              `<p class="text-xs text-slate-400 mt-1">Add-ons: ${escapeHtml(renderServices(item.selectedServices))} • Auto-renew: ${
                 item.autoRenewEnabled ? "On" : "Off"
               }</p>`,
               canRetry

@@ -106,6 +106,29 @@
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
   }
 
+  function prettifySlug(slug) {
+    return String(slug || "")
+      .trim()
+      .split("-")
+      .filter(Boolean)
+      .map(function (part) {
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(" ");
+  }
+
+  function courseDisplayName(plan) {
+    const explicit = String(
+      (plan && (plan.courseName || plan.courseLabel || plan.courseTitle || plan.course_name || plan.course_label)) || ""
+    ).trim();
+    if (explicit) return explicit;
+    const slug = String(plan && plan.courseSlug || "").trim().toLowerCase();
+    const match = FALLBACK_COURSES.find(function (item) {
+      return item.slug === slug;
+    });
+    return (match && match.label) || prettifySlug(slug) || "Course";
+  }
+
   function setCourseOptions(items, preferredSlug) {
     if (!courseSelect) return;
     const selected = String(preferredSlug || courseSelect.value || "").trim().toLowerCase();
@@ -538,10 +561,11 @@
         const disableEnrol = !canEnrolNow;
         const enrolLabel = "Enrol";
         const showCancel = !!plan.canCancel;
+        const courseName = courseDisplayName(plan);
         return [
           `<article class="wallet-plan" data-plan-uuid="${plan.planUuid}">`,
-          `<p class="wallet-pill">${plan.batchLabel}</p>`,
-          `<p style="margin-top:8px;font-weight:700;color:#14213d">${plan.courseSlug}</p>`,
+          `<p class="wallet-pill">${esc(plan.batchLabel)}</p>`,
+          `<p class="mt-3 text-base font-heading font-extrabold text-white sm:text-lg">${esc(courseName)}</p>`,
           `${
             Number(plan.discountMinor || 0) > 0
               ? `<p class="wallet-msg" style="margin-top:4px">Coupon (${String(plan.couponCode || "").toUpperCase()}): -${fmtMoney(Number(plan.discountMinor || 0), plan.currency)}</p>`
