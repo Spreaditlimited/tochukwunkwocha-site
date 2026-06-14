@@ -5,12 +5,16 @@
   var ruleForm = document.getElementById("affiliateRuleForm");
   var payoutForm = document.getElementById("affiliatePayoutRunForm");
   var payoutResult = document.getElementById("affPayoutResult");
+  var commissionTotalsEl = document.getElementById("affCommissionTotals");
+  var commissionRowsEl = document.getElementById("affCommissionRows");
+  var commissionSortEl = document.getElementById("affCommissionSort");
   var auditRows = document.getElementById("affAuditRows");
   var FORM_STATE_KEY = "affiliate_rule_form_state_v1";
 
   var rules = [];
   var courses = [];
   var audit = [];
+  var commissionSummary = { totalsByCurrency: [], affiliates: [] };
 
   function esc(value) {
     return String(value || "")
@@ -76,6 +80,87 @@
     var d = new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
     return d.toLocaleString();
+  }
+
+  function dateMs(value) {
+    if (!value) return 0;
+    var d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 0;
+    return d.getTime();
+  }
+
+  function formatMoney(minor, currency) {
+    var amount = Number(minor || 0) / 100;
+    var ccy = String(currency || "NGN").toUpperCase();
+    var locale = ccy === "USD" ? "en-US" : "en-NG";
+    try {
+      return new Intl.NumberFormat(locale, { style: "currency", currency: ccy }).format(amount);
+    } catch (_error) {
+      return ccy + " " + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  function sortedCommissionRows() {
+    var sort = String(commissionSortEl && commissionSortEl.value || "latest_desc");
+    var rows = Array.isArray(commissionSummary.affiliates) ? commissionSummary.affiliates.slice() : [];
+    rows.sort(function (a, b) {
+      if (sort === "latest_asc") return dateMs(a.latestCommissionAt) - dateMs(b.latestCommissionAt);
+      if (sort === "earned_desc") return Number(b.earnedMinor || 0) - Number(a.earnedMinor || 0);
+      if (sort === "approved_desc") return Number(b.approvedMinor || 0) - Number(a.approvedMinor || 0);
+      if (sort === "paid_desc") return Number(b.paidMinor || 0) - Number(a.paidMinor || 0);
+      return dateMs(b.latestCommissionAt) - dateMs(a.latestCommissionAt);
+    });
+    return rows;
+  }
+
+  function renderCommissionSummary() {
+    if (commissionTotalsEl) {
+      var totals = Array.isArray(commissionSummary.totalsByCurrency) ? commissionSummary.totalsByCurrency : [];
+      if (!totals.length) {
+        commissionTotalsEl.innerHTML = '<div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm font-semibold text-gray-500 sm:col-span-2 xl:col-span-4">No affiliate commissions yet.</div>';
+      } else {
+        commissionTotalsEl.innerHTML = totals.map(function (item) {
+          var currency = String(item.currency || "NGN").toUpperCase();
+          return [
+            '<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">',
+            '<p class="text-xs font-bold uppercase tracking-wide text-gray-500">' + esc(currency) + ' Total Earned</p>',
+            '<p class="mt-1 text-2xl font-heading font-extrabold text-gray-900">' + esc(formatMoney(item.earnedMinor, currency)) + '</p>',
+            '<p class="mt-2 text-xs font-semibold text-gray-500">Approved ' + esc(formatMoney(item.approvedMinor, currency)) + ' · Paid ' + esc(formatMoney(item.paidMinor, currency)) + '</p>',
+            '</div>',
+            '<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">',
+            '<p class="text-xs font-bold uppercase tracking-wide text-gray-500">' + esc(currency) + ' Pipeline</p>',
+            '<p class="mt-1 text-2xl font-heading font-extrabold text-gray-900">' + esc(formatMoney(item.pendingMinor, currency)) + '</p>',
+            '<p class="mt-2 text-xs font-semibold text-gray-500">Pending · ' + esc(String(Number(item.totalCount || 0))) + ' commissions</p>',
+            '</div>',
+          ].join("");
+        }).join("");
+      }
+    }
+
+    if (!commissionRowsEl) return;
+    var rows = sortedCommissionRows();
+    if (!rows.length) {
+      commissionRowsEl.innerHTML = '<tr><td colspan="9" class="py-3 text-gray-500">No affiliate commissions yet.</td></tr>';
+      return;
+    }
+    commissionRowsEl.innerHTML = rows.map(function (item) {
+      var currency = String(item.currency || "NGN").toUpperCase();
+      var name = String(item.fullName || "").trim() || "Unknown affiliate";
+      var email = String(item.email || "").trim();
+      return [
+        "<tr class='border-b border-gray-100'>",
+        "<td class='py-2 pr-3'><div class='font-bold text-gray-900'>" + esc(name) + "</div><div class='text-xs text-gray-500'>" + esc(email || ("Account #" + String(item.accountId || "-"))) + "</div></td>",
+        "<td class='py-2 pr-3 font-mono text-xs'>" + esc(item.affiliateCode || "-") + "</td>",
+        "<td class='py-2 pr-3 font-semibold text-gray-900'>" + esc(formatMoney(item.earnedMinor, currency)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(formatMoney(item.approvedMinor, currency)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(formatMoney(item.paidMinor, currency)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(formatMoney(item.pendingMinor, currency)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(formatMoney(item.blockedMinor, currency)) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(item.totalCount || 0) + "</td>",
+        "<td class='py-2 pr-3'>" + esc(safeDate(item.latestCommissionAt)) + "</td>",
+        "</tr>",
+      ].join("");
+    }).join("");
   }
 
   function renderAudit() {
@@ -204,10 +289,12 @@
     }
     rules = Array.isArray(json.rules) ? json.rules : [];
     audit = Array.isArray(json.audit) ? json.audit : [];
+    commissionSummary = json.commissionSummary && typeof json.commissionSummary === "object" ? json.commissionSummary : { totalsByCurrency: [], affiliates: [] };
     courses = mergeCoursesWithRuleSlugs(Array.isArray(json.courses) ? json.courses : [], rules);
     renderCourseOptions();
     syncFormFromSelection(preferred);
     renderRules();
+    renderCommissionSummary();
     renderAudit();
   }
 
@@ -275,6 +362,7 @@
       payoutResult.classList.remove("hidden");
     }
     setMessage("Payout batch completed.", "ok");
+    await loadRules();
   }
 
   if (ruleForm) {
@@ -297,6 +385,17 @@
       });
     });
   }
+  if (commissionSortEl) {
+    commissionSortEl.addEventListener("change", renderCommissionSummary);
+  }
+  document.addEventListener("click", function (event) {
+    var target = event.target;
+    if (!target || !target.matches("[data-aff-sort]")) return;
+    if (commissionSortEl) {
+      commissionSortEl.value = String(target.getAttribute("data-aff-sort") || "latest_desc");
+    }
+    renderCommissionSummary();
+  });
 
   loadRules().catch(function (error) {
     setMessage(error.message || "Could not load affiliate data", "error");

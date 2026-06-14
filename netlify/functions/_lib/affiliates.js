@@ -2289,6 +2289,91 @@ async function listRecentAffiliateAudit(pool, limitInput) {
   });
 }
 
+async function listAffiliateCommissionSummary(pool) {
+  await ensureAffiliateTables(pool);
+  const [rows] = await pool.query(
+    `SELECT
+       p.id AS profile_id,
+       p.profile_uuid,
+       p.account_id,
+       p.affiliate_code,
+       p.status AS affiliate_status,
+       p.eligibility_status,
+       p.payout_currency,
+       a.full_name,
+       a.email,
+       COALESCE(c.currency, p.payout_currency, 'NGN') AS currency,
+       COUNT(c.id) AS total_count,
+       COALESCE(SUM(c.commission_amount_minor), 0) AS earned_minor,
+       COALESCE(SUM(CASE WHEN c.status = 'pending' THEN c.commission_amount_minor ELSE 0 END), 0) AS pending_minor,
+       COALESCE(SUM(CASE WHEN c.status = 'approved' THEN c.commission_amount_minor ELSE 0 END), 0) AS approved_minor,
+       COALESCE(SUM(CASE WHEN c.status = 'paid' THEN c.commission_amount_minor ELSE 0 END), 0) AS paid_minor,
+       COALESCE(SUM(CASE WHEN c.status IN ('blocked','reversed') THEN c.commission_amount_minor ELSE 0 END), 0) AS blocked_minor,
+       MIN(c.created_at) AS first_commission_at,
+       MAX(c.created_at) AS latest_commission_at,
+       MAX(c.paid_at) AS latest_paid_at
+     FROM ${AFFILIATE_PROFILES_TABLE} p
+     LEFT JOIN student_accounts a ON a.id = p.account_id
+     LEFT JOIN ${AFFILIATE_COMMISSIONS_TABLE} c ON c.affiliate_profile_id = p.id
+     GROUP BY p.id, p.profile_uuid, p.account_id, p.affiliate_code, p.status, p.eligibility_status,
+              p.payout_currency, a.full_name, a.email, COALESCE(c.currency, p.payout_currency, 'NGN')
+     HAVING total_count > 0
+     ORDER BY latest_commission_at DESC, p.id DESC`
+  );
+
+  const affiliates = (Array.isArray(rows) ? rows : []).map(function (row) {
+    return {
+      profileId: Number(row.profile_id || 0),
+      profileUuid: clean(row.profile_uuid, 64),
+      accountId: Number(row.account_id || 0),
+      affiliateCode: clean(row.affiliate_code, 40),
+      affiliateStatus: clean(row.affiliate_status, 30),
+      eligibilityStatus: clean(row.eligibility_status, 40),
+      fullName: clean(row.full_name, 180),
+      email: clean(row.email, 190),
+      currency: clean(row.currency || row.payout_currency || "NGN", 10).toUpperCase(),
+      totalCount: Number(row.total_count || 0),
+      earnedMinor: Number(row.earned_minor || 0),
+      pendingMinor: Number(row.pending_minor || 0),
+      approvedMinor: Number(row.approved_minor || 0),
+      paidMinor: Number(row.paid_minor || 0),
+      blockedMinor: Number(row.blocked_minor || 0),
+      firstCommissionAt: row.first_commission_at || null,
+      latestCommissionAt: row.latest_commission_at || null,
+      latestPaidAt: row.latest_paid_at || null,
+    };
+  });
+
+  const totalsByCurrency = {};
+  affiliates.forEach(function (row) {
+    const currency = clean(row.currency || "NGN", 10).toUpperCase() || "NGN";
+    if (!totalsByCurrency[currency]) {
+      totalsByCurrency[currency] = {
+        currency,
+        totalCount: 0,
+        earnedMinor: 0,
+        pendingMinor: 0,
+        approvedMinor: 0,
+        paidMinor: 0,
+        blockedMinor: 0,
+      };
+    }
+    totalsByCurrency[currency].totalCount += Number(row.totalCount || 0);
+    totalsByCurrency[currency].earnedMinor += Number(row.earnedMinor || 0);
+    totalsByCurrency[currency].pendingMinor += Number(row.pendingMinor || 0);
+    totalsByCurrency[currency].approvedMinor += Number(row.approvedMinor || 0);
+    totalsByCurrency[currency].paidMinor += Number(row.paidMinor || 0);
+    totalsByCurrency[currency].blockedMinor += Number(row.blockedMinor || 0);
+  });
+
+  return {
+    totalsByCurrency: Object.keys(totalsByCurrency).sort().map(function (currency) {
+      return totalsByCurrency[currency];
+    }),
+    affiliates,
+  };
+}
+
 async function upsertAffiliateCourseRule(pool, input) {
   await ensureAffiliateTables(pool);
   const courseSlug = normalizeCourse(input && input.courseSlug);
@@ -2550,6 +2635,7 @@ module.exports = {
   runAffiliatePayoutBatch,
   listAffiliateCourseRules,
   listRecentAffiliateAudit,
+  listAffiliateCommissionSummary,
   upsertAffiliateCourseRule,
   listAffiliatePayoutBanks,
   sendAffiliatePayoutChangeOtp,

@@ -113,7 +113,7 @@
       .course-hero {
         position: relative;
         overflow: hidden;
-        padding-top: 140px;
+        padding-top: 120px;
         padding-bottom: 100px;
         background: #f8f6f1;
       }
@@ -324,6 +324,23 @@
         max-width: 100%;
       }
 
+      .student-site-frame {
+        height: 400px;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .student-site-frame iframe {
+        border: 0;
+        transform-origin: top left;
+      }
+
+      @media (min-width: 768px) {
+        .student-site-frame {
+          height: 450px;
+        }
+      }
+
       .browser-header {
         display: flex;
         align-items: center;
@@ -391,7 +408,7 @@
         }
 
         .course-hero {
-          padding-top: 100px;
+          padding-top: 84px;
         }
 
         .hero-brand-logo {
@@ -435,8 +452,8 @@
           max-width: 100%;
         }
 
-        .student-websites-section .browser-mockup iframe {
-          height: 350px !important;
+        .student-site-frame {
+          height: 350px;
         }
 
         .browser-header {
@@ -1183,7 +1200,9 @@
                     </div>
                   </div>
                   <div class="w-10 shrink-0"></div> </div>
-                <iframe src="https://moonlit-madeleine-c0b82e.netlify.app/" title="Student website 1" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                <div class="student-site-frame">
+                  <iframe src="https://moonlit-madeleine-c0b82e.netlify.app/" title="Student website 1" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                </div>
               </div>
             </div>
       
@@ -1204,7 +1223,9 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <iframe src="https://olytribe.com.ng" title="Student website 2" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                <div class="student-site-frame">
+                  <iframe src="https://olytribe.com.ng" title="Student website 2" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                </div>
               </div>
             </div>
       
@@ -1225,7 +1246,9 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <iframe src="https://themancavenaija.com" title="Student website 3" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                <div class="student-site-frame">
+                  <iframe src="https://themancavenaija.com" title="Student website 3" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                </div>
               </div>
             </div>
       
@@ -1246,7 +1269,9 @@
                   </div>
                   <div class="w-10 shrink-0"></div>
                 </div>
-                <iframe src="https://naijakitchenflavor.netlify.app" title="Student website 4" class="w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                <div class="student-site-frame">
+                  <iframe src="https://naijakitchenflavor.netlify.app" title="Student website 4" class="student-site-preview w-full h-[400px] md:h-[450px] bg-white block" loading="lazy"></iframe>
+                </div>
               </div>
             </div>
       
@@ -1987,6 +2012,37 @@
           });
           body.insertAdjacentElement("afterend", toggle);
         });
+      })();
+
+      (function initStudentSitePreviews() {
+        var frames = Array.prototype.slice.call(document.querySelectorAll(".student-site-frame"));
+        if (!frames.length) return;
+        var previewWidth = 1024;
+
+        function fitPreviews() {
+          var isMobile = window.matchMedia("(max-width: 640px)").matches;
+          frames.forEach(function (frame) {
+            var iframe = frame.querySelector(".student-site-preview");
+            if (!iframe) return;
+            if (!isMobile) {
+              iframe.style.width = "";
+              iframe.style.height = "";
+              iframe.style.transform = "";
+              return;
+            }
+
+            var frameWidth = Math.max(1, frame.clientWidth);
+            var frameHeight = Math.max(1, frame.clientHeight);
+            var scale = Math.min(1, frameWidth / previewWidth);
+            iframe.style.width = previewWidth + "px";
+            iframe.style.height = Math.ceil(frameHeight / scale) + "px";
+            iframe.style.transform = "scale(" + scale + ")";
+          });
+        }
+
+        fitPreviews();
+        window.addEventListener("resize", fitPreviews);
+        window.addEventListener("orientationchange", fitPreviews);
       })();
 
       (function initFaqAccordion() {

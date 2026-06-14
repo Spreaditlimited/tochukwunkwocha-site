@@ -81,6 +81,24 @@
         box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
         background-color: #ffffff;
       }
+      .aff-sort-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+        font-weight: 800;
+        color: inherit;
+        cursor: pointer;
+      }
+      .aff-sort-btn:hover,
+      .aff-sort-btn:focus-visible {
+        color: #111827;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
     </style>
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
@@ -189,6 +207,41 @@
             </section>
 
             <section class="rounded-2xl border border-gray-200 bg-white p-5">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 class="text-lg font-heading font-extrabold text-gray-900">Affiliate Commission Summary</h3>
+                  <p class="text-sm text-gray-500 mt-1">Totals earned, approved, paid, and pending by affiliate.</p>
+                </div>
+                <select id="affCommissionSort" class="premium-picker sm:w-56">
+                  <option value="latest_desc">Latest commission first</option>
+                  <option value="latest_asc">Oldest commission first</option>
+                  <option value="earned_desc">Highest earned first</option>
+                  <option value="approved_desc">Highest approved first</option>
+                  <option value="paid_desc">Highest paid first</option>
+                </select>
+              </div>
+              <div id="affCommissionTotals" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
+              <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left border-b border-gray-200 text-gray-500">
+                      <th class="py-2 pr-3">Affiliate</th>
+                      <th class="py-2 pr-3">Code</th>
+                      <th class="py-2 pr-3"><button type="button" class="aff-sort-btn" data-aff-sort="earned_desc">Earned</button></th>
+                      <th class="py-2 pr-3"><button type="button" class="aff-sort-btn" data-aff-sort="approved_desc">Approved</button></th>
+                      <th class="py-2 pr-3"><button type="button" class="aff-sort-btn" data-aff-sort="paid_desc">Paid</button></th>
+                      <th class="py-2 pr-3">Pending</th>
+                      <th class="py-2 pr-3">Blocked</th>
+                      <th class="py-2 pr-3">Count</th>
+                      <th class="py-2 pr-3"><button type="button" class="aff-sort-btn" data-aff-sort="latest_desc">Latest</button></th>
+                    </tr>
+                  </thead>
+                  <tbody id="affCommissionRows"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5">
               <h3 class="text-lg font-heading font-extrabold text-gray-900">Attribution &amp; Commission Audit</h3>
               <p class="text-sm text-gray-500 mt-1">Recent affiliate events, including skipped commission reasons.</p>
               <div class="mt-4 overflow-x-auto">
@@ -212,6 +265,6 @@
     </div>
     <script src="/assets/internal-auth.js" defer></script>
     <script src="/assets/internal-nav.js?v=20260509e" defer></script>
-    <script src="/assets/admin-affiliates.js?v=20260413a" defer></script>
+    <script src="/assets/admin-affiliates.js?v=20260614-commission-summary" defer></script>
   </body>
 </html>
