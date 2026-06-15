@@ -1,0 +1,44 @@
+/* Internal admin dashboard isolation layer. Loaded only on /internal/** after global styles. */
+html,
+body {
+  padding-top: 0 !important;
+}
+
+body {
+  background-color: #f9fafb;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="password"],
+input[type="datetime-local"],
+textarea {
+  background-color: #fff !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+input[readonly],
+textarea[readonly] {
+  background-color: #f9fafb !important;
+  color: #374151 !important;
+}

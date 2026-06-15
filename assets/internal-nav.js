@@ -63,7 +63,7 @@
     // is hidden with transforms. Keep sidebar strictly off-canvas via `left`
     // and ensure the main shell never contributes horizontal overflow.
     style.textContent = [
-      "@media (max-width: 1023px) {",
+      "@media (max-width: 767px) {",
       "  html, body { max-width: 100%; overflow-x: hidden; }",
       "  body { position: relative; }",
       "  section.flex { overflow-x: hidden; }",

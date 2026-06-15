@@ -39,6 +39,11 @@
   status = 301
 
 [[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+[[headers]]
   for = "/dashboard"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
