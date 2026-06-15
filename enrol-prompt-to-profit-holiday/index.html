@@ -30,7 +30,15 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
+    </noscript>
     <link rel="stylesheet" href="/assets/styles.css?v=20260611-sticky-card-payment" />
 <style>
       /* Layout Container */
@@ -537,7 +545,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" width="188" height="42" decoding="async" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -567,7 +575,7 @@
           
           <div class="trust-column relative z-10">
             <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/10 text-brand-300 border border-brand-500/20 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-6">
-              <img src="/assets/optimized/prompt-to-profit-logo.webp" alt="Prompt to Profit Summer logo" class="h-3" style="filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));" />
+              <img src="/assets/optimized/prompt-to-profit-logo.webp" alt="Prompt to Profit Summer logo" class="h-3" width="56" height="12" decoding="async" fetchpriority="high" style="filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));" />
               <span>• Summer Batch</span>
             </div>
             
@@ -575,10 +583,10 @@
             
             <div class="social-proof">
               <div class="social-proof-avatars">
-                <img src="/assets/solomon.JPG" alt="Student" loading="lazy">
-                <img src="/assets/chinenye.JPG" alt="Student" loading="lazy">
-                <img src="/assets/emeka.JPG" alt="Student" loading="lazy">
-                <img src="/assets/audu.jpg" alt="Student" loading="lazy">
+                <img src="/assets/optimized/solomon-avatar.webp" alt="Student" width="36" height="36" decoding="async">
+                <img src="/assets/optimized/chinenye-avatar.webp" alt="Student" width="36" height="36" decoding="async">
+                <img src="/assets/optimized/emeka-avatar.webp" alt="Student" width="36" height="36" decoding="async">
+                <img src="/assets/optimized/audu-avatar.webp" alt="Student" width="36" height="36" decoding="async">
               </div>
               <div class="social-proof-text">
                 <div class="social-proof-stars">★★★★★</div>
@@ -766,7 +774,7 @@
     
     <div class="footer-logo mb-6">
       <a href="/" class="block transition-transform hover:scale-105 duration-300">
-        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" width="188" height="42" loading="lazy" decoding="async" />
       </a>
     </div>
     

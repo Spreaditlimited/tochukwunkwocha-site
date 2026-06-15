@@ -45,9 +45,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <link rel="stylesheet" href="/assets/styles.css" />
 <style>
       /* Base Resets & Enhancements */
@@ -469,7 +477,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" width="188" height="42" decoding="async" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -509,7 +517,7 @@
               <span class="tracking-wide uppercase text-xs">Registration Open</span>
             </div>
       
-            <img src="/assets/optimized/prompt-to-profit-logo.webp" alt="Prompt to Profit logo" class="w-48 lg:w-56 h-auto mb-8 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+            <img src="/assets/optimized/prompt-to-profit-logo.webp" alt="Prompt to Profit logo" class="w-48 lg:w-56 h-auto mb-8 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" width="224" height="48" decoding="async" fetchpriority="high" />
             
             <h1 class="font-heading font-extrabold text-[2.75rem] sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight text-white leading-[1.08] mb-6">
               Build Websites with <br class="hidden sm:block" />
@@ -532,9 +540,9 @@
             
             <div class="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 rounded-2xl inline-flex items-center gap-5 shadow-2xl">
               <div class="flex -space-x-4">
-                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/anuri.JPG" alt="Student">
-                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/ekpere.JPG" alt="Student">
-                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/michelle.png" alt="Student">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/optimized/anuri-avatar.webp" alt="Student" width="48" height="48" decoding="async">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/optimized/ekpere-avatar.webp" alt="Student" width="48" height="48" decoding="async">
+                <img class="w-12 h-12 rounded-full border-2 border-slate-900 object-cover" src="/assets/optimized/michelle-avatar.webp" alt="Student" width="48" height="48" decoding="async">
                 <div class="w-12 h-12 rounded-full border-2 border-slate-900 bg-brand-800 flex items-center justify-center text-xs font-bold text-brand-200">+350</div>
               </div>
               <div>
@@ -1285,7 +1293,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/anuri.JPG" alt="Anuri Okongwu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/anuri-avatar.webp" alt="Anuri Okongwu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Anuri Okongwu</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Parent & Advocate</p>
@@ -1312,7 +1320,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/buchi.JPG" alt="Buchi Ileka" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/buchi-avatar.webp" alt="Buchi Ileka" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Buchi Ileka</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Parent</p>
@@ -1339,7 +1347,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/marquis.jpeg" alt="Marquis Festus" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/marquis-avatar.webp" alt="Marquis Festus" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Marquis Festus</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Father of an 8-year old</p>
@@ -1366,7 +1374,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/ekpere.JPG" alt="Ekpereamaka Blessings" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/ekpere-avatar.webp" alt="Ekpereamaka Blessings" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Ekpereamaka Blessings</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1393,7 +1401,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/michelle.png" alt="Michelle Emoghware" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/michelle-avatar.webp" alt="Michelle Emoghware" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Michelle Emoghware</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1420,7 +1428,7 @@
                 </p>
       
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/chinenye.JPG" alt="Charity Chinedu-Ogbu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/chinenye-avatar.webp" alt="Charity Chinedu-Ogbu" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Charity Chinedu-Ogbu</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1447,7 +1455,7 @@
                 </p>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/Williams Ghamorai.png" alt="Williams Ghomorai" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/williams-ghamorai-avatar.webp" alt="Williams Ghomorai" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Williams Ghomorai</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1474,7 +1482,7 @@
                 </p>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/Love Chuks.png" alt="Love Chuks" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/love-chuks-avatar.webp" alt="Love Chuks" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Love Chuks</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1501,7 +1509,7 @@
                 </p>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/Shola Akinwunmi.png" alt="Shola Akinwunmi" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/shola-akinwunmi-avatar.webp" alt="Shola Akinwunmi" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Shola Akinwunmi</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1528,7 +1536,7 @@
                 </p>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/Isaac Akinseye.png" alt="Isaac Akinseye" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/isaac-akinseye-avatar.webp" alt="Isaac Akinseye" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Isaac Akinseye</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1555,7 +1563,7 @@
                 </p>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 relative z-10">
-                  <img src="/assets/Jamike Ugochukwu.png" alt="Jamike Ugochukwu Okoroji" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30">
+                  <img src="/assets/optimized/jamike-ugochukwu-avatar.webp" alt="Jamike Ugochukwu Okoroji" class="w-12 h-12 rounded-full object-cover shadow-lg ring-2 ring-brand-500/30" width="48" height="48" loading="lazy" decoding="async">
                   <div>
                     <h3 class="font-bold text-white text-sm">Jamike Ugochukwu Okoroji</h3>
                     <p class="text-xs text-brand-300 font-mono tracking-wide mt-1">Beginner Student</p>
@@ -1922,7 +1930,7 @@
     
     <div class="footer-logo mb-6">
       <a href="/" class="block transition-transform hover:scale-105 duration-300">
-        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" width="188" height="42" loading="lazy" decoding="async" />
       </a>
     </div>
     
@@ -1951,7 +1959,7 @@
 </footer>
 
 
-    <script src="/assets/bundles/bundle-4742df36f136.min.js"></script>
+    <script src="/assets/bundles/bundle-4742df36f136.min.js" defer></script>
     <script>
       (function initTestimonialClamp() {
         var testimonials = document.querySelectorAll(".testimonial-body");
