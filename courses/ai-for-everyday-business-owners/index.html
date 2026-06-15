@@ -34,64 +34,8 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/styles.css" />
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          preflight: false,
-        },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#1a2849',
-                700: '#14213d',
-                800: '#0f182d',
-                900: '#0a101e',
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <style type="text/tailwindcss">
-      @layer base {
-        main *, main ::before, main ::after {
-          box-sizing: border-box;
-          border-width: 0;
-          border-style: solid;
-          border-color: rgba(255,255,255,0.1);
-        }
-        main h1, main h2, main h3, main p, main label {
-          margin: 0;
-        }
-      }
-
-      @layer utilities {
-        .glass-card {
-          @apply bg-[#0d1117]/80 backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)];
-        }
-        .btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-500 to-orange-600 px-8 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:-translate-y-1 focus:outline-none border-none cursor-pointer;
-        }
-        .btn-outline {
-          @apply inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-8 py-4 text-sm font-bold text-slate-300 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-1 focus:outline-none cursor-pointer;
-        }
-      }
-    </style>
-    <style>
+<link rel="stylesheet" href="/assets/styles.css" />
+<style>
       body {
         min-height: 100vh;
         display: flex;
@@ -345,6 +289,6 @@
       </div>
     </footer>
 
-    <script src="/assets/site.js"></script>
+    <script src="/assets/bundles/bundle-ab1b87133569.min.js"></script>
   </body>
 </html>

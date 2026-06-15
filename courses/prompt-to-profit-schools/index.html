@@ -24,59 +24,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: { preflight: false },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb', 100: '#dfe7f7', 200: '#ccd3e6', 300: '#99a9cc', 400: '#667eb2',
-                500: '#22345f', 600: '#1a2849', 700: '#14213d', 800: '#0f182d', 900: '#0a101e',
-              }
-            }
-          }
-        }
-      }
-    </script>
-
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .tw-section-label {
-          @apply inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-bold font-mono uppercase tracking-widest text-amber-400 mb-6 backdrop-blur-md;
-        }
-        
-        .glass-card { 
-          @apply bg-[#0d1117]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 sm:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-500 hover:-translate-y-1 hover:border-white/20; 
-        }
-
-        .btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] hover:-translate-y-1 focus:outline-none border-none cursor-pointer;
-        }
-        .btn-outline {
-          @apply inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-8 py-4 text-sm font-bold text-slate-300 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-1 focus:outline-none cursor-pointer;
-        }
-        
-        .field-input {
-          @apply block w-full rounded-xl border border-white/10 py-4 px-5 text-white bg-[#060b14]/50 shadow-inner transition-all duration-300 placeholder:text-slate-500 hover:border-white/20 hover:bg-[#060b14]/80 focus:bg-[#060b14] focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 sm:text-sm outline-none backdrop-blur-sm;
-        }
-      }
-    </style>
-
-    <style>
+<style>
       /* Global Dark Mode Enforcement (Non-intrusive to header/footer) */
       body {
         background-color: #060b14;
@@ -708,9 +656,6 @@
       </div>
     </footer>
 
-    <script src="/assets/site.js" defer></script>
-    <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/schools-landing-config.js" defer></script>
-    <script src="/assets/school-readiness-scorecard.js" defer></script>
+    <script src="/assets/bundles/bundle-fb67ed6110aa.min.js" defer></script>
   </body>
 </html>

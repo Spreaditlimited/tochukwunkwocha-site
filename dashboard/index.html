@@ -12,35 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#1a2849',
-                700: '#14213d',
-                800: '#0f182d',
-                900: '#0f1a33',
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <style>
+<style>
       [hidden] { display: none !important; }
       .wallet-plan-actions { display: flex; gap: 12px; flex-wrap: nowrap; align-items: center; margin-top: 16px; }
       .wallet-plan-actions .wallet-topup-input { margin-top: 0; flex: 1 1 220px; min-width: 180px; }
@@ -118,52 +90,7 @@
         }
       }
     </style>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        /* Premium Dark Mode Form Components */
-        .tw-input {
-          @apply mt-2 block w-full rounded-xl border border-white/10 py-3.5 px-4 text-white bg-[#0d1117]/60 shadow-inner transition-all duration-300 placeholder:text-slate-500 hover:border-white/20 hover:bg-[#0d1117]/80 focus:bg-[#060b14] focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:text-sm sm:leading-6 outline-none backdrop-blur-sm;
-        }
-        .tw-select {
-          @apply appearance-none cursor-pointer pr-10;
-          background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
-          background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
-          background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
-        }
-        .tw-select option {
-          @apply bg-[#0d1117] text-white py-2;
-        }
-        .tw-label { @apply block text-sm font-bold leading-6 text-slate-300 mb-1; }
-
-        /* Premium Buttons */
-        .tw-btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(102,126,178,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(102,126,178,0.6)] hover:-translate-y-0.5 border-none;
-        }
-        .btn-outline {
-          @apply inline-flex items-center justify-center rounded-xl bg-white/5 px-6 py-3.5 text-sm font-bold text-slate-300 border border-white/10 shadow-sm transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-0.5;
-        }
-
-        /* Interactive Plan Cards */
-        .wallet-plan {
-          @apply rounded-2xl border border-white/10 bg-[#161b22]/80 backdrop-blur-md p-6 shadow-lg mb-5 transition-all duration-300 hover:border-white/20 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)];
-        }
-        .wallet-progress {
-          @apply mt-4 w-full h-2.5 rounded-full bg-[#060b14] overflow-hidden border border-white/10 shadow-inner;
-        }
-        .wallet-progress > span {
-          @apply block h-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(102,126,178,0.8)];
-        }
-
-        /* Glassmorphic Containers */
-        .premium-card {
-          @apply bg-[#0d1117]/80 backdrop-blur-xl rounded-[2rem] p-6 sm:p-10 border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)];
-        }
-        .premium-inner-card {
-          @apply bg-[#161b22]/50 border border-white/5 rounded-2xl p-6 relative overflow-hidden;
-        }
-      }
-    </style>
-    <style>
+<style>
       /* Dashboard contrast pass: scoped to this page only. */
       body.user-dashboard-page {
         color: #e2e8f0;
@@ -541,11 +468,6 @@
     </div>
 
     <script src="https://js.paystack.co/v1/inline.js" defer></script>
-    <script src="/assets/auth-back.js?v=20260405a" defer></script>
-    <script src="/assets/student-device-id.js?v=20260411a" defer></script>
-    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
-    <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
-    <script src="/assets/installments.js?v=20260614-course-labels" defer></script>
+    <script src="/assets/bundles/bundle-f95979a7f434.min.js" defer></script>
   </body>
 </html>

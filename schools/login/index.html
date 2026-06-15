@@ -12,35 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              heading: ["Manrope", "sans-serif"],
-              mono: ["Fira Code", "monospace"],
-            },
-            colors: {
-              brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#ccd3e6",
-                300: "#99a9cc",
-                400: "#667eb2",
-                500: "#22345f",
-                600: "#1a2849",
-                700: "#14213d",
-                800: "#0f182d",
-                900: "#0f1a33",
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <style>
+<style>
       [hidden] { display: none !important; }
       
       /* Ambient Deep Space Elements */
@@ -77,23 +49,7 @@
         color: #fff !important;
       }
     </style>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .glass-card {
-          @apply bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] transition-all duration-300;
-        }
-        .tw-input { 
-          @apply mt-2 block w-full rounded-xl border border-white/10 py-3.5 px-4 text-white bg-[#060b14]/50 shadow-inner transition-all duration-300 placeholder:text-slate-500 hover:border-white/20 hover:bg-[#060b14]/80 focus:bg-[#060b14] focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 sm:text-sm sm:leading-6 outline-none backdrop-blur-sm; 
-        }
-        .tw-label { 
-          @apply block text-sm font-bold leading-6 text-slate-300 mb-1; 
-        }
-        .tw-btn-primary { 
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] hover:-translate-y-0.5 border-none cursor-pointer; 
-        }
-      }
-    </style>
-  </head>
+</head>
   <body class="bg-[#060b14] text-slate-300 font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-amber-500 selection:text-white flex flex-col items-center justify-center">
     
     <div class="ambient-glow-1"></div>
@@ -223,10 +179,6 @@
       </div>
     </main>
     
-    <script src="/assets/auth-back.js?v=20260405a" defer></script>
-    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
-    <script src="/assets/school-login.js?v=20260404a" defer></script>
-    <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/school-register.js?v=20260427b" defer></script>
+    <script src="/assets/bundles/bundle-062243b2e07c.min.js" defer></script>
   </body>
 </html>

@@ -5,13 +5,19 @@
   "type": "commonjs",
   "scripts": {
     "build:blog": "node scripts/build-blog.js",
-    "build": "npm run build:blog",
+    "build:assets": "node scripts/build-assets.js",
+    "build:assets:rewrite": "node scripts/build-assets.js --rewrite-html",
+    "build": "npm run build:blog && npm run build:assets:rewrite",
     "db:migrate": "node scripts/db-migrate.js",
     "db:school-student-codes:backfill": "node scripts/school-student-codes-backfill.js"
   },
   "dependencies": {
     "docx": "^9.6.1",
     "mysql2": "^3.11.3",
-    "nodemailer": "^6.10.1"
+    "nodemailer": "^9.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "tailwindcss": "^3.4.17"
   }
 }

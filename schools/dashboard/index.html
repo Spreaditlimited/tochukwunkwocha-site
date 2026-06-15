@@ -9,27 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              heading: ["Manrope", "sans-serif"],
-              mono: ["Fira Code", "monospace"]
-            },
-            colors: {
-              brand: {
-                50: "#eef2fb", 100: "#dfe7f7", 200: "#ccd3e6", 300: "#99a9cc", 400: "#667eb2",
-                500: "#22345f", 600: "#1a2849", 700: "#14213d", 800: "#0f182d", 900: "#0a101e",
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <style>
+<style>
       [hidden] { display: none !important; }
 
       /* Base Dark Mode Settings for Main Container */
@@ -142,68 +122,7 @@
       }
       #advancedLearnModalBody h4 { color: #fff !important; }
     </style>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        /* Glassmorphic Panel Component */
-        .glass-panel {
-          @apply bg-[#0d1117]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-300;
-        }
-
-        /* Input Overrides */
-        input[type="text"], input[type="email"], input[type="number"], textarea {
-          @apply bg-[#060b14]/50 border-white/10 text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-500/20 transition-all shadow-inner outline-none !important;
-        }
-
-        /* Native File Input Dark Mode Override */
-        input[type="file"] {
-          @apply file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 text-slate-400 cursor-pointer !important;
-        }
-
-        /* Shared Buttons */
-        .btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-sm font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 border-none cursor-pointer;
-        }
-        .btn-outline {
-          @apply inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-6 py-3 text-sm font-bold text-slate-300 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-0.5 cursor-pointer;
-        }
-
-        /* JS Injected Elements Interceptor */
-
-        /* Candidates List */
-        #advancedCandidatesList > div {
-          @apply border-white/5 hover:bg-white/5 text-slate-300 transition-colors !important;
-        }
-
-        /* Table Interceptors */
-        #schoolStudentsRows tr {
-          @apply border-t border-white/5 text-slate-300 font-light hover:bg-white/5 transition-colors !important;
-        }
-        #schoolStudentsRows td {
-          @apply py-4 !important;
-        }
-        #schoolStudentsRows p,
-        #schoolStudentsRows span,
-        #schoolStudentsRows code {
-          @apply text-slate-300 !important;
-        }
-        #schoolStudentsRows p.text-xs,
-        #schoolStudentsRows span.text-slate-400 {
-          @apply text-slate-500 !important;
-        }
-        #schoolStudentsRows a {
-          @apply text-sky-300 hover:text-sky-200 underline !important;
-        }
-        /* Buttons inside table */
-        #schoolStudentsRows button, #schoolStudentsRows a[class*="rounded"] {
-          @apply bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors !important;
-        }
-        /* Status Pills inside table */
-        #schoolStudentsRows span[class*="bg-"] {
-          @apply bg-[#161b22] border border-white/10 text-slate-300 font-mono tracking-widest text-[10px] uppercase rounded px-2 py-1 inline-block !important;
-        }
-      }
-    </style>
-  </head>
+</head>
   <body class="school-dashboard-page bg-[#060b14] text-slate-300 font-sans antialiased selection:bg-blue-500 selection:text-white">
     <section class="school-dashboard-shell flex w-full relative">
       <button id="schoolMobileMenuOverlay" type="button" aria-label="Close menu" class="fixed inset-0 bg-[#060b14]/80 z-40 hidden md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></button>
@@ -467,7 +386,6 @@
       </div>
     </div>
 
-    <script src="/assets/school-nav.js?v=20260614-rail-fix" defer></script>
-    <script src="/assets/school-dashboard.js?v=20260614-dark-shell" defer></script>
+    <script src="/assets/bundles/bundle-7ceb47a92f3f.min.js" defer></script>
   </body>
 </html>

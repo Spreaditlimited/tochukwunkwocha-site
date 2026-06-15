@@ -17,89 +17,7 @@
     />
 
     <link rel="stylesheet" href="/assets/styles.css" />
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          /* CRITICAL: Protects the Navbar and Footer from Tailwind's global reset */
-          preflight: false,
-        },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#1a2849',
-                700: '#14213d',
-                800: '#0f182d',
-                900: '#0a101e',
-              }
-            }
-          }
-        }
-      }
-    </script>
-
-    <style type="text/tailwindcss">
-      /* Scoped reset specifically for the main dashboard area */
-      @layer base {
-        main *, main ::before, main ::after {
-          box-sizing: border-box;
-          border-width: 0;
-          border-style: solid;
-          border-color: #e5e7eb;
-        }
-        main h1, main h2, main h3, main p, main label {
-          margin: 0;
-        }
-      }
-
-      @layer utilities {
-        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Premium Dashboard Components */
-        .premium-card {
-          @apply bg-white rounded-3xl p-6 sm:p-8 shadow-sm ring-1 ring-gray-200/60 transition-shadow hover:shadow-md;
-        }
-
-        .premium-input {
-          @apply block w-full rounded-xl border-0 py-3 px-4 text-gray-900 bg-gray-50 shadow-sm ring-1 ring-inset ring-gray-200 transition-all;
-          @apply placeholder:text-gray-400 hover:ring-gray-300 focus:bg-white focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6;
-        }
-
-        .premium-label {
-          @apply block text-sm font-bold text-gray-700 mb-2;
-        }
-
-        .status-badge {
-          @apply inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-bold ring-1 ring-inset;
-        }
-
-        .dashboard-events-scroll {
-          @apply max-h-[300px] overflow-y-auto pr-2 text-sm text-gray-600 leading-relaxed space-y-3;
-        }
-
-        /* Custom scrollbar for activity feed */
-        .dashboard-events-scroll::-webkit-scrollbar { width: 4px; }
-        .dashboard-events-scroll::-webkit-scrollbar-track { background: transparent; }
-        .dashboard-events-scroll::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
-      }
-    </style>
-    <style>
+<style>
       /* Dashboard mobile footer trim: mirror the overview page behavior. */
       @media (max-width: 767px) {
         body.user-dashboard-page,
@@ -412,9 +330,6 @@
         </main>
       </div>
     </section>
-    <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
-    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
-    <script src="/assets/dashboard-client.js" defer></script>
+    <script src="/assets/bundles/bundle-2c376c293a59.min.js" defer></script>
   </body>
 </html>

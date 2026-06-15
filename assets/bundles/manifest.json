@@ -1,0 +1,219 @@
+{
+  "bundle-ab1b87133569.min.js": [
+    "assets/site.js"
+  ],
+  "bundle-cc4adaaf3d0c.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/contact.js"
+  ],
+  "bundle-4742df36f136.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js"
+  ],
+  "bundle-fb67ed6110aa.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/schools-landing-config.js",
+    "assets/school-readiness-scorecard.js"
+  ],
+  "bundle-a182799a2691.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-affiliate.js"
+  ],
+  "bundle-e762853c7e59.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-business-plans.js"
+  ],
+  "bundle-390bd303a0a7.min.js": [
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-certificate-view.js"
+  ],
+  "bundle-97f46c19b23f.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-courses.js"
+  ],
+  "bundle-ffc82752afdb.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-course-player.js"
+  ],
+  "bundle-ff9f80b69c45.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/password-visibility.js",
+    "assets/dashboard-domains.js",
+    "assets/recaptcha.js",
+    "assets/domain-registration-service.js"
+  ],
+  "bundle-245a7bfa04dd.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/family-dashboard.js"
+  ],
+  "bundle-f95979a7f434.min.js": [
+    "assets/auth-back.js",
+    "assets/student-device-id.js",
+    "assets/password-visibility.js",
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/installments.js"
+  ],
+  "bundle-2c376c293a59.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/password-visibility.js",
+    "assets/dashboard-client.js"
+  ],
+  "bundle-7e56cd25034f.min.js": [
+    "assets/student-sidebar.js",
+    "assets/user-dashboard-shell.js",
+    "assets/dashboard-projects.js"
+  ],
+  "bundle-434fda40a6d3.min.js": [
+    "assets/user-dashboard-shell.js",
+    "assets/student-device-id.js",
+    "assets/password-visibility.js",
+    "assets/dashboard-reset-password.js"
+  ],
+  "bundle-8ddf8a852417.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/enrol-page.js"
+  ],
+  "bundle-fd98e9d4efc8.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-affiliates.js"
+  ],
+  "bundle-4d36b49342e1.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-build-calls.js"
+  ],
+  "bundle-808c09cf8d50.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-build-scorecards.js"
+  ],
+  "bundle-a91a60275e3c.min.js": [
+    "assets/admin-business-plan-manager.js",
+    "assets/password-visibility.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-e9c215122fa7.min.js": [
+    "assets/admin-domain-management.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-715d079e29ee.min.js": [
+    "assets/password-visibility.js",
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-student-security-alerts.js"
+  ],
+  "bundle-066947848140.min.js": [
+    "assets/admin-installments.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-9fa50add0037.min.js": [
+    "assets/admin-leadpage-jobs.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-fb6f4ca8ca04.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-learning-progress.js"
+  ],
+  "bundle-1f30ab623732.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-learning-support.js"
+  ],
+  "bundle-edb3c5710e3e.min.js": [
+    "assets/admin-manual-payments.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-2bc589862d36.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-school-calls.js"
+  ],
+  "bundle-6608f5d3a4d5.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-school-scorecards.js"
+  ],
+  "bundle-6822427d2a49.min.js": [
+    "assets/internal-auth.js",
+    "assets/internal-nav.js",
+    "assets/admin-schools.js"
+  ],
+  "bundle-b2ddf4dcfe6b.min.js": [
+    "assets/admin-tochukwu-settings.js",
+    "assets/admin-coupons.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-d2931e795e41.min.js": [
+    "assets/admin-business-plan-verifier.js",
+    "assets/password-visibility.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-bac75d5c5bb2.min.js": [
+    "assets/admin-video-library.js",
+    "assets/internal-nav.js"
+  ],
+  "bundle-9cc7d81c5323.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/holiday-waitlist.js"
+  ],
+  "bundle-8eb97b326d6e.min.js": [
+    "assets/site.js",
+    "assets/project-public.js"
+  ],
+  "bundle-35083c5f6987.min.js": [
+    "assets/site.js",
+    "assets/school-call-booking.js"
+  ],
+  "bundle-99c50e1c19d8.min.js": [
+    "assets/school-certificate-view.js"
+  ],
+  "bundle-7ceb47a92f3f.min.js": [
+    "assets/school-nav.js",
+    "assets/school-dashboard.js"
+  ],
+  "bundle-062243b2e07c.min.js": [
+    "assets/auth-back.js",
+    "assets/password-visibility.js",
+    "assets/school-login.js",
+    "assets/recaptcha.js",
+    "assets/school-register.js"
+  ],
+  "bundle-b95ac8ee8202.min.js": [
+    "assets/auth-back.js",
+    "assets/school-register.js"
+  ],
+  "bundle-a5a4d07684b0.min.js": [
+    "assets/password-visibility.js",
+    "assets/school-reset-password.js"
+  ],
+  "bundle-aea3237183bc.min.js": [
+    "assets/school-reset-password-request.js"
+  ],
+  "bundle-b9df2060775a.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/business-plan.js"
+  ],
+  "bundle-f7a6b3024bc0.min.js": [
+    "assets/site.js",
+    "assets/recaptcha.js",
+    "assets/domain-registration-service.js"
+  ],
+  "bundle-977cc895412f.min.js": [
+    "assets/leadpage-service.js"
+  ]
+}

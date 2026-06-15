@@ -36,81 +36,7 @@
     />
     
     <link rel="stylesheet" href="/assets/styles.css" />
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          preflight: false,
-        },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#1a2849',
-                700: '#14213d',
-                800: '#0f182d',
-                900: '#0a101e',
-              }
-            }
-          }
-        }
-      }
-    </script>
-    
-    <style type="text/tailwindcss">
-      @layer base {
-        main *, main ::before, main ::after {
-          box-sizing: border-box;
-          border-width: 0;
-          border-style: solid;
-          border-color: rgba(255,255,255,0.1);
-        }
-        main h1, main h2, main h3, main p, main label {
-          margin: 0;
-        }
-      }
-
-      @layer utilities {
-        .reveal { @apply animate-[fadeIn_0.8s_ease-out_forwards]; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .premium-input {
-          @apply block w-full rounded-xl border border-white/10 py-4 px-5 text-white bg-[#0d1117]/60 shadow-inner transition-all duration-300;
-          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#0d1117]/80 focus:bg-[#060b14] focus:border-brand-400 focus:ring-4 focus:ring-brand-500/20 sm:text-sm outline-none backdrop-blur-sm;
-        }
-        
-        .premium-label {
-          @apply block text-sm font-bold text-slate-300 mb-2;
-        }
-
-        .contact-card {
-          @apply bg-[#0d1117]/80 backdrop-blur-xl rounded-[2rem] p-8 border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-500 hover:-translate-y-1 hover:border-white/20 flex items-start gap-5 relative overflow-hidden group;
-        }
-        
-        .picker-wrap { @apply relative; }
-        .picker-wrap__icon { @apply pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400; }
-        
-        select.premium-input option {
-          @apply bg-[#0d1117] text-white py-2;
-        }
-      }
-    </style>
-    <style>
+<style>
       .ambient-glow-1 {
         position: absolute;
         top: 10%;
@@ -750,8 +676,6 @@
 </footer>
 
 
-    <script src="/assets/site.js"></script>
-    <script src="/assets/recaptcha.js"></script>
-    <script src="/assets/contact.js"></script>
+    <script src="/assets/bundles/bundle-cc4adaaf3d0c.min.js"></script>
   </body>
 </html>

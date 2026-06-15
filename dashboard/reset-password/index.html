@@ -8,40 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { 
-              sans: ['Inter', 'sans-serif'], 
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace']
-            },
-            colors: { 
-              brand: { 
-                500: '#22345f', 
-                600: '#1a2849', 
-                700: '#14213d',
-                400: '#667eb2' 
-              } 
-            }
-          }
-        }
-      };
-    </script>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .premium-input {
-          @apply block w-full rounded-xl border border-white/10 py-3.5 px-4 text-white bg-[#0d1117]/60 shadow-inner transition-all duration-300;
-          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#0d1117]/80 focus:bg-[#060b14] focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:text-sm outline-none backdrop-blur-sm;
-        }
-        .premium-label {
-          @apply block text-sm font-bold text-slate-300 mb-2;
-        }
-      }
-    </style>
-    <style>
+<style>
       .ambient-glow-1 {
         position: fixed; top: -10%; left: -20%; width: 70%; height: 70%;
         background: rgba(37, 99, 235, 0.15); border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0;
@@ -55,6 +22,7 @@
         background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
       }
     </style>
+      <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body class="bg-[#060b14] text-slate-300 font-sans antialiased min-h-screen flex items-center justify-center p-4 relative overflow-hidden selection:bg-brand-500 selection:text-white">
     
@@ -100,9 +68,6 @@
       </div>
     </section>
 
-    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
-    <script src="/assets/student-device-id.js?v=20260411a" defer></script>
-    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
-    <script src="/assets/dashboard-reset-password.js" defer></script>
+    <script src="/assets/bundles/bundle-434fda40a6d3.min.js" defer></script>
   </body>
 </html>

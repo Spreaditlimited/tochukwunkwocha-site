@@ -9,70 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { sans: ["Inter", "sans-serif"], heading: ["Manrope", "sans-serif"] },
-            colors: {
-              brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#ccd3e6",
-                300: "#99a9cc",
-                400: "#667eb2",
-                500: "#22345f",
-                600: "#1a2849",
-                700: "#14213d",
-                800: "#0f182d",
-                900: "#0a101e",
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        body.modal-open {
-          overflow: hidden;
-        }
-        .picker-wrap {
-          @apply relative;
-        }
-        .picker-select {
-          @apply block w-full appearance-none rounded-xl border-0 bg-white py-3 pl-4 pr-11 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 transition-all;
-          @apply hover:ring-brand-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-600;
-        }
-        .picker-wrap__icon {
-          @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-600;
-        }
-        .review-modal {
-          @apply fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300;
-        }
-        .review-modal[aria-hidden="true"] {
-          @apply opacity-0 pointer-events-none;
-        }
-        .review-modal[aria-hidden="false"] {
-          @apply opacity-100 pointer-events-auto;
-        }
-        .review-modal__backdrop {
-          @apply absolute inset-0 bg-gray-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default;
-        }
-        .review-modal__panel {
-          @apply relative bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 sm:p-8 transform transition-transform duration-300 mx-4;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-        .review-modal[aria-hidden="true"] .review-modal__panel {
-          @apply translate-y-4 scale-95;
-        }
-        .review-modal[aria-hidden="false"] .review-modal__panel {
-          @apply translate-y-0 scale-100;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden">
     <section class="flex h-full w-full">
@@ -237,8 +174,6 @@
       </div>
     </div>
 
-    <script src="/assets/internal-auth.js" defer></script>
-    <script src="/assets/internal-nav.js?v=20260509e" defer></script>
-    <script src="/assets/admin-school-calls.js?v=20260507a" defer></script>
+    <script src="/assets/bundles/bundle-2bc589862d36.min.js" defer></script>
   </body>
 </html>

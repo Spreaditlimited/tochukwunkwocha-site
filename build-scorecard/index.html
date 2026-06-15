@@ -8,73 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#1a2849',
-                700: '#14213d',
-                800: '#0f182d',
-                900: '#0a101e',
-              }
-            }
-          }
-        }
-      }
-    </script>
-
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .input-premium {
-          @apply block w-full rounded-xl border border-white/10 py-4 px-5 text-white bg-[#060b14]/50 shadow-inner transition-all duration-300;
-          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#060b14]/80 focus:bg-[#060b14] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 sm:text-sm outline-none backdrop-blur-sm;
-        }
-
-        .radio-card-body {
-          @apply flex items-center p-5 rounded-xl border border-white/10 bg-white/5 transition-all duration-300 hover:bg-white/10 hover:border-white/20 cursor-pointer;
-        }
-
-        .radio-indicator {
-          @apply h-5 w-5 rounded-full border-2 border-slate-600 mr-4 flex-shrink-0 transition-all duration-300;
-        }
-
-        /* Active Radio States */
-        .radio-card-input:checked + .radio-card-body {
-          @apply border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.15)];
-        }
-        .radio-card-input:checked + .radio-card-body .radio-indicator {
-          @apply bg-emerald-400 border-emerald-400 shadow-[0_0_8px_#34d399];
-        }
-        .radio-card-input:focus-visible + .radio-card-body {
-          @apply outline outline-2 outline-emerald-400 outline-offset-2;
-        }
-
-        .btn-primary {
-          @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-8 py-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] hover:-translate-y-0.5 focus:outline-none border-none;
-        }
-        
-        .btn-outline {
-          @apply inline-flex items-center justify-center text-sm font-bold text-slate-400 transition-colors duration-300 hover:text-white;
-        }
-      }
-    </style>
-
-    <style>
+<style>
       body {
         background: #060b14;
         color: #cbd5e1;
@@ -99,6 +33,7 @@
         transform: translateY(0);
       }
     </style>
+      <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body class="font-sans antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
 

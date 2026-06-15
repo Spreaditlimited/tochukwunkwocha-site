@@ -35,60 +35,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          preflight: false,
-        },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              heading: ["Manrope", "sans-serif"],
-              mono: ["Fira Code", "monospace"],
-            },
-            colors: {
-              brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#c7d6f1",
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: "#22345f",
-                600: "#14213d",
-                700: '#14213d',
-                800: '#0f182d',
-                900: "#0f1a33",
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <style type="text/tailwindcss">
-      @layer utilities {
-        .premium-input {
-          @apply block w-full rounded-xl border border-white/10 py-4 px-5 text-white bg-[#060b14]/50 shadow-inner transition-all duration-300;
-          @apply placeholder:text-slate-500 hover:border-white/20 hover:bg-[#060b14]/80 focus:bg-[#060b14] focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 sm:text-sm outline-none backdrop-blur-sm;
-        }
-        
-        .premium-select {
-          @apply appearance-none cursor-pointer pr-10;
-          background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
-          background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
-          background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
-        }
-        .premium-select option {
-          @apply bg-[#0d1117] text-white py-2;
-        }
-
-        .glass-card {
-          @apply bg-[#0d1117]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 sm:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.5)];
-        }
-      }
-    </style>
-    <style>
+<style>
       /* Fix to eliminate the light background strip between dark main content and the footer */
       body { background-color: #060b14; color: #cbd5e1; }
       main { margin-bottom: 0 !important; padding-bottom: 0 !important; }
@@ -362,8 +309,6 @@
   </div>
 </footer>
 
-    <script src="/assets/site.js" defer></script>
-    <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/domain-registration-service.js" defer></script>
+    <script src="/assets/bundles/bundle-f7a6b3024bc0.min.js" defer></script>
   </body>
 </html>

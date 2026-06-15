@@ -25,6 +25,8 @@
   const registerBtn = document.getElementById("domainRegisterBtn");
   const customerStatusEl = document.getElementById("domainCustomerStatus");
   const unsupportedTlds = new Set(["ng", "com.ng"]);
+  const suggestDefaultLabel = "AI Suggest";
+  const checkDefaultLabel = "Search";
   const COUNTRY_PHONE_OPTIONS = [
     { country: "NG", name: "Nigeria", phoneCc: "234" },
     { country: "GH", name: "Ghana", phoneCc: "233" },
@@ -326,6 +328,30 @@
     return json;
   }
 
+  function setDomainActionBusy(button, busy, label) {
+    if (!button) return;
+    button.disabled = busy === true;
+    if (busy) {
+      button.setAttribute("aria-busy", "true");
+      button.textContent = label || "Working...";
+    } else {
+      button.removeAttribute("aria-busy");
+      button.textContent = button === suggestBtn ? suggestDefaultLabel : checkDefaultLabel;
+    }
+  }
+
+  function setDomainActionsLocked(locked) {
+    [suggestBtn, checkBtn].forEach(function (button) {
+      if (!button) return;
+      if (locked) {
+        button.disabled = true;
+      } else {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+      }
+    });
+  }
+
   function scrollToResultsArea() {
     const target = suggestionsEl || statusEl;
     if (!target || typeof target.scrollIntoView !== "function") return;
@@ -449,8 +475,8 @@
         setStatus(".ng extensions are currently not supported.", false);
         return;
       }
-      suggestBtn.disabled = true;
-      suggestBtn.textContent = "Suggesting...";
+      setDomainActionsLocked(true);
+      setDomainActionBusy(suggestBtn, true, "Suggesting...");
       try {
         const json = await request("/.netlify/functions/domain-suggest", {
           method: "POST",
@@ -471,8 +497,8 @@
       } catch (error) {
         setStatus(error.message || "Could not suggest domains", false);
       } finally {
-        suggestBtn.disabled = false;
-        suggestBtn.textContent = "Suggest";
+        setDomainActionBusy(suggestBtn, false);
+        setDomainActionsLocked(false);
         scrollToResultsArea();
       }
     });
@@ -492,8 +518,8 @@
         setStatus(".ng extensions are currently not supported.", false);
         return;
       }
-      checkBtn.disabled = true;
-      checkBtn.textContent = "Checking...";
+      setDomainActionsLocked(true);
+      setDomainActionBusy(checkBtn, true, "Searching...");
       try {
         if (hasExplicitExtension(domainName)) {
           const json = await request("/.netlify/functions/domain-check", {
@@ -516,10 +542,18 @@
       } catch (error) {
         setStatus(error.message || "Could not check domain", false);
       } finally {
-        checkBtn.disabled = false;
-        checkBtn.textContent = "Check";
+        setDomainActionBusy(checkBtn, false);
+        setDomainActionsLocked(false);
         scrollToResultsArea();
       }
+    });
+  }
+
+  if (domainInput && checkBtn) {
+    domainInput.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (!checkBtn.disabled) checkBtn.click();
     });
   }
 

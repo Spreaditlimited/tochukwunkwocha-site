@@ -9,35 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              heading: ["Manrope", "sans-serif"],
-              mono: ["Fira Code", "monospace"],
-            },
-            colors: {
-              brand: {
-                50: "#eef2fb",
-                100: "#dfe7f7",
-                200: "#ccd3e6",
-                300: "#99a9cc",
-                400: "#667eb2",
-                500: "#22345f",
-                600: "#14213d",
-                700: "#14213d",
-                800: "#0f182d",
-                900: "#0a101e",
-              },
-            },
-          },
-        },
-      };
-    </script>
-    <style>
+<style>
       [hidden] { display: none !important; }
       :root {
         --domains-card-bg: #0d1117;
@@ -300,11 +272,11 @@
                 <h3 class="text-2xl font-heading font-bold text-white">Search and register a new domain</h3>
               </div>
 
-              <div class="flex flex-col gap-4 sm:flex-row items-stretch">
-                <input id="domainInput" type="text" class="premium-input font-mono !py-4 flex-1" placeholder="Type domain (e.g., yourbrand.com)" />
-                <div class="flex gap-3">
-                  <button id="domainSuggestBtn" type="button" class="btn-outline flex-1 sm:flex-none">AI Suggest</button>
-                  <button id="domainCheckBtn" type="button" class="btn-primary flex-1 sm:flex-none">Search</button>
+              <div class="domain-search-row flex flex-col gap-4 md:flex-row md:items-stretch">
+                <input id="domainInput" type="text" class="premium-input domain-search-input font-mono !py-4" placeholder="Type domain (e.g., yourbrand.com)" />
+                <div class="domain-search-actions grid grid-cols-2 gap-3 md:flex md:flex-none">
+                  <button id="domainSuggestBtn" type="button" class="btn-outline domain-search-button">AI Suggest</button>
+                  <button id="domainCheckBtn" type="button" class="btn-primary domain-search-button">Search</button>
                 </div>
               </div>
               <p class="mt-3 text-[11px] font-mono text-slate-500 uppercase tracking-widest">Supported extensions currently: .com, .net, .org, .io, .co</p>
@@ -436,11 +408,6 @@
         </main>
       </div>
     </section>
-    <script src="/assets/student-sidebar.js?v=20260609-group-enrollment" defer></script>
-    <script src="/assets/user-dashboard-shell.js?v=20260614-dashboard-bg" defer></script>
-    <script src="/assets/password-visibility.js?v=20260410a" defer></script>
-    <script src="/assets/dashboard-domains.js?v=20260614-dark-domains" defer></script>
-    <script src="/assets/recaptcha.js" defer></script>
-    <script src="/assets/domain-registration-service.js" defer></script>
+    <script src="/assets/bundles/bundle-ff9f80b69c45.min.js" defer></script>
   </body>
 </html>

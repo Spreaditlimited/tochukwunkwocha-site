@@ -36,82 +36,7 @@
     />
     
     <link rel="stylesheet" href="/assets/styles.css" />
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          preflight: false,
-        },
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Manrope', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#eef2fb',
-                100: '#dfe7f7',
-                200: '#ccd3e6',
-                300: '#99a9cc',
-                400: '#667eb2',
-                500: '#22345f',
-                600: '#14213d',
-                900: '#0f1a33',
-              }
-            }
-          }
-        }
-      }
-    </script>
-    
-    <style type="text/tailwindcss">
-      @layer base {
-        main *, main ::before, main ::after {
-          box-sizing: border-box;
-          border-style: solid;
-          border-width: 0;
-        }
-      }
-      @layer utilities {
-        .reveal {
-          @apply animate-[fadeIn_0.8s_ease-out_forwards];
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      }
-      
-      /* Tech Grid Background */
-      .ambient-grid {
-        position: absolute;
-        inset: 0;
-        background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==');
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      #courseCatalogGrid > article {
-        background: #0d1117 !important;
-        isolation: isolate;
-      }
-
-      #courseCatalogGrid > article:hover {
-        background: #0d1117 !important;
-      }
-
-      #courseCatalogGrid > article > div:first-child[aria-hidden="true"] {
-        opacity: 0.2 !important;
-      }
-
-      #courseCatalogGrid > article:hover > div:first-child[aria-hidden="true"] {
-        opacity: 0.35 !important;
-      }
-    </style>
-  </head>
+</head>
   <body class="bg-[#060b14] text-slate-300 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
     
     <header class="site-header">
@@ -500,6 +425,6 @@
           .catch(function () { return null; });
       })();
     </script>
-    <script src="/assets/site.js"></script>
+    <script src="/assets/bundles/bundle-ab1b87133569.min.js"></script>
   </body>
 </html>

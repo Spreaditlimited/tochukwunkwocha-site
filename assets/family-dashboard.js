@@ -128,11 +128,11 @@
       return '<option value="' + escapeHtml(option.batchKey) + '">' + escapeHtml(option.batchLabel || option.batchKey) + (option.batchStartText ? " - Starts " + escapeHtml(option.batchStartText) : "") + escapeHtml(remaining) + "</option>";
     }).join("");
     return [
-      '<div class="mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3" data-family-batch-switch-wrap>',
+      '<div class="family-batch-switch-panel mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3" data-family-batch-switch-wrap>',
       '<p class="text-xs font-bold uppercase tracking-wide text-amber-100">Change Batch</p>',
       '<div class="mt-2 flex flex-col gap-2 sm:flex-row">',
-      '<select id="' + escapeHtml(id) + '" data-family-batch-switch-select class="picker-select text-xs">' + options + "</select>",
-      '<button type="button" data-family-batch-switch-submit data-source-type="' + escapeHtml(sw.sourceType) + '" data-source-id="' + escapeHtml(sw.sourceId) + '" data-select-id="' + escapeHtml(id) + '" class="inline-flex items-center justify-center rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600">Change</button>',
+      '<select id="' + escapeHtml(id) + '" data-family-batch-switch-select class="picker-select family-batch-switch-select text-xs">' + options + "</select>",
+      '<button type="button" data-family-batch-switch-submit data-source-type="' + escapeHtml(sw.sourceType) + '" data-source-id="' + escapeHtml(sw.sourceId) + '" data-select-id="' + escapeHtml(id) + '" class="batch-switch-button">Change</button>',
       "</div>",
       '<p data-family-batch-switch-status class="mt-2 text-xs text-amber-100/80"></p>',
       "</div>",
