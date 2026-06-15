@@ -266,7 +266,7 @@
         backdrop-filter: blur(12px);
       }
 
-      body.contact-page main .grid {
+      body.contact-page main .contact-layout {
         display: grid;
         grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
         gap: 4rem;
@@ -310,7 +310,7 @@
         color: #d8b4fe;
       }
 
-      body.contact-page main .lg\:col-span-7 > div {
+      body.contact-page main .contact-form-column > div {
         position: relative;
         overflow: hidden;
         border-radius: 2rem;
@@ -320,7 +320,7 @@
         box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
       }
 
-      body.contact-page main .lg\:col-span-7 > div::before {
+      body.contact-page main .contact-form-column > div::before {
         content: "";
         position: absolute;
         top: 0;
@@ -330,7 +330,7 @@
         background: linear-gradient(90deg, #667eb2, #a855f7, #22345f);
       }
 
-      body.contact-page main .lg\:col-span-7 h3 {
+      body.contact-page main .contact-form-column h3 {
         margin: 0 0 2rem;
       }
 
@@ -453,7 +453,7 @@
           padding: 3.5rem 0 5rem;
         }
 
-        body.contact-page main .grid,
+        body.contact-page main .contact-layout,
         body.contact-page main form .grid {
           grid-template-columns: 1fr;
         }
@@ -469,7 +469,7 @@
           padding: 3rem 0 4rem;
         }
 
-        body.contact-page main .lg\:col-span-7 > div {
+        body.contact-page main .contact-form-column > div {
           border-radius: 1.25rem;
           padding: 1.5rem;
         }
@@ -522,9 +522,9 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start reveal">
+        <div class="contact-layout grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start reveal">
           
-          <div class="hidden lg:col-span-5 lg:block space-y-6">
+          <div class="contact-details-column hidden lg:block space-y-6">
             
             <div class="contact-card">
               <div class="absolute -inset-0.5 bg-gradient-to-br from-indigo-500/20 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md -z-10"></div>
@@ -573,7 +573,7 @@
 
           </div>
 
-          <div class="lg:col-span-7">
+          <div class="contact-form-column">
             <div class="bg-gradient-to-br from-[#161b22] to-[#0a0f1e] rounded-[2.5rem] p-8 sm:p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] border border-white/10 relative overflow-hidden group/form">
               <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-400 via-purple-500 to-brand-600"></div>
               
