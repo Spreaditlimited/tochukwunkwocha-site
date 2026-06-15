@@ -1,7 +1,7 @@
 module.exports = {
   content: [
     "./*.html",
-    "./**/*.html",
+    "./{blog,build,build-scorecard,contact,courses,dashboard,enrol-ai-for-everyday-business-owners,enrol-prompt-to-production,enrol-prompt-to-profit,enrol-prompt-to-profit-holiday,internal,join-holiday-waitlist,privacy-policy,projects,schools,services,terms-and-conditions}/**/*.html",
     "./assets/**/*.js",
     "./assets/tailwind-inline.css",
   ],
