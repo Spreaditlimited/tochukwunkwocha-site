@@ -32,6 +32,56 @@
       #faq h3[role="button"] { justify-content: space-between; gap: 16px; transition: color 0.3s; }
       #faq h3[role="button"]::after { content: "+"; font-size: 1.5rem; line-height: 1; color: #60a5fa; transition: transform 0.3s ease, color 0.3s ease; font-weight: 400; }
       #faq h3[role="button"][aria-expanded="true"]::after { content: "−"; color: #ffffff; }
+
+      /* Advanced page contrast fixes */
+      body.public-page--prompt-to-production main {
+        color: #dbeafe;
+      }
+
+      body.public-page--prompt-to-production .reveal {
+        opacity: 1;
+        transform: none;
+      }
+
+      body.public-page--prompt-to-production main .tw-h2,
+      body.public-page--prompt-to-production main h2,
+      body.public-page--prompt-to-production main h3,
+      body.public-page--prompt-to-production main h4 {
+        color: #f8fafc;
+      }
+
+      body.public-page--prompt-to-production main .tw-section-label {
+        border-color: rgba(96, 165, 250, 0.42);
+        background: rgba(59, 130, 246, 0.16);
+        color: #bfdbfe;
+      }
+
+      body.public-page--prompt-to-production main .text-slate-300 {
+        color: #e2e8f0 !important;
+      }
+
+      body.public-page--prompt-to-production main .text-slate-400 {
+        color: #cbd5e1 !important;
+      }
+
+      body.public-page--prompt-to-production main .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+
+      body.public-page--prompt-to-production main .glass-card {
+        background: rgba(13, 17, 23, 0.92);
+        border-color: rgba(255, 255, 255, 0.16);
+        box-shadow: 0 24px 56px -18px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+
+      body.public-page--prompt-to-production main .glass-card p,
+      body.public-page--prompt-to-production main #faq article div {
+        color: #cbd5e1;
+      }
+
+      body.public-page--prompt-to-production main .glass-card:hover {
+        border-color: rgba(147, 197, 253, 0.38);
+      }
     </style>
   </head>
   <body class="public-page--prompt-to-production bg-[#f8f6f1] font-sans antialiased min-h-screen flex flex-col text-gray-900">

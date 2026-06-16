@@ -504,15 +504,22 @@
       }
       
       /* Ambient Backgrounds */
+      html {
+        background: #060b14;
+      }
       body.bg-\[\#060b14\] {
-        background-color: #060b14 !important;
+        background: #060b14 !important;
+      }
+      body.bg-\[\#060b14\] main {
+        background: #060b14;
+        isolation: isolate;
       }
       .ambient-glow-1 {
-        position: absolute;
-        top: -10%;
-        left: -10%;
-        width: 50%;
-        height: 50%;
+        position: fixed;
+        top: -12vh;
+        left: -10vw;
+        width: min(50vw, 720px);
+        height: min(50vh, 540px);
         background: rgba(37, 99, 235, 0.15);
         border-radius: 50%;
         filter: blur(120px);
@@ -520,11 +527,11 @@
         z-index: 0;
       }
       .ambient-glow-2 {
-        position: absolute;
-        bottom: 20%;
-        right: -10%;
-        width: 60%;
-        height: 40%;
+        position: fixed;
+        bottom: 12vh;
+        right: -12vw;
+        width: min(60vw, 860px);
+        height: min(42vh, 520px);
         background: rgba(124, 58, 237, 0.1);
         border-radius: 50%;
         filter: blur(150px);
@@ -532,7 +539,7 @@
         z-index: 0;
       }
       .tech-grid {
-        position: absolute;
+        position: fixed;
         inset: 0;
         background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMyIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIvPjwvc3ZnPg==');
         z-index: 0;
