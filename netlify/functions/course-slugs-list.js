@@ -3,6 +3,8 @@ const { getPool } = require("./_lib/db");
 const { listLearningCourses } = require("./_lib/learning");
 const { listCourseConfigs, canonicalizeCourseSlug } = require("./_lib/course-config");
 
+const HIDDEN_PUBLIC_COURSE_SLUGS = new Set(["prompt-to-profit-holiday"]);
+
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 220);
 }
@@ -25,7 +27,7 @@ exports.handler = async function (event) {
         const label = clean(course && course.course_title, 220);
         return { slug: slug, label: label || slug };
       })
-      .filter(function (item) { return !!item.slug; });
+      .filter(function (item) { return !!item.slug && !HIDDEN_PUBLIC_COURSE_SLUGS.has(item.slug); });
 
     const configuredItems = (listCourseConfigs() || [])
       .map(function (cfg) {
@@ -33,7 +35,7 @@ exports.handler = async function (event) {
         const label = clean(cfg && cfg.name, 220);
         return { slug: slug, label: label || slug };
       })
-      .filter(function (item) { return !!item.slug; });
+      .filter(function (item) { return !!item.slug && !HIDDEN_PUBLIC_COURSE_SLUGS.has(item.slug); });
 
     const merged = new Map();
     configuredItems.forEach(function (item) {
@@ -52,4 +54,3 @@ exports.handler = async function (event) {
     return json(500, { ok: false, error: error.message || "Could not list courses." });
   }
 };
-

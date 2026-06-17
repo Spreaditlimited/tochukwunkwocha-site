@@ -8,18 +8,8 @@
   const COURSE_DURATION_DAYS = {
     "prompt-to-profit": 5,
   };
+  const HIDDEN_DISCOVERY_COURSE_SLUGS = new Set(["prompt-to-profit-holiday"]);
   const DEFAULT_COURSE_CATALOG = [
-    {
-      slug: "prompt-to-profit-holiday",
-      name: "Prompt to Profit Holiday",
-      subtitle: "A beginner-friendly summer cohort for students and young builders to use AI to create real websites and digital projects.",
-      href: "/courses/prompt-to-profit-holiday/",
-      theme: {
-        card: "bg-gradient-to-br from-[#eef4ff] via-[#f5f9ff] to-[#ffffff] ring-[#bfdbfe]",
-        badge: "bg-[#dbeafe] text-[#1d4ed8]",
-        button: "bg-[#1d4ed8] text-white hover:bg-[#1e40af]",
-      },
-    },
     {
       slug: "prompt-to-profit",
       name: "Prompt to Profit",
@@ -221,6 +211,7 @@
         const slug = normalizeSlug(item && item.slug);
         const name = String(item && item.label || "").trim() || prettifySlug(slug);
         if (!slug) return null;
+        if (HIDDEN_DISCOVERY_COURSE_SLUGS.has(slug)) return null;
         const existing = DEFAULT_COURSE_CATALOG.find(function (row) {
           return normalizeSlug(row.slug) === slug;
         });

@@ -35,8 +35,51 @@
 
 [[redirects]]
   from = "/courses/prompt-to-profit-kids/"
-  to = "/courses/prompt-to-profit-children/"
+  to = "/courses/prompt-to-profit"
   status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-kids"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-children/"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-children"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-for-job-seekers/"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-for-job-seekers"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-holiday/"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/courses/prompt-to-profit-holiday"
+  to = "/courses/prompt-to-profit"
+  status = 301
+  force = true
 
 [[headers]]
   for = "/*"

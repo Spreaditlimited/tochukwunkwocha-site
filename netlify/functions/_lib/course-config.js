@@ -34,7 +34,7 @@ const COURSE_CONFIGS = {
   "prompt-to-profit-holiday": {
     slug: "prompt-to-profit-holiday",
     name: "Prompt to Profit Holiday",
-    landingPath: "/courses/prompt-to-profit-holiday",
+    landingPath: "/courses/prompt-to-profit",
     defaultBatchKey: "ptph-batch-1",
     defaultBatchLabel: "Batch 1",
     defaultPrefix: "PTPH",
