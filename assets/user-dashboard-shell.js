@@ -12,6 +12,86 @@
   var sidebars = [];
   var railToggleButtons = [];
 
+  function normalizePath(pathname) {
+    var path = String(pathname || "/").trim();
+    if (!path) return "/";
+    return path.endsWith("/") ? path : path + "/";
+  }
+
+  function isProtectedDashboardPath() {
+    var path = normalizePath(window.location.pathname);
+    if (path.indexOf("/dashboard/") !== 0) return false;
+    if (path === "/dashboard/login/") return false;
+    if (path === "/dashboard/reset-password/") return false;
+    if (path === "/dashboard/project/") {
+      var query = new URLSearchParams(window.location.search || "");
+      return !(String(query.get("job_uuid") || "").trim() && String(query.get("access") || "").trim());
+    }
+    return true;
+  }
+
+  function dashboardLoginUrl() {
+    return "/dashboard/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+  }
+
+  function redirectToDashboardLogin() {
+    window.location.replace(dashboardLoginUrl());
+  }
+
+  window.tochukwuDashboardAuthRedirect = redirectToDashboardLogin;
+
+  function readSignoutMarker() {
+    try {
+      return sessionStorage.getItem(SIGNOUT_MARKER_KEY) === "1";
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function installAuthPendingStyle() {
+    if (!document || !document.head || document.getElementById("dashboard-auth-pending-style")) return;
+    var style = document.createElement("style");
+    style.id = "dashboard-auth-pending-style";
+    style.textContent = 'html[data-dashboard-auth-pending="1"] body.user-dashboard-page { visibility: hidden !important; }';
+    document.head.appendChild(style);
+  }
+
+  function protectDashboardRoute() {
+    if (!isProtectedDashboardPath()) return;
+    installAuthPendingStyle();
+    document.documentElement.setAttribute("data-dashboard-auth-pending", "1");
+
+    if (readSignoutMarker()) {
+      redirectToDashboardLogin();
+      return;
+    }
+
+    fetch("/.netlify/functions/user-session", {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Unauthorized");
+        return response.json().catch(function () {
+          return null;
+        });
+      })
+      .then(function (json) {
+        if (!json || json.ok !== true || !json.account) throw new Error("Unauthorized");
+        document.documentElement.removeAttribute("data-dashboard-auth-pending");
+      })
+      .catch(function () {
+        redirectToDashboardLogin();
+      });
+  }
+
+  window.addEventListener("pageshow", function () {
+    if (isProtectedDashboardPath() && readSignoutMarker()) {
+      redirectToDashboardLogin();
+    }
+  });
+
   function injectHiddenScrollbarStyles() {
     if (!document || !document.head) return;
     if (document.getElementById("tochukwu-user-scrollbar-style")) return;
@@ -103,12 +183,6 @@
 
     document.head.appendChild(style);
     document.body.classList.add("tochukwu-hide-scrollbars");
-  }
-
-  function normalizePath(pathname) {
-    var path = String(pathname || "/").trim();
-    if (!path) return "/";
-    return path.endsWith("/") ? path : path + "/";
   }
 
   function getPathFromHref(rawHref) {
@@ -361,9 +435,10 @@
       sessionStorage.setItem(SIGNOUT_MARKER_KEY, "1");
     } catch (_error) {}
 
-    window.location.href = "/dashboard/";
+    window.location.href = "/dashboard/login/";
   }
 
+  protectDashboardRoute();
   injectHiddenScrollbarStyles();
 
   sidebars = Array.prototype.slice.call(document.querySelectorAll("aside")).filter(function (aside) {
@@ -437,7 +512,7 @@
         navLock = false;
         button.disabled = false;
         button.style.opacity = "1";
-        window.location.href = "/dashboard/";
+        window.location.href = "/dashboard/login/";
       });
     });
   });

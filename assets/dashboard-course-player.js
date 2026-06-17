@@ -1240,6 +1240,10 @@
     var data = await response.json().catch(function () {
       return null;
     });
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = "/dashboard/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+      throw new Error("Unauthorized");
+    }
     if (!response.ok || !data || data.ok !== true) {
       throw new Error((data && data.error) || "Request failed");
     }

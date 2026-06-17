@@ -48,6 +48,11 @@
       [role="tablist"] button[aria-selected="false"]:hover {
         color: #fff !important;
       }
+      @media (max-width: 760px) {
+        #schoolGuestStack {
+          padding-top: env(safe-area-inset-top, 0px);
+        }
+      }
     </style>
 </head>
   <body class="bg-[#060b14] text-slate-300 font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-amber-500 selection:text-white flex flex-col items-center justify-center">
@@ -56,19 +61,21 @@
     <div class="ambient-glow-2"></div>
     <div class="tech-grid"></div>
 
-    <main class="w-full p-4 sm:p-6 lg:p-8 relative z-10 flex-1 flex items-center justify-center">
-      <div id="schoolGuestStack" class="w-full max-w-2xl mx-auto space-y-6">
+    <main class="w-full p-4 sm:p-6 lg:p-10 relative z-10 flex-1 flex items-start justify-center">
+      <div id="schoolGuestStack" class="w-full max-w-2xl mx-auto space-y-8">
         
-        <button
-          type="button"
-          data-auth-back
-          aria-label="Go back"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-all duration-300 hover:bg-white/10 hover:text-white hover:-translate-y-0.5"
-        >
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
+        <div class="flex justify-center">
+          <a
+            href="/"
+            aria-label="Back to Home"
+            class="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 transition-colors hover:text-white"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
+            </svg>
+            <span>Back to Home</span>
+          </a>
+        </div>
 
         <section class="glass-card p-6 sm:p-10 relative overflow-hidden group">
           <div class="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-50 z-0"></div>

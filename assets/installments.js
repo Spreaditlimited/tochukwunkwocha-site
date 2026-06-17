@@ -1359,7 +1359,8 @@
       });
     })
     .catch(function () {
-      setWalletState(false);
+      const next = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+      window.location.href = "/dashboard/login/?next=" + next;
       return null;
     });
   setAuthView("signin");

@@ -708,6 +708,10 @@
       const json = await res.json().catch(function () {
         return null;
       });
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = "/dashboard/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+        return;
+      }
       if (!res.ok || !json || !json.ok) {
         throw new Error((json && json.error) || "Could not load courses");
       }

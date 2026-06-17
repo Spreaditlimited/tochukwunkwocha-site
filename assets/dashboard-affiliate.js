@@ -256,7 +256,7 @@
     });
     var json = await res.json().catch(function () { return null; });
     if (res.status === 401) {
-      window.location.href = "/dashboard/";
+      window.location.href = "/dashboard/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
       return;
     }
     if (!res.ok || !json || !json.ok) {

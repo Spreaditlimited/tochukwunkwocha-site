@@ -796,7 +796,7 @@
     .catch(function (error) {
       setVisible(loadingEl, false);
       if (error && error.status === 401) {
-        window.location.href = "/dashboard/?next=/dashboard/family/";
+        window.location.href = "/dashboard/login/?next=" + encodeURIComponent("/dashboard/family/");
         return;
       }
       if (errorEl) {

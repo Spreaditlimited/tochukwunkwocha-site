@@ -215,5 +215,10 @@
   ],
   "bundle-977cc895412f.min.js": [
     "assets/leadpage-service.js"
+  ],
+  "bundle-006fac8e5101.min.js": [
+    "assets/auth-back.js",
+    "assets/password-visibility.js",
+    "assets/dashboard-login.js"
   ]
 }
