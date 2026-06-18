@@ -192,6 +192,25 @@
     lead: null,
     submission: { ok: false, message: "" },
   };
+  var currentScreen = "landing";
+  var suppressWizardHistory = false;
+
+  function scorecardIsOpen() {
+    return document.body.classList.contains("scorecard-mode");
+  }
+
+  function wizardHistoryState() {
+    return {
+      schoolScorecardOpen: scorecardIsOpen(),
+      screen: currentScreen,
+      index: state.currentIndex,
+    };
+  }
+
+  function updateWizardHistory(mode) {
+    if (suppressWizardHistory || !window.history || !window.history[mode]) return;
+    window.history[mode](wizardHistoryState(), "", window.location.href);
+  }
 
   function setStatusText(el, message, tone) {
     if (!el) return;
@@ -264,11 +283,16 @@
     }
   }
 
-  function showScreen(name) {
+  function showScreen(name, options) {
+    var opts = options || {};
     screenIntro.hidden = name !== "intro";
     screenQuestion.hidden = name !== "question";
     screenLead.hidden = name !== "lead";
     screenResult.hidden = name !== "result";
+    currentScreen = name;
+    if (scorecardIsOpen() && opts.history !== false) {
+      updateWizardHistory(opts.replaceHistory ? "replaceState" : "pushState");
+    }
   }
 
   function setScorecardOpenSession(open) {
@@ -320,16 +344,19 @@
       return;
     }
 
-    showScreen("intro");
+    showScreen("intro", { replaceHistory: opts.replaceHistory });
     renderIntro();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function exitScorecard(targetId) {
+  function exitScorecard(targetId, options) {
+    var opts = options || {};
     document.body.classList.remove("scorecard-mode");
     if (landingShell) landingShell.hidden = false;
     if (scorecardShell) scorecardShell.hidden = true;
     setScorecardOpenSession(false);
+    currentScreen = "landing";
+    if (opts.history !== false) updateWizardHistory(opts.replaceHistory ? "replaceState" : "pushState");
 
     if (targetId) {
       var target = document.querySelector(targetId);
@@ -393,6 +420,14 @@
     questionBackBtn.disabled = state.currentIndex === 0;
     questionContinueBtn.disabled = !Number.isInteger(state.answers[state.currentIndex]);
     questionContinueBtn.textContent = state.currentIndex === QUESTIONS.length - 1 ? "Continue" : "Continue";
+  }
+
+  function showQuestionAt(index, options) {
+    var opts = options || {};
+    state.currentIndex = Math.max(0, Math.min(QUESTIONS.length - 1, Number(index) || 0));
+    showScreen("question", { history: false });
+    renderQuestion();
+    if (opts.history !== false) updateWizardHistory(opts.replaceHistory ? "replaceState" : "pushState");
   }
 
   function openLeadScreen() {
@@ -570,10 +605,10 @@
     if (state.currentIndex > 0) {
       state.currentIndex -= 1;
       persistProgress("question");
-      renderQuestion();
+      showQuestionAt(state.currentIndex, { replaceHistory: true });
       return;
     }
-    showScreen("intro");
+    showScreen("intro", { replaceHistory: true });
     renderIntro();
   });
 
@@ -587,7 +622,7 @@
 
     state.currentIndex += 1;
     persistProgress("question");
-    renderQuestion();
+    showQuestionAt(state.currentIndex);
   });
 
   finishLaterBtn.addEventListener("click", function () {
@@ -596,9 +631,7 @@
   });
 
   leadBackBtn.addEventListener("click", function () {
-    showScreen("question");
-    state.currentIndex = QUESTIONS.length - 1;
-    renderQuestion();
+    showQuestionAt(QUESTIONS.length - 1, { replaceHistory: true });
   });
 
   if (leadForm) {
@@ -642,6 +675,42 @@
         exitScorecard(href);
       }
     });
+  });
+
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(wizardHistoryState(), "", window.location.href);
+  }
+
+  window.addEventListener("popstate", function (event) {
+    var historyState = event.state || {};
+    suppressWizardHistory = true;
+
+    if (!historyState.schoolScorecardOpen) {
+      exitScorecard(null, { history: false });
+      suppressWizardHistory = false;
+      return;
+    }
+
+    document.body.classList.add("scorecard-mode");
+    if (landingShell) landingShell.hidden = true;
+    if (scorecardShell) scorecardShell.hidden = false;
+    setScorecardOpenSession(true);
+
+    if (historyState.screen === "question") {
+      showQuestionAt(historyState.index, { history: false });
+    } else if (historyState.screen === "lead") {
+      showScreen("lead", { history: false });
+      setStatusText(leadStatus, "", "idle");
+    } else if (historyState.screen === "result") {
+      showScreen("result", { history: false });
+      renderResultScreen();
+    } else {
+      showScreen("intro", { history: false });
+      renderIntro();
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    suppressWizardHistory = false;
   });
 
   if (window.location.search.indexOf("scorecard=1") > -1) {

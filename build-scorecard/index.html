@@ -9,9 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
+      html,
       body {
-        background: #060b14;
+        background: #060b14 !important;
+      }
+
+      body {
         color: #cbd5e1;
+        padding-top: 0 !important;
+      }
+
+      .build-scorecard-header {
+        display: none !important;
       }
 
       /* Deep Space Backgrounds */
@@ -32,6 +41,110 @@
         opacity: 1;
         transform: translateY(0);
       }
+
+      .build-scorecard-main {
+        width: 100%;
+        min-height: 100dvh;
+        padding: 40px 20px !important;
+        display: grid !important;
+        place-items: center;
+        background: #060b14 !important;
+      }
+
+      .build-scorecard-card {
+        background: rgba(13, 17, 23, 0.8) !important;
+        backdrop-filter: blur(24px);
+        width: 100%;
+        max-width: min(100%, 960px);
+        margin: 0 auto;
+        padding: 64px !important;
+        border-radius: 2rem !important;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.8) !important;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+
+      .build-scorecard-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 48px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 24px;
+      }
+
+      .build-scorecard-top h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-family: "Fira Code", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #34d399;
+      }
+
+      .build-scorecard-frame {
+        width: min(100%, calc(100vw - 40px));
+        max-width: 960px !important;
+      }
+
+      @media (max-width: 768px) {
+        .build-scorecard-main {
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+
+        .build-scorecard-frame {
+          width: 100vw;
+          max-width: none !important;
+        }
+
+        .build-scorecard-card {
+          width: calc(100vw - 2rem);
+          max-width: none;
+          margin-left: auto;
+          margin-right: auto;
+          border-radius: 1.5rem !important;
+          padding: 40px 24px !important;
+        }
+
+        #scorecardForm,
+        .step-container,
+        .step-container > .space-y-6,
+        .step-container > .space-y-10,
+        .input-premium,
+        .radio-card-body {
+          width: 100%;
+          max-width: none;
+        }
+
+        #scorecardForm .grid,
+        #scorecardForm .flex.sm\:flex-row {
+          grid-template-columns: 1fr !important;
+        }
+
+        .build-scorecard-title {
+          font-size: 2rem !important;
+          line-height: 1.15 !important;
+        }
+
+        .build-scorecard-intro-copy {
+          font-size: 1rem !important;
+          line-height: 1.65 !important;
+        }
+
+        .build-scorecard-actions {
+          align-items: stretch !important;
+          flex-direction: column !important;
+          gap: 0.75rem !important;
+        }
+
+        .build-scorecard-actions .btn-primary,
+        .build-scorecard-actions .btn-outline {
+          width: 100%;
+        }
+      }
     </style>
       <link rel="stylesheet" href="/assets/styles.css" />
   </head>
@@ -41,7 +154,7 @@
     <div class="ambient-glow-2"></div>
     <div class="tech-grid"></div>
 
-    <header class="w-full py-6 px-6 lg:px-8 flex items-center justify-between z-20 relative">
+    <header class="build-scorecard-header w-full py-6 px-6 lg:px-8 flex items-center justify-between z-20 relative">
       <a href="/" class="transition hover:opacity-70">
         <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="h-8 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" onerror="this.outerHTML='<span class=\'font-heading font-extrabold text-xl tracking-tight text-white\'>TN<span class=\'text-emerald-400\'>.</span></span>'" />
       </a>
@@ -52,11 +165,18 @@
       <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(16,185,129,0.8)]" style="width: 10%;"></div>
     </div>
 
-    <main class="flex-1 w-full flex items-center justify-center py-12 px-4 sm:px-6 relative z-10">
-      <div class="w-full max-w-3xl">
+    <main class="build-scorecard-main flex-1 w-full flex items-center justify-center py-12 px-4 sm:px-6 relative z-10">
+      <div class="build-scorecard-frame">
         
-        <div class="bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 sm:p-10 lg:p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div class="build-scorecard-card bg-[#0d1117]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 sm:p-10 lg:p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500"></div>
+          <div class="build-scorecard-top">
+            <h4>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Build Scorecard
+            </h4>
+            <a href="/build/" class="btn-outline !px-4 !py-2 !text-xs">Cancel &amp; Exit</a>
+          </div>
 
           <form id="scorecardForm" class="relative" novalidate onsubmit="event.preventDefault(); submitForm();">
             
@@ -65,8 +185,8 @@
                 <span class="mr-2 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
                 Application
               </span>
-              <h1 class="text-4xl sm:text-5xl font-heading font-extrabold text-white tracking-tight mb-6 leading-tight">Let’s Understand What You’re Building.</h1>
-              <p class="text-lg text-slate-400 max-w-lg mx-auto mb-10 font-light">This short scorecard helps determine whether your project fits the Build implementation model.</p>
+              <h1 class="build-scorecard-title text-4xl sm:text-5xl font-heading font-extrabold text-white tracking-tight mb-6 leading-tight">Let’s Understand What You’re Building.</h1>
+              <p class="build-scorecard-intro-copy text-lg text-slate-400 max-w-lg mx-auto mb-10 font-light">This short scorecard helps determine whether your project fits the Build implementation model.</p>
               
               <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs font-mono font-semibold text-slate-500 mb-10 uppercase tracking-widest">
                 <span class="flex items-center gap-2"><svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 3–5 minutes</span>
@@ -107,7 +227,7 @@
                   <input id="websiteUrl" type="url" class="input-premium" placeholder="https://">
                 </div>
               </div>
-              <div class="mt-10 flex justify-end border-t border-white/5 pt-6">
+              <div class="build-scorecard-actions mt-10 flex justify-end border-t border-white/5 pt-6">
                 <button type="button" onclick="nextStep(2)" class="btn-primary">Continue</button>
               </div>
             </div>
@@ -130,7 +250,7 @@
                   <input id="systemUsers" type="text" required class="input-premium" placeholder="Internal staff, external clients, etc.">
                 </div>
               </div>
-              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+              <div class="build-scorecard-actions mt-10 flex justify-between items-center border-t border-white/5 pt-6">
                 <button type="button" onclick="prevStep(1)" class="btn-outline">Back</button>
                 <button type="button" onclick="nextStep(3)" class="btn-primary">Continue</button>
               </div>
@@ -176,7 +296,7 @@
                   </div>
                 </label>
               </div>
-              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+              <div class="build-scorecard-actions mt-10 flex justify-between items-center border-t border-white/5 pt-6">
                 <button type="button" onclick="prevStep(2)" class="btn-outline">Back</button>
                 <button type="button" onclick="nextStep(4)" class="btn-primary">Continue</button>
               </div>
@@ -227,7 +347,7 @@
                   </div>
                 </label>
               </div>
-              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+              <div class="build-scorecard-actions mt-10 flex justify-between items-center border-t border-white/5 pt-6">
                 <button type="button" onclick="prevStep(3)" class="btn-outline">Back</button>
                 <button type="button" onclick="nextStep(5)" class="btn-primary">Continue</button>
               </div>
@@ -275,7 +395,7 @@
 
               </div>
               
-              <div class="mt-10 flex justify-between items-center border-t border-white/5 pt-6">
+              <div class="build-scorecard-actions mt-10 flex justify-between items-center border-t border-white/5 pt-6">
                 <button type="button" onclick="prevStep(4)" class="btn-outline">Back</button>
                 <button type="submit" class="btn-primary w-full sm:w-auto">Submit Scorecard</button>
               </div>
@@ -345,6 +465,34 @@
       let latestPricing = null;
       const DRAFT_KEY = 'build_scorecard_draft_v1';
       const STEP_KEY = 'build_scorecard_step_v1';
+      let suppressWizardHistory = false;
+
+      function currentWizardState() {
+        return { buildScorecardStep: currentStep };
+      }
+
+      function updateWizardHistory(mode) {
+        if (suppressWizardHistory || !window.history || !window.history[mode]) return;
+        window.history[mode](currentWizardState(), '', window.location.href);
+      }
+
+      function renderStep(step) {
+        document.querySelectorAll('.step-container').forEach(el => {
+          el.classList.remove('active');
+        });
+
+        const target = step === 0 ? document.getElementById('introStep') : document.querySelector(`[data-step="${step}"]`);
+        if (!target) return;
+
+        setTimeout(() => {
+          target.classList.add('active');
+        }, 50);
+
+        currentStep = step;
+        updateProgress();
+        saveDraft();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 
       function formatNaira(minor) {
         const amount = (Number(minor || 0) / 100);
@@ -439,13 +587,14 @@
         });
 
         if (Number.isInteger(step) && step >= 0 && step <= totalSteps) {
-          if (step > 0) nextStep(step);
-          else {
-            currentStep = 0;
-            updateProgress();
+            if (step > 0) nextStep(step, { replaceHistory: true, skipValidation: true });
+            else {
+              currentStep = 0;
+              updateProgress();
+              updateWizardHistory('replaceState');
+            }
           }
         }
-      }
 
       function clearDraft() {
         try {
@@ -466,9 +615,10 @@
         document.getElementById('progressBar').style.width = percentage + '%';
       }
 
-      function nextStep(step) {
+      function nextStep(step, options) {
+        const opts = options || {};
         // Basic HTML5 Validation before proceeding
-        if(currentStep > 0) {
+        if(!opts.skipValidation && currentStep > 0) {
           const currentContainer = document.querySelector(`[data-step="${currentStep}"]`);
           const inputs = currentContainer.querySelectorAll('input, textarea');
           let valid = true;
@@ -481,38 +631,23 @@
           if(!valid) return;
         }
 
-        document.querySelectorAll('.step-container').forEach(el => {
-          el.classList.remove('active');
-        });
-        
-        const target = step === 0 ? document.getElementById('introStep') : document.querySelector(`[data-step="${step}"]`);
-        
-        // Timeout to allow display:block to render before opacity transition
-        setTimeout(() => {
-          target.classList.add('active');
-        }, 50);
-        
-        currentStep = step;
-        updateProgress();
-        saveDraft();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        renderStep(step);
+        updateWizardHistory(opts.replaceHistory ? 'replaceState' : 'pushState');
       }
 
-      function prevStep(step) {
-        document.querySelectorAll('.step-container').forEach(el => {
-          el.classList.remove('active');
-        });
-        const target = step === 0 ? document.getElementById('introStep') : document.querySelector(`[data-step="${step}"]`);
-        
-        setTimeout(() => {
-          target.classList.add('active');
-        }, 50);
-        
-        currentStep = step;
-        updateProgress();
-        saveDraft();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      function prevStep(step, options) {
+        const opts = options || {};
+        renderStep(step);
+        updateWizardHistory(opts.replaceHistory ? 'replaceState' : 'pushState');
       }
+
+      window.addEventListener('popstate', function (event) {
+        const state = event.state || {};
+        if (!Number.isInteger(state.buildScorecardStep)) return;
+        suppressWizardHistory = true;
+        renderStep(Math.max(0, Math.min(totalSteps, state.buildScorecardStep)));
+        suppressWizardHistory = false;
+      });
 
       function selectedValue(name) {
         const selected = document.querySelector(`input[name="${name}"]:checked`);
