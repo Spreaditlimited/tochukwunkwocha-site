@@ -6,6 +6,7 @@ const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-s
 const { evaluateCouponForOrder, normalizeCouponCode, ensureCouponsTables } = require("./_lib/coupons");
 const { getCoursePaymentLock } = require("./_lib/course-payment-lock");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
+const { resolveInstallmentPlanPricing } = require("./_lib/installment-pricing");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -19,6 +20,7 @@ exports.handler = async function (event) {
 
   const courseSlug = String(body.courseSlug || "prompt-to-profit").trim().slice(0, 120) || "prompt-to-profit";
   const couponCode = normalizeCouponCode(body.couponCode);
+  const country = String(body.country || "Nigeria").trim().slice(0, 120) || "Nigeria";
 
   const pool = getPool();
   try {
@@ -55,10 +57,8 @@ exports.handler = async function (event) {
     const batch = await resolveCourseBatch(pool, { courseSlug, batchKey: body.batchKey });
     if (!batch) return json(404, { ok: false, error: "Batch not found" });
 
-    const baseAmountMinor = Number(batch.paystack_amount_minor || 0);
-    const rawSurcharge = Number(process.env.INSTALLMENT_SURCHARGE_PERCENT || "20");
-    const surchargePercent = Number.isFinite(rawSurcharge) && rawSurcharge >= 0 ? rawSurcharge : 0;
-    const baseTargetAmountMinor = Math.round(baseAmountMinor * (1 + surchargePercent / 100));
+    const planPricing = resolveInstallmentPlanPricing({ country, courseSlug, batch, learningCourse });
+    const baseTargetAmountMinor = Number(planPricing.targetAmountMinor || 0);
     let discountMinor = 0;
     let finalTargetAmountMinor = baseTargetAmountMinor;
     let couponId = null;
@@ -69,7 +69,7 @@ exports.handler = async function (event) {
         couponCode,
         courseSlug,
         email: session.account.email,
-        currency: "NGN",
+        currency: planPricing.currency,
         baseAmountMinor: baseTargetAmountMinor,
       });
       if (!evaluated.ok) {
@@ -95,6 +95,8 @@ exports.handler = async function (event) {
           courseSlug: existing.course_slug,
           batchKey: existing.batch_key,
           batchLabel: existing.batch_label,
+          country: existing.country || null,
+          provider: existing.provider || (String(existing.currency || "NGN").toUpperCase() === "NGN" ? "paystack" : "stripe"),
           currency: existing.currency,
           baseAmountMinor: Number(existing.base_amount_minor || existing.target_amount_minor || 0),
           discountMinor: Number(existing.discount_minor || 0),
@@ -111,7 +113,9 @@ exports.handler = async function (event) {
       courseSlug,
       batchKey: batch.batch_key,
       batchLabel: batch.batch_label,
-      currency: "NGN",
+      country: planPricing.country || country,
+      provider: planPricing.provider,
+      currency: planPricing.currency,
       targetAmountMinor: finalTargetAmountMinor,
       baseAmountMinor: baseTargetAmountMinor,
       discountMinor: discountMinor,
@@ -127,6 +131,8 @@ exports.handler = async function (event) {
         courseSlug: created.course_slug,
         batchKey: created.batch_key,
         batchLabel: created.batch_label,
+        country: created.country || null,
+        provider: created.provider || planPricing.provider,
         currency: created.currency,
         baseAmountMinor: Number(created.base_amount_minor || created.target_amount_minor || 0),
         discountMinor: Number(created.discount_minor || 0),

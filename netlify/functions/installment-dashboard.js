@@ -26,6 +26,8 @@ exports.handler = async function (event) {
         courseSlug: plan.course_slug,
         batchKey: plan.batch_key,
         batchLabel: plan.batch_label,
+        country: plan.country || null,
+        provider: plan.provider || (String(plan.currency || "NGN").toUpperCase() === "NGN" ? "paystack" : "stripe"),
         currency: plan.currency,
         baseAmountMinor: Number(plan.base_amount_minor || plan.target_amount_minor || 0),
         discountMinor: Number(plan.discount_minor || 0),

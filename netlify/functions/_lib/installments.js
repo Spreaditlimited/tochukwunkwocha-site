@@ -24,6 +24,8 @@ async function ensureInstallmentTables(pool) {
       course_slug VARCHAR(120) NOT NULL,
       batch_key VARCHAR(64) NOT NULL,
       batch_label VARCHAR(120) NOT NULL,
+      country VARCHAR(120) NULL,
+      provider VARCHAR(40) NOT NULL DEFAULT 'paystack',
       currency VARCHAR(12) NOT NULL DEFAULT 'NGN',
       target_amount_minor INT NOT NULL,
       base_amount_minor INT NULL,
@@ -45,6 +47,20 @@ async function ensureInstallmentTables(pool) {
   try {
     await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN base_amount_minor INT NULL`);
     shouldBackfillBaseAmount = true;
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN country VARCHAR(120) NULL`);
+  } catch (_error) {}
+  try {
+    await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN provider VARCHAR(40) NOT NULL DEFAULT 'paystack'`);
+  } catch (_error) {}
+  try {
+    await pool.query(
+      `UPDATE student_installment_plans
+       SET provider = 'stripe'
+       WHERE UPPER(currency) <> 'NGN'
+         AND (provider IS NULL OR provider = '' OR provider = 'paystack')`
+    );
   } catch (_error) {}
   try {
     await pool.query(`ALTER TABLE student_installment_plans ADD COLUMN discount_minor INT NOT NULL DEFAULT 0`);
@@ -103,14 +119,16 @@ async function createInstallmentPlan(pool, input) {
   const planUuid = `ip_${crypto.randomUUID().replace(/-/g, "")}`;
   await pool.query(
     `INSERT INTO student_installment_plans
-      (plan_uuid, account_id, course_slug, batch_key, batch_label, currency, target_amount_minor, base_amount_minor, discount_minor, coupon_code, coupon_id, total_paid_minor, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)`,
+      (plan_uuid, account_id, course_slug, batch_key, batch_label, country, provider, currency, target_amount_minor, base_amount_minor, discount_minor, coupon_code, coupon_id, total_paid_minor, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)`,
     [
       planUuid,
       Number(input.accountId),
       input.courseSlug,
       input.batchKey,
       input.batchLabel,
+      input.country ? String(input.country).trim().slice(0, 120) : null,
+      String(input.provider || "paystack").trim().toLowerCase() || "paystack",
       input.currency || "NGN",
       Number(input.targetAmountMinor || 0),
       Number(input.baseAmountMinor || input.targetAmountMinor || 0),
@@ -311,7 +329,7 @@ async function insertWalletOrder(pool, input) {
     input.fullName,
     input.email,
     input.phone,
-    null,
+    input.country || null,
     input.currency,
     input.amountMinor,
     input.baseAmountMinor,
@@ -343,7 +361,7 @@ async function insertWalletOrder(pool, input) {
       input.courseSlug,
       input.fullName,
       input.email,
-      null,
+      input.country || null,
       input.currency,
       input.amountMinor,
       input.baseAmountMinor,
@@ -378,6 +396,7 @@ async function autoEnrollPlanIfEligible(pool, input) {
             pl.course_slug,
             pl.batch_key,
             pl.batch_label,
+            pl.country,
             pl.currency,
             pl.target_amount_minor,
             pl.total_paid_minor,
@@ -417,6 +436,7 @@ async function autoEnrollPlanIfEligible(pool, input) {
     fullName: plan.full_name || "Student",
     email: plan.email,
     phone: plan.phone_e164,
+    country: plan.country || null,
     currency: plan.currency || "NGN",
     amountMinor: target,
     baseAmountMinor: Number(plan.base_amount_minor || target),

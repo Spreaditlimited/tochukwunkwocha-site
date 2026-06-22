@@ -2,7 +2,9 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { ensureStudentAuthTables, requireStudentSession } = require("./_lib/student-auth");
 const { ensureInstallmentTables, findPlanByUuidForAccount, createInstallmentPayment } = require("./_lib/installments");
-const { paystackInitialize, paystackPublicKey, siteBaseUrl } = require("./_lib/payments");
+const { paystackInitialize, paystackPublicKey, stripeCreateCheckoutSession, siteBaseUrl } = require("./_lib/payments");
+const { getCourseName } = require("./_lib/course-config");
+const { grossUpStripeAmount } = require("./_lib/installment-pricing");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return badMethod();
@@ -33,9 +35,55 @@ exports.handler = async function (event) {
     const remaining = Math.max(0, Number(plan.target_amount_minor || 0) - Number(plan.total_paid_minor || 0));
     const safeAmount = Math.min(amountMinor, remaining > 0 ? remaining : amountMinor);
     if (!Number.isFinite(safeAmount) || safeAmount < 100) return json(400, { ok: false, error: "Amount is too small" });
+    const currency = String(plan.currency || "NGN").trim().toUpperCase() || "NGN";
+    const providerRaw = String(plan.provider || "").trim().toLowerCase();
+    const provider = providerRaw === "stripe" || currency !== "NGN" ? "stripe" : "paystack";
 
     const paymentUuidSeed = planUuid.replace(/[^a-zA-Z0-9]/g, "").slice(-12);
     const reference = `IWP_${paymentUuidSeed}_${Date.now().toString().slice(-8)}`;
+
+    if (provider === "stripe") {
+      const chargeAmountMinor = grossUpStripeAmount(safeAmount, currency);
+      const checkout = await stripeCreateCheckoutSession({
+        email: session.account.email,
+        amountMinor: chargeAmountMinor,
+        currency,
+        courseName: `${getCourseName(plan.course_slug)} installment top-up`,
+        orderUuid: reference,
+        successUrl: `${siteBaseUrl()}/.netlify/functions/stripe-return?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${siteBaseUrl()}/dashboard/?payment=cancelled`,
+        metadata: {
+          payment_scope: "installment",
+          installment_plan_uuid: plan.plan_uuid,
+          account_uuid: session.account.accountUuid,
+          course_slug: plan.course_slug,
+          batch_key: plan.batch_key,
+          net_amount_minor: String(safeAmount),
+          charge_amount_minor: String(chargeAmountMinor),
+          currency,
+        },
+      });
+
+      await createInstallmentPayment(pool, {
+        planId: plan.id,
+        provider: "stripe",
+        providerReference: checkout.providerReference,
+        providerOrderId: checkout.providerOrderId || null,
+        currency,
+        amountMinor: safeAmount,
+      });
+
+      return json(200, {
+        ok: true,
+        provider: "stripe",
+        checkoutUrl: checkout.checkoutUrl,
+        reference: checkout.providerReference,
+        amountMinor: safeAmount,
+        chargeAmountMinor,
+        currency,
+        email: session.account.email,
+      });
+    }
 
     const checkout = await paystackInitialize({
       email: session.account.email,
@@ -60,6 +108,7 @@ exports.handler = async function (event) {
 
     return json(200, {
       ok: true,
+      provider: "paystack",
       checkoutUrl: checkout.checkoutUrl,
       accessCode: checkout.accessCode || null,
       publicKey: paystackPublicKey(),

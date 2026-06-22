@@ -28,16 +28,22 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await ensureCourseBatchesTable(pool);
-    const updated = await updateCourseBatch(pool, {
+    const updateInput = {
       courseSlug,
       batchKey,
       batchLabel: body.batchLabel,
       paystackReferencePrefix: body.paystackReferencePrefix,
       paystackAmountMinor: body.paystackAmountMinor,
       paypalAmountMinor: body.paypalAmountMinor,
-      brevoListId: body.brevoListId,
       batchStartAt: body.batchStartAt,
-    });
+    };
+    if (Object.prototype.hasOwnProperty.call(body, "brevoListId")) {
+      updateInput.brevoListId = body.brevoListId;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "seatLimit")) {
+      updateInput.seatLimit = body.seatLimit;
+    }
+    const updated = await updateCourseBatch(pool, updateInput);
     return json(200, {
       ok: true,
       courseSlug,

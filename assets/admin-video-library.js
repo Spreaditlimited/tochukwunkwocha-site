@@ -42,6 +42,7 @@
   var courseBatchPrefixInput = document.getElementById("courseBatchPrefixInput");
   var courseBatchNgnInput = document.getElementById("courseBatchNgnInput");
   var courseBatchGbpInput = document.getElementById("courseBatchGbpInput");
+  var courseBatchBrevoListInput = document.getElementById("courseBatchBrevoListInput");
   var createCourseBatchBtn = document.getElementById("createCourseBatchBtn");
   var updateCourseBatchBtn = document.getElementById("updateCourseBatchBtn");
   var activateCourseBatchBtn = document.getElementById("activateCourseBatchBtn");
@@ -433,6 +434,7 @@
       if (courseBatchPrefixInput) courseBatchPrefixInput.value = "";
       if (courseBatchNgnInput) courseBatchNgnInput.value = "";
       if (courseBatchGbpInput) courseBatchGbpInput.value = "";
+      if (courseBatchBrevoListInput) courseBatchBrevoListInput.value = "";
       return;
     }
     if (courseBatchLabelInput) courseBatchLabelInput.value = String(batch.batch_label || batch.batchLabel || "");
@@ -441,10 +443,11 @@
     if (courseBatchPrefixInput) courseBatchPrefixInput.value = String(batch.paystack_reference_prefix || batch.paystackReferencePrefix || "");
     if (courseBatchNgnInput) courseBatchNgnInput.value = String(Number(batch.paystack_amount_minor || batch.paystackAmountMinor || 0) || "");
     if (courseBatchGbpInput) courseBatchGbpInput.value = String(Number(batch.paypal_amount_minor || batch.paypalAmountMinor || 0) || "");
+    if (courseBatchBrevoListInput) courseBatchBrevoListInput.value = String(batch.brevo_list_id || batch.brevoListId || "");
   }
 
   function setCourseBatchControlsDisabled(disabled) {
-    [courseBatchLabelInput, courseBatchKeyInput, courseBatchStartInput, courseBatchPrefixInput, courseBatchNgnInput, courseBatchGbpInput, createCourseBatchBtn, updateCourseBatchBtn, activateCourseBatchBtn, deleteCourseBatchBtn]
+    [courseBatchLabelInput, courseBatchKeyInput, courseBatchStartInput, courseBatchPrefixInput, courseBatchNgnInput, courseBatchGbpInput, courseBatchBrevoListInput, createCourseBatchBtn, updateCourseBatchBtn, activateCourseBatchBtn, deleteCourseBatchBtn]
       .forEach(function (el) {
         if (el) el.disabled = !!disabled;
       });
@@ -1206,6 +1209,7 @@
             paystackReferencePrefix: String(courseBatchPrefixInput && courseBatchPrefixInput.value || "").trim(),
             paystackAmountMinor: Number(courseBatchNgnInput && courseBatchNgnInput.value || 0),
             paypalAmountMinor: Number(courseBatchGbpInput && courseBatchGbpInput.value || 0),
+            brevoListId: String(courseBatchBrevoListInput && courseBatchBrevoListInput.value || "").trim(),
           }),
         });
         setMessage("Batch created.", "ok");
@@ -1237,6 +1241,7 @@
             paystackReferencePrefix: String(courseBatchPrefixInput && courseBatchPrefixInput.value || "").trim(),
             paystackAmountMinor: Number(courseBatchNgnInput && courseBatchNgnInput.value || 0),
             paypalAmountMinor: Number(courseBatchGbpInput && courseBatchGbpInput.value || 0),
+            brevoListId: String(courseBatchBrevoListInput && courseBatchBrevoListInput.value || "").trim(),
           }),
         });
         setMessage("Batch updated.", "ok");

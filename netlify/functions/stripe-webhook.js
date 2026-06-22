@@ -4,6 +4,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { verifyStripeSignature } = require("./_lib/payments");
 const { markOrderPaidBy } = require("./_lib/orders");
 const { ensureSchoolTables, markSchoolOrderPaidBy } = require("./_lib/schools");
+const { ensureInstallmentTables, markInstallmentPaymentPaidByReference, autoEnrollPlanIfEligible } = require("./_lib/installments");
 const { ensureStudentAuthTables, findStudentByEmail } = require("./_lib/student-auth");
 const { creditFamilySeats, provisionFamilyOrder } = require("./_lib/families");
 
@@ -42,6 +43,33 @@ exports.handler = async function (event) {
     return json(200, { ok: true, ignored: true });
   }
   const metadata = session.metadata || {};
+  if (String(metadata.payment_scope || "").toLowerCase() === "installment") {
+    await ensureInstallmentTables(pool);
+    const installmentResult = await markInstallmentPaymentPaidByReference(pool, {
+      providerReference: session.id ? String(session.id) : null,
+      providerOrderId: session.payment_intent ? String(session.payment_intent) : null,
+    });
+    if (!installmentResult.ok) {
+      console.warn("stripe_webhook_installment_mark_failed", {
+        sessionId: session.id || null,
+        planUuid: metadata.installment_plan_uuid || null,
+        error: installmentResult.error || "unknown_error",
+      });
+      return json(404, { ok: false, error: installmentResult.error });
+    }
+    if (Number.isFinite(Number(installmentResult.planId)) && Number(installmentResult.planId) > 0) {
+      try {
+        await autoEnrollPlanIfEligible(pool, { planId: Number(installmentResult.planId) });
+      } catch (error) {
+        console.warn("stripe_webhook_installment_auto_enrol_failed", {
+          sessionId: session.id || null,
+          planUuid: installmentResult.planUuid || metadata.installment_plan_uuid || null,
+          error: error && error.message ? error.message : String(error || "unknown_error"),
+        });
+      }
+    }
+    return json(200, { ok: true });
+  }
   if (metadata.school_order_uuid || String(metadata.payment_scope || "").toLowerCase() === "school_registration") {
     await ensureSchoolTables(pool);
     const schoolResult = await markSchoolOrderPaidBy(pool, {

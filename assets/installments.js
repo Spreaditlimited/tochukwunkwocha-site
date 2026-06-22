@@ -54,6 +54,7 @@
   const profileNavLink = document.querySelector("[data-profile-nav-link]");
   const courseSelect = document.getElementById("walletCourse");
   const batchSelect = document.getElementById("walletBatch");
+  const countrySelect = document.getElementById("walletCountry");
   const couponCodeInput = document.getElementById("walletCouponCode");
   const applyCouponBtn = document.getElementById("walletApplyCouponBtn");
   const couponStatusEl = document.getElementById("walletCouponStatus");
@@ -104,6 +105,10 @@
 
   function selectedCourseSlug() {
     return String((courseSelect && courseSelect.value) || "prompt-to-profit").trim() || "prompt-to-profit";
+  }
+
+  function selectedPaymentCountry() {
+    return String((countrySelect && countrySelect.value) || "Nigeria").trim() || "Nigeria";
   }
 
   function prettifySlug(slug) {
@@ -251,6 +256,15 @@
     } catch (_error) {
       return `${code} ${amount.toFixed(2)}`;
     }
+  }
+
+  function currencyInputMeta(currency) {
+    const code = String(currency || "NGN").toUpperCase();
+    return {
+      code,
+      minMajor: code === "NGN" ? 100 : 1,
+      stepMajor: code === "NGN" ? 100 : 1,
+    };
   }
 
   function setMsg(el, text, type) {
@@ -562,6 +576,7 @@
         const enrolLabel = "Enrol";
         const showCancel = !!plan.canCancel;
         const courseName = courseDisplayName(plan);
+        const inputMeta = currencyInputMeta(plan.currency);
         return [
           `<article class="wallet-plan" data-plan-uuid="${plan.planUuid}">`,
           `<p class="wallet-pill">${esc(plan.batchLabel)}</p>`,
@@ -575,7 +590,7 @@
           `<p class="wallet-msg">Remaining: ${fmtMoney(remaining, plan.currency)}</p>`,
           `<div class="wallet-progress"><span style="width:${progress}%"></span></div>`,
           `<div class="wallet-plan-actions">`,
-          `<input class="tw-input wallet-input wallet-topup-input" type="number" min="100" step="100" placeholder="Top-up amount (NGN)" data-topup-input ${disabledPay ? "disabled" : ""} />`,
+          `<input class="tw-input wallet-input wallet-topup-input" type="number" min="${inputMeta.minMajor}" step="${inputMeta.stepMajor}" placeholder="Top-up amount (${esc(inputMeta.code)})" data-topup-input data-currency="${esc(inputMeta.code)}" ${disabledPay ? "disabled" : ""} />`,
           `<button class="btn btn-primary wallet-plan-btn wallet-plan-btn--enrol ${disabledPay ? "is-locked" : ""}" type="button" data-action="pay" ${disabledPay ? 'disabled aria-disabled="true" title="Pay Part is temporarily unavailable while Paystack approves our new business account."' : ""}>Pay Part</button>`,
           `<button class="btn btn-outline wallet-plan-btn wallet-plan-btn--enrol ${disableEnrol ? "is-locked" : ""}" type="button" data-action="enrol" ${disableEnrol ? "disabled aria-disabled=\"true\" title=\"Complete full payment to unlock enrolment\"" : ""}>${enrolLabel}</button>`,
           showCancel
@@ -938,6 +953,7 @@
         body: JSON.stringify({
           courseSlug: selectedCourseSlug(),
           batchKey,
+          country: selectedPaymentCountry(),
           couponCode: appliedPlanCoupon
             ? appliedPlanCoupon.code
             : String((couponCodeInput && couponCodeInput.value) || "").trim(),
@@ -991,6 +1007,7 @@
         body: JSON.stringify({
           courseSlug: selectedCourseSlug(),
           batchKey: batchKey,
+          country: selectedPaymentCountry(),
           couponCode: couponCode,
           email: dashboard && dashboard.account ? dashboard.account.email : "",
         }),
@@ -1179,6 +1196,13 @@
     });
   }
 
+  if (countrySelect) {
+    countrySelect.addEventListener("change", function () {
+      clearAppliedCoupon("");
+      if (couponCodeInput) couponCodeInput.value = "";
+    });
+  }
+
   if (applyCouponBtn) {
     applyCouponBtn.addEventListener("click", function () {
       applyInstallmentCoupon().catch(function () {
@@ -1293,12 +1317,14 @@
 
       if (action === "pay") {
         const input = card.querySelector("[data-topup-input]");
-        const amountNgn = Number(input && input.value ? input.value : 0);
-        if (!Number.isFinite(amountNgn) || amountNgn < 100) {
-          setMsg(planMsg, "Enter a valid top-up amount in Naira.", "error");
+        const currency = String(input && input.getAttribute("data-currency") || "NGN").toUpperCase();
+        const inputMeta = currencyInputMeta(currency);
+        const amountMajor = Number(input && input.value ? input.value : 0);
+        if (!Number.isFinite(amountMajor) || amountMajor < inputMeta.minMajor) {
+          setMsg(planMsg, "Enter a valid top-up amount in " + currency + ".", "error");
           return;
         }
-        const amountMinor = Math.round(amountNgn * 100);
+        const amountMinor = Math.round(amountMajor * 100);
         button.disabled = true;
         const originalText = button.textContent;
         button.textContent = "Opening...";

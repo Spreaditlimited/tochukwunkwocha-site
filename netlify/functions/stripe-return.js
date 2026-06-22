@@ -4,6 +4,7 @@ const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { siteBaseUrl, stripeRetrieveCheckoutSession } = require("./_lib/payments");
 const { sendEmail } = require("./_lib/email");
 const { markOrderPaidBy } = require("./_lib/orders");
+const { ensureInstallmentTables, markInstallmentPaymentPaidByReference, autoEnrollPlanIfEligible } = require("./_lib/installments");
 const { getCourseLandingPath, normalizeCourseSlug } = require("./_lib/course-config");
 const {
   ensureStudentAuthTables,
@@ -61,6 +62,23 @@ exports.handler = async function (event) {
     const txCourseSlug = normalizeCourseSlug(metadata.course_slug, "prompt-to-profit");
     if (String(session.payment_status || "").toLowerCase() !== "paid") {
       return { statusCode: 302, headers: { Location: `${siteBaseUrl()}${getCourseLandingPath(txCourseSlug)}?payment=failed` }, body: "" };
+    }
+
+    if (String(metadata.payment_scope || "").toLowerCase() === "installment") {
+      await ensureInstallmentTables(pool);
+      const result = await markInstallmentPaymentPaidByReference(pool, {
+        providerReference: session.id,
+        providerOrderId: session.payment_intent ? String(session.payment_intent) : null,
+      });
+      if (!result.ok) {
+        return { statusCode: 302, headers: { Location: `${siteBaseUrl()}/dashboard/?payment=failed` }, body: "" };
+      }
+      if (Number.isFinite(Number(result.planId)) && Number(result.planId) > 0) {
+        try {
+          await autoEnrollPlanIfEligible(pool, { planId: Number(result.planId) });
+        } catch (_error) {}
+      }
+      return { statusCode: 302, headers: { Location: `${siteBaseUrl()}/dashboard/?payment=success` }, body: "" };
     }
 
     const result = await markOrderPaidBy({
