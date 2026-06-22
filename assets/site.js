@@ -492,6 +492,29 @@
     }).format(date);
   }
 
+  function formatCourseStartTime(date) {
+    const wat = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date) + " WAT";
+    const uk = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date) + " UK";
+    const dayDate = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+    return `${uk} (${wat}), ${dayDate}`;
+  }
+
   function formatDateOnly(date, timeZone) {
     return new Intl.DateTimeFormat("en-GB", {
       timeZone,
@@ -519,14 +542,13 @@
   function launchScheduleText() {
     const startDate = parseBatchStart(activeCourseBatchStartAt);
     if (!startDate) return "";
-    const lagos = formatDayTime(startDate, "Africa/Lagos");
-    return `Launch is ${lagos} WAT.`;
+    return `Launch is ${formatCourseStartTime(startDate)}.`;
   }
 
   function activeBatchText(active, field) {
     const label = String((active && active.batchLabel) || "Current Batch").trim() || "Current Batch";
     const startDate = parseBatchStart(active && active.batchStartAt);
-    const fullStart = startDate ? formatDayTime(startDate, "Africa/Lagos") + " WAT" : "";
+    const fullStart = startDate ? formatCourseStartTime(startDate) : "";
     const dateOnly = startDate ? formatDateOnly(startDate, "Africa/Lagos") : "";
     const shortDate = startDate ? formatShortDate(startDate, "Africa/Lagos") : "";
     const key = String(field || "").trim();

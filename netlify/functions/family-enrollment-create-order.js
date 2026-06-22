@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
-const { paystackInitialize } = require("./_lib/payments");
+const { paystackInitialize, stripeCreateCheckoutSession, siteBaseUrl } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
@@ -12,6 +12,7 @@ const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
   getCourseConfig,
+  getCourseName,
   getCourseDefaultAmountMinor,
 } = require("./_lib/course-config");
 const {
@@ -22,6 +23,11 @@ const {
   consumeFamilySeatsForChildren,
   savePendingFamilyChildren,
 } = require("./_lib/families");
+const {
+  grossUpStripeAmount,
+  isNigeriaCountry,
+  resolveStripeCurrency,
+} = require("./_lib/installment-pricing");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 500);
@@ -31,26 +37,56 @@ function requiresExplicitBatchSelection(courseSlug) {
   return String(courseSlug || "").trim().toLowerCase() === "prompt-to-profit-holiday";
 }
 
-function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount }) {
+function resolveStripeBaseMinor({ learningCourse, courseSlug, currency }) {
+  const cur = String(currency || "USD").toUpperCase();
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
+  const fallbackMajor = {
+    "prompt-to-profit": { GBP: 25, USD: 30, EUR: 25 },
+    "prompt-to-production": { GBP: 100, USD: 150, EUR: 100 },
+    "ai-for-everyday-business-owners": { GBP: 20, USD: 25, EUR: 20 },
+    "prompt-to-profit-holiday": { GBP: 25, USD: 30, EUR: 25 },
+  };
+  const col = cur === "GBP" ? "price_gbp_minor" : (cur === "EUR" ? "price_eur_minor" : "price_usd_minor");
+  const configured = Number(learningCourse && learningCourse[col]);
+  const fallback = Number((fallbackMajor[slug] && (fallbackMajor[slug][cur] || fallbackMajor[slug].USD)) || 30) * 100;
+  return Number.isFinite(configured) && configured > 0 ? Math.round(configured) : Math.round(fallback);
+}
+
+function priceConfig({ provider, country, courseSlug, batch, learningCourse, enrollmentMode, seatCount }) {
   const mode = String(enrollmentMode || "batch").trim().toLowerCase() === "immediate" ? "immediate" : "batch";
   const qty = Math.max(1, Math.round(Number(seatCount || 1)));
+  const isStripe = provider === "stripe";
   const courseNgnMinor = Number(learningCourse && learningCourse.price_ngn_minor);
-  const singleCourseMinor = mode === "immediate"
+  const singlePaystackMinor = mode === "immediate"
     ? (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : getCourseDefaultAmountMinor(courseSlug))
     : (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
       ? Math.round(courseNgnMinor)
       : Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug)));
-  if (provider !== "paystack") throw new Error("Only Paystack is supported.");
-  const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
-  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  if (provider !== "paystack" && !isStripe) throw new Error("Unsupported payment provider.");
+  const currency = isStripe ? resolveStripeCurrency(country) : "NGN";
+  const singleCourseMinor = isStripe
+    ? resolveStripeBaseMinor({ learningCourse, courseSlug, currency })
+    : singlePaystackMinor;
+  const vatPercentRaw = Number(isStripe ? process.env.INTL_VAT_PERCENT : process.env.SITE_VAT_PERCENT);
+  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : (isStripe ? 20 : 7.5);
   const courseMinor = groupEnrollmentBaseAmountMinor(courseSlug, singleCourseMinor, qty);
   const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
   const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
+  if (isStripe) {
+    const amountMinor = grossUpStripeAmount(priceMinor, currency);
+    return {
+      currency,
+      baseAmountMinor: courseMinor,
+      vatMinor,
+      processingFeeMinor: amountMinor - priceMinor,
+      amountMinor,
+    };
+  }
   const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
   const amountMinor = applicableAtPrice > 200000
     ? (priceMinor + 200000)
     : Math.ceil(((priceMinor + (priceMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
-  return { currency: "NGN", amountMinor };
+  return { currency: "NGN", baseAmountMinor: courseMinor, vatMinor, processingFeeMinor: amountMinor - priceMinor, amountMinor };
 }
 
 exports.handler = async function (event) {
@@ -68,7 +104,8 @@ exports.handler = async function (event) {
   if (!session.ok) return json(session.statusCode || 401, { ok: false, error: session.error || "Unauthorized" });
 
   const courseSlug = normalizeCourseSlug(body.courseSlug, DEFAULT_COURSE_SLUG);
-  const provider = "paystack";
+  const country = clean(body.country || "Nigeria", 120) || "Nigeria";
+  const provider = isNigeriaCountry(country) ? "paystack" : "stripe";
   const parentName = clean(session.account.fullName, 180);
   const parentEmail = clean(session.account.email, 220).toLowerCase();
   const parentPhone = clean(session.account.phone, 40);
@@ -95,8 +132,9 @@ exports.handler = async function (event) {
       return json(409, { ok: false, error: "Enrollment is currently locked for this course." });
     }
     const allowedMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
+    if (provider === "stripe" && allowedMethods.indexOf("stripe") === -1) allowedMethods.push("stripe");
     if (allowedMethods.indexOf(provider) === -1) {
-      return json(400, { ok: false, error: "Paystack is not available for this course." });
+      return json(400, { ok: false, error: "Selected payment method is not available for this course." });
     }
 
     const enrollmentMode = String(learningCourse && learningCourse.enrollment_mode || "batch").trim().toLowerCase() === "immediate"
@@ -147,7 +185,7 @@ exports.handler = async function (event) {
       }
     }
 
-    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount });
+    const price = priceConfig({ provider, country, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount });
     const amountMinor = Number(price.amountMinor || 0);
     const orderUuid = crypto.randomUUID();
     const courseConfig = getCourseConfig(courseSlug);
@@ -157,16 +195,17 @@ exports.handler = async function (event) {
     await pool.query(
       `INSERT INTO course_orders
        (order_uuid, course_slug, first_name, email, phone, country, currency, amount_minor, base_amount_minor, discount_minor, final_amount_minor, provider, buyer_type, seat_count, status, batch_key, batch_label)
-       VALUES (?, ?, ?, ?, ?, ?, 'NGN', ?, ?, 0, ?, ?, 'family', ?, 'pending', ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'family', ?, 'pending', ?, ?)`,
       [
         orderUuid,
         courseSlug,
         parentName,
         parentEmail,
         parentPhone || null,
-        null,
+        country,
+        price.currency,
         amountMinor,
-        amountMinor,
+        Number(price.baseAmountMinor || amountMinor),
         amountMinor,
         provider,
         family.seatCount,
@@ -184,11 +223,7 @@ exports.handler = async function (event) {
       children: family.children,
     });
 
-    const payment = await paystackInitialize({
-      email: parentEmail,
-      amountMinor,
-      reference,
-      metadata: {
+    const metadata = {
         order_uuid: orderUuid,
         first_name: parentName,
         course_slug: courseSlug,
@@ -196,22 +231,42 @@ exports.handler = async function (event) {
         batch_label: batch ? batch.batch_label : null,
         buyer_type: "family",
         seat_count: family.seatCount,
-      },
-    });
+    };
+    const payment = provider === "stripe"
+      ? await stripeCreateCheckoutSession({
+          email: parentEmail,
+          amountMinor,
+          currency: price.currency,
+          courseName: `${getCourseName(courseSlug)} group enrollment`,
+          orderUuid,
+          metadata,
+          successUrl: `${siteBaseUrl()}/.netlify/functions/stripe-return?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${siteBaseUrl()}/dashboard/family/?payment=cancelled`,
+        })
+      : await paystackInitialize({
+          email: parentEmail,
+          amountMinor,
+          reference,
+          metadata,
+          callbackUrl: `${siteBaseUrl()}/.netlify/functions/paystack-return`,
+        });
 
     await pool.query(
       `UPDATE course_orders
-       SET provider_reference = ?
+       SET provider_reference = ?,
+           provider_order_id = ?
        WHERE order_uuid = ?`,
-      [payment.providerReference, orderUuid]
+      [payment.providerReference, payment.providerOrderId || null, orderUuid]
     );
 
     return json(200, {
       ok: true,
       orderUuid,
+      provider,
       checkoutUrl: payment.checkoutUrl,
       pricing: {
-        currency: "NGN",
+        currency: price.currency,
+        baseAmountMinor: Number(price.baseAmountMinor || amountMinor),
         finalAmountMinor: amountMinor,
         seatCount: family.seatCount,
       },

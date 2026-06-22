@@ -201,7 +201,9 @@
       "at", "austria", "be", "belgium", "cy", "cyprus", "ee", "estonia", "fi", "finland", "fr", "france",
       "de", "germany", "gr", "greece", "ie", "ireland", "it", "italy", "lv", "latvia", "lt", "lithuania",
       "lu", "luxembourg", "mt", "malta", "nl", "netherlands", "pt", "portugal", "sk", "slovakia",
-      "si", "slovenia", "es", "spain", "eu", "european union"
+      "si", "slovenia", "es", "spain", "hr", "croatia", "cz", "czech republic", "dk", "denmark",
+      "hu", "hungary", "pl", "poland", "ro", "romania", "se", "sweden", "bg", "bulgaria",
+      "eu", "european union"
     ];
     return euCountries.indexOf(text) !== -1 ? "European Union" : "Other";
   }
@@ -386,7 +388,9 @@
     var json = await res.json().catch(function () { return null; });
     if (!res.ok || !json || !json.ok) return;
     if (!json.country && !json.countryCode) return;
-    countryInput.value = normalizeEnrollmentCountry(json.country || json.countryCode);
+    var detectedCountry = normalizeEnrollmentCountry(json.country || json.countryCode);
+    if (detectedCountry === "Other" && json.countryCode) detectedCountry = "Other";
+    countryInput.value = detectedCountry;
     updateWhatsappPhoneHelper();
     syncPaymentMethodsForCountry();
     updatePaymentOptionMetas();
@@ -660,6 +664,29 @@
     }).format(date);
   }
 
+  function formatCourseStartTime(date) {
+    var wat = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date) + " WAT";
+    var uk = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date) + " UK";
+    var dayDate = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Lagos",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+    return uk + " (" + wat + "), " + dayDate;
+  }
+
   function compareBatchStart(a, b) {
     var ad = parseBatchStart(a && a.batchStartAt);
     var bd = parseBatchStart(b && b.batchStartAt);
@@ -682,7 +709,7 @@
   function launchScheduleText() {
     var startDate = parseBatchStart(activeCourseBatchStartAt);
     if (!startDate) return "";
-    return "Classes begin " + formatDayTime(startDate, "Africa/Lagos") + " WAT.";
+    return "Classes begin " + formatCourseStartTime(startDate) + ".";
   }
 
   function updateIntro() {
@@ -919,7 +946,7 @@
         var startText = "";
         var parsedStart = parseBatchStart(item.batchStartAt);
         if (parsedStart) {
-          startText = " • Starts " + formatDayTime(parsedStart, "Africa/Lagos") + " WAT";
+          startText = " • Starts " + formatCourseStartTime(parsedStart);
         }
         options.push(
           '<option value="' +
@@ -948,7 +975,7 @@
         holidayWaitlistRows.innerHTML = fullBatches.map(function (item) {
           var startText = "-";
           var parsed = parseBatchStart(item.batchStartAt);
-          if (parsed) startText = formatDayTime(parsed, "Africa/Lagos");
+          if (parsed) startText = formatCourseStartTime(parsed);
           var batchKey = String(item.batchKey || "").trim();
           var waitlistHref = "/join-holiday-waitlist/?batch=" + encodeURIComponent(batchKey);
           return [

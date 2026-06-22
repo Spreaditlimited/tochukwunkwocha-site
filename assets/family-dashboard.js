@@ -15,6 +15,7 @@
   var enrollCourseEl = document.getElementById("familyEnrollCourse");
   var enrollBatchFieldEl = document.getElementById("familyEnrollBatchField");
   var enrollBatchEl = document.getElementById("familyEnrollBatch");
+  var enrollCountryEl = document.getElementById("familyEnrollCountry");
   var enrollChildrenEl = document.getElementById("familyEnrollChildren");
   var enrollAddChildEl = document.getElementById("familyEnrollAddChild");
   var enrollSummaryEl = document.getElementById("familyEnrollSummary");
@@ -62,6 +63,19 @@
     return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(amount);
   }
 
+  function selectedCountry() {
+    return String((enrollCountryEl && enrollCountryEl.value) || "Nigeria").trim() || "Nigeria";
+  }
+
+  function isNigeriaCountry(value) {
+    var text = String(value || "").trim().toLowerCase();
+    return text === "ng" || text === "nga" || text === "nigeria";
+  }
+
+  function selectedPurchaseProvider() {
+    return isNigeriaCountry(selectedCountry()) ? "paystack" : "stripe";
+  }
+
   function paymentProviderLabel(provider) {
     var key = String(provider || "").trim().toLowerCase();
     if (key === "stripe") return "Stripe";
@@ -72,7 +86,7 @@
 
   function selectedPaymentProvider() {
     var balance = selectedSeatBalance() || preferredBalanceForCourse();
-    if (!balance || selectedAvailableSeats() < enrollmentSeatCount()) return "paystack";
+    if (!balance || selectedAvailableSeats() < enrollmentSeatCount()) return selectedPurchaseProvider();
     if (balance && balance.paymentProvider) return String(balance.paymentProvider || "");
     return "paystack";
   }
@@ -440,11 +454,13 @@
       return;
     }
     var selectedCourseSlug = enrollCourseEl && enrollCourseEl.value;
+    var provider = selectedPurchaseProvider();
     var totalMinor = paystackTotalForBase(groupEnrollmentBaseAmountMinor(selectedCourseSlug, basePerChild, seats));
     var discountText = groupDiscountText(selectedCourseSlug, basePerChild, seats);
+    var totalLabel = provider === "stripe" ? "Checkout via Stripe" : "Total (Paystack): " + formatNgnMinor(totalMinor);
     enrollSummaryEl.textContent = available > 0
-      ? String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText
-      : String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText;
+      ? String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - " + totalLabel + discountText
+      : String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - " + totalLabel + discountText;
     updateEnrollmentPaymentMethod();
     if (enrollSubmitEl && !enrollSubmitEl.disabled) enrollSubmitEl.textContent = "Purchase Seats";
   }
@@ -665,6 +681,10 @@
     enrollBatchEl.addEventListener("change", updateEnrollmentSummary);
   }
 
+  if (enrollCountryEl) {
+    enrollCountryEl.addEventListener("change", updateEnrollmentSummary);
+  }
+
   if (enrollAddChildEl) {
     enrollAddChildEl.addEventListener("click", function () {
       addEnrollmentChildRow();
@@ -710,6 +730,7 @@
         body: JSON.stringify({
           courseSlug: enrollCourseEl ? enrollCourseEl.value : "prompt-to-profit-holiday",
           batchKey: batch.batchKey || null,
+          country: selectedCountry(),
           children: children,
         }),
       })

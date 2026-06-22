@@ -11,6 +11,38 @@ function firstHeader(headers, names) {
   return "";
 }
 
+function firstGeoCountryCode(event, context) {
+  const geoSources = [
+    context && context.geo,
+    event && event.geo,
+    event && event.requestContext && event.requestContext.geo,
+  ];
+  for (const geo of geoSources) {
+    if (!geo || typeof geo !== "object") continue;
+    const direct = geo.countryCode || geo.country_code || geo.country;
+    if (typeof direct === "string" && direct.trim()) return direct;
+    if (geo.country && typeof geo.country === "object") {
+      const nested = geo.country.code || geo.country.isoCode || geo.country.iso_code;
+      if (nested) return nested;
+    }
+  }
+  return "";
+}
+
+function countryCodeFromHeaderValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.charAt(0) === "{") {
+    try {
+      const parsed = JSON.parse(raw);
+      return firstGeoCountryCode({ geo: parsed }, { geo: parsed });
+    } catch (error) {
+      return "";
+    }
+  }
+  return raw;
+}
+
 function countryName(code) {
   const c = String(code || "").trim().toUpperCase();
   if (c === "NG") return "Nigeria";
@@ -21,13 +53,19 @@ function countryName(code) {
   return "";
 }
 
-exports.handler = async function (event) {
-  const code = firstHeader(event.headers || {}, [
+exports.handler = async function (event, context) {
+  const headerCode = firstHeader(event.headers || {}, [
+    "x-nf-geo",
+    "x-netlify-geo",
     "x-nf-country",
+    "x-nf-country-code",
+    "x-vercel-ip-country",
     "x-country-code",
+    "x-appengine-country",
     "cloudfront-viewer-country",
     "cf-ipcountry",
   ]);
+  const code = firstGeoCountryCode(event, context) || countryCodeFromHeaderValue(headerCode);
   return json(200, {
     ok: true,
     countryCode: String(code || "").trim().toUpperCase(),

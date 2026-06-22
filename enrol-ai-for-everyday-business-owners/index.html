@@ -316,33 +316,59 @@
       }
 
       .coupon-apply-btn {
-        padding: 0 20px;
-        min-height: 56px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: auto;
+        min-width: 88px;
+        height: 52px !important;
+        min-height: 52px !important;
+        max-height: 52px !important;
+        padding: 0 16px;
         font-size: 0.9rem;
-        border-radius: 12px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        line-height: 1;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.16);
         color: #fff;
-        font-weight: 600;
+        font-weight: 700;
+        white-space: nowrap;
         transition: all 0.3s;
       }
       .coupon-code-row {
-        display: flex;
-        align-items: stretch;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
         width: 100%;
       }
       .coupon-code-row .form-input {
-        flex: 1 1 auto;
         min-width: 0;
+        height: 52px;
+        min-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
         margin-bottom: 0;
       }
       .coupon-code-row .coupon-apply-btn {
-        flex: 0 0 auto;
-        align-self: stretch;
+        align-self: center;
+        height: 52px !important;
       }
       .coupon-apply-btn:hover {
         background: rgba(255,255,255,0.1);
+      }
+      .coupon-apply-btn:disabled {
+        cursor: wait;
+        opacity: 0.72;
+      }
+      @media (max-width: 420px) {
+        .coupon-code-row {
+          grid-template-columns: 1fr;
+        }
+        .coupon-code-row .coupon-apply-btn {
+          width: 100%;
+        }
       }
 
       /* Custom Radio Options */
