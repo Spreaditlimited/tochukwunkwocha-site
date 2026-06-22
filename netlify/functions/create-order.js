@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
-const { paystackInitialize } = require("./_lib/payments");
+const { paystackInitialize, stripeCreateCheckoutSession, siteBaseUrl } = require("./_lib/payments");
 const { ensureCourseOrdersBatchColumns } = require("./_lib/course-orders");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
 const { assertBatchHasCapacity } = require("./_lib/batch-capacity");
@@ -21,6 +21,7 @@ const {
   DEFAULT_COURSE_SLUG,
   normalizeCourseSlug,
   getCourseConfig,
+  getCourseName,
   getCourseDefaultAmountMinor,
 } = require("./_lib/course-config");
 const { verifyRecaptchaToken, clientIpFromEvent } = require("./_lib/recaptcha");
@@ -34,6 +35,7 @@ function normalizeEmail(value) {
 function normalizeProvider(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "paystack") return raw;
+  if (raw === "stripe") return raw;
   return "paystack";
 }
 
@@ -61,19 +63,84 @@ function priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMo
     : (Number.isFinite(courseNgnMinor) && courseNgnMinor > 0
       ? Math.round(courseNgnMinor)
       : Number((batch && batch.paystack_amount_minor) || getCourseDefaultAmountMinor(courseSlug)));
-  if (provider !== "paystack") throw new Error("Only Paystack is supported.");
-  const vatPercentRaw = Number(process.env.SITE_VAT_PERCENT);
-  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 7.5;
+  const isStripe = provider === "stripe";
+  if (provider !== "paystack" && !isStripe) throw new Error("Unsupported payment provider.");
+  const country = normalizeCountry(arguments[0] && arguments[0].country);
+  const stripeCurrency = resolveStripeCurrency(country);
+  const stripeBaseMinor = resolveStripeBaseMinor({ learningCourse, courseSlug, currency: stripeCurrency });
+  const vatPercentRaw = Number(isStripe ? process.env.INTL_VAT_PERCENT : process.env.SITE_VAT_PERCENT);
+  const vatPercent = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : (isStripe ? 20 : 7.5);
   const courseMinor = familyEnrollmentEnabledForCourse(courseSlug) && qty > 1
-    ? groupEnrollmentBaseAmountMinor(courseSlug, singleCourseMinor, qty)
-    : Math.max(0, Number(singleCourseMinor || 0)) * qty;
+    ? groupEnrollmentBaseAmountMinor(courseSlug, isStripe ? stripeBaseMinor : singleCourseMinor, qty)
+    : Math.max(0, Number(isStripe ? stripeBaseMinor : singleCourseMinor || 0)) * qty;
   const vatMinor = Math.round((Math.max(0, Number(courseMinor || 0)) * vatPercent) / 100);
   const priceMinor = Math.max(0, Number(courseMinor || 0)) + vatMinor;
+  if (isStripe) {
+    const amountMinor = grossUpStripeAmount(priceMinor, stripeCurrency);
+    return {
+      currency: stripeCurrency,
+      courseMinor,
+      vatMinor,
+      processingFeeMinor: amountMinor - priceMinor,
+      amountMinor,
+      amountDisplay: (amountMinor / 100).toFixed(2),
+    };
+  }
   const applicableAtPrice = Math.round(priceMinor * 0.015) + (priceMinor < 250000 ? 0 : 10000);
   const amountMinor = applicableAtPrice > 200000
     ? (priceMinor + 200000)
     : Math.ceil(((priceMinor + (priceMinor < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
   return { currency: "NGN", amountMinor: amountMinor, amountDisplay: (amountMinor / 100).toFixed(2) };
+}
+
+function isNigeriaCountry(value) {
+  const text = normalizeCountry(value).toLowerCase();
+  return text === "ng" || text === "nga" || text === "nigeria";
+}
+
+function resolveStripeCurrency(country) {
+  const text = normalizeCountry(country).toLowerCase();
+  const eu = new Set([
+    "at","austria","be","belgium","cy","cyprus","ee","estonia","fi","finland","fr","france","de","germany","gr","greece","ie","ireland","it","italy","lv","latvia","lt","lithuania","lu","luxembourg","mt","malta","nl","netherlands","pt","portugal","sk","slovakia","si","slovenia","es","spain",
+  ]);
+  if (text === "gb" || text === "gbr" || text === "uk" || text === "united kingdom" || text === "england" || text === "scotland" || text === "wales") return "GBP";
+  if (text === "us" || text === "usa" || text === "united states" || text === "united states of america") return "USD";
+  if (eu.has(text)) return "EUR";
+  return "USD";
+}
+
+function resolveStripeBaseMinor({ learningCourse, courseSlug, currency }) {
+  const cur = String(currency || "USD").toUpperCase();
+  const slug = normalizeCourseSlug(courseSlug, DEFAULT_COURSE_SLUG);
+  const fallbackMajor = {
+    "prompt-to-profit": { GBP: 25, USD: 30, EUR: 25 },
+    "prompt-to-production": { GBP: 100, USD: 150, EUR: 100 },
+    "ai-for-everyday-business-owners": { GBP: 20, USD: 25, EUR: 20 },
+  };
+  const col = cur === "GBP" ? "price_gbp_minor" : (cur === "EUR" ? "price_eur_minor" : "price_usd_minor");
+  const configured = Number(learningCourse && learningCourse[col]);
+  const single = Number.isFinite(configured) && configured > 0
+    ? Math.round(configured)
+    : Math.round(Number((fallbackMajor[slug] && (fallbackMajor[slug][cur] || fallbackMajor[slug].USD)) || 30) * 100);
+  return Math.max(0, single);
+}
+
+function stripeFixedFeeMinor(currency) {
+  const cur = String(currency || "USD").toUpperCase();
+  const raw = Number(process.env[`STRIPE_FEE_FIXED_${cur}_MINOR`]);
+  if (Number.isFinite(raw) && raw >= 0) return Math.round(raw);
+  if (cur === "GBP") return 20;
+  if (cur === "EUR") return 25;
+  return 30;
+}
+
+function grossUpStripeAmount(netMinor, currency) {
+  const net = Math.max(0, Math.round(Number(netMinor || 0)));
+  const bpsRaw = Number(process.env.STRIPE_FEE_BPS);
+  const bps = Number.isFinite(bpsRaw) && bpsRaw >= 0 ? Math.round(bpsRaw) : 150;
+  const fixed = stripeFixedFeeMinor(currency);
+  if (bps >= 10000) return net + fixed;
+  return Math.ceil(((net + fixed) / (1 - bps / 10000)) + 1);
 }
 
 exports.handler = async function (event) {
@@ -111,7 +178,11 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "Family enrollment is not available for this course." });
   }
 
-  if (provider !== "paystack") {
+  if (provider === "stripe" && isNigeriaCountry(country)) {
+    return json(400, { ok: false, error: "Stripe is for international payments. Please use Paystack or bank transfer in Nigeria." });
+  }
+
+  if (provider !== "paystack" && provider !== "stripe") {
     return json(400, { ok: false, error: "Invalid payment provider" });
   }
 
@@ -157,6 +228,7 @@ exports.handler = async function (event) {
       ? "immediate"
       : "batch";
     const allowedMethods = normalizePaymentMethods(learningCourse && learningCourse.payment_methods).split(",");
+    if (provider === "stripe" && allowedMethods.indexOf("stripe") === -1) allowedMethods.push("stripe");
     if (allowedMethods.indexOf(provider) === -1) {
       return json(400, { ok: false, error: "Selected payment method is not available for this course." });
     }
@@ -177,7 +249,7 @@ exports.handler = async function (event) {
         return json(409, { ok: false, error: `Only ${capacity.remainingSeats} seats are left in this batch.` });
       }
     }
-    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount });
+    const price = priceConfig({ provider, courseSlug, batch, learningCourse, enrollmentMode, seatCount: family.seatCount, country });
 
     let pricing = {
       currency: price.currency,
@@ -297,21 +369,17 @@ exports.handler = async function (event) {
         fullName: firstName,
         phone,
         courseSlug,
-        source: "paystack_enrollment",
+        source: `${provider}_enrollment`,
         optedIn: true,
         optInVersion: optInTextVersion,
       }).catch(function (error) {
-        console.error("paystack_whatsapp_contact_upsert_failed", error && error.message ? error.message : error);
+        console.error("course_whatsapp_contact_upsert_failed", error && error.message ? error.message : error);
       });
     }
 
     const prefix = String((batch && batch.paystack_reference_prefix) || (courseConfig && courseConfig.defaultPrefix) || "PTP").trim().toUpperCase();
     const reference = `${prefix}_${orderUuid.replace(/-/g, "").slice(0, 24)}`;
-    const payment = await paystackInitialize({
-      email,
-      amountMinor: pricing.finalAmountMinor,
-      reference,
-      metadata: {
+    const metadata = {
         order_uuid: orderUuid,
         first_name: firstName,
         course_slug: courseSlug,
@@ -319,14 +387,31 @@ exports.handler = async function (event) {
         batch_label: batch ? batch.batch_label : null,
         buyer_type: family.isFamily ? "family" : "student",
         seat_count: family.seatCount,
-      },
-    });
+    };
+    const payment = provider === "stripe"
+      ? await stripeCreateCheckoutSession({
+          email,
+          amountMinor: pricing.finalAmountMinor,
+          currency: pricing.currency,
+          courseName: getCourseName(courseSlug),
+          orderUuid,
+          metadata,
+          successUrl: `${siteBaseUrl()}/.netlify/functions/stripe-return?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${siteBaseUrl()}${courseConfig && courseConfig.landingPath ? courseConfig.landingPath : "/courses"}?payment=cancelled`,
+        })
+      : await paystackInitialize({
+          email,
+          amountMinor: pricing.finalAmountMinor,
+          reference,
+          metadata,
+        });
 
     await pool.query(
       `UPDATE course_orders
-       SET provider_reference = ?
+       SET provider_reference = ?,
+           provider_order_id = ?
        WHERE order_uuid = ?`,
-      [payment.providerReference, orderUuid]
+      [payment.providerReference, payment.providerOrderId || null, orderUuid]
     );
 
     return json(200, {

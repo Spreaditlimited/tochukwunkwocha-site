@@ -23,14 +23,17 @@
   var courseEnrollmentModeInput = document.getElementById("courseEnrollmentModeInput");
   var coursePriceNgnInput = document.getElementById("coursePriceNgnInput");
   var coursePriceGbpInput = document.getElementById("coursePriceGbpInput");
+  var coursePriceUsdInput = document.getElementById("coursePriceUsdInput");
+  var coursePriceEurInput = document.getElementById("coursePriceEurInput");
+  var courseSchoolAdvancedDiscountPanel = document.getElementById("courseSchoolAdvancedDiscountPanel");
+  var courseSchoolAdvancedDiscountNgnInput = document.getElementById("courseSchoolAdvancedDiscountNgnInput");
+  var courseSchoolAdvancedDiscountGbpInput = document.getElementById("courseSchoolAdvancedDiscountGbpInput");
+  var courseSchoolAdvancedDiscountUsdInput = document.getElementById("courseSchoolAdvancedDiscountUsdInput");
+  var courseSchoolAdvancedDiscountEurInput = document.getElementById("courseSchoolAdvancedDiscountEurInput");
   var coursePaystackEnabledInput = document.getElementById("coursePaystackEnabledInput");
-  var coursePaypalEnabledInput = document.getElementById("coursePaypalEnabledInput");
+  var courseStripeEnabledInput = document.getElementById("courseStripeEnabledInput");
   var courseManualEnabledInput = document.getElementById("courseManualEnabledInput");
   var courseEnrollmentLockedInput = document.getElementById("courseEnrollmentLockedInput");
-  if (coursePaypalEnabledInput) {
-    coursePaypalEnabledInput.checked = false;
-    coursePaypalEnabledInput.disabled = true;
-  }
   var courseBatchRows = document.getElementById("courseBatchRows");
   var courseBatchManagerHint = document.getElementById("courseBatchManagerHint");
   var courseBatchLabelInput = document.getElementById("courseBatchLabelInput");
@@ -526,7 +529,7 @@
           '<p><span class="font-semibold">Brevo List:</span> ' + escapeHtml(brevoList || "-") + "</p>" +
           '<p><span class="font-semibold">Manual:</span> ' + escapeHtml(formatMinorCurrency(ngnMinor, "NGN")) + "</p>" +
           '<p><span class="font-semibold">Paystack:</span> ' + escapeHtml(formatMinorCurrency(ngnMinor, "NGN")) + "</p>" +
-          '<p><span class="font-semibold">PayPal:</span> ' + escapeHtml(formatMinorCurrency(gbpMinor, "GBP")) + "</p>" +
+          '<p><span class="font-semibold">Legacy GBP:</span> ' + escapeHtml(formatMinorCurrency(gbpMinor, "GBP")) + "</p>" +
         "</div>" +
       "</button>";
     }).join("");
@@ -632,6 +635,19 @@
     }
   }
 
+  function isSchoolCourseSlug(value) {
+    var slug = String(value || "").trim().toLowerCase();
+    return slug === "prompt-to-profit-schools" || slug === "prompt-to-profit-for-schools";
+  }
+
+  function syncSchoolAdvancedDiscountVisibility() {
+    if (!courseSchoolAdvancedDiscountPanel) return;
+    var slug = courseSlugInput ? String(courseSlugInput.value || "").trim().toLowerCase() : selectedCourseSlug();
+    var visible = isSchoolCourseSlug(slug);
+    courseSchoolAdvancedDiscountPanel.classList.toggle("hidden", !visible);
+    courseSchoolAdvancedDiscountPanel.hidden = !visible;
+  }
+
   function hydrateCourseForm(course) {
     if (!course) {
       if (courseSlugInput) courseSlugInput.value = "";
@@ -642,10 +658,17 @@
       if (courseEnrollmentModeInput) courseEnrollmentModeInput.value = "batch";
       if (coursePriceNgnInput) coursePriceNgnInput.value = "";
       if (coursePriceGbpInput) coursePriceGbpInput.value = "";
+      if (coursePriceUsdInput) coursePriceUsdInput.value = "";
+      if (coursePriceEurInput) coursePriceEurInput.value = "";
+      if (courseSchoolAdvancedDiscountNgnInput) courseSchoolAdvancedDiscountNgnInput.value = "";
+      if (courseSchoolAdvancedDiscountGbpInput) courseSchoolAdvancedDiscountGbpInput.value = "";
+      if (courseSchoolAdvancedDiscountUsdInput) courseSchoolAdvancedDiscountUsdInput.value = "";
+      if (courseSchoolAdvancedDiscountEurInput) courseSchoolAdvancedDiscountEurInput.value = "";
       if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = true;
-      if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
+      if (courseStripeEnabledInput) courseStripeEnabledInput.checked = true;
       if (courseManualEnabledInput) courseManualEnabledInput.checked = true;
       if (courseEnrollmentLockedInput) courseEnrollmentLockedInput.checked = false;
+      syncSchoolAdvancedDiscountVisibility();
       return;
     }
     if (courseSlugInput) courseSlugInput.value = String(course.course_slug || "");
@@ -662,12 +685,31 @@
     if (coursePriceGbpInput) {
       coursePriceGbpInput.value = Number.isFinite(Number(course.price_gbp_minor)) ? String(Number(course.price_gbp_minor)) : "";
     }
+    if (coursePriceUsdInput) {
+      coursePriceUsdInput.value = Number.isFinite(Number(course.price_usd_minor)) ? String(Number(course.price_usd_minor)) : "";
+    }
+    if (coursePriceEurInput) {
+      coursePriceEurInput.value = Number.isFinite(Number(course.price_eur_minor)) ? String(Number(course.price_eur_minor)) : "";
+    }
+    if (courseSchoolAdvancedDiscountNgnInput) {
+      courseSchoolAdvancedDiscountNgnInput.value = Number.isFinite(Number(course.school_advanced_discount_ngn_minor)) ? String(Number(course.school_advanced_discount_ngn_minor)) : "";
+    }
+    if (courseSchoolAdvancedDiscountGbpInput) {
+      courseSchoolAdvancedDiscountGbpInput.value = Number.isFinite(Number(course.school_advanced_discount_gbp_minor)) ? String(Number(course.school_advanced_discount_gbp_minor)) : "";
+    }
+    if (courseSchoolAdvancedDiscountUsdInput) {
+      courseSchoolAdvancedDiscountUsdInput.value = Number.isFinite(Number(course.school_advanced_discount_usd_minor)) ? String(Number(course.school_advanced_discount_usd_minor)) : "";
+    }
+    if (courseSchoolAdvancedDiscountEurInput) {
+      courseSchoolAdvancedDiscountEurInput.value = Number.isFinite(Number(course.school_advanced_discount_eur_minor)) ? String(Number(course.school_advanced_discount_eur_minor)) : "";
+    }
     var methodsRaw = String(course && course.payment_methods || "").trim().toLowerCase();
-    var enabled = methodsRaw ? methodsRaw.split(",") : ["paystack", "manual_transfer"];
+    var enabled = methodsRaw ? methodsRaw.split(",") : ["paystack", "stripe", "manual_transfer"];
     if (coursePaystackEnabledInput) coursePaystackEnabledInput.checked = enabled.indexOf("paystack") !== -1;
-    if (coursePaypalEnabledInput) coursePaypalEnabledInput.checked = false;
+    if (courseStripeEnabledInput) courseStripeEnabledInput.checked = enabled.indexOf("stripe") !== -1;
     if (courseManualEnabledInput) courseManualEnabledInput.checked = enabled.indexOf("manual_transfer") !== -1;
     if (courseEnrollmentLockedInput) courseEnrollmentLockedInput.checked = Number(course.is_enrollment_locked || 0) === 1;
+    syncSchoolAdvancedDiscountVisibility();
   }
 
   function renderModuleSelect() {
@@ -1272,6 +1314,11 @@
     });
   }
 
+  if (courseSlugInput) {
+    courseSlugInput.addEventListener("input", syncSchoolAdvancedDiscountVisibility);
+    courseSlugInput.addEventListener("change", syncSchoolAdvancedDiscountVisibility);
+  }
+
   if (moduleSelect) {
     moduleSelect.addEventListener("change", function () {
       var nextId = Number(moduleSelect.value || 0);
@@ -1854,6 +1901,12 @@
       }
       var ngnValue = coursePriceNgnInput ? String(coursePriceNgnInput.value || "").trim() : "";
       var gbpValue = coursePriceGbpInput ? String(coursePriceGbpInput.value || "").trim() : "";
+      var usdValue = coursePriceUsdInput ? String(coursePriceUsdInput.value || "").trim() : "";
+      var eurValue = coursePriceEurInput ? String(coursePriceEurInput.value || "").trim() : "";
+      var schoolAdvancedDiscountNgnValue = courseSchoolAdvancedDiscountNgnInput ? String(courseSchoolAdvancedDiscountNgnInput.value || "").trim() : "";
+      var schoolAdvancedDiscountGbpValue = courseSchoolAdvancedDiscountGbpInput ? String(courseSchoolAdvancedDiscountGbpInput.value || "").trim() : "";
+      var schoolAdvancedDiscountUsdValue = courseSchoolAdvancedDiscountUsdInput ? String(courseSchoolAdvancedDiscountUsdInput.value || "").trim() : "";
+      var schoolAdvancedDiscountEurValue = courseSchoolAdvancedDiscountEurInput ? String(courseSchoolAdvancedDiscountEurInput.value || "").trim() : "";
       if (ngnValue !== "" && (!Number.isFinite(Number(ngnValue)) || Number(ngnValue) < 0)) {
         setMessage("Enter a valid non-negative NGN price.", "error");
         return;
@@ -1862,8 +1915,17 @@
         setMessage("Enter a valid non-negative GBP price.", "error");
         return;
       }
+      if (usdValue !== "" && (!Number.isFinite(Number(usdValue)) || Number(usdValue) < 0)) {
+        setMessage("Enter a valid non-negative USD price.", "error");
+        return;
+      }
+      if (eurValue !== "" && (!Number.isFinite(Number(eurValue)) || Number(eurValue) < 0)) {
+        setMessage("Enter a valid non-negative EUR price.", "error");
+        return;
+      }
       var paymentMethods = [];
       if (coursePaystackEnabledInput && coursePaystackEnabledInput.checked) paymentMethods.push("paystack");
+      if (courseStripeEnabledInput && courseStripeEnabledInput.checked) paymentMethods.push("stripe");
       if (courseManualEnabledInput && courseManualEnabledInput.checked) paymentMethods.push("manual_transfer");
       if (!paymentMethods.length) {
         setMessage("Enable at least one payment method for this course.", "error");
@@ -1883,6 +1945,24 @@
           : null,
         price_gbp_minor: gbpValue !== ""
           ? Number(gbpValue)
+          : null,
+        price_usd_minor: usdValue !== ""
+          ? Number(usdValue)
+          : null,
+        price_eur_minor: eurValue !== ""
+          ? Number(eurValue)
+          : null,
+        school_advanced_discount_ngn_minor: schoolAdvancedDiscountNgnValue !== ""
+          ? Number(schoolAdvancedDiscountNgnValue)
+          : null,
+        school_advanced_discount_gbp_minor: schoolAdvancedDiscountGbpValue !== ""
+          ? Number(schoolAdvancedDiscountGbpValue)
+          : null,
+        school_advanced_discount_usd_minor: schoolAdvancedDiscountUsdValue !== ""
+          ? Number(schoolAdvancedDiscountUsdValue)
+          : null,
+        school_advanced_discount_eur_minor: schoolAdvancedDiscountEurValue !== ""
+          ? Number(schoolAdvancedDiscountEurValue)
           : null,
         payment_methods: paymentMethods,
       };

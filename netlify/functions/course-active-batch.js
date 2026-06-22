@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureCourseBatchesTable, resolveCourseBatch } = require("./_lib/batch-store");
+const { ensureCourseOrdersProviderColumn } = require("./_lib/course-orders");
 const { DEFAULT_COURSE_SLUG, normalizeCourseSlug, getCourseDefaultAmountMinor, getCourseDefaultPaypalMinor } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { familyEnrollmentEnabledForCourse, maxFamilyChildren } = require("./_lib/families");
@@ -10,8 +11,9 @@ function normalizePaymentMethods(input) {
   const parts = raw.split(",").map(function (v) { return String(v || "").trim().toLowerCase(); }).filter(Boolean);
   const out = [];
   if (parts.indexOf("paystack") !== -1) out.push("paystack");
+  if (parts.indexOf("stripe") !== -1 || parts.indexOf("paypal") !== -1) out.push("stripe");
   if (parts.indexOf("manual_transfer") !== -1) out.push("manual_transfer");
-  if (!out.length) return ["paystack", "manual_transfer"];
+  if (!out.length) return ["paystack", "stripe", "manual_transfer"];
   return out;
 }
 
@@ -27,6 +29,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await applyRuntimeSettings(pool);
+    await ensureCourseOrdersProviderColumn(pool);
     await ensureLearningTables(pool);
     await ensureCourseBatchesTable(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
@@ -58,7 +61,11 @@ exports.handler = async function (event) {
         },
         coursePricing: {
           priceNgnMinor: Number.isFinite(courseNgnMinor) && courseNgnMinor > 0 ? Math.round(courseNgnMinor) : 0,
+          priceGbpMinor: Number(learningCourse && learningCourse.price_gbp_minor || 0),
+          priceUsdMinor: Number(learningCourse && learningCourse.price_usd_minor || 0),
+          priceEurMinor: Number(learningCourse && learningCourse.price_eur_minor || 0),
           vatPercent: safeVatPercent,
+          intlVatPercent: Number(process.env.INTL_VAT_PERCENT || 20),
           paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
           paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
         },
@@ -86,7 +93,11 @@ exports.handler = async function (event) {
       },
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
+        priceGbpMinor: Number(learningCourse && learningCourse.price_gbp_minor || 0),
+        priceUsdMinor: Number(learningCourse && learningCourse.price_usd_minor || 0),
+        priceEurMinor: Number(learningCourse && learningCourse.price_eur_minor || 0),
         vatPercent: safeVatPercent,
+        intlVatPercent: Number(process.env.INTL_VAT_PERCENT || 20),
         paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
         paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
       },

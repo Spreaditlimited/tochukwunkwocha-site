@@ -98,7 +98,7 @@
 
   let activeCourseBatchKey = currentCourseConfig().defaultBatchKey;
   let activeCourseBatchStartAt = "";
-  let enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+  let enabledPaymentMethods = { paystack: true, stripe: true, manual_transfer: true };
   var initialAffiliateCode = resolveAffiliateCode();
   appendAffiliateCodeToEnrolLinks(initialAffiliateCode);
 
@@ -391,9 +391,9 @@
     '          <span class="payment-option__title">Paystack</span>',
     '          <span class="payment-option__meta" id="paystackOptionMeta">Pay securely in Naira.</span>',
     "        </button>",
-    '        <button type="button" class="payment-option" data-provider="paypal" role="radio" aria-checked="false">',
-    '          <span class="payment-option__title">PayPal</span>',
-    '          <span class="payment-option__meta" id="paypalOptionMeta">International checkout (PayPal)</span>',
+    '        <button type="button" class="payment-option" data-provider="stripe" role="radio" aria-checked="false">',
+    '          <span class="payment-option__title">Stripe</span>',
+    '          <span class="payment-option__meta" id="paypalOptionMeta">International card checkout</span>',
     "        </button>",
     '        <button type="button" class="payment-option" data-provider="manual_transfer" role="radio" aria-checked="false">',
     '          <span class="payment-option__title">Manual bank transfer</span>',
@@ -574,13 +574,13 @@
   }
 
   function applyEnabledPaymentMethods(methods) {
-    enabledPaymentMethods = { paystack: false, paypal: false, manual_transfer: false };
+    enabledPaymentMethods = { paystack: false, stripe: false, manual_transfer: false };
     (Array.isArray(methods) ? methods : []).forEach(function (method) {
       var key = String(method || "").trim().toLowerCase();
-      if (key === "paystack" || key === "paypal" || key === "manual_transfer") enabledPaymentMethods[key] = true;
+      if (key === "paystack" || key === "stripe" || key === "manual_transfer") enabledPaymentMethods[key] = true;
     });
-    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.paypal && !enabledPaymentMethods.manual_transfer) {
-      enabledPaymentMethods = { paystack: true, paypal: true, manual_transfer: true };
+    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.stripe && !enabledPaymentMethods.manual_transfer) {
+      enabledPaymentMethods = { paystack: true, stripe: true, manual_transfer: true };
     }
     paymentOptions.forEach(function (el) {
       var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
@@ -622,11 +622,8 @@
           "</span>" +
           (schedule ? '<p class="mt-2 text-xs text-slate-500">' + schedule + "</p>" : "");
       }
-      const paypalLabel = formatGbpMinor(active && active.paypalAmountMinor);
       if (paypalOptionMeta) {
-        paypalOptionMeta.textContent = paypalLabel
-          ? `Pay online (${paypalLabel})`
-          : "International checkout (PayPal)";
+        paypalOptionMeta.textContent = "International card checkout";
       }
       updateLaunchCopy();
       applyActiveBatchPageFields(cfg.slug, active);

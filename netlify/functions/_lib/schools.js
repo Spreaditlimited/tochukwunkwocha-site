@@ -30,6 +30,9 @@ const DEFAULT_SCHOOLS_PRICE_PER_STUDENT_MINOR = 850000;
 const DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS = 5;
 const DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR = 850000;
 const DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR = 5000000;
+const DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_GBP_MINOR = 2000;
+const DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_USD_MINOR = 2000;
+const DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_EUR_MINOR = 2000;
 const DEFAULT_SITE_VAT_PERCENT = 7.5;
 const STUDENT_CODE_LENGTH = 10;
 const STUDENT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -170,6 +173,66 @@ function schoolsPricingConfig() {
   };
 }
 
+function schoolCoursePricingFromLearningCourse(learningCourse) {
+  const source = learningCourse && typeof learningCourse === "object" ? learningCourse : {};
+  const ngn = Number(source.price_ngn_minor);
+  const gbp = Number(source.price_gbp_minor);
+  const usd = Number(source.price_usd_minor);
+  const eur = Number(source.price_eur_minor);
+  const discountNgn = Number(source.school_advanced_discount_ngn_minor);
+  const discountGbp = Number(source.school_advanced_discount_gbp_minor);
+  const discountUsd = Number(source.school_advanced_discount_usd_minor);
+  const discountEur = Number(source.school_advanced_discount_eur_minor);
+  return {
+    ngnMinor: Number.isFinite(ngn) && ngn > 0 ? Math.round(ngn) : schoolsPricePerStudentMinor(),
+    gbpMinor: Number.isFinite(gbp) && gbp > 0 ? Math.round(gbp) : schoolStripePricePerStudentMinor("GBP"),
+    usdMinor: Number.isFinite(usd) && usd > 0 ? Math.round(usd) : schoolStripePricePerStudentMinor("USD"),
+    eurMinor: Number.isFinite(eur) && eur > 0 ? Math.round(eur) : schoolStripePricePerStudentMinor("EUR"),
+    discountNgnMinor: Number.isFinite(discountNgn) && discountNgn >= 0 ? Math.round(discountNgn) : null,
+    discountGbpMinor: Number.isFinite(discountGbp) && discountGbp >= 0 ? Math.round(discountGbp) : null,
+    discountUsdMinor: Number.isFinite(discountUsd) && discountUsd >= 0 ? Math.round(discountUsd) : null,
+    discountEurMinor: Number.isFinite(discountEur) && discountEur >= 0 ? Math.round(discountEur) : null,
+    courseSlug: clean(source.course_slug, 120).toLowerCase(),
+  };
+}
+
+async function resolveSchoolCoursePricing(pool, courseSlugInput) {
+  if (pool && typeof pool.query === "function") {
+    try {
+      await ensureLearningTables(pool);
+    } catch (_error) {}
+  }
+  const requested = clean(courseSlugInput, 120).toLowerCase();
+  const candidates = [];
+  if (requested === "prompt-to-profit") candidates.push("prompt-to-profit-schools", requested);
+  else if (requested) candidates.push(requested);
+  candidates.push("prompt-to-profit-schools", "prompt-to-profit");
+
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate)) continue;
+    seen.add(candidate);
+    try {
+      const course = await findLearningCourseBySlug(pool, candidate);
+      if (course) return schoolCoursePricingFromLearningCourse(course);
+    } catch (_error) {}
+  }
+
+  return schoolCoursePricingFromLearningCourse(null);
+}
+
+async function schoolsPricingConfigForPool(pool, courseSlugInput) {
+  const base = schoolsPricingConfig();
+  const coursePricing = await resolveSchoolCoursePricing(pool, courseSlugInput || "prompt-to-profit-schools");
+  return Object.assign({}, base, {
+    pricePerStudentMinor: coursePricing.ngnMinor,
+    priceGbpMinor: coursePricing.gbpMinor,
+    priceUsdMinor: coursePricing.usdMinor,
+    priceEurMinor: coursePricing.eurMinor,
+    pricingCourseSlug: coursePricing.courseSlug || clean(courseSlugInput, 120).toLowerCase() || "prompt-to-profit-schools",
+  });
+}
+
 function schoolsAdvancedMinSeats() {
   const raw = Number(process.env.SCHOOLS_ADVANCED_MIN_SEATS || DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS);
   if (!Number.isFinite(raw) || raw < 1) return DEFAULT_SCHOOLS_ADVANCED_MIN_SEATS;
@@ -189,9 +252,10 @@ function schoolsAdvancedPricingConfig(input) {
   const basePricePerStudentMinor = Number.isFinite(basePricePerStudentMinorRaw) && basePricePerStudentMinorRaw > 0
     ? Math.trunc(basePricePerStudentMinorRaw)
     : schoolsAdvancedPricePerStudentMinor();
-  const discountPerStudentMinorRaw = Number(
-    process.env.SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_NGN_MINOR || DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR
-  );
+  const sourceDiscountNgnRaw = Number(source.discountNgnMinor);
+  const discountPerStudentMinorRaw = Number.isFinite(sourceDiscountNgnRaw) && sourceDiscountNgnRaw >= 0
+    ? sourceDiscountNgnRaw
+    : Number(process.env.SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_NGN_MINOR || DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR);
   const discountPerStudentMinor = Number.isFinite(discountPerStudentMinorRaw) && discountPerStudentMinorRaw > 0
     ? Math.trunc(discountPerStudentMinorRaw)
     : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_PER_STUDENT_MINOR;
@@ -202,6 +266,9 @@ function schoolsAdvancedPricingConfig(input) {
     minSeats,
     basePricePerStudentMinor,
     discountPerStudentMinor,
+    discountGbpMinor: Number.isFinite(Number(source.discountGbpMinor)) && Number(source.discountGbpMinor) >= 0 ? Math.round(Number(source.discountGbpMinor)) : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_GBP_MINOR,
+    discountUsdMinor: Number.isFinite(Number(source.discountUsdMinor)) && Number(source.discountUsdMinor) >= 0 ? Math.round(Number(source.discountUsdMinor)) : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_USD_MINOR,
+    discountEurMinor: Number.isFinite(Number(source.discountEurMinor)) && Number(source.discountEurMinor) >= 0 ? Math.round(Number(source.discountEurMinor)) : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_EUR_MINOR,
     pricePerStudentMinor,
     vatPercent: vatPct,
     vatBps,
@@ -231,6 +298,48 @@ function schoolsAdvancedPricingFromConfig(seatCountInput, cfgInput) {
   };
 }
 
+function schoolsAdvancedStripePricingFromConfig(seatCountInput, countryInput, cfgInput) {
+  const cfg = cfgInput && typeof cfgInput === "object" ? cfgInput : schoolsAdvancedPricingConfig();
+  const seats = Math.max(0, toInt(seatCountInput, 0));
+  const currency = schoolStripeCurrency(countryInput);
+  const configured = currency === "GBP"
+    ? Number(cfg.priceGbpMinor)
+    : (currency === "EUR" ? Number(cfg.priceEurMinor) : Number(cfg.priceUsdMinor));
+  const basePricePerSeatMinor = Number.isFinite(configured) && configured > 0
+    ? Math.round(configured)
+    : schoolStripePricePerStudentMinor(currency);
+  const configuredDiscount = currency === "GBP"
+    ? Number(cfg.discountGbpMinor)
+    : (currency === "EUR" ? Number(cfg.discountEurMinor) : Number(cfg.discountUsdMinor));
+  const discountPerSeatMinor = Number.isFinite(configuredDiscount) && configuredDiscount >= 0
+    ? Math.round(configuredDiscount)
+    : (currency === "GBP" ? DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_GBP_MINOR : (currency === "EUR" ? DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_EUR_MINOR : DEFAULT_SCHOOLS_ADVANCED_DISCOUNT_USD_MINOR));
+  const pricePerSeatMinor = Math.max(0, basePricePerSeatMinor - discountPerSeatMinor);
+  const vatPercentRaw = Number(process.env.INTL_VAT_PERCENT);
+  const vatPercentValue = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 20;
+  const vatBps = Math.round(vatPercentValue * 100);
+  const subtotalMinor = Math.max(0, seats * pricePerSeatMinor);
+  const vatMinor = Math.round((subtotalMinor * vatBps) / 10000);
+  const amountBeforeFeesMinor = subtotalMinor + vatMinor;
+  const totalMinor = grossUpSchoolStripeAmount(amountBeforeFeesMinor, currency);
+  const processingFeeMinor = Math.max(0, totalMinor - amountBeforeFeesMinor);
+  return {
+    seats,
+    seatMinimum: cfg.minSeats,
+    basePricePerSeatMinor,
+    discountPerSeatMinor,
+    pricePerSeatMinor,
+    vatPercent: vatPercentValue,
+    vatBps,
+    subtotalMinor,
+    vatMinor,
+    processingFeeMinor,
+    totalMinor,
+    currency,
+    courseSlug: cfg.courseSlug || "prompt-to-production",
+  };
+}
+
 async function resolveAdvancedCourseBasePriceMinor(pool) {
   const fallback = getCourseDefaultAmountMinor("prompt-to-production");
   if (!pool || typeof pool.query !== "function") return fallback;
@@ -247,7 +356,34 @@ async function resolveAdvancedCourseBasePriceMinor(pool) {
 
 async function schoolsAdvancedPricingConfigForPool(pool) {
   const basePricePerStudentMinor = await resolveAdvancedCourseBasePriceMinor(pool);
-  return schoolsAdvancedPricingConfig({ basePricePerStudentMinor });
+  let coursePricing = null;
+  let discountPricing = null;
+  try {
+    await ensureLearningTables(pool);
+    coursePricing = schoolCoursePricingFromLearningCourse(await findLearningCourseBySlug(pool, "prompt-to-production"));
+  } catch (_error) {
+    coursePricing = null;
+  }
+  try {
+    discountPricing = await resolveSchoolCoursePricing(pool, "prompt-to-profit-schools");
+  } catch (_error) {
+    discountPricing = null;
+  }
+  return Object.assign(
+    {},
+    schoolsAdvancedPricingConfig({
+      basePricePerStudentMinor,
+      discountNgnMinor: discountPricing && discountPricing.discountNgnMinor,
+      discountGbpMinor: discountPricing && discountPricing.discountGbpMinor,
+      discountUsdMinor: discountPricing && discountPricing.discountUsdMinor,
+      discountEurMinor: discountPricing && discountPricing.discountEurMinor,
+    }),
+    {
+      priceGbpMinor: coursePricing && coursePricing.gbpMinor,
+      priceUsdMinor: coursePricing && coursePricing.usdMinor,
+      priceEurMinor: coursePricing && coursePricing.eurMinor,
+    }
+  );
 }
 
 async function schoolsAdvancedPricingForPool(pool, seatCountInput) {
@@ -255,14 +391,26 @@ async function schoolsAdvancedPricingForPool(pool, seatCountInput) {
   return schoolsAdvancedPricingFromConfig(seatCountInput, cfg);
 }
 
+async function schoolsAdvancedStripePricingForPool(pool, seatCountInput, countryInput) {
+  const cfg = await schoolsAdvancedPricingConfigForPool(pool);
+  return schoolsAdvancedStripePricingFromConfig(seatCountInput, countryInput, cfg);
+}
+
 function schoolsPricing(seatCountInput) {
   const cfg = schoolsPricingConfig();
+  return schoolsPricingFromConfig(seatCountInput, cfg);
+}
+
+function schoolsPricingFromConfig(seatCountInput, cfgInput) {
+  const cfg = cfgInput && typeof cfgInput === "object" ? cfgInput : schoolsPricingConfig();
   const seats = Math.max(0, toInt(seatCountInput, 0));
   const pricePerSeatMinor = cfg.pricePerStudentMinor;
   const subtotalMinor = Math.max(0, seats * pricePerSeatMinor);
   const vatBps = cfg.vatBps;
   const vatMinor = Math.round((subtotalMinor * vatBps) / 10000);
-  const totalMinor = subtotalMinor + vatMinor;
+  const amountBeforeFeesMinor = subtotalMinor + vatMinor;
+  const totalMinor = grossUpPaystackAmount(amountBeforeFeesMinor);
+  const processingFeeMinor = Math.max(0, totalMinor - amountBeforeFeesMinor);
   return {
     seats,
     seatMinimum: cfg.minSeats,
@@ -271,9 +419,120 @@ function schoolsPricing(seatCountInput) {
     vatBps,
     subtotalMinor,
     vatMinor,
+    processingFeeMinor,
     totalMinor,
     currency: "NGN",
   };
+}
+
+async function schoolsPricingForPool(pool, seatCountInput, courseSlugInput) {
+  const cfg = await schoolsPricingConfigForPool(pool, courseSlugInput);
+  return schoolsPricingFromConfig(seatCountInput, cfg);
+}
+
+function grossUpPaystackAmount(netMinor) {
+  const net = Math.max(0, Math.round(Number(netMinor || 0)));
+  const applicableAtPrice = Math.round(net * 0.015) + (net < 250000 ? 0 : 10000);
+  return applicableAtPrice > 200000
+    ? net + 200000
+    : Math.ceil(((net + (net < 250000 ? 0 : 10000)) / (1 - 0.015)) + 1);
+}
+
+function normalizeSchoolCountry(value) {
+  return clean(value, 120);
+}
+
+function isNigeriaCountry(value) {
+  const text = normalizeSchoolCountry(value).toLowerCase();
+  return text === "ng" || text === "nga" || text === "nigeria";
+}
+
+function schoolStripeCurrency(country) {
+  const text = normalizeSchoolCountry(country).toLowerCase();
+  const eu = new Set([
+    "at", "austria", "be", "belgium", "cy", "cyprus", "ee", "estonia", "fi", "finland", "fr", "france",
+    "de", "germany", "gr", "greece", "ie", "ireland", "it", "italy", "lv", "latvia", "lt", "lithuania",
+    "lu", "luxembourg", "mt", "malta", "nl", "netherlands", "pt", "portugal", "sk", "slovakia",
+    "si", "slovenia", "es", "spain", "european union", "eu",
+  ]);
+  if (text === "gb" || text === "gbr" || text === "uk" || text === "united kingdom" || text === "england" || text === "scotland" || text === "wales") return "GBP";
+  if (eu.has(text)) return "EUR";
+  return "USD";
+}
+
+function schoolStripePricePerStudentMinor(currency) {
+  const cur = String(currency || "USD").toUpperCase();
+  const envKey = `SCHOOLS_PRICE_PER_STUDENT_${cur}_MINOR`;
+  const raw = Number(process.env[envKey]);
+  if (Number.isFinite(raw) && raw > 0) return Math.trunc(raw);
+  if (cur === "GBP") return 2000;
+  if (cur === "EUR") return 2000;
+  return 2500;
+}
+
+function schoolStripePricePerStudentMinorFromConfig(currency, cfgInput) {
+  const cfg = cfgInput && typeof cfgInput === "object" ? cfgInput : {};
+  const cur = String(currency || "USD").toUpperCase();
+  const configured = cur === "GBP"
+    ? Number(cfg.priceGbpMinor)
+    : (cur === "EUR" ? Number(cfg.priceEurMinor) : Number(cfg.priceUsdMinor));
+  if (Number.isFinite(configured) && configured > 0) return Math.round(configured);
+  return schoolStripePricePerStudentMinor(cur);
+}
+
+function schoolStripeFixedFeeMinor(currency) {
+  const cur = String(currency || "USD").toUpperCase();
+  const raw = Number(process.env[`STRIPE_FEE_FIXED_${cur}_MINOR`]);
+  if (Number.isFinite(raw) && raw >= 0) return Math.round(raw);
+  if (cur === "GBP") return 20;
+  if (cur === "EUR") return 25;
+  return 30;
+}
+
+function grossUpSchoolStripeAmount(netMinor, currency) {
+  const net = Math.max(0, Math.round(Number(netMinor || 0)));
+  const bpsRaw = Number(process.env.STRIPE_FEE_BPS);
+  const bps = Number.isFinite(bpsRaw) && bpsRaw >= 0 ? Math.round(bpsRaw) : 150;
+  const fixed = schoolStripeFixedFeeMinor(currency);
+  if (bps >= 10000) return net + fixed;
+  return Math.ceil(((net + fixed) / (1 - bps / 10000)) + 1);
+}
+
+function schoolsStripePricing(seatCountInput, countryInput) {
+  const cfg = schoolsPricingConfig();
+  return schoolsStripePricingFromConfig(seatCountInput, countryInput, cfg);
+}
+
+function schoolsStripePricingFromConfig(seatCountInput, countryInput, cfgInput) {
+  const cfg = cfgInput && typeof cfgInput === "object" ? cfgInput : schoolsPricingConfig();
+  const seats = Math.max(0, toInt(seatCountInput, 0));
+  const currency = schoolStripeCurrency(countryInput);
+  const pricePerSeatMinor = schoolStripePricePerStudentMinorFromConfig(currency, cfg);
+  const vatPercentRaw = Number(process.env.INTL_VAT_PERCENT);
+  const vatPercentValue = Number.isFinite(vatPercentRaw) && vatPercentRaw >= 0 ? vatPercentRaw : 20;
+  const vatBps = Math.round(vatPercentValue * 100);
+  const subtotalMinor = Math.max(0, seats * pricePerSeatMinor);
+  const vatMinor = Math.round((subtotalMinor * vatBps) / 10000);
+  const amountBeforeFeesMinor = subtotalMinor + vatMinor;
+  const totalMinor = grossUpSchoolStripeAmount(amountBeforeFeesMinor, currency);
+  const processingFeeMinor = Math.max(0, totalMinor - amountBeforeFeesMinor);
+  return {
+    seats,
+    seatMinimum: cfg.minSeats,
+    pricePerSeatMinor,
+    vatPercent: vatPercentValue,
+    vatBps,
+    subtotalMinor,
+    vatMinor,
+    processingFeeMinor,
+    totalMinor,
+    currency,
+  };
+}
+
+async function schoolsStripePricingForPool(pool, seatCountInput, countryInput, courseSlugInput) {
+  const cfg = await schoolsPricingConfigForPool(pool, courseSlugInput);
+  return schoolsStripePricingFromConfig(seatCountInput, countryInput, cfg);
 }
 
 function isSecureRequest(event) {
@@ -361,6 +620,7 @@ async function ensureSchoolTables(pool) {
       vat_bps INT NOT NULL DEFAULT 0,
       subtotal_minor BIGINT NOT NULL DEFAULT 0,
       vat_minor BIGINT NOT NULL DEFAULT 0,
+      processing_fee_minor BIGINT NOT NULL DEFAULT 0,
       total_minor BIGINT NOT NULL DEFAULT 0,
       status VARCHAR(40) NOT NULL DEFAULT 'active',
       paid_at DATETIME NULL,
@@ -449,6 +709,7 @@ async function ensureSchoolTables(pool) {
       admin_name VARCHAR(180) NOT NULL,
       admin_email VARCHAR(220) NOT NULL,
       admin_phone VARCHAR(80) NULL,
+      country VARCHAR(120) NULL,
       course_slug VARCHAR(120) NOT NULL,
       seats_requested INT NOT NULL,
       currency VARCHAR(10) NOT NULL DEFAULT 'NGN',
@@ -554,6 +815,8 @@ async function ensureSchoolTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN school_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN order_kind VARCHAR(50) NOT NULL DEFAULT 'school_enrollment'`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN seat_course_slug VARCHAR(120) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN country VARCHAR(120) NULL`);
+  await safeAlter(pool, `ALTER TABLE ${SCHOOL_ORDERS_TABLE} ADD COLUMN processing_fee_minor BIGINT NOT NULL DEFAULT 0`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN student_code VARCHAR(20) NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN account_id BIGINT NULL`);
   await safeAlter(pool, `ALTER TABLE ${SCHOOL_STUDENTS_TABLE} ADD COLUMN website_url VARCHAR(1000) NULL`);
@@ -881,13 +1144,15 @@ async function createSchoolOrder(pool, input) {
   const adminName = clean(input && input.adminName, 180);
   const adminEmail = normalizeEmail(input && input.adminEmail);
   const adminPhone = clean(input && input.adminPhone, 80);
+  const country = normalizeSchoolCountry(input && input.country);
   const courseSlug = clean(input && input.courseSlug, 120).toLowerCase() || "prompt-to-profit";
   const seatCourseSlug = clean(input && input.seatCourseSlug, 120).toLowerCase() || courseSlug;
   const orderKind = clean(input && input.orderKind, 50).toLowerCase() || "school_enrollment";
   const provider = clean(input && input.provider, 40).toLowerCase() || "paystack";
-  const pricing = orderKind === "advanced_seat_purchase"
+  const pricingOverride = input && input.pricing && typeof input.pricing === "object" ? input.pricing : null;
+  const pricing = pricingOverride || (orderKind === "advanced_seat_purchase"
     ? await schoolsAdvancedPricingForPool(pool, input && input.seatsRequested)
-    : schoolsPricing(input && input.seatsRequested);
+    : await schoolsPricingForPool(pool, input && input.seatsRequested, courseSlug));
 
   if (!schoolName || !adminName || !adminEmail) {
     throw new Error("School name, admin name, and valid admin email are required");
@@ -919,9 +1184,9 @@ async function createSchoolOrder(pool, input) {
   }
   await pool.query(
     `INSERT INTO ${SCHOOL_ORDERS_TABLE}
-      (order_uuid, school_id, school_name, admin_name, admin_email, admin_phone, course_slug, seats_requested, currency,
-       seat_course_slug, order_kind, price_per_student_minor, vat_bps, subtotal_minor, vat_minor, total_minor, provider, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      (order_uuid, school_id, school_name, admin_name, admin_email, admin_phone, country, course_slug, seats_requested, currency,
+       seat_course_slug, order_kind, price_per_student_minor, vat_bps, subtotal_minor, vat_minor, processing_fee_minor, total_minor, provider, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
     [
       orderUuid,
       existingSchoolId > 0 ? existingSchoolId : null,
@@ -929,6 +1194,7 @@ async function createSchoolOrder(pool, input) {
       adminName,
       adminEmail,
       adminPhone || null,
+      country || null,
       courseSlug,
       pricing.seats,
       pricing.currency,
@@ -938,6 +1204,7 @@ async function createSchoolOrder(pool, input) {
       pricing.vatBps,
       pricing.subtotalMinor,
       pricing.vatMinor,
+      pricing.processingFeeMinor || 0,
       pricing.totalMinor,
       provider,
       now,
@@ -1977,9 +2244,15 @@ module.exports = {
   DEFAULT_SCHOOLS_ADVANCED_PRICE_PER_STUDENT_MINOR,
   DEFAULT_SITE_VAT_PERCENT,
   schoolsPricingConfig,
+  schoolsPricingConfigForPool,
   schoolsPricing,
+  schoolsPricingForPool,
+  schoolsStripePricing,
+  schoolsStripePricingForPool,
+  isNigeriaCountry,
   schoolsAdvancedPricingConfigForPool,
   schoolsAdvancedPricingForPool,
+  schoolsAdvancedStripePricingForPool,
   ensureSchoolTables,
   createSchoolOrder,
   markSchoolOrderPaidBy,

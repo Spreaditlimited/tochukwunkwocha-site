@@ -164,8 +164,9 @@ function normalizePaymentMethods(input) {
     .filter(Boolean);
   const allowed = [];
   if (tokens.indexOf("paystack") !== -1) allowed.push("paystack");
+  if (tokens.indexOf("stripe") !== -1 || tokens.indexOf("paypal") !== -1) allowed.push("stripe");
   if (tokens.indexOf("manual_transfer") !== -1 || tokens.indexOf("manual") !== -1) allowed.push("manual_transfer");
-  if (!allowed.length) return "paystack,manual_transfer";
+  if (!allowed.length) return "paystack,stripe,manual_transfer";
   return allowed.join(",");
 }
 
@@ -210,6 +211,11 @@ async function ensureLearningTables(pool) {
       price_ngn_minor INT NULL,
       price_gbp_minor INT NULL,
       price_usd_minor INT NULL,
+      price_eur_minor INT NULL,
+      school_advanced_discount_ngn_minor INT NULL,
+      school_advanced_discount_gbp_minor INT NULL,
+      school_advanced_discount_usd_minor INT NULL,
+      school_advanced_discount_eur_minor INT NULL,
       vat_bps INT NULL,
       paystack_fee_bps INT NULL,
       paystack_fee_fixed_minor_ngn INT NULL,
@@ -234,6 +240,11 @@ async function ensureLearningTables(pool) {
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_ngn_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_gbp_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_usd_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN price_eur_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN school_advanced_discount_ngn_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN school_advanced_discount_gbp_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN school_advanced_discount_usd_minor INT NULL`);
+  await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN school_advanced_discount_eur_minor INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN vat_bps INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN paystack_fee_bps INT NULL`);
   await safeAlter(pool, `ALTER TABLE ${COURSES_TABLE} ADD COLUMN paystack_fee_fixed_minor_ngn INT NULL`);
@@ -1012,6 +1023,12 @@ async function listLearningCourses(pool) {
             enrollment_mode,
             price_ngn_minor,
             price_gbp_minor,
+            price_usd_minor,
+            price_eur_minor,
+            school_advanced_discount_ngn_minor,
+            school_advanced_discount_gbp_minor,
+            school_advanced_discount_usd_minor,
+            school_advanced_discount_eur_minor,
             payment_methods,
             is_enrollment_locked,
             is_published,
@@ -1055,6 +1072,12 @@ async function findLearningCourseBySlug(pool, courseSlug) {
             enrollment_mode,
             price_ngn_minor,
             price_gbp_minor,
+            price_usd_minor,
+            price_eur_minor,
+            school_advanced_discount_ngn_minor,
+            school_advanced_discount_gbp_minor,
+            school_advanced_discount_usd_minor,
+            school_advanced_discount_eur_minor,
             payment_methods,
             is_enrollment_locked,
             is_published,
@@ -1079,9 +1102,21 @@ async function upsertLearningCourse(pool, input) {
   const enrollmentMode = modeRaw === "immediate" ? "immediate" : "batch";
   const priceNgnMinorRaw = Number(input && input.price_ngn_minor);
   const priceGbpMinorRaw = Number(input && input.price_gbp_minor);
+  const priceUsdMinorRaw = Number(input && input.price_usd_minor);
+  const priceEurMinorRaw = Number(input && input.price_eur_minor);
+  const schoolAdvancedDiscountNgnMinorRaw = Number(input && input.school_advanced_discount_ngn_minor);
+  const schoolAdvancedDiscountGbpMinorRaw = Number(input && input.school_advanced_discount_gbp_minor);
+  const schoolAdvancedDiscountUsdMinorRaw = Number(input && input.school_advanced_discount_usd_minor);
+  const schoolAdvancedDiscountEurMinorRaw = Number(input && input.school_advanced_discount_eur_minor);
   const paymentMethods = normalizePaymentMethods(input && input.payment_methods);
   const priceNgnMinor = Number.isFinite(priceNgnMinorRaw) && priceNgnMinorRaw > 0 ? Math.round(priceNgnMinorRaw) : null;
   const priceGbpMinor = Number.isFinite(priceGbpMinorRaw) && priceGbpMinorRaw > 0 ? Math.round(priceGbpMinorRaw) : null;
+  const priceUsdMinor = Number.isFinite(priceUsdMinorRaw) && priceUsdMinorRaw > 0 ? Math.round(priceUsdMinorRaw) : null;
+  const priceEurMinor = Number.isFinite(priceEurMinorRaw) && priceEurMinorRaw > 0 ? Math.round(priceEurMinorRaw) : null;
+  const schoolAdvancedDiscountNgnMinor = Number.isFinite(schoolAdvancedDiscountNgnMinorRaw) && schoolAdvancedDiscountNgnMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountNgnMinorRaw) : null;
+  const schoolAdvancedDiscountGbpMinor = Number.isFinite(schoolAdvancedDiscountGbpMinorRaw) && schoolAdvancedDiscountGbpMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountGbpMinorRaw) : null;
+  const schoolAdvancedDiscountUsdMinor = Number.isFinite(schoolAdvancedDiscountUsdMinorRaw) && schoolAdvancedDiscountUsdMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountUsdMinorRaw) : null;
+  const schoolAdvancedDiscountEurMinor = Number.isFinite(schoolAdvancedDiscountEurMinorRaw) && schoolAdvancedDiscountEurMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountEurMinorRaw) : null;
   const isEnrollmentLocked = input && (input.is_enrollment_locked === true || Number(input.is_enrollment_locked) === 1) ? 1 : 0;
   const isPublished = input && (input.is_published === true || Number(input.is_published) === 1) ? 1 : 0;
   const releaseAt = toSqlDateTime(input && input.release_at);
@@ -1093,10 +1128,10 @@ async function upsertLearningCourse(pool, input) {
   if (Number.isFinite(id) && id > 0) {
     await pool.query(
       `UPDATE ${COURSES_TABLE}
-       SET course_slug = ?, course_title = ?, course_description = ?, enrollment_mode = ?, price_ngn_minor = ?, price_gbp_minor = ?, payment_methods = ?, is_enrollment_locked = ?, is_published = ?, release_at = ?, updated_at = ?
+       SET course_slug = ?, course_title = ?, course_description = ?, enrollment_mode = ?, price_ngn_minor = ?, price_gbp_minor = ?, price_usd_minor = ?, price_eur_minor = ?, school_advanced_discount_ngn_minor = ?, school_advanced_discount_gbp_minor = ?, school_advanced_discount_usd_minor = ?, school_advanced_discount_eur_minor = ?, payment_methods = ?, is_enrollment_locked = ?, is_published = ?, release_at = ?, updated_at = ?
        WHERE id = ?
        LIMIT 1`,
-      [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, paymentMethods, isEnrollmentLocked, isPublished, releaseAt, now, id]
+      [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, priceUsdMinor, priceEurMinor, schoolAdvancedDiscountNgnMinor, schoolAdvancedDiscountGbpMinor, schoolAdvancedDiscountUsdMinor, schoolAdvancedDiscountEurMinor, paymentMethods, isEnrollmentLocked, isPublished, releaseAt, now, id]
     );
     const [rows] = await pool.query(
       `SELECT id,
@@ -1106,6 +1141,12 @@ async function upsertLearningCourse(pool, input) {
               enrollment_mode,
               price_ngn_minor,
               price_gbp_minor,
+              price_usd_minor,
+              price_eur_minor,
+              school_advanced_discount_ngn_minor,
+              school_advanced_discount_gbp_minor,
+              school_advanced_discount_usd_minor,
+              school_advanced_discount_eur_minor,
               payment_methods,
               is_enrollment_locked,
               is_published,
@@ -1122,20 +1163,26 @@ async function upsertLearningCourse(pool, input) {
 
   await pool.query(
     `INSERT INTO ${COURSES_TABLE}
-      (course_slug, course_title, course_description, enrollment_mode, price_ngn_minor, price_gbp_minor, payment_methods, is_enrollment_locked, is_published, release_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (course_slug, course_title, course_description, enrollment_mode, price_ngn_minor, price_gbp_minor, price_usd_minor, price_eur_minor, school_advanced_discount_ngn_minor, school_advanced_discount_gbp_minor, school_advanced_discount_usd_minor, school_advanced_discount_eur_minor, payment_methods, is_enrollment_locked, is_published, release_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
       course_title = VALUES(course_title),
       course_description = VALUES(course_description),
       enrollment_mode = VALUES(enrollment_mode),
       price_ngn_minor = VALUES(price_ngn_minor),
       price_gbp_minor = VALUES(price_gbp_minor),
+      price_usd_minor = VALUES(price_usd_minor),
+      price_eur_minor = VALUES(price_eur_minor),
+      school_advanced_discount_ngn_minor = VALUES(school_advanced_discount_ngn_minor),
+      school_advanced_discount_gbp_minor = VALUES(school_advanced_discount_gbp_minor),
+      school_advanced_discount_usd_minor = VALUES(school_advanced_discount_usd_minor),
+      school_advanced_discount_eur_minor = VALUES(school_advanced_discount_eur_minor),
       payment_methods = VALUES(payment_methods),
       is_enrollment_locked = VALUES(is_enrollment_locked),
       is_published = VALUES(is_published),
       release_at = VALUES(release_at),
       updated_at = VALUES(updated_at)`,
-    [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, paymentMethods, isEnrollmentLocked, isPublished, releaseAt, now, now]
+    [slug, title, description, enrollmentMode, priceNgnMinor, priceGbpMinor, priceUsdMinor, priceEurMinor, schoolAdvancedDiscountNgnMinor, schoolAdvancedDiscountGbpMinor, schoolAdvancedDiscountUsdMinor, schoolAdvancedDiscountEurMinor, paymentMethods, isEnrollmentLocked, isPublished, releaseAt, now, now]
   );
   return findLearningCourseBySlug(pool, slug);
 }

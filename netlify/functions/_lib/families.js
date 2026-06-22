@@ -734,6 +734,45 @@ async function listFamilyDashboard(pool, parentAccountId) {
      ORDER BY course_slug ASC, batch_label ASC, batch_key ASC`,
     [Number(family.id)]
   );
+  const [seatProviderRows] = await pool.query(
+    `SELECT
+       l.course_slug,
+       l.batch_key,
+       l.source_type,
+       l.source_uuid,
+       co.provider AS order_provider,
+       co.currency AS order_currency,
+       mp.currency AS manual_currency
+     FROM ${FAMILY_SEAT_LEDGER_TABLE} l
+     LEFT JOIN course_orders co
+       ON l.source_type = 'course_order'
+      AND co.order_uuid = l.source_uuid
+     LEFT JOIN course_manual_payments mp
+       ON l.source_type = 'manual_payment'
+      AND mp.payment_uuid = l.source_uuid
+     INNER JOIN (
+       SELECT course_slug, batch_key, MAX(id) AS latest_id
+       FROM ${FAMILY_SEAT_LEDGER_TABLE}
+       WHERE family_id = ?
+         AND entry_type = 'purchase'
+       GROUP BY course_slug, batch_key
+     ) latest ON latest.latest_id = l.id
+     WHERE l.family_id = ?
+       AND l.entry_type = 'purchase'`,
+    [Number(family.id), Number(family.id)]
+  );
+  const providerBySeat = new Map();
+  (seatProviderRows || []).forEach(function (row) {
+    const key = `${clean(row.course_slug, 120)}::${clean(row.batch_key, 64)}`;
+    const sourceType = clean(row.source_type, 40);
+    const provider = sourceType === "manual_payment"
+      ? "manual_transfer"
+      : clean(row.order_provider, 40).toLowerCase();
+    providerBySeat.set(key, {
+      provider: provider || "paystack",
+      currency: clean(row.order_currency || row.manual_currency, 10).toUpperCase(),
+    });
+  });
   return {
     family: {
       familyUuid: clean(family.family_uuid, 64),
@@ -745,6 +784,8 @@ async function listFamilyDashboard(pool, parentAccountId) {
     seats: (seatRows || []).map(function (row) {
       const purchased = Number(row.seats_purchased || 0);
       const consumed = Number(row.seats_consumed || 0);
+      const key = `${clean(row.course_slug, 120)}::${clean(row.batch_key, 64)}`;
+      const payment = providerBySeat.get(key) || { provider: "paystack", currency: "" };
       return {
         courseSlug: clean(row.course_slug, 120),
         batchKey: clean(row.batch_key, 64),
@@ -752,6 +793,8 @@ async function listFamilyDashboard(pool, parentAccountId) {
         seatsPurchased: purchased,
         seatsUsed: consumed,
         seatsAvailable: Math.max(0, purchased - consumed),
+        paymentProvider: payment.provider,
+        paymentCurrency: payment.currency,
       };
     }),
     children: (rows || []).map(function (row) {

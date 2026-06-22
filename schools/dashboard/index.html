@@ -29,6 +29,10 @@
         overflow-x: hidden;
       }
 
+      .school-dashboard-content {
+        min-width: 0;
+      }
+
       .school-dashboard-topbar {
         height: 3.5rem !important;
         min-height: 3.5rem !important;
@@ -49,6 +53,8 @@
         min-height: 100dvh;
         position: fixed;
         flex: 0 0 18rem;
+        display: flex;
+        flex-direction: column;
       }
 
       #schoolSidebar > [data-school-sidebar-brand] {
@@ -57,6 +63,16 @@
         max-height: 3.5rem !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
+      }
+
+      #schoolSidebar nav {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      #schoolSidebar [data-school-sidebar-footer] {
+        margin-top: auto;
+        flex-shrink: 0;
       }
 
       .school-dashboard-main {
@@ -87,15 +103,35 @@
 
       @media (min-width: 768px) {
         body.school-dashboard-page {
-          height: auto;
-          overflow-y: auto;
+          height: 100dvh;
+          overflow: hidden;
+        }
+
+        .school-dashboard-shell {
+          height: 100dvh;
+          overflow: hidden;
         }
 
         #schoolSidebar {
-          position: sticky;
+          position: fixed;
+          top: 0;
+          left: 0;
           min-height: 100dvh;
           height: 100dvh;
           overflow: visible;
+        }
+
+        .school-dashboard-content {
+          width: calc(100% - 18rem);
+          height: 100dvh;
+          margin-left: 18rem;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        body.school-dashboard-page[data-school-sidebar-collapsed="1"] .school-dashboard-content {
+          width: calc(100% - 5.5rem);
+          margin-left: 5.5rem;
         }
       }
 
@@ -127,7 +163,7 @@
     <section class="school-dashboard-shell flex w-full relative">
       <button id="schoolMobileMenuOverlay" type="button" aria-label="Close menu" class="fixed inset-0 bg-[#060b14]/80 z-40 hidden md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></button>
 
-      <aside id="schoolSidebar" class="fixed top-0 left-0 z-50 h-dvh w-72 overflow-y-auto bg-[#060b14]/95 backdrop-blur-2xl border-r border-white/5 text-white flex flex-col transform -translate-x-full md:sticky md:top-0 md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+      <aside id="schoolSidebar" class="fixed top-0 left-0 z-50 h-dvh w-72 overflow-y-auto bg-[#060b14]/95 backdrop-blur-2xl border-r border-white/5 text-white flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
         <div data-school-sidebar-brand class="h-16 flex items-center px-6 border-b border-white/10">
           <img src="/assets/Prompt to Profit_icon.png" alt="Prompt to Profit icon" class="h-8 w-8 rounded object-cover bg-white/10 border border-white/20 p-0.5 mr-3" />
           <span class="font-heading font-bold text-lg" data-brand-label="1">School Portal</span>
@@ -139,12 +175,12 @@
           <a href="#uploadSection" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Bulk Enroll</a>
           <a href="/schools/reset-password-request/" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-white/5 hover:text-white rounded-lg font-medium transition-colors">Reset Password</a>
         </nav>
-        <div class="p-4 border-t border-white/10">
+        <div data-school-sidebar-footer class="mt-auto p-4 border-t border-white/10">
           <button type="button" data-school-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
         </div>
       </aside>
 
-      <div class="flex-1 flex min-w-0 flex-col">
+      <div class="school-dashboard-content flex-1 flex min-w-0 flex-col">
         <header class="school-dashboard-topbar sticky top-0 h-14 shrink-0 bg-[#060b14]/90 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 sm:px-6 gap-3 z-20">
           <div class="flex items-center gap-3 min-w-0">
             <button id="schoolMobileMenuButton" type="button" aria-controls="schoolSidebar" aria-expanded="false" class="md:hidden p-2 -ml-2 text-slate-400 hover:text-white cursor-pointer rounded-lg hover:bg-white/10">

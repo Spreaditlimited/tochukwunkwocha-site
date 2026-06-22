@@ -182,6 +182,7 @@
         signout.style.paddingRight = "";
       }
       aside.setAttribute("data-collapsed", "0");
+      document.body.setAttribute("data-school-sidebar-collapsed", "0");
       return;
     }
 
@@ -204,6 +205,7 @@
       signout.setAttribute("title", "Sign out");
     }
     aside.setAttribute("data-collapsed", "1");
+    document.body.setAttribute("data-school-sidebar-collapsed", "1");
   }
 
   function chevronSvg(collapsed) {
@@ -241,7 +243,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("data-sidebar-rail-toggle", "1");
-      btn.className = "hidden md:inline-flex absolute top-20 -right-3 z-[70] h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#f8fafc] text-slate-800 shadow-[0_10px_25px_rgba(0,0,0,0.35)] ring-1 ring-slate-900/10 hover:bg-white transition-colors";
+      btn.className = "hidden md:inline-flex absolute top-20 -right-3 z-[70] h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#0f172a] text-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.45)] ring-1 ring-white/10 hover:bg-[#1e293b] hover:text-white transition-colors";
       btn.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();

@@ -14,6 +14,14 @@ function paystackSecret() {
   return required("PAYSTACK_SECRET_KEY");
 }
 
+function stripeSecret() {
+  return required("STRIPE_SECRET_KEY");
+}
+
+function stripeWebhookSecret() {
+  return required("STRIPE_WEBHOOK_SECRET");
+}
+
 function buildError(message, extra) {
   const err = new Error(String(message || "Unknown error"));
   if (extra && typeof extra === "object") {
@@ -122,6 +130,82 @@ async function paystackInitialize({ email, amountMinor, reference, metadata, cal
     accessCode: json.data.access_code || null,
     providerReference: json.data.reference || reference,
   };
+}
+
+function appendStripeParam(params, key, value) {
+  if (value === undefined || value === null) return;
+  params.append(key, String(value));
+}
+
+async function stripeCreateCheckoutSession({ email, amountMinor, currency, courseName, orderUuid, metadata, successUrl, cancelUrl }) {
+  const params = new URLSearchParams();
+  appendStripeParam(params, "mode", "payment");
+  appendStripeParam(params, "customer_email", email);
+  appendStripeParam(params, "success_url", successUrl);
+  appendStripeParam(params, "cancel_url", cancelUrl);
+  appendStripeParam(params, "line_items[0][quantity]", "1");
+  appendStripeParam(params, "line_items[0][price_data][currency]", String(currency || "").toLowerCase());
+  appendStripeParam(params, "line_items[0][price_data][unit_amount]", Math.round(Number(amountMinor || 0)));
+  appendStripeParam(params, "line_items[0][price_data][product_data][name]", courseName || "Course enrollment");
+  appendStripeParam(params, "client_reference_id", orderUuid);
+  const meta = metadata && typeof metadata === "object" ? metadata : {};
+  Object.keys(meta).forEach((key) => {
+    appendStripeParam(params, `metadata[${key}]`, meta[key] === null ? "" : meta[key]);
+    appendStripeParam(params, `payment_intent_data[metadata][${key}]`, meta[key] === null ? "" : meta[key]);
+  });
+
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${stripeSecret()}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.id || !json.url) {
+    throw new Error((json && json.error && json.error.message) || `Stripe Checkout failed (${res.status})`);
+  }
+  return {
+    checkoutUrl: json.url,
+    providerReference: json.id,
+    providerOrderId: json.payment_intent || null,
+  };
+}
+
+async function stripeRetrieveCheckoutSession(sessionId) {
+  const id = String(sessionId || "").trim();
+  if (!id) throw new Error("Missing Stripe session ID");
+  const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${stripeSecret()}`,
+      Accept: "application/json",
+    },
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || !json.id) {
+    throw new Error((json && json.error && json.error.message) || `Stripe session retrieve failed (${res.status})`);
+  }
+  return json;
+}
+
+function verifyStripeSignature(rawBody, signatureHeader) {
+  const secret = stripeWebhookSecret();
+  const header = String(signatureHeader || "");
+  const parts = header.split(",").reduce((acc, part) => {
+    const idx = part.indexOf("=");
+    if (idx > -1) acc[part.slice(0, idx)] = part.slice(idx + 1);
+    return acc;
+  }, {});
+  const timestamp = parts.t || "";
+  const expectedSig = parts.v1 || "";
+  if (!timestamp || !expectedSig) return false;
+  const signedPayload = `${timestamp}.${String(rawBody || "")}`;
+  const digest = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
+  const a = Buffer.from(digest, "hex");
+  const b = Buffer.from(expectedSig, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 async function paystackVerifyTransaction(reference) {
@@ -479,6 +563,9 @@ module.exports = {
   paystackResolveBankAccount,
   paystackCreateTransferRecipient,
   paystackCreateTransfer,
+  stripeCreateCheckoutSession,
+  stripeRetrieveCheckoutSession,
+  verifyStripeSignature,
   paypalCreateOrder,
   paypalCaptureOrder,
   paypalVerifyWebhook,

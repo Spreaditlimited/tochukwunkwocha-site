@@ -1,7 +1,7 @@
 const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
-const { paystackInitialize, siteBaseUrl } = require("./_lib/payments");
-const { ensureSchoolTables, createSchoolOrder } = require("./_lib/schools");
+const { paystackInitialize, stripeCreateCheckoutSession, siteBaseUrl } = require("./_lib/payments");
+const { ensureSchoolTables, createSchoolOrder, schoolsStripePricingForPool, isNigeriaCountry } = require("./_lib/schools");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { ensureLearningTables, findLearningCourseBySlug } = require("./_lib/learning");
 const { ensureAffiliateTables, captureSchoolOrderReferral } = require("./_lib/affiliates");
@@ -13,6 +13,16 @@ function parseBody(event) {
   } catch (_error) {
     return null;
   }
+}
+
+function clean(value, max) {
+  return String(value || "").trim().slice(0, max || 500);
+}
+
+function normalizeProvider(value) {
+  const raw = clean(value, 40).toLowerCase();
+  if (raw === "stripe") return "stripe";
+  return "paystack";
 }
 
 exports.handler = async function (event) {
@@ -41,14 +51,28 @@ exports.handler = async function (event) {
       return json(400, { ok: false, error: "Unknown course. Please choose a valid course." });
     }
     await ensureSchoolTables(pool);
+    const country = clean(body.country, 120);
+    if (!country) {
+      return json(400, { ok: false, error: "Select your country before continuing." });
+    }
+    const provider = normalizeProvider(body.provider);
+    if (isNigeriaCountry(country) && provider !== "paystack") {
+      return json(400, { ok: false, error: "Use Paystack for Nigerian school registration payments." });
+    }
+    if (!isNigeriaCountry(country) && provider !== "stripe") {
+      return json(400, { ok: false, error: "Use Stripe for international school registration payments." });
+    }
+    const pricing = provider === "stripe" ? await schoolsStripePricingForPool(pool, body.seatCount, country, courseSlug) : null;
     const order = await createSchoolOrder(pool, {
       schoolName: body.schoolName,
       adminName: body.adminName,
       adminEmail: body.adminEmail,
       adminPhone: body.adminPhone,
+      country,
       seatsRequested: body.seatCount,
       courseSlug,
-      provider: "paystack",
+      provider,
+      pricing,
     });
 
     const affiliateCode = String(body.affiliateCode || body.affiliate_code || "").trim().toUpperCase().slice(0, 40);
@@ -62,31 +86,45 @@ exports.handler = async function (event) {
     }
 
     const reference = `SCH_${order.orderUuid.replace(/[^a-z0-9]/gi, "").slice(0, 26).toUpperCase()}`;
-    const payment = await paystackInitialize({
-      email: String(body.adminEmail || "").trim().toLowerCase(),
-      amountMinor: Number(order.pricing.totalMinor || 0),
-      reference,
-      callbackUrl: `${siteBaseUrl()}/.netlify/functions/school-paystack-return`,
-      metadata: {
-        school_order_uuid: order.orderUuid,
-        school_name: String(body.schoolName || "").trim(),
-        admin_email: String(body.adminEmail || "").trim().toLowerCase(),
-        course_slug: courseSlug,
-        seat_count: Number(order.pricing.seats || 0),
-      },
-    });
+    const metadata = {
+      school_order_uuid: order.orderUuid,
+      school_name: String(body.schoolName || "").trim(),
+      admin_email: String(body.adminEmail || "").trim().toLowerCase(),
+      course_slug: courseSlug,
+      seat_count: Number(order.pricing.seats || 0),
+      payment_scope: "school_registration",
+    };
+    const payment = provider === "stripe"
+      ? await stripeCreateCheckoutSession({
+          email: String(body.adminEmail || "").trim().toLowerCase(),
+          amountMinor: Number(order.pricing.totalMinor || 0),
+          currency: String(order.pricing.currency || "USD").toUpperCase(),
+          courseName: "Prompt to Profit for Schools",
+          orderUuid: order.orderUuid,
+          metadata,
+          successUrl: `${siteBaseUrl()}/.netlify/functions/school-stripe-return?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${siteBaseUrl()}/schools/login/?mode=register&payment=cancelled`,
+        })
+      : await paystackInitialize({
+          email: String(body.adminEmail || "").trim().toLowerCase(),
+          amountMinor: Number(order.pricing.totalMinor || 0),
+          reference,
+          callbackUrl: `${siteBaseUrl()}/.netlify/functions/school-paystack-return`,
+          metadata,
+        });
 
     await pool.query(
       `UPDATE school_orders
-       SET provider_reference = ?, updated_at = NOW()
+       SET provider_reference = ?, provider_order_id = ?, updated_at = NOW()
        WHERE order_uuid = ?
        LIMIT 1`,
-      [payment.providerReference || reference, order.orderUuid]
+      [payment.providerReference || reference, payment.providerOrderId || null, order.orderUuid]
     );
 
     return json(200, {
       ok: true,
       orderUuid: order.orderUuid,
+      provider,
       checkoutUrl: payment.checkoutUrl,
       pricing: order.pricing,
     });

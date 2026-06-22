@@ -38,9 +38,21 @@ exports.handler = async function (event) {
   const enrollmentMode = clean(body.enrollment_mode, 24).toLowerCase() === "immediate" ? "immediate" : "batch";
   const priceNgnMinorRaw = Number(body.price_ngn_minor);
   const priceGbpMinorRaw = Number(body.price_gbp_minor);
+  const priceUsdMinorRaw = Number(body.price_usd_minor);
+  const priceEurMinorRaw = Number(body.price_eur_minor);
+  const schoolAdvancedDiscountNgnMinorRaw = Number(body.school_advanced_discount_ngn_minor);
+  const schoolAdvancedDiscountGbpMinorRaw = Number(body.school_advanced_discount_gbp_minor);
+  const schoolAdvancedDiscountUsdMinorRaw = Number(body.school_advanced_discount_usd_minor);
+  const schoolAdvancedDiscountEurMinorRaw = Number(body.school_advanced_discount_eur_minor);
   const paymentMethods = Array.isArray(body.payment_methods) ? body.payment_methods : String(body.payment_methods || "");
   const priceNgnMinor = Number.isFinite(priceNgnMinorRaw) && priceNgnMinorRaw > 0 ? Math.round(priceNgnMinorRaw) : null;
   const priceGbpMinor = Number.isFinite(priceGbpMinorRaw) && priceGbpMinorRaw > 0 ? Math.round(priceGbpMinorRaw) : null;
+  const priceUsdMinor = Number.isFinite(priceUsdMinorRaw) && priceUsdMinorRaw > 0 ? Math.round(priceUsdMinorRaw) : null;
+  const priceEurMinor = Number.isFinite(priceEurMinorRaw) && priceEurMinorRaw > 0 ? Math.round(priceEurMinorRaw) : null;
+  const schoolAdvancedDiscountNgnMinor = Number.isFinite(schoolAdvancedDiscountNgnMinorRaw) && schoolAdvancedDiscountNgnMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountNgnMinorRaw) : null;
+  const schoolAdvancedDiscountGbpMinor = Number.isFinite(schoolAdvancedDiscountGbpMinorRaw) && schoolAdvancedDiscountGbpMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountGbpMinorRaw) : null;
+  const schoolAdvancedDiscountUsdMinor = Number.isFinite(schoolAdvancedDiscountUsdMinorRaw) && schoolAdvancedDiscountUsdMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountUsdMinorRaw) : null;
+  const schoolAdvancedDiscountEurMinor = Number.isFinite(schoolAdvancedDiscountEurMinorRaw) && schoolAdvancedDiscountEurMinorRaw >= 0 ? Math.round(schoolAdvancedDiscountEurMinorRaw) : null;
 
   if (!slug) return json(400, { ok: false, error: "course_slug is required" });
   if (!title) return json(400, { ok: false, error: "course_title is required" });
@@ -56,6 +68,12 @@ exports.handler = async function (event) {
       enrollment_mode: enrollmentMode,
       price_ngn_minor: priceNgnMinor,
       price_gbp_minor: priceGbpMinor,
+      price_usd_minor: priceUsdMinor,
+      price_eur_minor: priceEurMinor,
+      school_advanced_discount_ngn_minor: schoolAdvancedDiscountNgnMinor,
+      school_advanced_discount_gbp_minor: schoolAdvancedDiscountGbpMinor,
+      school_advanced_discount_usd_minor: schoolAdvancedDiscountUsdMinor,
+      school_advanced_discount_eur_minor: schoolAdvancedDiscountEurMinor,
       payment_methods: paymentMethods,
       is_enrollment_locked: isEnrollmentLocked,
       is_published: isPublished,

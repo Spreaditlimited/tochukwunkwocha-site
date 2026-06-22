@@ -17,7 +17,7 @@ async function getCoursePaymentLock(pool, input) {
      WHERE email = ?
        AND course_slug = ?
        AND status = 'paid'
-       AND provider IN ('paystack', 'paypal')
+       AND provider IN ('paystack', 'paypal', 'stripe')
      ORDER BY id DESC
      LIMIT 1`,
     [email, courseSlug]

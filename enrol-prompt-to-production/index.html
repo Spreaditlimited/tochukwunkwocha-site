@@ -220,6 +220,20 @@
         box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
       }
 
+      .country-select-premium {
+        appearance: none;
+        padding-right: 48px;
+        font-weight: 600;
+        background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+        background-position: calc(100% - 24px) calc(50% - 2px), calc(100% - 18px) calc(50% - 2px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+      }
+      .country-select-premium option {
+        background-color: #0d1117;
+        color: #fff;
+      }
+
       /* Installment Banner */
       .installment-banner {
         display: flex;
@@ -312,7 +326,7 @@
 
       .coupon-apply-btn {
         padding: 0 20px;
-        height: 56px;
+        min-height: 56px;
         font-size: 0.9rem;
         border-radius: 12px;
         background: rgba(255,255,255,0.05);
@@ -320,6 +334,21 @@
         color: #fff;
         font-weight: 600;
         transition: all 0.3s;
+      }
+      .coupon-code-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+      }
+      .coupon-code-row .form-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin-bottom: 0;
+      }
+      .coupon-code-row .coupon-apply-btn {
+        flex: 0 0 auto;
+        align-self: stretch;
       }
       .coupon-apply-btn:hover {
         background: rgba(255,255,255,0.1);
@@ -568,6 +597,18 @@
                 <input id="enrolPhone" name="phone" type="tel" class="form-input" autocomplete="tel" placeholder="e.g. +2348012345678" required />
               </div>
 
+              <div>
+                <label for="enrolCountry" class="form-label">Country</label>
+                <select id="enrolCountry" name="country" class="form-input country-select-premium" autocomplete="country-name">
+                  <option value="Nigeria">Nigeria</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="United States">United States</option>
+                  <option value="European Union">European Union</option>
+                  <option value="Other">Other</option>
+                </select>
+                <p class="text-xs text-slate-500 -mt-3 mb-5">We try to detect this automatically. You can change it to see the right currency and gateway.</p>
+              </div>
+
               <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-4 mb-6 cursor-pointer hover:bg-white/10 transition-colors">
                 <input
                   type="checkbox"
@@ -583,9 +624,9 @@
 
               <div>
                 <label for="couponCodeInput" class="form-label">Coupon code (optional)</label>
-                <div class="flex items-start gap-2">
-                  <input id="couponCodeInput" name="couponCode" type="text" class="form-input flex-1 !mb-0" placeholder="Enter code" />
-                  <button id="applyCouponBtn" type="button" class="coupon-apply-btn shrink-0">Apply</button>
+                <div class="coupon-code-row">
+                  <input id="couponCodeInput" name="couponCode" type="text" class="form-input" placeholder="Enter code" />
+                  <button id="applyCouponBtn" type="button" class="coupon-apply-btn">Apply</button>
                 </div>
                 <p id="couponStatus" class="text-xs mt-2 hidden"></p>
                 <p id="couponSummary" class="text-xs mt-1 text-brand-300 hidden font-medium"></p>

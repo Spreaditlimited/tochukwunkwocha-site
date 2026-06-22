@@ -2,6 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { listCourseBatches } = require("./_lib/batch-store");
+const { ensureCourseOrdersProviderColumn } = require("./_lib/course-orders");
 const { normalizeCourseSlug, DEFAULT_COURSE_SLUG } = require("./_lib/course-config");
 const { ensureLearningTables, findLearningCourseBySlug, normalizePaymentMethods } = require("./_lib/learning");
 const { familyEnrollmentEnabledForCourse, maxFamilyChildren } = require("./_lib/families");
@@ -26,6 +27,7 @@ exports.handler = async function (event) {
   const pool = getPool();
   try {
     await applyRuntimeSettings(pool);
+    await ensureCourseOrdersProviderColumn(pool);
     await ensureLearningTables(pool);
     const learningCourse = await findLearningCourseBySlug(pool, courseSlug);
     const vatPercent = Number(process.env.SITE_VAT_PERCENT);
@@ -59,7 +61,11 @@ exports.handler = async function (event) {
       },
       coursePricing: {
         priceNgnMinor: Number(learningCourse && learningCourse.price_ngn_minor || 0),
+        priceGbpMinor: Number(learningCourse && learningCourse.price_gbp_minor || 0),
+        priceUsdMinor: Number(learningCourse && learningCourse.price_usd_minor || 0),
+        priceEurMinor: Number(learningCourse && learningCourse.price_eur_minor || 0),
         vatPercent: safeVatPercent,
+        intlVatPercent: Number(process.env.INTL_VAT_PERCENT || 20),
         paystackFeeBps: Number(learningCourse && learningCourse.paystack_fee_bps || 150),
         paystackFeeFixedMinorNgn: Number(learningCourse && learningCourse.paystack_fee_fixed_minor_ngn || 10000),
       },

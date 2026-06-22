@@ -78,6 +78,22 @@
     return "₦" + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function fmtCurrencyFromMinor(currency, value) {
+    var cur = String(currency || "NGN").trim().toUpperCase() || "NGN";
+    if (cur === "NGN") return fmtNairaFromMinor(value);
+    var num = Number(value || 0) / 100;
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: cur,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(num);
+    } catch (_error) {
+      return cur + " " + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
   function fmtDate(value) {
     if (!value) return "-";
     var d = new Date(value);
@@ -509,11 +525,14 @@
     latestAdvancedQuote = quoteData && quoteData.quote ? quoteData.quote : null;
     var cfg = quoteData && quoteData.config ? quoteData.config : {};
     var quote = latestAdvancedQuote || {};
+    var currency = quote.currency || "NGN";
+    var provider = clean(quoteData && quoteData.provider).toLowerCase();
+    var isStripeQuote = provider === "stripe";
     if (advancedModalSeatsEl) advancedModalSeatsEl.textContent = String(quote.seats || seatCount || cfg.minSeats || 0);
-    if (advancedModalBasePriceEl) advancedModalBasePriceEl.textContent = fmtNairaFromMinor(cfg.basePricePerStudentMinor || quote.pricePerSeatMinor || 0);
-    if (advancedModalDiscountEl) advancedModalDiscountEl.textContent = "-" + fmtNairaFromMinor(cfg.discountPerStudentMinor || 0);
-    if (advancedModalDiscountedPriceEl) advancedModalDiscountedPriceEl.textContent = fmtNairaFromMinor(quote.pricePerSeatMinor || 0);
-    if (advancedModalTotalEl) advancedModalTotalEl.textContent = fmtNairaFromMinor(quote.totalMinor || 0);
+    if (advancedModalBasePriceEl) advancedModalBasePriceEl.textContent = fmtCurrencyFromMinor(currency, isStripeQuote ? (quote.basePricePerSeatMinor || quote.pricePerSeatMinor || 0) : (cfg.basePricePerStudentMinor || quote.pricePerSeatMinor || 0));
+    if (advancedModalDiscountEl) advancedModalDiscountEl.textContent = "-" + fmtCurrencyFromMinor(currency, isStripeQuote ? (quote.discountPerSeatMinor || 0) : (cfg.discountPerStudentMinor || 0));
+    if (advancedModalDiscountedPriceEl) advancedModalDiscountedPriceEl.textContent = fmtCurrencyFromMinor(currency, quote.pricePerSeatMinor || 0);
+    if (advancedModalTotalEl) advancedModalTotalEl.textContent = fmtCurrencyFromMinor(currency, quote.totalMinor || 0);
     toggleAdvancedPurchaseModal(true);
   }
 

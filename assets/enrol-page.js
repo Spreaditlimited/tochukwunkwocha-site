@@ -2,28 +2,34 @@
   var form = document.getElementById("enrolPageForm");
   if (!form) return;
 
-  var submitBtn = document.getElementById("enrolSubmit");
-  var errorEl = document.getElementById("enrolError");
-  var successEl = document.getElementById("enrolSuccess");
-  var providerInput = document.getElementById("enrolProvider");
-  var paymentOptions = Array.prototype.slice.call(document.querySelectorAll(".payment-option"));
-  var manualTransferBlock = document.getElementById("manualTransferBlock");
-  var manualBankDetails = document.getElementById("manualBankDetails");
-  var manualProofFileInput = document.getElementById("manualProofFile");
+  var submitBtn = form.querySelector("#enrolSubmit");
+  var errorEl = form.querySelector("#enrolError");
+  var successEl = form.querySelector("#enrolSuccess");
+  var providerInput = form.querySelector("#enrolProvider");
+  var paymentOptions = Array.prototype.slice.call(form.querySelectorAll(".payment-option"));
+  var manualTransferBlock = form.querySelector("#manualTransferBlock");
+  var manualBankDetails = form.querySelector("#manualBankDetails");
+  var manualProofFileInput = form.querySelector("#manualProofFile");
   var batchEl = document.getElementById("enrolActiveBatch");
   var introEl = document.getElementById("enrolIntro");
-  var paystackOptionMeta = document.getElementById("paystackOptionMeta");
-  var manualOptionMeta = document.getElementById("manualOptionMeta");
-  var paypalOptionMeta = document.getElementById("paypalOptionMeta");
-  var paystackBreakdown = document.getElementById("paystackBreakdown");
-  var breakdownCoursePrice = document.getElementById("breakdownCoursePrice");
-  var breakdownVat = document.getElementById("breakdownVat");
-  var breakdownPaystackFee = document.getElementById("breakdownPaystackFee");
-  var breakdownTotal = document.getElementById("breakdownTotal");
-  var couponCodeInput = document.getElementById("couponCodeInput");
-  var applyCouponBtn = document.getElementById("applyCouponBtn");
-  var couponStatusEl = document.getElementById("couponStatus");
-  var couponSummaryEl = document.getElementById("couponSummary");
+  var paystackOptionMeta = form.querySelector("#paystackOptionMeta");
+  var manualOptionMeta = form.querySelector("#manualOptionMeta");
+  var paypalOptionMeta = form.querySelector("#paypalOptionMeta");
+  var stripeOptionMeta = form.querySelector("#stripeOptionMeta");
+  var paystackBreakdown = form.querySelector("#paystackBreakdown");
+  var breakdownCoursePrice = form.querySelector("#breakdownCoursePrice");
+  var breakdownVat = form.querySelector("#breakdownVat");
+  var breakdownPaystackFee = form.querySelector("#breakdownPaystackFee");
+  var breakdownTotal = form.querySelector("#breakdownTotal");
+  var stripeBreakdown = form.querySelector("#stripeBreakdown");
+  var stripeBreakdownCoursePrice = form.querySelector("#stripeBreakdownCoursePrice");
+  var stripeBreakdownVat = form.querySelector("#stripeBreakdownVat");
+  var stripeBreakdownFee = form.querySelector("#stripeBreakdownFee");
+  var stripeBreakdownTotal = form.querySelector("#stripeBreakdownTotal");
+  var couponCodeInput = form.querySelector("#couponCodeInput");
+  var applyCouponBtn = form.querySelector("#applyCouponBtn");
+  var couponStatusEl = form.querySelector("#couponStatus");
+  var couponSummaryEl = form.querySelector("#couponSummary");
   var holidayBatchPickerWrap = document.getElementById("holidayBatchPickerWrap");
   var holidayBatchSelect = document.getElementById("holidayBatchSelect");
   var holidayBatchMeta = document.getElementById("holidayBatchMeta");
@@ -49,10 +55,56 @@
   var manualPaymentDetails = null;
   var appliedCoupon = null;
   var couponPricingByProvider = { paystack: null };
-  var basePricingByProvider = { paystack: null };
-  var enabledPaymentMethods = { paystack: true, manual_transfer: true };
+  var basePricingByProvider = { paystack: null, stripe: null };
+  var enabledPaymentMethods = { paystack: true, stripe: true, manual_transfer: true };
+  var countryInput = null;
   var enrollmentLocked = false;
   var AFFILIATE_REF_KEY = "tn_affiliate_ref_code_v1";
+
+  function refreshPaymentOptions() {
+    paymentOptions = Array.prototype.slice.call(form.querySelectorAll(".payment-option"));
+    stripeOptionMeta = form.querySelector("#stripeOptionMeta");
+  }
+
+  function bindPaymentOption(option) {
+    if (!option || option.getAttribute("data-payment-listener") === "true") return;
+    option.setAttribute("data-payment-listener", "true");
+    option.addEventListener("click", function () {
+      var provider = option.getAttribute("data-provider");
+      if (isOptionDisabled(option)) return;
+      if (!provider) return;
+      setActiveProvider(provider);
+    });
+  }
+
+  function ensureStripeOption() {
+    refreshPaymentOptions();
+    var hasStripe = paymentOptions.some(function (el) {
+      return String(el.getAttribute("data-provider") || "") === "stripe";
+    });
+    if (hasStripe) {
+      paymentOptions.forEach(bindPaymentOption);
+      return;
+    }
+    var paystackOption = paymentOptions.find(function (el) {
+      return String(el.getAttribute("data-provider") || "") === "paystack";
+    });
+    var wrap = (paystackOption && paystackOption.parentNode) || form.querySelector(".payment-options");
+    if (!wrap) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "payment-option";
+    btn.setAttribute("data-provider", "stripe");
+    btn.setAttribute("role", "radio");
+    btn.setAttribute("aria-checked", "false");
+    btn.innerHTML = '<span class="payment-option__title">Stripe</span><span class="payment-option__meta" id="stripeOptionMeta">International card checkout</span>';
+    if (paystackOption && paystackOption.parentNode === wrap) wrap.insertBefore(btn, paystackOption.nextSibling);
+    else wrap.appendChild(btn);
+    refreshPaymentOptions();
+    paymentOptions.forEach(bindPaymentOption);
+  }
+
+  ensureStripeOption();
 
   var COURSE_CONFIGS = {
     "prompt-to-profit": {
@@ -134,7 +186,210 @@
   function formatCurrencyMinor(currency, minor) {
     var cur = String(currency || "").toUpperCase();
     if (cur === "NGN") return formatNgnMinor(minor);
-    return formatGbpMinor(minor);
+    var amount = Number(minor || 0) / 100;
+    if (!Number.isFinite(amount)) return "";
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: cur }).format(amount);
+  }
+
+  function normalizeEnrollmentCountry(value) {
+    var text = String(value || "").trim().toLowerCase();
+    if (!text) return "Other";
+    if (text === "ng" || text === "nga" || text === "nigeria") return "Nigeria";
+    if (text === "gb" || text === "gbr" || text === "uk" || text === "united kingdom" || text === "england" || text === "scotland" || text === "wales") return "United Kingdom";
+    if (text === "us" || text === "usa" || text === "united states" || text === "united states of america") return "United States";
+    var euCountries = [
+      "at", "austria", "be", "belgium", "cy", "cyprus", "ee", "estonia", "fi", "finland", "fr", "france",
+      "de", "germany", "gr", "greece", "ie", "ireland", "it", "italy", "lv", "latvia", "lt", "lithuania",
+      "lu", "luxembourg", "mt", "malta", "nl", "netherlands", "pt", "portugal", "sk", "slovakia",
+      "si", "slovenia", "es", "spain", "eu", "european union"
+    ];
+    return euCountries.indexOf(text) !== -1 ? "European Union" : "Other";
+  }
+
+  function phoneDialingCodeForCountry(value) {
+    var country = normalizeEnrollmentCountry(value);
+    if (country === "Nigeria") return "+234";
+    if (country === "United States") return "+1";
+    return "+44";
+  }
+
+  function phoneExampleForCountry(value) {
+    var country = normalizeEnrollmentCountry(value);
+    if (country === "Nigeria") return "+2348012345678";
+    if (country === "United States") return "+12025550123";
+    return "+447911123456";
+  }
+
+  function moveCountryFieldFirst() {
+    if (!countryInput) return;
+    var countryWrap = countryInput.closest ? countryInput.closest("div") : null;
+    if (!countryWrap || !countryWrap.parentNode || countryWrap.parentNode !== form) return;
+    var first = form.firstElementChild;
+    if (first && first !== countryWrap) form.insertBefore(countryWrap, first);
+  }
+
+  function updateWhatsappPhoneHelper() {
+    var phoneEl = form.querySelector("[name='phone']");
+    if (!phoneEl) return;
+    var country = normalizeEnrollmentCountry(countryInput ? countryInput.value : "");
+    var code = phoneDialingCodeForCountry(country);
+    var example = phoneExampleForCountry(country);
+    phoneEl.placeholder = "e.g. " + example;
+    var wrap = phoneEl.closest ? phoneEl.closest("div") : null;
+    if (!wrap) return;
+    var helper = form.querySelector("#whatsappPhoneHelper");
+    if (!helper) {
+      helper = document.createElement("p");
+      helper.id = "whatsappPhoneHelper";
+      helper.className = "text-xs text-slate-500 -mt-3 mb-5";
+      wrap.appendChild(helper);
+    }
+    var suffix = country === "European Union" || country === "Other" ? " We use the UK code by default for this option." : "";
+    helper.textContent = "Start your WhatsApp number with " + code + ". Example: " + example + "." + suffix;
+  }
+
+  function ensureCountryInput() {
+    countryInput = form.querySelector("#enrolCountry");
+    if (!countryInput) {
+      var wrap = document.createElement("div");
+      wrap.innerHTML = [
+        '<label for="enrolCountry" class="form-label">Country</label>',
+        '<select id="enrolCountry" name="country" class="form-input country-select-premium" autocomplete="country-name">',
+        '<option value="Nigeria">Nigeria</option>',
+        '<option value="United Kingdom">United Kingdom</option>',
+        '<option value="United States">United States</option>',
+        '<option value="European Union">European Union</option>',
+        '<option value="Other">Other</option>',
+        "</select>",
+      ].join("");
+      form.insertBefore(wrap, form.firstChild);
+      countryInput = form.querySelector("#enrolCountry");
+    }
+    countryInput.value = normalizeEnrollmentCountry(countryInput.value || "Nigeria");
+    moveCountryFieldFirst();
+    updateWhatsappPhoneHelper();
+    if (!countryInput || countryInput.getAttribute("data-country-listener") === "true") return;
+    countryInput.setAttribute("data-country-listener", "true");
+    countryInput.addEventListener("change", function () {
+      countryInput.setAttribute("data-user-touched", "true");
+      countryInput.value = normalizeEnrollmentCountry(countryInput.value);
+      updateWhatsappPhoneHelper();
+      syncPaymentMethodsForCountry();
+      updatePaymentOptionMetas();
+    });
+  }
+
+  function isNigeria(value) {
+    return normalizeEnrollmentCountry(value) === "Nigeria";
+  }
+
+  function stripeCurrencyForCountry(value) {
+    var country = normalizeEnrollmentCountry(value);
+    if (country === "United Kingdom") return "GBP";
+    if (country === "European Union") return "EUR";
+    return "USD";
+  }
+
+  function stripeBaseMinorForCountry(value) {
+    var cur = stripeCurrencyForCountry(value);
+    var pricing = activeCoursePricing || {};
+    var configured = cur === "GBP"
+      ? Number(pricing.priceGbpMinor || 0)
+      : (cur === "EUR" ? Number(pricing.priceEurMinor || 0) : Number(pricing.priceUsdMinor || 0));
+    if (Number.isFinite(configured) && configured > 0) return Math.round(configured);
+    var fallbackMajor = {
+      "prompt-to-profit": { GBP: 25, USD: 30, EUR: 25 },
+      "prompt-to-production": { GBP: 100, USD: 150, EUR: 100 },
+      "ai-for-everyday-business-owners": { GBP: 20, USD: 25, EUR: 20 },
+    };
+    var fallback = fallbackMajor[courseSlug] || {};
+    return Math.round(Number(fallback[cur] || fallback.USD || 30) * 100);
+  }
+
+  function stripeBreakdownForCountry(value) {
+    var currency = stripeCurrencyForCountry(value);
+    var unitMinor = stripeBaseMinorForCountry(value);
+    var seats = familySeatCount();
+    var courseMinor = groupEnrollmentBaseAmountMinor(unitMinor, seats);
+    var vatPercent = Number(activeCoursePricing && activeCoursePricing.intlVatPercent || 20);
+    var vatMinor = Math.round((courseMinor * (Number.isFinite(vatPercent) ? vatPercent : 20)) / 100);
+    var netMinor = courseMinor + vatMinor;
+    var fixed = currency === "GBP" ? 20 : (currency === "EUR" ? 25 : 30);
+    var totalMinor = Math.ceil(((netMinor + fixed) / (1 - 0.015)) + 1);
+    return { currency: currency, courseMinor: courseMinor, vatMinor: vatMinor, feeMinor: totalMinor - netMinor, totalMinor: totalMinor };
+  }
+
+  function ensureStripeBreakdown() {
+    stripeBreakdown = form.querySelector("#stripeBreakdown");
+    if (stripeBreakdown) {
+      stripeBreakdownCoursePrice = form.querySelector("#stripeBreakdownCoursePrice");
+      stripeBreakdownVat = form.querySelector("#stripeBreakdownVat");
+      stripeBreakdownFee = form.querySelector("#stripeBreakdownFee");
+      stripeBreakdownTotal = form.querySelector("#stripeBreakdownTotal");
+      return;
+    }
+    if (!paystackBreakdown || !paystackBreakdown.parentNode) return;
+    stripeBreakdown = document.createElement("section");
+    stripeBreakdown.id = "stripeBreakdown";
+    stripeBreakdown.className = paystackBreakdown.className || "manual-transfer mt-2 p-5 rounded-xl hidden";
+    stripeBreakdown.hidden = true;
+    stripeBreakdown.innerHTML = [
+      '<div class="mb-2" id="stripeBreakdownDetails">',
+      '<p class="manual-transfer__title font-bold text-sm mb-3">Payment Summary</p>',
+      '<div class="space-y-2 text-sm text-slate-400">',
+      '<p class="flex justify-between"><span>Course price:</span> <strong class="text-white" id="stripeBreakdownCoursePrice">-</strong></p>',
+      '<p class="flex justify-between"><span>VAT:</span> <strong class="text-white" id="stripeBreakdownVat">-</strong></p>',
+      '<p class="flex justify-between"><span>Processing fee:</span> <strong class="text-white" id="stripeBreakdownFee">-</strong></p>',
+      '<div class="h-px bg-white/10 my-2"></div>',
+      '<p class="flex justify-between text-brand-300 font-bold"><span>Total:</span> <span id="stripeBreakdownTotal">-</span></p>',
+      '</div>',
+      '</div>',
+    ].join("");
+    paystackBreakdown.parentNode.insertBefore(stripeBreakdown, paystackBreakdown.nextSibling);
+    stripeBreakdownCoursePrice = form.querySelector("#stripeBreakdownCoursePrice");
+    stripeBreakdownVat = form.querySelector("#stripeBreakdownVat");
+    stripeBreakdownFee = form.querySelector("#stripeBreakdownFee");
+    stripeBreakdownTotal = form.querySelector("#stripeBreakdownTotal");
+  }
+
+  function syncPaymentMethodsForCountry() {
+    ensureStripeOption();
+    refreshPaymentOptions();
+    ensureCountryInput();
+    var country = countryInput ? countryInput.value : "Nigeria";
+    var nigerian = isNigeria(country);
+    paymentOptions.forEach(function (el) {
+      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
+      var countryAllowed = nigerian ? provider !== "stripe" : provider === "stripe";
+      var methodAllowed = nigerian ? !!enabledPaymentMethods[provider] : provider === "stripe";
+      var disabled = enrollmentLocked || !methodAllowed || !countryAllowed;
+      el.hidden = !countryAllowed;
+      el.style.display = countryAllowed ? "" : "none";
+      el.classList.toggle("hidden", !countryAllowed);
+      if (disabled) {
+        el.setAttribute("disabled", "disabled");
+        el.setAttribute("data-disabled", "true");
+      } else {
+        el.removeAttribute("disabled");
+        el.removeAttribute("data-disabled");
+      }
+      el.classList.toggle("opacity-50", disabled);
+      el.classList.toggle("cursor-not-allowed", disabled);
+    });
+    setActiveProvider(nigerian ? "paystack" : "stripe", { force: !nigerian });
+  }
+
+  async function detectPaymentLocale() {
+    ensureCountryInput();
+    if (!countryInput || countryInput.getAttribute("data-user-touched") === "true") return;
+    var res = await fetch("/.netlify/functions/payment-locale", { method: "GET", headers: { Accept: "application/json" } });
+    var json = await res.json().catch(function () { return null; });
+    if (!res.ok || !json || !json.ok) return;
+    if (!json.country && !json.countryCode) return;
+    countryInput.value = normalizeEnrollmentCountry(json.country || json.countryCode);
+    updateWhatsappPhoneHelper();
+    syncPaymentMethodsForCountry();
+    updatePaymentOptionMetas();
   }
 
   function familySeatCount() {
@@ -201,6 +456,11 @@
     }
     var seats = familySeatCount();
     var provider = providerInput ? providerInput.value : "paystack";
+    if (provider === "stripe") {
+      var stripePricing = stripeBreakdownForCountry(countryInput ? countryInput.value : "United Kingdom");
+      summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Stripe): " + formatCurrencyMinor(stripePricing.currency, stripePricing.totalMinor);
+      return;
+    }
     if (provider === "manual_transfer" && manualPaymentDetails && Number.isFinite(Number(manualPaymentDetails.amountMinor))) {
       var manualDiscount = groupDiscountText(Number(activeCoursePricing && activeCoursePricing.priceNgnMinor || 0), seats);
       summaryEl.textContent = String(seats) + " seat" + (seats === 1 ? "" : "s") + " selected • Total (Direct Bank Transfer): " + formatCurrencyMinor("NGN", Number(manualPaymentDetails.amountMinor || 0)) + (manualDiscount ? " • " + manualDiscount : "");
@@ -301,11 +561,13 @@
     if (!paystackBreakdown) return;
     var provider = providerInput ? providerInput.value : "paystack";
     if (provider !== "paystack") {
+      paystackBreakdown.hidden = true;
       paystackBreakdown.classList.add("hidden");
       return;
     }
     var pricing = currentPaystackPricing();
     if (!pricing || !Number.isFinite(Number(pricing.finalAmountMinor))) {
+      paystackBreakdown.hidden = true;
       paystackBreakdown.classList.add("hidden");
       return;
     }
@@ -318,12 +580,31 @@
     paystackBreakdown.classList.remove("hidden");
   }
 
+  function renderStripeBreakdown() {
+    ensureStripeBreakdown();
+    if (!stripeBreakdown) return;
+    var provider = providerInput ? providerInput.value : "paystack";
+    if (provider !== "stripe") {
+      stripeBreakdown.hidden = true;
+      stripeBreakdown.classList.add("hidden");
+      return;
+    }
+    var breakdown = stripeBreakdownForCountry(countryInput ? countryInput.value : "United Kingdom");
+    if (stripeBreakdownCoursePrice) stripeBreakdownCoursePrice.textContent = formatCurrencyMinor(breakdown.currency, breakdown.courseMinor);
+    if (stripeBreakdownVat) stripeBreakdownVat.textContent = formatCurrencyMinor(breakdown.currency, breakdown.vatMinor);
+    if (stripeBreakdownFee) stripeBreakdownFee.textContent = formatCurrencyMinor(breakdown.currency, breakdown.feeMinor);
+    if (stripeBreakdownTotal) stripeBreakdownTotal.textContent = formatCurrencyMinor(breakdown.currency, breakdown.totalMinor);
+    stripeBreakdown.hidden = false;
+    stripeBreakdown.classList.remove("hidden");
+  }
+
   function clearAppliedCoupon(message) {
     appliedCoupon = null;
     couponPricingByProvider = { paystack: null };
     renderCouponSummary();
     updatePaymentOptionMetas();
     renderPaystackBreakdown();
+    renderStripeBreakdown();
     if (message) setCouponStatus(message, "info");
     if (providerInput && providerInput.value === "manual_transfer") {
       ensureManualConfigLoaded().catch(function () { return null; });
@@ -347,7 +628,12 @@
         : "Pay in full";
     }
     if (paypalOptionMeta) paypalOptionMeta.textContent = "Unavailable";
+    if (stripeOptionMeta) {
+      var stripeBreakdown = stripeBreakdownForCountry(countryInput ? countryInput.value : "United Kingdom");
+      stripeOptionMeta.textContent = "International checkout (" + formatCurrencyMinor(stripeBreakdown.currency, stripeBreakdown.totalMinor) + ")";
+    }
     renderPaystackBreakdown();
+    renderStripeBreakdown();
     renderFamilyPaymentSummary();
   }
 
@@ -502,20 +788,7 @@
 
   function applyEnrollmentLock(locked) {
     enrollmentLocked = !!locked;
-    paymentOptions.forEach(function (el) {
-      var provider = String(el.getAttribute("data-provider") || "").trim().toLowerCase();
-      var allowedByMethod = !!enabledPaymentMethods[provider];
-      var disabled = enrollmentLocked || !allowedByMethod;
-      if (disabled) {
-        el.setAttribute("disabled", "disabled");
-        el.setAttribute("data-disabled", "true");
-      } else {
-        el.removeAttribute("disabled");
-        el.removeAttribute("data-disabled");
-      }
-      el.classList.toggle("opacity-50", disabled);
-      el.classList.toggle("cursor-not-allowed", disabled);
-    });
+    syncPaymentMethodsForCountry();
     if (submitBtn) {
       submitBtn.disabled = enrollmentLocked;
       submitBtn.classList.toggle("opacity-50", enrollmentLocked);
@@ -532,24 +805,25 @@
   }
 
   function applyEnabledPaymentMethods(methods) {
-    enabledPaymentMethods = { paystack: false, manual_transfer: false };
+    enabledPaymentMethods = { paystack: false, stripe: false, manual_transfer: false };
     (Array.isArray(methods) ? methods : []).forEach(function (method) {
       var key = String(method || "").trim().toLowerCase();
-      if (key === "paystack" || key === "manual_transfer") {
+      if (key === "paystack" || key === "stripe" || key === "manual_transfer") {
         enabledPaymentMethods[key] = true;
       }
     });
-    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.manual_transfer) {
-      enabledPaymentMethods = { paystack: true, manual_transfer: true };
+    if (!enabledPaymentMethods.paystack && !enabledPaymentMethods.stripe && !enabledPaymentMethods.manual_transfer) {
+      enabledPaymentMethods = { paystack: true, stripe: true, manual_transfer: true };
     }
-    applyEnrollmentLock(enrollmentLocked);
-    setActiveProvider(providerInput ? providerInput.value : firstEnabledProvider());
+    enabledPaymentMethods.stripe = true;
+    syncPaymentMethodsForCountry();
   }
 
   function firstEnabledProvider() {
     var fallback = "paystack";
     for (var i = 0; i < paymentOptions.length; i += 1) {
       var el = paymentOptions[i];
+      if (el.hidden || el.classList.contains("hidden")) continue;
       if (!isOptionDisabled(el)) {
         return el.getAttribute("data-provider") || fallback;
       }
@@ -557,10 +831,15 @@
     return fallback;
   }
 
-  function setActiveProvider(provider) {
+  function setActiveProvider(provider, options) {
     if (!providerInput) return;
+    var force = options && options.force === true;
+    if (force && provider === "stripe") {
+      ensureStripeOption();
+      refreshPaymentOptions();
+    }
     var optionEl = findOption(provider);
-    if (optionEl && isOptionDisabled(optionEl)) {
+    if (!force && optionEl && isOptionDisabled(optionEl)) {
       provider = firstEnabledProvider();
     }
     providerInput.value = provider;
@@ -575,13 +854,19 @@
       manualTransferBlock.classList.toggle("hidden", !isManual);
     }
     if (paystackBreakdown) {
-      var showPaystackBreakdown = !isManual;
+      var showPaystackBreakdown = provider === "paystack";
       paystackBreakdown.hidden = !showPaystackBreakdown;
       paystackBreakdown.classList.toggle("hidden", !showPaystackBreakdown);
+    }
+    if (stripeBreakdown) {
+      var showStripeBreakdown = provider === "stripe";
+      stripeBreakdown.hidden = !showStripeBreakdown;
+      stripeBreakdown.classList.toggle("hidden", !showStripeBreakdown);
     }
     if (submitBtn) submitBtn.textContent = isManual ? "Upload proof and confirm" : "Proceed to Payment";
     renderCouponSummary();
     renderPaystackBreakdown();
+    renderStripeBreakdown();
     renderFamilyPaymentSummary();
     if (isManual) {
       ensureManualConfigLoaded()
@@ -875,8 +1160,13 @@
       '<div id="familyChildrenWrap" class="family-children-wrap hidden" hidden></div>',
       "</div>",
     ].join("");
-    if (form.parentNode) form.parentNode.insertBefore(section, form);
-    else form.insertBefore(section, form.firstChild);
+    ensureCountryInput();
+    var countryWrap = countryInput && countryInput.closest ? countryInput.closest("div") : null;
+    if (countryWrap && countryWrap.parentNode === form) {
+      form.insertBefore(section, countryWrap.nextSibling);
+    } else {
+      form.insertBefore(section, form.firstChild);
+    }
     familySection = section;
     familyEnabledInput = document.getElementById("familyEnrollmentEnabled");
     familySeatCountInput = document.getElementById("familySeatCountInput");
@@ -966,18 +1256,15 @@
     if (familySeatCountInput) familySeatCountInput.setAttribute("max", String(familyMaxChildren));
   }
 
-  paymentOptions.forEach(function (option) {
-    option.addEventListener("click", function () {
-      var provider = option.getAttribute("data-provider");
-      if (isOptionDisabled(option)) return;
-      if (!provider) return;
-      setActiveProvider(provider);
-    });
-  });
+  paymentOptions.forEach(bindPaymentOption);
 
   async function applyCoupon() {
     var provider = providerInput ? providerInput.value : "paystack";
     var code = String((couponCodeInput && couponCodeInput.value) || "").trim();
+    if (provider === "stripe") {
+      setCouponStatus("Coupons are not available for international Stripe checkout yet.", "error");
+      return;
+    }
     if (isHolidayMultiBatchCourse() && !activeCourseBatchKey) {
       setCouponStatus("Please choose a batch first.", "error");
       return;
@@ -1028,6 +1315,7 @@
       updatePaymentOptionMetas();
       renderCouponSummary();
       renderPaystackBreakdown();
+      renderStripeBreakdown();
       setCouponStatus("Coupon applied successfully.", "ok");
       if (provider === "manual_transfer") {
         manualConfigLoadedKey = "";
@@ -1059,7 +1347,8 @@
     var email = String(form.email.value || "").trim();
     var phone = String((form.phone && form.phone.value) || "").trim();
     var whatsappOptIn = !!(form.whatsappOptIn && form.whatsappOptIn.checked);
-    var country = "";
+    ensureCountryInput();
+    var country = String(countryInput && countryInput.value || "").trim();
     var provider = providerInput ? providerInput.value : "paystack";
     var affiliateCode = resolveAffiliateCode();
     var familyMode = !!(familyEnabledInput && familyEnabledInput.checked);
@@ -1097,6 +1386,7 @@
             firstName: firstName,
             email: email,
             phone: phone,
+            country: country,
             whatsappOptIn: whatsappOptIn,
             optInTextVersion: "enrollment_whatsapp_v1",
             courseSlug: courseSlug,
@@ -1129,6 +1419,7 @@
           firstName: firstName,
           email: email,
           phone: phone,
+          country: country,
           whatsappOptIn: whatsappOptIn,
           optInTextVersion: "enrollment_whatsapp_v1",
           provider: provider,
@@ -1158,7 +1449,9 @@
   });
 
   updateIntro();
-  setActiveProvider((providerInput && providerInput.value) || "paystack");
+  ensureCountryInput();
+  syncPaymentMethodsForCountry();
+  detectPaymentLocale().catch(function () { return null; });
   if (holidayBatchSelect) {
     holidayBatchSelect.addEventListener("change", function () {
       applyHolidayBatchSelection(String(holidayBatchSelect.value || ""));

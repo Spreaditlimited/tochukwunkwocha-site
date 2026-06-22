@@ -18,6 +18,7 @@
   var enrollChildrenEl = document.getElementById("familyEnrollChildren");
   var enrollAddChildEl = document.getElementById("familyEnrollAddChild");
   var enrollSummaryEl = document.getElementById("familyEnrollSummary");
+  var enrollPaymentMethodEl = document.getElementById("familyEnrollPaymentMethod");
   var enrollSubmitEl = document.getElementById("familyEnrollSubmit");
   var enrollMessageEl = document.getElementById("familyEnrollMessage");
   var maxChildren = 5;
@@ -59,6 +60,26 @@
     var amount = Number(minor || 0) / 100;
     if (!Number.isFinite(amount)) return "";
     return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(amount);
+  }
+
+  function paymentProviderLabel(provider) {
+    var key = String(provider || "").trim().toLowerCase();
+    if (key === "stripe") return "Stripe";
+    if (key === "manual_transfer" || key === "manual" || key === "bank_transfer") return "Bank Transfer";
+    if (key === "paypal") return "PayPal";
+    return "Paystack";
+  }
+
+  function selectedPaymentProvider() {
+    var balance = selectedSeatBalance() || preferredBalanceForCourse();
+    if (!balance || selectedAvailableSeats() < enrollmentSeatCount()) return "paystack";
+    if (balance && balance.paymentProvider) return String(balance.paymentProvider || "");
+    return "paystack";
+  }
+
+  function updateEnrollmentPaymentMethod() {
+    if (!enrollPaymentMethodEl) return;
+    enrollPaymentMethodEl.textContent = "Payment method: " + paymentProviderLabel(selectedPaymentProvider());
   }
 
   function parseBatchStart(value) {
@@ -392,6 +413,7 @@
     if (!enrollSummaryEl) return;
     if (loadingEnrollmentOptions) {
       enrollSummaryEl.textContent = "Loading program pricing...";
+      updateEnrollmentPaymentMethod();
       setVisible(enrollCourseFieldEl, false);
       setVisible(enrollBatchFieldEl, false);
       return;
@@ -399,6 +421,7 @@
     var batch = selectedBatch();
     if (!batch) {
       enrollSummaryEl.textContent = "Choose an available batch to see the total.";
+      updateEnrollmentPaymentMethod();
       setVisible(enrollCourseFieldEl, true);
       setVisible(enrollBatchFieldEl, true);
       return;
@@ -412,6 +435,7 @@
     updateEnrollmentPickerVisibility();
     if (available >= seats) {
       enrollSummaryEl.textContent = String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. This will assign " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " without another payment.";
+      updateEnrollmentPaymentMethod();
       if (enrollSubmitEl && !enrollSubmitEl.disabled) enrollSubmitEl.textContent = "Assign Learners";
       return;
     }
@@ -421,6 +445,7 @@
     enrollSummaryEl.textContent = available > 0
       ? String(available) + " purchased seat" + (available === 1 ? "" : "s") + " available. " + String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText
       : String(seats) + " learner" + (seats === 1 ? "" : "s") + " selected - Total (Paystack): " + formatNgnMinor(totalMinor) + discountText;
+    updateEnrollmentPaymentMethod();
     if (enrollSubmitEl && !enrollSubmitEl.disabled) enrollSubmitEl.textContent = "Purchase Seats";
   }
 

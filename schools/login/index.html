@@ -48,6 +48,21 @@
       [role="tablist"] button[aria-selected="false"]:hover {
         color: #fff !important;
       }
+      #schoolPaymentOptions .payment-option {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+      }
+      #schoolPaymentOptions .payment-option.is-active {
+        background: rgba(245, 158, 11, 0.12) !important;
+        border-color: rgba(245, 158, 11, 0.45) !important;
+      }
+      #schoolPaymentOptions .payment-option__title {
+        color: #fff !important;
+      }
+      #schoolPaymentOptions .payment-option__meta {
+        color: #94a3b8 !important;
+      }
       @media (max-width: 760px) {
         #schoolGuestStack {
           padding-top: env(safe-area-inset-top, 0px);
@@ -123,8 +138,20 @@
           <form id="schoolRegisterForm" class="space-y-6 relative z-10" novalidate hidden>
             <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-2">
               <p id="schoolsPricingIntro" class="text-sm text-blue-300 font-light leading-relaxed">
-                Bulk school access starts at 50 students. Price is <strong class="text-white font-semibold">₦8,500 per student + VAT.</strong>
+                Loading school pricing...
               </p>
+            </div>
+
+            <div>
+              <label class="tw-label" for="schoolCountry">Country</label>
+              <select id="schoolCountry" required class="tw-input tw-select">
+                <option value="">Select country</option>
+                <option value="Nigeria">Nigeria</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="United States">United States</option>
+                <option value="European Union">European Union</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -146,6 +173,7 @@
               <div>
                 <label class="tw-label" for="adminPhone">Admin Phone</label>
                 <input id="adminPhone" type="text" required class="tw-input" placeholder="+234..." />
+                <p id="adminPhoneHelper" class="mt-1 text-xs text-slate-500"></p>
               </div>
             </div>
             
@@ -169,10 +197,29 @@
                   <span class="text-slate-400">VAT:</span> 
                   <span class="font-medium text-white">₦0</span>
                 </p>
+                <p id="priceProcessingFee" class="flex justify-between items-center">
+                  <span class="text-slate-400">Processing fee:</span>
+                  <span class="font-medium text-white">₦0</span>
+                </p>
               </div>
               <div class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
                 <span class="text-sm font-bold text-white uppercase tracking-wider">Total</span>
                 <span id="priceTotal" class="text-2xl font-heading font-extrabold text-white tracking-tight">₦0</span>
+              </div>
+            </div>
+
+            <div>
+              <span class="tw-label">Payment method</span>
+              <input id="schoolPaymentProvider" name="provider" type="hidden" value="paystack" />
+              <div id="schoolPaymentOptions" class="payment-options payment-options--dark mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+                <button type="button" class="payment-option is-active rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left transition-colors" data-provider="paystack" role="radio" aria-checked="true">
+                  <span class="payment-option__title block text-sm font-bold text-white">Paystack</span>
+                  <span class="payment-option__meta block text-xs text-slate-400">Nigerian card checkout</span>
+                </button>
+                <button type="button" class="payment-option rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-colors" data-provider="stripe" role="radio" aria-checked="false" hidden>
+                  <span class="payment-option__title block text-sm font-bold text-white">Stripe</span>
+                  <span class="payment-option__meta block text-xs text-slate-400">International card checkout</span>
+                </button>
               </div>
             </div>
             
@@ -186,6 +233,6 @@
       </div>
     </main>
     
-    <script src="/assets/bundles/bundle-062243b2e07c.min.js" defer></script>
+    <script src="/assets/bundles/bundle-062243b2e07c.min.js?v=school-payment-dark-20260621" defer></script>
   </body>
 </html>

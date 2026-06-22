@@ -2,18 +2,30 @@ const { applyRuntimeSettings } = require("./runtime-settings");
 const { ensureLearningTables, ensureCourseSlugForeignKey } = require("./learning");
 const { runtimeSchemaChangesAllowed } = require("./schema-mode");
 let courseOrdersEnsured = false;
+let courseOrdersProviderColumnEnsured = false;
 
 async function safeAlter(pool, sql) {
   try {
     await pool.query(sql);
+    return true;
   } catch (_error) {
-    return;
+    return false;
   }
+}
+
+async function ensureCourseOrdersProviderColumn(pool) {
+  await applyRuntimeSettings(pool);
+  if (courseOrdersProviderColumnEnsured) return;
+  courseOrdersProviderColumnEnsured = await safeAlter(
+    pool,
+    `ALTER TABLE course_orders MODIFY COLUMN provider VARCHAR(40) NOT NULL DEFAULT 'paystack'`
+  );
 }
 
 async function ensureCourseOrdersBatchColumns(pool) {
   await applyRuntimeSettings(pool);
   if (courseOrdersEnsured) return;
+  await ensureCourseOrdersProviderColumn(pool);
   if (!runtimeSchemaChangesAllowed()) {
     courseOrdersEnsured = true;
     return;
@@ -66,4 +78,4 @@ async function ensureCourseOrdersBatchColumns(pool) {
   courseOrdersEnsured = true;
 }
 
-module.exports = { ensureCourseOrdersBatchColumns };
+module.exports = { ensureCourseOrdersBatchColumns, ensureCourseOrdersProviderColumn };

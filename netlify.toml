@@ -25,12 +25,12 @@
 
 [[redirects]]
   from = "/schools/register"
-  to = "/schools/login/"
+  to = "/schools/login/?mode=register"
   status = 301
 
 [[redirects]]
   from = "/schools/register/*"
-  to = "/schools/login/"
+  to = "/schools/login/?mode=register"
   status = 301
 
 [[redirects]]
