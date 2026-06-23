@@ -746,10 +746,10 @@ async function listFamilyDashboard(pool, parentAccountId) {
      FROM ${FAMILY_SEAT_LEDGER_TABLE} l
      LEFT JOIN course_orders co
        ON l.source_type = 'course_order'
-      AND co.order_uuid = l.source_uuid
+      AND co.order_uuid COLLATE utf8mb4_general_ci = l.source_uuid COLLATE utf8mb4_general_ci
      LEFT JOIN course_manual_payments mp
        ON l.source_type = 'manual_payment'
-      AND mp.payment_uuid = l.source_uuid
+      AND mp.payment_uuid COLLATE utf8mb4_general_ci = l.source_uuid COLLATE utf8mb4_general_ci
      INNER JOIN (
        SELECT course_slug, batch_key, MAX(id) AS latest_id
        FROM ${FAMILY_SEAT_LEDGER_TABLE}
