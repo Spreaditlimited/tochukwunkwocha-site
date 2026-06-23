@@ -122,6 +122,34 @@
       }
       .social-proof-stars { color: #fbbf24; letter-spacing: 2px; }
 
+      @media (max-width: 640px) {
+        .social-proof {
+          display: inline-flex;
+          width: auto;
+          max-width: 100%;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 16px 18px;
+          border-radius: 28px;
+        }
+
+        .social-proof-avatars img {
+          width: 34px;
+          height: 34px;
+          margin-left: -10px;
+        }
+
+        .social-proof-avatars img:first-child {
+          margin-left: 0;
+        }
+
+        .social-proof-text {
+          font-size: 0.95rem;
+          line-height: 1.35;
+        }
+      }
+
       /* Trust Boxes (Glassmorphic) */
       .trust-box {
         display: flex;
