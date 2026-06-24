@@ -32,7 +32,7 @@ The most useful first skills are:
 
 These skills are practical for children in Lagos, Abuja, Port Harcourt, Ibadan, Enugu, Owerri, Benin, Kano, and anywhere else in Nigeria because they do not depend on expensive labs. They depend on guidance, consistency, and the right project.
 
-This is why [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) focuses on helping children use AI to build real websites without coding overwhelm.
+This is why [Prompt to Profit](/courses/prompt-to-profit/) now gives children, teenagers, beginners, and career-focused learners one clear starting point for using AI to build real websites without coding overwhelm.
 
 ## Why website building is a strong first AI project
 
@@ -105,7 +105,7 @@ A structured course helps because the child is not wandering randomly. They are 
 
 If your child is between 8 and the teenage years, start with practical AI creation. Let them build something small, explain it, and improve it.
 
-If you want a guided path, explore [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) or the focused holiday option at [Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/).
+If you want a guided path, explore [Prompt to Profit](/courses/prompt-to-profit/). The course now combines the former children, holiday, and job-seeker tracks into one practical beginner pathway.
 
 If you are a parent with older children or teenagers who want to build portfolios, also read [How Nigerian Students Can Build Websites With ChatGPT Without Coding](/blog/how-nigerian-students-can-build-websites-with-chatgpt-without-coding/).
 

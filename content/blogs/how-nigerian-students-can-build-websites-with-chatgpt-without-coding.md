@@ -87,7 +87,7 @@ A website gives you proof.
 
 You can add it to your CV, LinkedIn, WhatsApp bio, portfolio, or internship application. You can also use it as a sample when speaking to small businesses.
 
-If your main goal is employability, see [Prompt to Profit for Job Seekers](/courses/prompt-to-profit-for-job-seekers/).
+If your main goal is employability, start with [Prompt to Profit](/courses/prompt-to-profit/). The job-seeker path is now part of the main course, so learners can build visible proof without choosing a separate track.
 
 ## When to move beyond simple websites
 

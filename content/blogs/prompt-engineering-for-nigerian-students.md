@@ -80,7 +80,7 @@ This connects with [AI Curriculum for Nigerian Schools](/blog/ai-curriculum-for-
 
 ## Where Prompt to Profit fits
 
-[Prompt to Profit for Schools](/courses/prompt-to-profit-schools/) and [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) teach students to use prompts to build real digital projects. The focus is not memorizing AI definitions. The focus is using AI to create, review, improve, and explain.
+[Prompt to Profit for Schools](/courses/prompt-to-profit-schools/) teaches this in a school setting, while [Prompt to Profit](/courses/prompt-to-profit/) now serves learners outside the school program through one combined beginner course. The focus is not memorizing AI definitions. The focus is using AI to create, review, improve, and explain.
 
 For teenagers who want to turn this into portfolio work, read [AI Skills for Nigerian Teenagers](/blog/ai-skills-for-nigerian-teenagers-building-a-portfolio-before-university/).
 
@@ -161,4 +161,4 @@ Yes. Prompting starts with clear thinking and communication. Coding can come lat
 It helps students plan projects, ask better questions, create outlines, and improve AI-generated work.
 
 **Where should students start?**  
-Start with a practical project such as a website, portfolio, or presentation through [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) or [Prompt to Profit for Schools](/courses/prompt-to-profit-schools/).
+Start with a practical project such as a website, portfolio, or presentation through [Prompt to Profit](/courses/prompt-to-profit/) or, for school-wide programs, [Prompt to Profit for Schools](/courses/prompt-to-profit-schools/).

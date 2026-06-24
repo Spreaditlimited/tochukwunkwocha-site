@@ -61,7 +61,7 @@ It is time to bring practical, safe, and manageable AI education into your class
 
 Are you ready to empower your students to build the future? Contact us to secure access to the Prompt to Profit AI for Schools dashboard and give your school a real AI advantage.
 
-Start with [Prompt to Profit for Schools](/courses/prompt-to-profit-schools/) if you want a guided AI pathway for your school. Parents who want this same practical approach for children outside school can also explore [Prompt to Profit for Kids](/courses/prompt-to-profit-children/).
+Start with [Prompt to Profit for Schools](/courses/prompt-to-profit-schools/) if you want a guided AI pathway for your school. Parents who want this same practical approach for children outside school can explore [Prompt to Profit](/courses/prompt-to-profit/), which now combines the former kids, holiday, and job-seeker tracks into one beginner-friendly course.
 
 ## What makes a classroom future-proof?
 

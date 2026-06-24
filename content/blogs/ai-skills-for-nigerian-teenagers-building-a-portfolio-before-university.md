@@ -99,7 +99,7 @@ Ask them:
 
 These questions help teenagers think beyond copying AI output.
 
-Younger children can start with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/). Older teenagers who are ready for deeper building can explore [Prompt to Profit Advanced](/courses/prompt-to-production/).
+Younger children and teenagers who need a practical starting point can begin with [Prompt to Profit](/courses/prompt-to-profit/). Older teenagers who are ready for deeper building can explore [Prompt to Profit Advanced](/courses/prompt-to-production/).
 
 ## A 30-day portfolio plan for Nigerian teenagers
 

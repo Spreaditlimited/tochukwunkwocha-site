@@ -84,7 +84,7 @@ Students in Prompt to Profit programs are already learning that skill. They are 
 
 The tools have changed. Our teaching models and workforce skills must catch up.
 
-This is why [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) focuses on practical output. Children learn to plan a page, describe what they want, review what AI creates, and improve it until it works.
+This is why [Prompt to Profit](/courses/prompt-to-profit/) focuses on practical output for beginners, including children who are ready for guided AI-assisted building. Learners plan a page, describe what they want, review what AI creates, and improve it until it works.
 
 Schools that want to bring this same model into the classroom should also read [Future-Proofing Your Classrooms](/blog/future-proofing-your-classrooms/) and [AI Curriculum for Nigerian Schools](/blog/ai-curriculum-for-nigerian-schools-what-students-should-actually-learn/).
 
@@ -132,4 +132,4 @@ Yes. It helps children move beyond computer theory into practical creation, whic
 Yes. AI-assisted building can be the first step. Coding can come later with more context because the child already understands what websites are meant to do.
 
 **Where should parents start?**  
-Start with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) or read the full [Nigerian parent guide to AI skills](/blog/nigerian-parents-guide-to-ai-skills-for-children/).
+Start with [Prompt to Profit](/courses/prompt-to-profit/) or read the full [Nigerian parent guide to AI skills](/blog/nigerian-parents-guide-to-ai-skills-for-children/).

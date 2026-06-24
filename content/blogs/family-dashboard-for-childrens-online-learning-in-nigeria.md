@@ -65,7 +65,7 @@ Parents choosing programs can also read [How to Choose an AI Course for Your Chi
 
 ## Where Prompt to Profit fits
 
-[Prompt to Profit for Kids](/courses/prompt-to-profit-children/) and [Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/) are built for practical AI learning. A family dashboard makes that experience easier for parents who are enrolling more than one child.
+[Prompt to Profit](/courses/prompt-to-profit/) is now the single practical AI building course for children, teenagers, beginners, and career-focused learners. A family dashboard makes that experience easier for parents who are enrolling more than one child.
 
 The parent should manage the family. Each child should access their own learning.
 
@@ -137,4 +137,4 @@ No. Parents should manage enrollment while children access their own learning ac
 Yes. It is especially useful when a parent enrolls multiple children in holiday, school, or AI learning programs.
 
 **Where can parents start?**  
-Start with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) or [Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/).
+Start with [Prompt to Profit](/courses/prompt-to-profit/), which now combines the former children and holiday tracks into one beginner-friendly practical AI course.

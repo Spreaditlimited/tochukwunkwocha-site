@@ -25,7 +25,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-<style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"], heading: ["Manrope", "sans-serif"], mono: ["Fira Code", "monospace"] },
+            colors: {
+              brand: {
+                50: "#eef2fb", 100: "#dfe7f7", 200: "#ccd3e6", 300: "#99a9cc", 400: "#667eb2",
+                500: "#22345f", 600: "#1a2849", 700: "#14213d", 800: "#0f182d", 900: "#0a101e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
       .ambient-glow-1 {
         position: absolute;
         top: -5%;
@@ -239,7 +255,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -348,9 +364,9 @@
 <li>What would you add next?</li>
 </ul>
 <p>These questions help parents separate activity from real learning.</p>
-<h2>Where Prompt to Profit Holiday fits</h2>
-<p><a href="/courses/prompt-to-profit-holiday/">Prompt to Profit Holiday</a> is designed for parents who want children to use the holiday period for practical AI creation. The goal is not to overwhelm children with complex programming. The goal is to help them build real digital outcomes with guidance.</p>
-<p>If your child is younger, you can also review <a href="/courses/prompt-to-profit-children/">Prompt to Profit for Kids</a>. If the child is older and ready for deeper digital projects, <a href="/courses/prompt-to-production/">Prompt to Profit Advanced</a> may be the next path.</p>
+<h2>Where Prompt to Profit fits</h2>
+<p><a href="/courses/prompt-to-profit/">Prompt to Profit</a> now brings the beginner, children, holiday, and job-seeker paths into one practical AI building course. Parents who want children to use the holiday period well can use it as a guided way to move from AI curiosity to real digital outcomes.</p>
+<p>The goal is not to overwhelm children with complex programming. The goal is to help them learn prompting, planning, review, and project completion in a structured way. If the child is older and ready for deeper digital projects after the beginner path, <a href="/courses/prompt-to-production/">Prompt to Profit Advanced</a> may be the next step.</p>
 
 <section class="my-10 sm:my-12 rounded-2xl border border-white/10 bg-[#0d1117]/80 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -406,7 +422,7 @@
 <p><strong>Should a holiday AI program include coding?</strong></p>
 <p>It can, but coding should not be the first barrier. Children can start by building with AI and later understand the code behind the result.</p>
 <p><strong>Where can parents start?</strong></p>
-<p>Start with <a href="/courses/prompt-to-profit-holiday/">Prompt to Profit Holiday</a> if you want a guided holiday path.</p>
+<p>Start with <a href="/courses/prompt-to-profit/">Prompt to Profit</a> if you want a guided practical AI path that can work during holidays or regular learning periods.</p>
         
     <section class="mt-12 border-t border-white/10 pt-8">
       <p class="text-xs font-bold uppercase tracking-[0.16em] text-brand-300">Related articles</p>
@@ -444,7 +460,7 @@
     
     <div class="footer-logo mb-6">
       <a href="/" class="block transition-transform hover:scale-105 duration-300">
-        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
       </a>
     </div>
     
@@ -472,6 +488,6 @@
   </div>
 </footer>
 
-    <script src="/assets/bundles/bundle-ab1b87133569.min.js"></script>
+    <script src="/assets/site.js"></script>
   </body>
 </html>

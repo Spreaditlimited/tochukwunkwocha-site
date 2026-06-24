@@ -25,7 +25,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
-<style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"], heading: ["Manrope", "sans-serif"], mono: ["Fira Code", "monospace"] },
+            colors: {
+              brand: {
+                50: "#eef2fb", 100: "#dfe7f7", 200: "#ccd3e6", 300: "#99a9cc", 400: "#667eb2",
+                500: "#22345f", 600: "#1a2849", 700: "#14213d", 800: "#0f182d", 900: "#0a101e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
       .ambient-glow-1 {
         position: absolute;
         top: -5%;
@@ -239,7 +255,7 @@
     <header class="site-header">
       <div class="nav-wrap">
         <a class="logo" href="/">
-          <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="logo-image" />
+          <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="logo-image" />
         </a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
         <nav class="nav-links" aria-label="Primary navigation">
@@ -356,7 +372,7 @@
 <p>Many Nigerian students say they are interested in tech, but very few can show proof.</p>
 <p>A website gives you proof.</p>
 <p>You can add it to your CV, LinkedIn, WhatsApp bio, portfolio, or internship application. You can also use it as a sample when speaking to small businesses.</p>
-<p>If your main goal is employability, see <a href="/courses/prompt-to-profit-for-job-seekers/">Prompt to Profit for Job Seekers</a>.</p>
+<p>If your main goal is employability, start with <a href="/courses/prompt-to-profit/">Prompt to Profit</a>. The job-seeker path is now part of the main course, so learners can build visible proof without choosing a separate track.</p>
 <h2>When to move beyond simple websites</h2>
 <p>After building simple websites, you may want to build more advanced things like dashboards, login systems, payment flows, and apps.</p>
 <p>That is a different level. For that next step, read about <a href="/courses/prompt-to-production/">Prompt to Profit Advanced</a>.</p>
@@ -488,7 +504,7 @@
     
     <div class="footer-logo mb-6">
       <a href="/" class="block transition-transform hover:scale-105 duration-300">
-        <img src="/assets/optimized/revers-logo.webp" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+        <img src="/assets/revers_logo.png" alt="Tochukwu Nkwocha" class="footer-logo-image h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
       </a>
     </div>
     
@@ -516,6 +532,6 @@
   </div>
 </footer>
 
-    <script src="/assets/bundles/bundle-ab1b87133569.min.js"></script>
+    <script src="/assets/site.js"></script>
   </body>
 </html>

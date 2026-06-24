@@ -75,11 +75,11 @@ At the end of each week, ask your child simple questions:
 
 These questions help parents separate activity from real learning.
 
-## Where Prompt to Profit Holiday fits
+## Where Prompt to Profit fits
 
-[Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/) is designed for parents who want children to use the holiday period for practical AI creation. The goal is not to overwhelm children with complex programming. The goal is to help them build real digital outcomes with guidance.
+[Prompt to Profit](/courses/prompt-to-profit/) now brings the beginner, children, holiday, and job-seeker paths into one practical AI building course. Parents who want children to use the holiday period well can use it as a guided way to move from AI curiosity to real digital outcomes.
 
-If your child is younger, you can also review [Prompt to Profit for Kids](/courses/prompt-to-profit-children/). If the child is older and ready for deeper digital projects, [Prompt to Profit Advanced](/courses/prompt-to-production/) may be the next path.
+The goal is not to overwhelm children with complex programming. The goal is to help them learn prompting, planning, review, and project completion in a structured way. If the child is older and ready for deeper digital projects after the beginner path, [Prompt to Profit Advanced](/courses/prompt-to-production/) may be the next step.
 
 ## Questions to ask before paying for a holiday program
 
@@ -142,4 +142,4 @@ Yes. They can learn prompting, digital structure, safe AI use, and build a simpl
 It can, but coding should not be the first barrier. Children can start by building with AI and later understand the code behind the result.
 
 **Where can parents start?**  
-Start with [Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/) if you want a guided holiday path.
+Start with [Prompt to Profit](/courses/prompt-to-profit/) if you want a guided practical AI path that can work during holidays or regular learning periods.

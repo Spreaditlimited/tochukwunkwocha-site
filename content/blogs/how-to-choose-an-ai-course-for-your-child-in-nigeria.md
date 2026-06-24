@@ -44,7 +44,7 @@ A good AI course should include projects such as:
 - a small business landing page
 - a research or storytelling project
 
-This is why [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) focuses on helping children build real websites and digital projects with AI.
+This is why [Prompt to Profit](/courses/prompt-to-profit/) now serves as the practical beginner path for children, teenagers, and new learners who want to build real websites and digital projects with AI.
 
 ## 3. Make sure the course is age-appropriate
 
@@ -165,4 +165,4 @@ Yes. A child can begin with AI-assisted creation before learning deeper coding c
 Look for clear outcomes, real projects, safety guidance, and age-appropriate teaching.
 
 **Where should I begin?**  
-Begin with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) or the focused [Prompt to Profit Holiday](/courses/prompt-to-profit-holiday/) option.
+Begin with [Prompt to Profit](/courses/prompt-to-profit/). The former kids, holiday, and job-seeker options have been combined into this single practical beginner course.

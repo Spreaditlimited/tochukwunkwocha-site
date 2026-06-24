@@ -89,7 +89,7 @@ This keeps AI learning focused. A child should know whether they are building a 
 
 Any serious AI course for children should include safety rules. A course should not only show children exciting tools. It should teach boundaries, supervision, verification, and responsible use.
 
-This is part of the reason [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) focuses on guided projects. Parents choosing a course can also read [How to Choose an AI Course for Your Child in Nigeria](/blog/how-to-choose-an-ai-course-for-your-child-in-nigeria/).
+This is part of the reason [Prompt to Profit](/courses/prompt-to-profit/) focuses on guided projects, safe AI use, and practical output for beginners. Parents choosing a course can also read [How to Choose an AI Course for Your Child in Nigeria](/blog/how-to-choose-an-ai-course-for-your-child-in-nigeria/).
 
 ## A home AI safety agreement parents can use
 
@@ -143,4 +143,4 @@ Children should never share private information with AI tools.
 They can use AI to learn and plan, but they should not copy AI answers blindly.
 
 **Where can parents start?**  
-Start with [Prompt to Profit for Kids](/courses/prompt-to-profit-children/) if you want guided AI learning with practical projects.
+Start with [Prompt to Profit](/courses/prompt-to-profit/) if you want guided AI learning with practical projects.
