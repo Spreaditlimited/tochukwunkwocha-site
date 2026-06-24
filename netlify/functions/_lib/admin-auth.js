@@ -152,6 +152,7 @@ function inferredPageForFunction(functionName) {
   if (fn === "admin-learning-course-features") return "/internal/learning-support/";
   if (fn.startsWith("admin-manual-payments") || fn.startsWith("admin-payments-add-student") || fn.startsWith("admin-course-batches") || fn.startsWith("admin-coupons") || fn.startsWith("admin-whatsapp")) return "/internal/manual-payments/";
   if (fn.startsWith("admin-installments")) return "/internal/installments/";
+  if (fn.startsWith("admin-marketing")) return "/internal/marketing/";
   if (fn.startsWith("admin-domain") || fn.startsWith("admin-domains")) return "/internal/domain-management/";
   if (fn.startsWith("admin-learning-library") || fn.startsWith("admin-learning-module") || fn.startsWith("admin-learning-lessons") || fn.startsWith("admin-learning-course") || fn.startsWith("admin-learning-import") || fn.startsWith("admin-learning-cloudflare-sync") || fn.startsWith("admin-learning-stream-protection") || fn.startsWith("admin-learning-accessibility-autofill")) return "/internal/video-library/";
   if (fn.startsWith("admin-learning-progress")) return "/internal/learning-progress/";

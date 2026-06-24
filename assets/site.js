@@ -226,6 +226,281 @@
     document.body.insertAdjacentHTML("beforeend", markup);
   }
 
+  function initLeadCapturePopup() {
+    // 1. Configuration & Constants
+    const CONFIG = {
+      keys: {
+        firstSeen: "tn_lead_first_seen_at",
+        subscribed: "tn_lead_subscribed",
+        dismissCount: "tn_lead_dismiss_count",
+        lastDismissed: "tn_lead_last_dismissed_at",
+        sessionDismissed: "tn_lead_dismissed_this_session",
+      },
+      trigger: {
+        delayMs: 7000,
+        scrollThreshold: 0.35,
+      },
+      endpoints: {
+        subscribe: "/.netlify/functions/lead-capture-subscribe",
+      },
+      excludedPrefixes: [
+        "/dashboard",
+        "/admin",
+        "/schools/login",
+        "/dashboard/login",
+        "/invoice",
+      ]
+    };
+
+    const currentPath = window.location.pathname || "/";
+
+    // 2. Early Exits
+    if (CONFIG.excludedPrefixes.some(prefix => currentPath.startsWith(prefix))) return;
+    if (document.getElementById("tnLeadCapturePopup")) return;
+
+    // 3. Safe Storage Helpers
+    const storage = {
+      get: (type, key) => {
+        try { return window[type].getItem(key); } catch (e) { return null; }
+      },
+      set: (type, key, value) => {
+        try { window[type].setItem(key, value); } catch (e) {}
+      }
+    };
+
+    // Check if user has already subscribed or dismissed this session
+    if (storage.get('localStorage', CONFIG.keys.subscribed) === "true") return;
+    if (storage.get('sessionStorage', CONFIG.keys.sessionDismissed) === "true") return;
+
+    // Mark first seen
+    if (!storage.get('localStorage', CONFIG.keys.firstSeen)) {
+      storage.set('localStorage', CONFIG.keys.firstSeen, new Date().toISOString());
+    }
+
+    // 4. Utility Functions
+    const getPageType = () => currentPath.startsWith("/blog") ? "blog" : "site";
+
+    const getPopupMessage = () => getPageType() === "blog" 
+      ? "Get practical AI and business-building insights sent directly to your inbox."
+      : "Join practical builders getting clear AI lessons, tools, and updates from Tochukwu.";
+
+    const getCookie = (name) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift() || "";
+      return "";
+    };
+
+    const getAttributionPayload = () => {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        source: "lead_capture_popup",
+        pageType: getPageType(),
+        pageUrl: window.location.href,
+        pathname: currentPath,
+        referrer: document.referrer || "",
+        utmSource: params.get("utm_source") || "",
+        utmMedium: params.get("utm_medium") || "",
+        utmCampaign: params.get("utm_campaign") || "",
+        utmContent: params.get("utm_content") || "",
+        utmTerm: params.get("utm_term") || "",
+        fbclid: params.get("fbclid") || "",
+        fbp: getCookie("_fbp"),
+        fbc: getCookie("_fbc"),
+      };
+    };
+
+    // 5. CSS & HTML Injection
+    const injectStyles = () => {
+      if (document.getElementById("tnLeadCaptureStyles")) return;
+      const style = document.createElement("style");
+      style.id = "tnLeadCaptureStyles";
+      style.textContent = `
+        @keyframes tnSlideUpFade {
+          from { opacity: 0; transform: translateY(20px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .tn-lead-popup { position: fixed; inset-inline: 16px; bottom: 16px; z-index: 80; color: #f8fafc; pointer-events: none; }
+        .tn-lead-card { position: relative; overflow: hidden; max-width: 390px; margin-left: auto; border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; background: rgba(15,23,42,0.86); box-shadow: 0 24px 80px rgba(0,0,0,0.42); backdrop-filter: blur(18px); padding: 24px; pointer-events: auto; animation: tnSlideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .tn-lead-card::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 3px; background: linear-gradient(90deg, #667eb2, #a855f7); }
+        .tn-lead-close { position: absolute; right: 12px; top: 12px; display: grid; height: 28px; width: 28px; place-items: center; border: 0; border-radius: 999px; background: rgba(255,255,255,0.06); color: #cbd5e1; cursor: pointer; transition: all 0.2s ease; }
+        .tn-lead-close:hover { background: rgba(255,255,255,0.12); color: #fff; transform: scale(1.05); }
+        .tn-lead-person { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .tn-lead-avatar { height: 48px; width: 48px; border-radius: 999px; object-fit: cover; border: 1px solid rgba(255,255,255,0.16); }
+        .tn-lead-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #a5d6ff; }
+        .tn-lead-name { margin-top: 2px; font-size: 13px; font-weight: 800; color: #fff; }
+        .tn-lead-role { font-size: 11px; color: #94a3b8; }
+        .tn-lead-title { margin: 0; font-size: 20px; line-height: 1.18; font-weight: 900; color: #fff; }
+        .tn-lead-copy { margin: 10px 0 0; font-size: 13px; line-height: 1.6; color: #cbd5e1; }
+        .tn-lead-form { display: grid; gap: 10px; margin-top: 18px; }
+        .tn-lead-input { width: 100%; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(2,6,23,0.52); color: #fff; padding: 0 13px; font-size: 13px; outline: none; transition: all 0.2s ease; box-sizing: border-box; }
+        .tn-lead-input:focus { border-color: rgba(165,214,255,0.75); box-shadow: 0 0 0 3px rgba(102,126,178,0.28); }
+        .tn-lead-button { height: 44px; border: 0; border-radius: 999px; background: linear-gradient(90deg, #667eb2, #9333ea); color: #fff; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 0 28px rgba(102,126,178,0.28); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .tn-lead-button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 32px rgba(147,51,234,0.4); }
+        .tn-lead-button:disabled { cursor: wait; opacity: 0.72; }
+        .tn-lead-error { display: none; border-radius: 10px; background: rgba(244,63,94,0.12); color: #fda4af; padding: 9px 11px; font-size: 12px; font-weight: 700; margin: 0; }
+        .tn-lead-success { display: none; min-height: 190px; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+        .tn-lead-success-icon { display: grid; place-items: center; height: 42px; width: 42px; border-radius: 999px; background: rgba(16,185,129,0.14); color: #34d399; margin-bottom: 14px; }
+        .tn-lead-success h2 { margin: 0; font-size: 20px; color: #fff; }
+        .tn-lead-success p { margin: 8px 0 0; max-width: 260px; font-size: 13px; line-height: 1.55; color: #cbd5e1; }
+        .tn-lead-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; gap: 12px; }
+        @media (max-width: 640px) { .tn-lead-card { max-width: none; } }
+      `;
+      document.head.appendChild(style);
+    };
+
+    // 6. Action Handlers
+    const handleClose = () => {
+      const currentCount = Number(storage.get('localStorage', CONFIG.keys.dismissCount) || "0");
+      storage.set('localStorage', CONFIG.keys.dismissCount, String(currentCount + 1));
+      storage.set('localStorage', CONFIG.keys.lastDismissed, new Date().toISOString());
+      storage.set('sessionStorage', CONFIG.keys.sessionDismissed, "true");
+
+      const popup = document.getElementById("tnLeadCapturePopup");
+      if (popup) {
+        // Optional: Add a fade-out animation class here before removing
+        popup.remove();
+      }
+    };
+
+    const handleFormSubmit = async (event, elements) => {
+      event.preventDefault();
+      const { form, submitBtn, errorEl, formWrap, successWrap } = elements;
+
+      const firstName = String(form.firstName?.value || "").trim();
+      const email = String(form.email?.value || "").trim().toLowerCase();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Subscribing...";
+      errorEl.style.display = "none";
+
+      try {
+        const payload = { firstName, email, ...getAttributionPayload() };
+        
+        const response = await fetch(CONFIG.endpoints.subscribe, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json().catch(() => null);
+        
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "Unable to subscribe right now. Please try again.");
+        }
+
+        // Success
+        storage.set('localStorage', CONFIG.keys.subscribed, "true");
+
+        if (typeof window.fbq === "function") {
+          window.fbq("track", "Lead", {
+            content_name: "Tochukwu Website Lead Capture Popup",
+            content_category: getPageType(),
+          });
+        }
+
+        formWrap.style.display = "none";
+        successWrap.style.display = "flex";
+        setTimeout(handleClose, 2600);
+
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Subscribe to Insights";
+      }
+    };
+
+    const renderPopup = () => {
+      if (document.getElementById("tnLeadCapturePopup")) return;
+      injectStyles();
+
+      const markup = `
+        <div class="tn-lead-popup" id="tnLeadCapturePopup">
+          <div class="tn-lead-card" role="dialog" aria-modal="false" aria-labelledby="tnLeadTitle">
+            <button type="button" class="tn-lead-close" aria-label="Close lead capture popup">&times;</button>
+            
+            <div class="tn-lead-success" data-lead-success>
+              <div class="tn-lead-success-icon">&#10003;</div>
+              <h2>You’re on the list.</h2>
+              <p>Practical AI and building insights will arrive in your inbox shortly.</p>
+            </div>
+            
+            <div data-lead-form-wrap>
+              <div class="tn-lead-person">
+                <img class="tn-lead-avatar" src="/assets/optimized/tochukwu-portrait.webp" alt="Tochukwu Nkwocha" loading="lazy" />
+                <div>
+                  <div class="tn-lead-eyebrow">Weekly practical notes</div>
+                  <div class="tn-lead-name">Tochukwu Nkwocha</div>
+                  <div class="tn-lead-role">Founder, builder, practical AI educator</div>
+                </div>
+              </div>
+              
+              <h2 class="tn-lead-title" id="tnLeadTitle">Practical AI and building lessons, minus the noise.</h2>
+              <p class="tn-lead-copy">${getPopupMessage()}</p>
+              
+              <form class="tn-lead-form" data-lead-form novalidate>
+                <input class="tn-lead-input" name="firstName" autocomplete="given-name" placeholder="First name" required />
+                <input class="tn-lead-input" name="email" type="email" autocomplete="email" placeholder="Email address" required />
+                <p class="tn-lead-error" data-lead-error></p>
+                <button class="tn-lead-button" type="submit" data-lead-submit>Subscribe to Insights</button>
+              </form>
+              
+              <div class="tn-lead-foot">
+                <span>No spam.</span>
+                <span>Useful notes only.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML("beforeend", markup);
+
+      // Bind Events
+      const popup = document.getElementById("tnLeadCapturePopup");
+      const elements = {
+        form: popup.querySelector("[data-lead-form]"),
+        formWrap: popup.querySelector("[data-lead-form-wrap]"),
+        successWrap: popup.querySelector("[data-lead-success]"),
+        errorEl: popup.querySelector("[data-lead-error]"),
+        submitBtn: popup.querySelector("[data-lead-submit]"),
+      };
+
+      popup.querySelector(".tn-lead-close").addEventListener("click", handleClose);
+      elements.form.addEventListener("submit", (e) => handleFormSubmit(e, elements));
+    };
+
+    // 7. Triggers (Time & Scroll)
+    let isTriggered = false;
+
+    const trigger = () => {
+      if (isTriggered) return;
+      isTriggered = true;
+      renderPopup();
+    };
+
+    // Timer trigger
+    setTimeout(trigger, CONFIG.trigger.delayMs);
+
+    // Scroll trigger (Throttled for performance)
+    let scrollTimeout;
+    window.addEventListener("scroll", () => {
+      if (isTriggered) return;
+      
+      if (!scrollTimeout) {
+        scrollTimeout = setTimeout(() => {
+          const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+          if (scrollable > 0 && (window.scrollY / scrollable) >= CONFIG.trigger.scrollThreshold) {
+            trigger();
+          }
+          scrollTimeout = null;
+        }, 150); // Checks scroll depth every 150ms instead of every pixel
+      }
+    }, { passive: true });
+  }
+
   async function fetchPaidOrderSummary(orderUuid) {
     const res = await fetch(`/.netlify/functions/order-summary?order_uuid=${encodeURIComponent(orderUuid)}`, {
       method: "GET",
@@ -313,6 +588,7 @@
     openCookieBanner();
   }
   mountWhatsAppFloat();
+  initLeadCapturePopup();
 
   if (navToggle && navLinks) {
     navToggle.addEventListener("click", function () {

@@ -42,3 +42,32 @@ textarea[readonly] {
   background-color: #f9fafb !important;
   color: #374151 !important;
 }
+
+.premium-picker {
+  appearance: none;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  background-image: linear-gradient(45deg, transparent 50%, #14213d 50%), linear-gradient(135deg, #14213d 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(50% - 2px), calc(100% - 14px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.premium-picker:hover {
+  border-color: #93c5fd;
+  background-color: #ffffff;
+}
+
+.premium-picker:focus {
+  outline: none;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+  background-color: #ffffff;
+}

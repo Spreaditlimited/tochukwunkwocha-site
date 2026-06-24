@@ -113,6 +113,13 @@ Leadpage Brevo automation
 - `BREVO_LEADPAGE_FOLLOWUP_EMAIL_COUNT` (`5` default; clamped to 1..7 for free-tier safety)
 - `BREVO_FREE_TIER_DAILY_SEND_LIMIT` (`300` default; guardrail blocks new scheduling when projected sends exceed this)
 
+Practical AI Building Lessons Brevo drafts
+- The 12-week subscriber lesson sequence lives in `content/email-series/practical-ai-building-lessons.js`.
+- Use `npm run brevo:ai-lessons:drafts -- --dry-run --sender-email=you@example.com` to preview draft names.
+- Use `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, optional `BREVO_SENDER_NAME`, and optional `BREVO_LESSON_LIST_ID` (`17` default) to create Brevo campaign drafts.
+- These drafts are source material for a Brevo-native automation workflow. In Brevo, set the workflow trigger to contact added to list `17`, send Lesson 1, then wait 7 days between the remaining lessons.
+- If Brevo automation does not allow selecting draft campaigns, create active Brevo templates instead with `npm run brevo:ai-lessons:templates`. In the workflow email step, select the matching `Practical AI Building Lessons 01...12` template.
+
 Leadpage customer-owned credentials (new model)
 - Netlify publish and Brevo automation now read per-customer credentials saved from the client dashboard.
 - Global `NETLIFY_API_TOKEN`/`NETLIFY_SITE_ID` and `BREVO_API_KEY`/`BREVO_LEADPAGE_LIST_ID` are no longer required for leadpage jobs when customer credentials are present.

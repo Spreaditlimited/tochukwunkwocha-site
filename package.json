@@ -8,6 +8,8 @@
     "build:assets": "node scripts/build-assets.js",
     "build:assets:rewrite": "node scripts/build-assets.js --rewrite-html",
     "build": "npm run build:blog && npm run build:assets:rewrite && npm run build:images",
+    "brevo:ai-lessons:drafts": "node scripts/brevo-create-ai-lesson-drafts.js",
+    "brevo:ai-lessons:templates": "node scripts/brevo-create-ai-lesson-templates.js",
     "db:migrate": "node scripts/db-migrate.js",
     "db:school-student-codes:backfill": "node scripts/school-student-codes-backfill.js",
     "build:images": "node scripts/build-images.js"

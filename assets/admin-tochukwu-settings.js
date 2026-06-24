@@ -215,6 +215,7 @@
       "/internal/": "Dashboard",
       "/internal/manual-payments/": "Enrollments",
       "/internal/installments/": "Installments",
+      "/internal/marketing/": "Marketing",
       "/internal/domain-management/": "Domain Management",
       "/internal/video-library/": "Video Library",
       "/internal/learning-progress/": "Learning Progress",

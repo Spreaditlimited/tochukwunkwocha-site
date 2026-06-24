@@ -17,6 +17,7 @@ const { ensureStudentCertificatesTable } = require("../netlify/functions/_lib/st
 const { ensureAffiliateTables } = require("../netlify/functions/_lib/affiliates");
 const { ensureSchoolTables } = require("../netlify/functions/_lib/schools");
 const { ensureFamilyTables } = require("../netlify/functions/_lib/families");
+const { ensureMarketingLeadsTable } = require("../netlify/functions/_lib/marketing-leads");
 
 async function run() {
   const pool = getPool();
@@ -34,6 +35,7 @@ async function run() {
     await ensureAffiliateTables(pool);
     await ensureSchoolTables(pool);
     await ensureFamilyTables(pool);
+    await ensureMarketingLeadsTable(pool);
     console.log("db_migrate_ok");
   } finally {
     await pool.end();
