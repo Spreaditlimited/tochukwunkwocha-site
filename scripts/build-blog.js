@@ -48,9 +48,6 @@ const INTERNAL_LINK_RULES = [
   { phrase: 'Prompt to Profit curriculum', href: '/courses/prompt-to-profit-schools/' },
   { phrase: 'Prompt to Profit program', href: '/courses/prompt-to-profit-schools/' },
   { phrase: 'Prompt to Profit system', href: '/courses/prompt-to-profit-schools/' },
-  { phrase: 'Prompt to Profit for Kids', href: '/courses/prompt-to-profit-children/' },
-  { phrase: 'Prompt to Profit Kids', href: '/courses/prompt-to-profit-children/' },
-  { phrase: 'Prompt to Profit AI for Kids', href: '/courses/prompt-to-profit-children/' },
   { phrase: 'Prompt to Production', href: '/courses/prompt-to-production/' },
   { phrase: 'Prompt to Profit Advanced', href: '/courses/prompt-to-production/' },
   { phrase: 'domain registration', href: '/services/domain-registration/' },
@@ -185,7 +182,7 @@ function injectInArticleCta(html) {
     <div>
       <p class="!mt-0 text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-300">Build Practical AI Skills</p>
       <h3 class="mt-2 text-xl sm:text-2xl font-heading font-extrabold text-white">Ready to move from reading to building?</h3>
-      <p class="!mt-2 text-slate-400 leading-relaxed">Explore our hands-on AI courses for schools, kids, and ambitious creators.</p>
+      <p class="!mt-2 text-slate-400 leading-relaxed">Explore our hands-on AI courses for schools, professionals, business owners, and ambitious creators.</p>
     </div>
     <a href="/courses/" style="text-decoration:none;" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 px-5 py-3 text-sm font-bold !text-white shadow-[0_0_25px_rgba(102,126,178,0.35)] transition hover:from-brand-500 hover:to-purple-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
       Explore AI Courses
@@ -214,6 +211,24 @@ function toIsoDate(dateText) {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return '';
   return d.toISOString();
+}
+
+function buildNow() {
+  const raw = clean(process.env.BLOG_BUILD_DATE || '');
+  if (raw) {
+    const d = new Date(raw);
+    if (Number.isFinite(d.getTime())) return d;
+  }
+  return new Date();
+}
+
+function isFuturePost(dateText, now) {
+  const raw = clean(dateText);
+  if (!raw) return false;
+  const d = new Date(raw + 'T00:00:00Z');
+  if (!Number.isFinite(d.getTime())) return false;
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return d.getTime() > today.getTime();
 }
 
 function formatDateForHumans(dateText) {
@@ -702,25 +717,101 @@ function writePost(post, posts) {
   );
 }
 
+function getIndexAccentClass(index) {
+  const accents = [
+    'bg-brand-500/20 group-hover:bg-brand-400/30',
+    'bg-purple-500/15 group-hover:bg-purple-400/25',
+    'bg-cyan-500/10 group-hover:bg-cyan-400/20',
+  ];
+  return accents[index % accents.length];
+}
+
+function formatIndexTag(tag) {
+  return clean(tag)
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function getIndexTag(post) {
+  const tags = Array.isArray(post && post.tags) ? post.tags : [];
+  const genericTags = new Set(['nigeria', 'nigerian', 'uk', 'ai']);
+  const selected = tags.find((tag) => {
+    const normalized = clean(tag).toLowerCase();
+    return normalized && !genericTags.has(normalized);
+  }) || tags[0] || 'AI Insights';
+  return formatIndexTag(selected);
+}
+
+function renderIndexCard(post, index) {
+  const readTime = estimateReadTimeMinutes(post.body);
+  const humanDate = formatDateForHumans(post.date);
+  const tag = getIndexTag(post);
+  const accent = getIndexAccentClass(index);
+  return `
+        <article class="blog-card group flex flex-col h-full relative">
+          <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm -z-10"></div>
+          <div class="relative h-full bg-[#0d1117]/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full ${accent} blur-3xl transition-colors duration-500 pointer-events-none"></div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-8 relative z-10">
+              <span class="inline-flex items-center px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-lg shadow-sm">
+                ${escapeHtml(tag)}
+              </span>
+              <div class="flex items-center text-[11px] text-slate-500 space-x-2 font-mono uppercase tracking-widest">
+                <time datetime="${escapeHtml(post.date)}">${escapeHtml(humanDate)}</time>
+                <span>&middot;</span>
+                <span>${readTime} min read</span>
+              </div>
+            </div>
+
+            <h2 class="text-2xl lg:text-3xl font-heading font-extrabold text-white leading-tight mb-4 group-hover:text-brand-300 transition-colors duration-300 relative z-10">
+              <a href="/blog/${post.slug}/" class="focus:outline-none relative z-10 before:absolute before:inset-0">
+                ${escapeHtml(post.title)}
+              </a>
+            </h2>
+
+            <p class="text-[15px] text-slate-400 mb-8 flex-grow leading-relaxed font-light relative z-10">
+              ${escapeHtml(post.excerpt || '')}
+            </p>
+
+            <div class="mt-auto pt-6 border-t border-white/10 relative z-10">
+              <a href="/blog/${post.slug}/" class="relative z-10 inline-flex items-center text-xs font-mono font-bold uppercase tracking-widest text-slate-300 group-hover:text-brand-400 transition-colors duration-300 focus:outline-none focus:text-brand-300">
+                Read Article
+                <svg class="w-4 h-4 ml-2 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </a>
+            </div>
+          </div>
+        </article>`;
+}
+
+function updateCustomIndex(posts, indexPath) {
+  const existing = fs.readFileSync(indexPath, 'utf8');
+  const cards = posts.map((post, index) => renderIndexCard(post, index)).join('\n');
+  const updated = existing.replace(
+    /(<section\s+id="blogCards"[^>]*>)[\s\S]*?(\s*<\/section>\s*<div\s+class="mt-20\s+flex\s+items-center\s+justify-center\s+relative\s+z-10\s+px-6">)/,
+    `$1\n${cards}\n\n      $2`
+  );
+  if (updated === existing) {
+    console.log('Skipped blog index card refresh (custom blog/index.html markers not found).');
+    return false;
+  }
+  fs.writeFileSync(indexPath, updated, 'utf8');
+  console.log(`Refreshed custom blog index with ${posts.length} published post(s).`);
+  return true;
+}
+
 function writeIndex(posts) {
   ensureDir(OUTPUT_DIR);
   const indexPath = path.join(OUTPUT_DIR, 'index.html');
-  // Preserve manually designed /blog/index.html pages by default.
-  // Set BLOG_REBUILD_INDEX=1 when you explicitly want to regenerate it.
+  // Keep the manually designed no-image blog page, but refresh its cards so
+  // published scheduled posts appear on the landing page and pagination works.
   if (fs.existsSync(indexPath) && String(process.env.BLOG_REBUILD_INDEX || '') !== '1') {
-    console.log('Skipped blog index rebuild (existing custom blog/index.html preserved).');
+    updateCustomIndex(posts, indexPath);
     return;
   }
-  const cards = posts
-    .map((p) => `
-      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-xl font-bold"><a class="hover:underline" href="/blog/${p.slug}/">${escapeHtml(p.title)}</a></h2>
-        <p class="mt-1 text-sm text-slate-500">${escapeHtml(p.date)}</p>
-        <p class="mt-3 text-slate-700">${escapeHtml(p.excerpt || '')}</p>
-        <a class="mt-4 inline-block text-brand-700 font-semibold hover:underline" href="/blog/${p.slug}/">Read article</a>
-      </article>
-    `)
-    .join('\n');
+  const cards = posts.map((post, index) => renderIndexCard(post, index)).join('\n');
 
   const body = `
     <section class="rounded-3xl border border-brand-200 bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 p-6 sm:p-8 text-white shadow-xl">
@@ -728,7 +819,7 @@ function writeIndex(posts) {
       <h1 class="mt-2 text-3xl sm:text-4xl font-heading font-extrabold">Blog</h1>
       <p class="mt-2 text-brand-100">Practical updates on AI, schools, and digital skills training.</p>
     </section>
-    <section class="mt-6 grid gap-4">
+    <section id="blogCards" class="mt-6 grid gap-4">
       ${cards || '<p class="text-slate-600">No published posts yet.</p>'}
     </section>
   `;
@@ -781,6 +872,10 @@ function writeBlogSitemap(posts) {
 
 function build() {
   ensureDir(CONTENT_DIR);
+  const now = buildNow();
+  const includeFuturePosts = String(process.env.BLOG_INCLUDE_FUTURE || '').toLowerCase() === '1';
+  let scheduledCount = 0;
+  const scheduledSlugs = [];
   const files = fs.readdirSync(CONTENT_DIR).filter((f) => f.endsWith('.md'));
   const posts = [];
   for (const file of files) {
@@ -791,6 +886,11 @@ function build() {
     const slug = clean(parsed.data.slug) || slugify(title);
     const published = parsed.data.published === true || String(parsed.data.published).toLowerCase() === 'true';
     if (!published) continue;
+    if (!includeFuturePosts && isFuturePost(parsed.data.date, now)) {
+      scheduledCount += 1;
+      scheduledSlugs.push(slug);
+      continue;
+    }
     posts.push({
       title,
       slug,
@@ -804,12 +904,16 @@ function build() {
     });
   }
 
+  for (const scheduledSlug of scheduledSlugs) {
+    fs.rmSync(path.join(OUTPUT_DIR, scheduledSlug), { recursive: true, force: true });
+  }
+
   posts.sort((a, b) => (a.date < b.date ? 1 : -1));
   writeIndex(posts);
   posts.forEach((post) => writePost(post, posts));
   writeRss(posts);
   writeBlogSitemap(posts);
-  console.log(`Built blog: ${posts.length} published post(s)`);
+  console.log(`Built blog: ${posts.length} published post(s)${scheduledCount ? `, ${scheduledCount} scheduled future post(s) skipped` : ''}`);
 }
 
 build();
