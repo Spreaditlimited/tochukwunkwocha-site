@@ -24,6 +24,11 @@ function formatDateForSql(date) {
   ].join(":");
 }
 
+function formatSqlDateTimeValue(value) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return formatDateForSql(value);
+  return value;
+}
+
 function normalizeSqlDateTime(value, fallback) {
   if (value instanceof Date && Number.isFinite(value.getTime())) return formatDateForSql(value);
 
@@ -105,8 +110,8 @@ function mapRow(row) {
     excerpt: row.excerpt || "",
     tags: Array.isArray(tags) ? tags : [],
     seo,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: formatSqlDateTimeValue(row.created_at),
+    updatedAt: formatSqlDateTimeValue(row.updated_at),
   };
 }
 
