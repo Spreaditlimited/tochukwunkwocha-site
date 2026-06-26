@@ -993,13 +993,30 @@ function writeRss(posts) {
 }
 
 function writeBlogSitemap(posts) {
-  const urls = [`${SITE_URL}/blog/`].concat(posts.map(function (post) {
-    return `${SITE_URL}/blog/${post.slug}/`;
+  const urls = [{
+    loc: `${SITE_URL}/blog/`,
+    lastmod: posts[0] && posts[0].date ? posts[0].date : '',
+    changefreq: 'weekly',
+    priority: '0.90',
+  }].concat(posts.map(function (post) {
+    return {
+      loc: `${SITE_URL}/blog/${post.slug}/`,
+      lastmod: post.date || '',
+      changefreq: 'monthly',
+      priority: '0.75',
+    };
   }));
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.map(function (url) {
-      return `  <url><loc>${escapeXml(url)}</loc></url>`;
+      return [
+        '  <url>',
+        `    <loc>${escapeXml(url.loc)}</loc>`,
+        url.lastmod ? `    <lastmod>${escapeXml(url.lastmod)}</lastmod>` : '',
+        `    <changefreq>${escapeXml(url.changefreq)}</changefreq>`,
+        `    <priority>${escapeXml(url.priority)}</priority>`,
+        '  </url>',
+      ].filter(Boolean).join('\n');
     }).join('\n') +
     `\n</urlset>\n`;
   fs.writeFileSync(path.join(OUTPUT_DIR, 'sitemap.xml'), xml, 'utf8');

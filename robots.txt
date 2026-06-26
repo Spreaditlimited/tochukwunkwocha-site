@@ -6,3 +6,5 @@ Disallow: /.netlify/
 Disallow: /netlify/
 
 Sitemap: https://tochukwunkwocha.com/sitemap.xml
+Sitemap: https://tochukwunkwocha.com/sitemap-pages.xml
+Sitemap: https://tochukwunkwocha.com/blog/sitemap.xml

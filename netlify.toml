@@ -9,6 +9,18 @@
   status = 301
 
 [[redirects]]
+  from = "/blog/nigerian-parents-guide-to-ai-skills-for-children/"
+  to = "/blog/the-nigerian-parents-guide-to-ai-skills-for-children/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/blog/nigerian-parents-guide-to-ai-skills-for-children"
+  to = "/blog/the-nigerian-parents-guide-to-ai-skills-for-children/"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/services/lead-capture"
   to = "/services/lead-capture/"
   status = 301
@@ -113,6 +125,31 @@
 
 [[headers]]
   for = "/internal/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[[headers]]
+  for = "/schools/login/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[[headers]]
+  for = "/schools/reset-password/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[[headers]]
+  for = "/schools/reset-password-request/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[[headers]]
+  for = "/schools/dashboard/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+[[headers]]
+  for = "/projects/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
 
