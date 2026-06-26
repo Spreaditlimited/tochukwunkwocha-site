@@ -2,8 +2,7 @@
 /* eslint-disable no-console */
 const fs = require("fs");
 const path = require("path");
-const chromium = require("@sparticuz/chromium").default;
-const puppeteer = require("puppeteer-core");
+const PDFDocument = require("pdfkit");
 
 const { getPool } = require("../netlify/functions/_lib/db");
 const { applyRuntimeSettings } = require("../netlify/functions/_lib/runtime-settings");
@@ -63,15 +62,6 @@ function stripHtml(value) {
     .trim();
 }
 
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function slugify(input) {
   return clean(input, 180)
     .toLowerCase()
@@ -106,68 +96,101 @@ function compact(value, max, fallback) {
   return text || clean(fallback, max || 120);
 }
 
+function deDuplicateLocalContext(value, post) {
+  let text = String(value || "").replace(/\s+/g, " ").trim();
+  const postText = `${post && post.blogTitle ? post.blogTitle : ""} ${post && post.excerpt ? post.excerpt : ""}`;
+  const alreadyContextual = /\bNigeria(?:n)?\b/i.test(postText);
+  if (!alreadyContextual || !text) return text;
+  const matches = text.match(/\bNigeria(?:n)?\b/gi) || [];
+  if (matches.length <= 1) return text;
+  let seen = 0;
+  text = text.replace(/\b(Nigerian|Nigeria)\b/gi, (match) => {
+    seen += 1;
+    return seen === 1 ? match : "";
+  });
+  return text
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\bfor\s+(parents|schools|students|businesses|owners|teams)\b/gi, "for $1")
+    .trim();
+}
+
+function stripCountPhrases(value) {
+  return String(value || "")
+    .replace(/\b\d{1,2}-page\s+/gi, "")
+    .replace(/\b(?:one|two|three)-page\s+/gi, "")
+    .replace(/\b\d{1,2}\s+(?=(?:[a-z-]+\s+){0,4}(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, "")
+    .replace(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?=(?:[a-z-]+\s+){0,4}(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, "")
+    .replace(/\b(?:top|the)\s+\d{1,2}\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, "")
+    .replace(/\b\d{1,2}\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, "")
+    .replace(/^\s*(?:top|the)\s+\d{1,2}\s+/i, "")
+    .replace(/^\s*\d{1,2}\s+/, "")
+    .replace(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
+function cleanContext(value, post) {
+  return stripCountPhrases(deDuplicateLocalContext(value, post));
+}
+
+function compactContext(value, max, fallback, post) {
+  return compact(cleanContext(value, post), max, stripCountPhrases(fallback));
+}
+
 function normalizeList(value, limit, maxLength) {
   const arr = Array.isArray(value) ? value : [];
   return arr.map((item) => cleanListItem(item, maxLength || 220)).filter(Boolean).slice(0, limit || 8);
 }
 
+function normalizeContextList(value, limit, maxLength, post) {
+  const arr = Array.isArray(value) ? value : [];
+  return arr
+    .map((item) => cleanListItem(cleanContext(item, post), maxLength || 220))
+    .filter(Boolean)
+    .slice(0, limit || 8);
+}
+
 function cleanListItem(value, maxLength) {
-  return clean(value, maxLength || 220)
+  return stripCountPhrases(clean(value, maxLength || 220))
     .replace(/^\s*(?:[-*•]\s*)?(?:\d{1,2}|[a-zA-Z])[\.)]\s+/, "")
     .replace(/^\s*(?:[-*•]\s*)?(?:step|part)\s+\d{1,2}\s*[:.)-]\s*/i, "")
     .trim();
 }
 
-function extractLeadingCount(value) {
-  const match = clean(value, 120).match(/^(\d{1,2})\s+\S+/);
-  if (!match) return 0;
-  const count = Number(match[1]);
-  return Number.isFinite(count) && count >= 2 && count <= 8 ? count : 0;
-}
-
-function extractPromisedCount(value) {
-  const match = clean(value, 180).match(/\b(\d{1,2})\s+(?:ai\s+)?(?:project|projects|idea|ideas|step|steps|question|questions|way|ways|mistake|mistakes|check|checks|tip|tips)\b/i);
-  if (!match) return 0;
-  const count = Number(match[1]);
-  return Number.isFinite(count) && count >= 2 && count <= 8 ? count : 0;
-}
-
-function normalizeSectionHeading(value, itemCount) {
-  const heading = compact(value, 55, "");
-  if (!heading) return "";
-  const stated = extractLeadingCount(heading);
-  if (!stated) return heading;
-  return stated === Math.max(0, Number(itemCount || 0)) ? heading : compact(heading.replace(/^\d{1,2}\s+/, ""), 55, heading);
+function normalizePdfHeading(value) {
+  return compact(stripCountPhrases(value), 55, "");
 }
 
 function buildLeadMagnetPrompt(post) {
   const content = truncate(stripHtml(post.blogContent), 4200);
   const tags = Array.isArray(post.tags) ? post.tags.join(", ") : "";
   return [
-    "You are creating a premium lead magnet for a Nigerian practical AI education website.",
+    "You are creating a premium lead magnet for a practical AI education website with a strong Nigerian audience.",
     "The lead magnet will be promoted inside a blog post and through Facebook traffic.",
     "The reader must feel the PDF is specific, useful, and worth submitting their first name and email for.",
     "",
-    "Create a concise 1-2 page PDF concept and the matching CMS lead capture fields.",
+    "Create a concise PDF concept and the matching CMS lead capture fields.",
     "",
     "Rules:",
     "- The PDF must be immediately useful, not fluffy.",
     "- It must match the exact article theme and audience.",
     "- It must be mobile-readable when opened as a PDF.",
-    "- It must be practical for Nigerian parents, schools, students, professionals, or business owners depending on the article.",
+    "- It must be practical for the specific readers in the article: parents, schools, students, professionals, teams, or business owners.",
+    "- Do not repeat 'Nigeria' or 'Nigerian' mechanically. If the blog title already says Nigeria/Nigerian, use it sparingly in the PDF and prefer natural phrasing like 'parents', 'schools', 'business owners', or 'your team'.",
     "- Do not promise unrealistic outcomes.",
     "- Do not mention Facebook ads.",
     "- Avoid generic titles like 'Ultimate Guide'.",
     "- Use simple direct language.",
     "- The PDF must fit comfortably within two pages. It must never rely on overflow or tiny text.",
     "- Keep every sentence short. Avoid clauses stacked with commas.",
-    "- Prefer 2 to 3 compact sections. Each section should usually have 3 to 5 useful bullets.",
-    "- If the title, offer, or section heading promises a number, the PDF body must deliver exactly that number of relevant items.",
-    "- If the lead magnet promises '5 projects', include one section with exactly 5 project bullets. Do not reduce it to 3.",
-    "- Each bullet must be concise but complete, usually 6 to 16 words.",
-    "- Do not put a number in a section heading unless it exactly matches the number of bullets in that section.",
-    "- If space is tight, shorten each item, not the number of promised items.",
-    "- The action plan must use 3 to 4 short next steps.",
+    "- Do not use numeric promises anywhere in titles, headings, labels, button text, CTA copy, bullets, or body text.",
+    "- Do not write counted promises about prompts, areas, steps, ways, projects, skills, tips, or tools.",
+    "- Use natural headings like 'AI prompts for everyday business tasks', 'Key areas to score for AI readiness', or 'Project ideas to try this week'.",
+    "- Use compact sections with enough useful bullets to feel valuable while still fitting the PDF.",
+    "- Each bullet must be concise but complete.",
+    "- If space is tight, shorten the wording instead of introducing a numeric promise.",
     "- The PDF must include a natural service CTA that connects the reader to the most relevant Tochukwu service.",
     "- The service CTA body must be one short sentence and must not exceed 110 characters.",
     "- Pick the CTA URL carefully: schools use /courses/prompt-to-profit-schools/, children/parents use /courses/prompt-to-profit/, business owners use /courses/ai-for-everyday-business-owners/, build/system/website/app topics use /build/, team training or advisory topics use /contact/.",
@@ -175,11 +198,11 @@ function buildLeadMagnetPrompt(post) {
     "",
     "Return only valid JSON with this exact shape:",
     "{",
-    '  "leadMagnetTitle": "string, max 95 chars",',
+    '  "leadMagnetTitle": "string, max 95 chars, no numbers or count promises",',
     '  "offerHeadline": "string, max 120 chars",',
     '  "description": "string, max 190 chars",',
     '  "buttonText": "string, max 36 chars",',
-    '  "bullets": ["3 to 5 short benefit bullets"],',
+    '  "bullets": ["short benefit bullets, no numbers or count promises"],',
     '  "emailSubject": "string, max 80 chars",',
     '  "deliveryMessage": "string, max 280 chars",',
     '  "pdf": {',
@@ -188,9 +211,9 @@ function buildLeadMagnetPrompt(post) {
     '    "audience": "string, max 75 chars",',
     '    "promise": "string, max 120 chars",',
     '    "sections": [',
-    '      { "heading": "string, max 55 chars", "items": ["3 to 5 short practical bullets, max 90 chars each; exact count if heading/title promises a number"] }',
+    '      { "heading": "string, max 55 chars, no numbers or count promises", "items": ["short practical bullets, max 90 chars each, no numbers or count promises"] }',
     "    ],",
-    '    "actionPlan": ["3 to 4 short next steps, max 85 chars each"],',
+    '    "actionPlan": ["short next steps, max 85 chars each, no numbers or count promises"],',
     '    "closingNote": "string, max 130 chars",',
     '    "serviceCta": {',
     '      "label": "string, max 28 chars",',
@@ -258,35 +281,30 @@ function normalizeGenerated(raw, post) {
   const data = raw && typeof raw === "object" ? raw : {};
   const pdf = data.pdf && typeof data.pdf === "object" ? data.pdf : {};
   const sections = Array.isArray(pdf.sections) ? pdf.sections : [];
-  const leadMagnetTitle = compact(data.leadMagnetTitle, 95, `${clean(post.blogTitle, 70)} Checklist`);
-  const pdfTitle = compact(pdf.title, 88, compact(data.leadMagnetTitle, 88, `${clean(post.blogTitle, 70)} Checklist`));
-  const globalPromisedCount = extractPromisedCount(`${leadMagnetTitle} ${pdfTitle} ${data.offerHeadline || ""}`);
+  const leadMagnetTitle = compactContext(data.leadMagnetTitle, 95, `${clean(post.blogTitle, 70)} Checklist`, post);
+  const pdfTitle = compactContext(pdf.title, 88, compactContext(data.leadMagnetTitle, 88, `${clean(post.blogTitle, 70)} Checklist`, post), post);
   return {
     leadMagnetTitle,
-    offerHeadline: compact(data.offerHeadline, 115, "Get the practical 2-page PDF for this article"),
-    description: compact(data.description, 190, "A concise guide you can save and use after reading this article."),
-    buttonText: compact(data.buttonText, 36, "Send me the PDF"),
-    bullets: normalizeList(data.bullets, 4, 95),
+    offerHeadline: compactContext(data.offerHeadline, 115, "Get the practical PDF for this article", post),
+    description: compactContext(data.description, 190, "A concise guide you can save and use after reading this article.", post),
+    buttonText: compact(stripCountPhrases(data.buttonText), 36, "Send me the PDF"),
+    bullets: normalizeContextList(data.bullets, 5, 95, post),
     emailSubject: compact(data.emailSubject, 80, "Your PDF guide is ready"),
     deliveryMessage: compact(data.deliveryMessage, 240, "Here is the guide I promised in the article. Use it before taking the next step."),
     pdf: {
       title: pdfTitle,
-      subtitle: compact(pdf.subtitle, 140, compact(data.description, 140, "")),
-      audience: compact(pdf.audience, 75, "For practical AI learners and decision makers"),
-      promise: compact(pdf.promise, 120, "Use this to turn the article into a clear next step."),
+      subtitle: compactContext(pdf.subtitle, 140, compactContext(data.description, 140, "", post), post),
+      audience: compactContext(pdf.audience, 75, "For practical AI learners and decision makers", post),
+      promise: compactContext(pdf.promise, 120, "Use this to turn the article into a clear next step.", post),
       sections: sections.map((section) => {
-        const headingCount = extractLeadingCount(section && section.heading);
-        const sectionText = `${section && section.heading ? section.heading : ""} ${section && Array.isArray(section.items) ? section.items.join(" ") : ""}`;
-        const shouldUseGlobalCount = globalPromisedCount && /project|idea|step|question|way|mistake|check|tip/i.test(sectionText);
-        const itemLimit = headingCount || (shouldUseGlobalCount ? globalPromisedCount : 4);
-        const items = normalizeList(section && section.items, Math.min(Math.max(itemLimit, 3), 8), 90);
+        const items = normalizeContextList(section && section.items, 5, 90, post);
         return {
-          heading: normalizeSectionHeading(section && section.heading, items.length),
+          heading: normalizePdfHeading(section && section.heading),
           items,
         };
       }).filter((section) => section.heading && section.items.length).slice(0, 3),
-      actionPlan: normalizeList(pdf.actionPlan, 4, 85),
-      closingNote: compact(pdf.closingNote, 130, "Start small, make the next step concrete, and build from there."),
+      actionPlan: normalizeContextList(pdf.actionPlan, 5, 85, post),
+      closingNote: compactContext(pdf.closingNote, 130, "Start small, make the next step concrete, and build from there.", post),
       serviceCta: normalizeServiceCta(pdf.serviceCta, post),
     },
   };
@@ -296,8 +314,8 @@ function ensurePdfCompleteness(item, post) {
   if (!item.bullets.length) item.bullets = ["Know what to check first", "Avoid common mistakes", "Take the next practical step"];
   if (!item.pdf.sections.length) {
     item.pdf.sections = [
-      { heading: "What to check", items: item.bullets.slice(0, 4) },
-      { heading: "What to do next", items: item.pdf.actionPlan.slice(0, 4) },
+      { heading: "What to check", items: item.bullets.slice(0, 5) },
+      { heading: "What to do next", items: item.pdf.actionPlan.slice(0, 5) },
     ];
   }
   if (!item.pdf.actionPlan.length) {
@@ -361,136 +379,188 @@ function normalizeServiceCta(value, post) {
   ]);
   const url = clean(data.url, 180);
   return {
-    label: compact(data.label, 28, fallback.label),
-    headline: compact(data.headline, 62, fallback.headline),
-    body: compact(data.body, 110, fallback.body),
+    label: compact(stripCountPhrases(data.label), 28, fallback.label),
+    headline: compact(stripCountPhrases(data.headline), 62, fallback.headline),
+    body: compact(stripCountPhrases(data.body), 110, fallback.body),
     url: allowed.has(url) ? url : fallback.url,
   };
 }
 
-function renderPdfHtml(item, post) {
-  const accent = "#2a9d8f";
-  const title = escapeHtml(item.pdf.title);
-  const subtitle = escapeHtml(item.pdf.subtitle);
-  const sections = item.pdf.sections.map((section, index) => `
-    <section class="panel">
-      <p class="kicker">Part ${index + 1}</p>
-      <h2>${escapeHtml(section.heading)}</h2>
-      <ul>${section.items.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
-    </section>
-  `).join("");
-  const serviceCta = item.pdf.serviceCta || inferServiceCta(post);
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #f4f6fb; color: #101827; font-family: Inter, Arial, sans-serif; }
-    .page { width: 210mm; height: 297mm; padding: 14mm; background: #f6f7fb; page-break-after: always; display: flex; flex-direction: column; overflow: hidden; }
-    .page:last-child { page-break-after: auto; }
-    .hero { background: #0f172a; color: #fff; border-radius: 18px; padding: 20px; position: relative; overflow: hidden; }
-    .hero:after { content: ""; position: absolute; right: -50px; top: -50px; width: 160px; height: 160px; border-radius: 999px; background: rgba(42,157,143,.22); }
-    .eyebrow, .kicker { margin: 0 0 8px; color: #a5d6ff; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; }
-    h1 { position: relative; margin: 0; max-width: 620px; font-size: 28px; line-height: 1.08; letter-spacing: -.03em; }
-    .subtitle { position: relative; max-width: 620px; margin: 10px 0 0; color: #cbd5e1; font-size: 13px; line-height: 1.48; }
-    .meta { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; margin-top: 12px; }
-    .meta-card { border: 1px solid #dbe3ef; background: #fff; border-radius: 14px; padding: 12px; }
-    .meta-card strong { display: block; color: #0f172a; font-size: 13px; margin-bottom: 4px; }
-    .meta-card span { color: #475569; font-size: 12px; line-height: 1.45; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    .panel { border: 1px solid #dbe3ef; background: #fff; border-radius: 16px; padding: 13px; min-height: 96px; }
-    h2 { margin: 0 0 9px; color: #14213d; font-size: 17px; line-height: 1.18; letter-spacing: -.02em; }
-    h3 { margin: 0 0 8px; color: #14213d; font-size: 14px; line-height: 1.25; letter-spacing: -.01em; }
-    ul, ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-    li { position: relative; padding-left: 17px; color: #334155; font-size: 12px; line-height: 1.38; }
-    li:before { content: ""; position: absolute; left: 0; top: .55em; width: 7px; height: 7px; border-radius: 999px; background: ${accent}; }
-    .page-title { margin: 0; color: #0f172a; font-size: 26px; line-height: 1.12; letter-spacing: -.03em; }
-    .page-subtitle { margin: 9px 0 0; max-width: 620px; color: #475569; font-size: 12.5px; line-height: 1.48; }
-    .action { margin-top: 12px; border-radius: 18px; padding: 16px; color: #fff; background: linear-gradient(135deg, #14213d, #1a2849); }
-    .action h2 { color: #fff; }
-    .action li { color: #e2e8f0; }
-    .service-cta { margin-top: 12px; border-radius: 18px; padding: 16px; color: #fff; background: #0f172a; border: 1px solid rgba(42,157,143,.32); display: grid; gap: 10px; align-items: start; }
-    .service-cta > div { min-width: 0; }
-    .service-cta .kicker { color: #7dd3fc; }
-    .service-cta h2 { color: #fff; margin-bottom: 7px; font-size: 17px; }
-    .service-cta p { margin: 0; color: #cbd5e1; font-size: 12px; line-height: 1.42; }
-    .service-button { display: inline-block; justify-self: start; white-space: nowrap; border-radius: 999px; background: ${accent}; color: #fff; text-decoration: none; padding: 9px 13px; font-size: 10.5px; font-weight: 900; }
-    .note { margin-top: 12px; border-left: 4px solid ${accent}; background: #fff; border-radius: 0 14px 14px 0; padding: 12px 14px; color: #334155; font-size: 12.5px; line-height: 1.48; }
-    .footer { display: flex; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 10px; color: #64748b; font-size: 10px; }
-    .source { color: #64748b; font-size: 10px; line-height: 1.45; margin-top: 8px; }
-  </style>
-</head>
-<body>
-  <main class="page">
-    <section class="hero">
-      <p class="eyebrow">Tochukwu Tech and AI Academy</p>
-      <h1>${title}</h1>
-      <p class="subtitle">${subtitle}</p>
-    </section>
-    <section class="meta">
-      <div class="meta-card"><strong>Who this is for</strong><span>${escapeHtml(item.pdf.audience)}</span></div>
-      <div class="meta-card"><strong>What this helps you do</strong><span>${escapeHtml(item.pdf.promise)}</span></div>
-    </section>
-    <section class="grid">${sections}</section>
-    <p class="source">Created as a companion guide for: ${escapeHtml(post.blogTitle)}</p>
-    <div class="footer"><span>Practical AI. Real-world building.</span><span>tochukwunkwocha.com</span></div>
-  </main>
-  <main class="page">
-    <p class="eyebrow">Action page</p>
-    <h1 class="page-title">Turn the checklist into one clear next step</h1>
-    <p class="page-subtitle">Use this page to move from reading to a concrete decision. Print it, share it with the right person, and agree on the first action before the day ends.</p>
-    <section class="action">
-      <p class="kicker">Next steps</p>
-      <h2>Use this in the next 24 hours</h2>
-      <ol>${item.pdf.actionPlan.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ol>
-    </section>
-    <section class="service-cta">
-      <div>
-        <p class="kicker">Recommended next step</p>
-        <h2>${escapeHtml(serviceCta.headline)}</h2>
-        <p>${escapeHtml(serviceCta.body)}</p>
-      </div>
-      <a class="service-button" href="https://tochukwunkwocha.com${escapeHtml(serviceCta.url)}">${escapeHtml(serviceCta.label)}</a>
-    </section>
-    <p class="note">${escapeHtml(item.pdf.closingNote)}</p>
-    <p class="source">Created as a companion guide for: ${escapeHtml(post.blogTitle)}</p>
-    <div class="footer"><span>Practical AI. Real-world building.</span><span>tochukwunkwocha.com</span></div>
-  </main>
-</body>
-</html>`;
+function collectPdf(doc) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+  });
 }
 
-async function renderPdfBuffer(html) {
-  const executablePath = await chromium.executablePath();
-  if (!executablePath) throw new Error("Packaged Chromium executable was not found. Ensure @sparticuz/chromium is installed in production dependencies.");
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath,
-    headless: chromium.headless == null ? true : chromium.headless,
+function fillPage(doc) {
+  doc.rect(0, 0, 595.28, 841.89).fill("#f6f7fb");
+}
+
+function textBlock(doc, text, x, y, width, options) {
+  const opts = options || {};
+  doc.font(opts.bold ? "Helvetica-Bold" : "Helvetica")
+    .fontSize(opts.size || 12)
+    .fillColor(opts.color || "#334155")
+    .text(String(text || ""), x, y, {
+      width,
+      lineGap: opts.lineGap == null ? 2 : opts.lineGap,
+      continued: false,
+      link: opts.link,
+      underline: opts.underline === true,
+    });
+  return doc.y;
+}
+
+function drawKicker(doc, text, x, y, color) {
+  return textBlock(doc, String(text || "").toUpperCase(), x, y, 500, {
+    size: 8.5,
+    bold: true,
+    color: color || "#a5d6ff",
+    lineGap: 0,
   });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: Math.max(10000, Number(process.env.PDF_EXPORT_TIMEOUT_MS || "60000") || 60000) });
-    return Buffer.from(await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
-    }));
-  } finally {
-    await browser.close().catch(() => {});
-  }
+}
+
+function drawBulletList(doc, items, x, y, width, options) {
+  const opts = options || {};
+  let cursor = y;
+  (items || []).forEach((item) => {
+    const text = cleanListItem(item, 220);
+    if (!text) return;
+    doc.circle(x + 3, cursor + 7, 3.2).fill(opts.dotColor || "#2a9d8f");
+    doc.font("Helvetica").fontSize(opts.size || 10.5).fillColor(opts.color || "#334155");
+    doc.text(text, x + 15, cursor, {
+      width: width - 15,
+      lineGap: opts.lineGap == null ? 2 : opts.lineGap,
+    });
+    cursor = doc.y + (opts.gap == null ? 6 : opts.gap);
+  });
+  return cursor;
+}
+
+function roundedPanel(doc, x, y, width, height, options) {
+  const opts = options || {};
+  doc.roundedRect(x, y, width, height, opts.radius || 13)
+    .fillAndStroke(opts.fill || "#ffffff", opts.stroke || "#dbe3ef");
+}
+
+function drawMetaCard(doc, x, y, width, title, body) {
+  roundedPanel(doc, x, y, width, 62, { radius: 11 });
+  textBlock(doc, title, x + 12, y + 12, width - 24, { size: 10.5, bold: true, color: "#0f172a" });
+  textBlock(doc, body, x + 12, y + 29, width - 24, { size: 9.5, color: "#475569", lineGap: 1.5 });
+}
+
+function estimateSectionHeight(doc, section, width) {
+  doc.font("Helvetica-Bold").fontSize(15);
+  const headingHeight = doc.heightOfString(section.heading || "", { width: width - 24, lineGap: 1 });
+  doc.font("Helvetica").fontSize(10.2);
+  const itemHeight = (section.items || []).reduce((sum, item) => {
+    return sum + doc.heightOfString(String(item || ""), { width: width - 39, lineGap: 1.5 }) + 7;
+  }, 0);
+  return Math.max(118, 44 + headingHeight + itemHeight);
+}
+
+function drawSectionPanel(doc, section, x, y, width) {
+  const safeSection = Object.assign({}, section, {
+    heading: normalizePdfHeading(section && section.heading),
+  });
+  const height = estimateSectionHeight(doc, safeSection, width);
+  roundedPanel(doc, x, y, width, height, { radius: 13 });
+  drawKicker(doc, "Guide section", x + 12, y + 12, "#a5d6ff");
+  textBlock(doc, safeSection.heading, x + 12, y + 32, width - 24, { size: 15, bold: true, color: "#14213d", lineGap: 1 });
+  drawBulletList(doc, safeSection.items, x + 12, doc.y + 8, width - 24, { size: 10.2, lineGap: 1.5, gap: 5 });
+  return height;
+}
+
+function drawFooter(doc, postTitle) {
+  const y = 800;
+  textBlock(doc, `Created as a companion guide for: ${postTitle}`, 40, y - 22, 430, { size: 8.5, color: "#64748b", lineGap: 1 });
+  textBlock(doc, "Practical AI. Real-world building.", 40, y + 8, 220, { size: 8.5, color: "#64748b" });
+  textBlock(doc, "tochukwunkwocha.com", 430, y + 8, 125, { size: 8.5, color: "#64748b" });
+}
+
+function drawPageOne(doc, item, post) {
+  fillPage(doc);
+  const margin = 40;
+  const pageWidth = 595.28;
+  const contentWidth = pageWidth - (margin * 2);
+  roundedPanel(doc, margin, 38, contentWidth, 130, { radius: 15, fill: "#0f172a", stroke: "#0f172a" });
+  drawKicker(doc, "Tochukwu Tech and AI Academy", margin + 18, 58);
+  textBlock(doc, item.pdf.title, margin + 18, 78, contentWidth - 36, { size: 23, bold: true, color: "#ffffff", lineGap: 1 });
+  textBlock(doc, item.pdf.subtitle, margin + 18, doc.y + 8, contentWidth - 36, { size: 10.8, color: "#cbd5e1", lineGap: 2 });
+
+  const metaY = 182;
+  drawMetaCard(doc, margin, metaY, 238, "Who this is for", item.pdf.audience);
+  drawMetaCard(doc, margin + 252, metaY, contentWidth - 252, "What this helps you do", item.pdf.promise);
+
+  const colGap = 12;
+  const colWidth = (contentWidth - colGap) / 2;
+  let leftY = metaY + 78;
+  let rightY = metaY + 78;
+  (item.pdf.sections || []).slice(0, 3).forEach((section, index) => {
+    const useLeft = index % 2 === 0;
+    const x = useLeft ? margin : margin + colWidth + colGap;
+    const y = useLeft ? leftY : rightY;
+    const height = drawSectionPanel(doc, section, x, y, colWidth);
+    if (useLeft) leftY = y + height + 12;
+    else rightY = y + height + 12;
+  });
+
+  drawFooter(doc, post.blogTitle);
+}
+
+function drawPageTwo(doc, item, post) {
+  fillPage(doc);
+  const margin = 40;
+  const contentWidth = 595.28 - (margin * 2);
+  const serviceCta = item.pdf.serviceCta || inferServiceCta(post);
+
+  drawKicker(doc, "Action page", margin, 46);
+  textBlock(doc, "Turn the checklist into a clear next step", margin, 68, contentWidth, { size: 25, bold: true, color: "#0f172a", lineGap: 1 });
+  textBlock(doc, "Use this page to move from reading to a concrete decision. Print it, share it with the right person, and agree on an action before the day ends.", margin, doc.y + 10, contentWidth, { size: 11.2, color: "#475569", lineGap: 2 });
+
+  let y = doc.y + 22;
+  roundedPanel(doc, margin, y, contentWidth, 148, { radius: 16, fill: "#14213d", stroke: "#14213d" });
+  drawKicker(doc, "Next steps", margin + 16, y + 18, "#a5d6ff");
+  textBlock(doc, "Use this soon", margin + 16, y + 40, contentWidth - 32, { size: 17, bold: true, color: "#ffffff" });
+  drawBulletList(doc, item.pdf.actionPlan, margin + 16, doc.y + 11, contentWidth - 32, { size: 10.8, color: "#e2e8f0", dotColor: "#2a9d8f", gap: 5 });
+
+  y += 166;
+  roundedPanel(doc, margin, y, contentWidth, 142, { radius: 16, fill: "#0f172a", stroke: "#2a9d8f" });
+  drawKicker(doc, "Recommended next step", margin + 16, y + 16, "#7dd3fc");
+  textBlock(doc, serviceCta.headline, margin + 16, y + 38, contentWidth - 32, { size: 17, bold: true, color: "#ffffff", lineGap: 1 });
+  textBlock(doc, serviceCta.body, margin + 16, doc.y + 7, contentWidth - 32, { size: 10.8, color: "#cbd5e1", lineGap: 2 });
+  const buttonY = doc.y + 12;
+  const buttonWidth = Math.min(210, Math.max(112, doc.widthOfString(serviceCta.label) + 28));
+  doc.roundedRect(margin + 16, buttonY, buttonWidth, 28, 14).fill("#2a9d8f");
+  doc.link(margin + 16, buttonY, buttonWidth, 28, `https://tochukwunkwocha.com${serviceCta.url}`);
+  textBlock(doc, serviceCta.label, margin + 30, buttonY + 8, buttonWidth - 28, { size: 9.5, bold: true, color: "#ffffff", lineGap: 0 });
+
+  y += 160;
+  doc.rect(margin, y, 4, 70).fill("#2a9d8f");
+  roundedPanel(doc, margin + 4, y, contentWidth - 4, 70, { radius: 0, fill: "#ffffff", stroke: "#ffffff" });
+  textBlock(doc, item.pdf.closingNote, margin + 18, y + 18, contentWidth - 34, { size: 11.2, color: "#334155", lineGap: 2 });
+
+  drawFooter(doc, post.blogTitle);
+}
+
+async function renderPdfDocument(item, post) {
+  const doc = new PDFDocument({ size: "A4", margin: 0, bufferPages: false, autoFirstPage: false });
+  const done = collectPdf(doc);
+  doc.addPage();
+  drawPageOne(doc, item, post);
+  doc.addPage();
+  drawPageTwo(doc, item, post);
+  doc.end();
+  return done;
 }
 
 async function createPdfBuffer(item, post) {
   const slug = slugify(post.blogSlug || post.blogTitle) || `lead-magnet-${Date.now()}`;
   return {
-    buffer: await renderPdfBuffer(renderPdfHtml(item, post)),
+    buffer: await renderPdfDocument(item, post),
     filename: `${slug}-guide.pdf`,
   };
 }
@@ -503,15 +573,15 @@ async function generateLeadMagnetForPost(pool, post, optionsInput) {
   const existing = await getLeadMagnetForPost(pool, post.pidBlog).catch(() => null);
   const generated = ensurePdfCompleteness(normalizeGenerated(await generateWithOpenAi(post, model, timeoutMs), post), post);
   if (existing && existing.magnetUuid) {
-    generated.leadMagnetTitle = existing.title ? compact(existing.title, 95, generated.leadMagnetTitle) : generated.leadMagnetTitle;
-    generated.offerHeadline = existing.offerHeadline ? compact(existing.offerHeadline, 115, generated.offerHeadline) : generated.offerHeadline;
-    generated.description = existing.description ? compact(existing.description, 190, generated.description) : generated.description;
-    generated.buttonText = existing.buttonText ? compact(existing.buttonText, 36, generated.buttonText) : generated.buttonText;
-    generated.bullets = Array.isArray(existing.bullets) && existing.bullets.length ? normalizeList(existing.bullets, 4, 95) : generated.bullets;
-    generated.emailSubject = existing.emailSubject ? compact(existing.emailSubject, 80, generated.emailSubject) : generated.emailSubject;
-    generated.deliveryMessage = existing.deliveryMessage ? compact(existing.deliveryMessage, 240, generated.deliveryMessage) : generated.deliveryMessage;
-    generated.pdf.title = existing.title ? compact(existing.title, 88, generated.pdf.title) : generated.pdf.title;
-    generated.pdf.subtitle = existing.description ? compact(existing.description, 140, generated.pdf.subtitle) : generated.pdf.subtitle;
+    generated.leadMagnetTitle = existing.title ? compactContext(existing.title, 95, generated.leadMagnetTitle, post) : generated.leadMagnetTitle;
+    generated.offerHeadline = existing.offerHeadline ? compactContext(existing.offerHeadline, 115, generated.offerHeadline, post) : generated.offerHeadline;
+    generated.description = existing.description ? compactContext(existing.description, 190, generated.description, post) : generated.description;
+    generated.buttonText = existing.buttonText ? compact(stripCountPhrases(existing.buttonText), 36, generated.buttonText) : generated.buttonText;
+    generated.bullets = Array.isArray(existing.bullets) && existing.bullets.length ? normalizeContextList(existing.bullets, 5, 95, post) : generated.bullets;
+    generated.emailSubject = existing.emailSubject ? compact(stripCountPhrases(existing.emailSubject), 80, generated.emailSubject) : generated.emailSubject;
+    generated.deliveryMessage = existing.deliveryMessage ? compactContext(existing.deliveryMessage, 240, generated.deliveryMessage, post) : generated.deliveryMessage;
+    generated.pdf.title = existing.title ? compactContext(existing.title, 88, generated.pdf.title, post) : generated.pdf.title;
+    generated.pdf.subtitle = existing.description ? compactContext(existing.description, 140, generated.pdf.subtitle, post) : generated.pdf.subtitle;
   }
 
   const pdf = await createPdfBuffer(generated, post);
@@ -548,7 +618,7 @@ async function generateLeadMagnetForPost(pool, post, optionsInput) {
       filename: pdf.filename,
       contentType: "application/pdf",
     });
-    pdfUrl = getLeadMagnetDownloadUrl(savedMagnet.slug);
+    pdfUrl = `${getLeadMagnetDownloadUrl(savedMagnet.slug)}&v=${Date.now()}`;
     savedMagnet = await saveLeadMagnetForPost(pool, {
       pidBlog: post.pidBlog,
       enabled: true,
@@ -624,5 +694,6 @@ if (require.main === module) {
 }
 
 module.exports = {
+  createPdfBuffer,
   generateLeadMagnetForPost,
 };

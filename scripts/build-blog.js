@@ -33,6 +33,22 @@ function clean(s) {
   return String(s || '').trim();
 }
 
+function stripCountPhrases(value) {
+  return String(value || '')
+    .replace(/\b\d{1,2}-page\s+/gi, '')
+    .replace(/\b(?:one|two|three)-page\s+/gi, '')
+    .replace(/\b\d{1,2}\s+(?=(?:[a-z-]+\s+){0,4}(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, '')
+    .replace(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?=(?:[a-z-]+\s+){0,4}(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, '')
+    .replace(/\b(?:top|the)\s+\d{1,2}\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, '')
+    .replace(/\b\d{1,2}\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, '')
+    .replace(/^\s*(?:top|the)\s+\d{1,2}\s+/i, '')
+    .replace(/^\s*\d{1,2}\s+/, '')
+    .replace(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?=(?:ai\s+)?(?:area|areas|check|checks|essential|essentials|factor|factors|idea|ideas|item|items|lesson|lessons|mistake|mistakes|project|projects|prompt|prompts|question|questions|skill|skills|step|steps|task|tasks|tip|tips|tool|tools|way|ways)\b)/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
+}
+
 function escapeHtml(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
@@ -192,16 +208,16 @@ function markdownToHtml(md) {
 function renderLeadMagnetCta(leadMagnet) {
   const magnet = leadMagnet && typeof leadMagnet === 'object' ? leadMagnet : null;
   if (!magnet || !magnet.active || !magnet.title) return '';
-  const bullets = Array.isArray(magnet.bullets) ? magnet.bullets.filter(Boolean).slice(0, 4) : [];
-  const headline = clean(magnet.offerHeadline) || `Get the 2-page PDF for this article`;
-  const description = clean(magnet.description) || 'A practical, mobile-friendly guide you can save and use after reading.';
-  const buttonText = clean(magnet.buttonText) || 'Send me the PDF';
+  const bullets = Array.isArray(magnet.bullets) ? magnet.bullets.map(stripCountPhrases).filter(Boolean).slice(0, 4) : [];
+  const headline = stripCountPhrases(magnet.offerHeadline) || `Get the PDF for this article`;
+  const description = stripCountPhrases(magnet.description) || 'A practical, mobile-friendly guide you can save and use after reading.';
+  const buttonText = stripCountPhrases(magnet.buttonText) || 'Send me the PDF';
   return `
 <section class="blog-lead-magnet-cta my-10 sm:my-12" data-blog-lead-cta data-lead-magnet-slug="${escapeHtml(magnet.slug)}">
   <div class="rounded-2xl border border-brand-400/30 bg-gradient-to-br from-[#101827] to-[#0d1117] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.38)] sm:p-7">
     <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
-        <p class="!mt-0 text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-300">Free 2-page PDF</p>
+        <p class="!mt-0 text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-300">Free PDF</p>
         <h3 class="mt-2 text-xl font-heading font-extrabold leading-tight text-white sm:text-2xl">${escapeHtml(headline)}</h3>
         <p class="!mt-3 text-sm leading-7 text-slate-300">${escapeHtml(description)}</p>
         ${bullets.length ? `<ul class="blog-lead-magnet-benefits mt-4 grid gap-2 text-sm text-slate-300">${bullets.map((item) => `<li class="blog-lead-magnet-benefit"><span class="blog-lead-magnet-benefit-dot" aria-hidden="true"></span><span>${escapeHtml(item)}</span></li>`).join('')}</ul>` : ''}
@@ -223,11 +239,11 @@ function renderLeadMagnetConfigScript(post) {
     blogTitle: post.title,
     leadMagnet: {
       slug: magnet.slug,
-      title: magnet.title,
-      offerHeadline: magnet.offerHeadline || `Get the 2-page PDF for this article`,
-      description: magnet.description || "A practical, mobile-friendly guide you can save and use after reading.",
-      buttonText: magnet.buttonText || "Send me the PDF",
-      bullets: Array.isArray(magnet.bullets) ? magnet.bullets.filter(Boolean).slice(0, 4) : [],
+      title: stripCountPhrases(magnet.title),
+      offerHeadline: stripCountPhrases(magnet.offerHeadline) || `Get the PDF for this article`,
+      description: stripCountPhrases(magnet.description) || "A practical, mobile-friendly guide you can save and use after reading.",
+      buttonText: stripCountPhrases(magnet.buttonText) || "Send me the PDF",
+      bullets: Array.isArray(magnet.bullets) ? magnet.bullets.map(stripCountPhrases).filter(Boolean).slice(0, 4) : [],
       pdfUrl: magnet.pdfUrl || "",
     },
   };

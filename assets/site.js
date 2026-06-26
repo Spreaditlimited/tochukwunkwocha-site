@@ -332,7 +332,7 @@
       ? (activeLeadMagnet.offerHeadline || activeLeadMagnet.title || "Get the PDF guide for this article")
       : "Practical AI and building lessons, minus the noise.";
 
-    const getPopupEyebrow = () => activeLeadMagnet ? "Free 2-page PDF" : "Weekly practical notes";
+    const getPopupEyebrow = () => activeLeadMagnet ? "Free PDF" : "Weekly practical notes";
 
     const getSubmitText = () => activeLeadMagnet
       ? (activeLeadMagnet.buttonText || "Send me the PDF")

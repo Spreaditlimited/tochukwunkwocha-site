@@ -33,7 +33,7 @@ exports.handler = async function (event) {
         "Content-Type": "application/pdf",
         "Content-Length": String(file.buffer.length),
         "Content-Disposition": `inline; filename="${filename}"`,
-        "Cache-Control": "private, max-age=300",
+        "Cache-Control": "no-store, max-age=0",
       },
       body: file.buffer.toString("base64"),
     };
