@@ -58,6 +58,42 @@ function buildPdfEmail(input) {
   };
 }
 
+function pageContextLabel(input) {
+  const data = input && typeof input === "object" ? input : {};
+  const pathname = clean(data.pathname, 500).toLowerCase();
+  const pageType = clean(data.pageType, 40).toLowerCase();
+  if (pathname === "/" || pathname === "/index.html") return "the home page";
+  if (pathname.startsWith("/courses/") || pathname.startsWith("/enrol-")) return "a course page";
+  if (pathname.startsWith("/schools")) return "the schools page";
+  if (pathname.startsWith("/build") || pathname.startsWith("/websites")) return "a build service page";
+  if (pageType && pageType !== "site") return `${pageType.replace(/[_-]+/g, " ")} page`;
+  return "the website";
+}
+
+function buildSiteWelcomeEmail(input) {
+  const data = input && typeof input === "object" ? input : {};
+  const firstName = clean(data.firstName, 120);
+  const context = pageContextLabel(data);
+  const blogUrl = `${siteBaseUrl()}/blog/`;
+  const coursesUrl = `${siteBaseUrl()}/courses/prompt-to-profit/`;
+  const contactUrl = `${siteBaseUrl()}/contact/`;
+  const subject = "Welcome to my practical AI notes";
+  const body = [
+    `<p style="margin:0 0 16px;">Hi ${escapeHtml(firstName || "there")},</p>`,
+    `<p style="margin:0 0 16px;">Thanks for joining from ${escapeHtml(context)}. You are now on my practical AI and building list.</p>`,
+    `<p style="margin:0 0 16px;">Within the next 7 days, you should start receiving my weekly trainings. I use those notes to share clear, practical lessons on AI, digital skills, useful tools, and building real projects without unnecessary jargon.</p>`,
+    `<p style="margin:0 0 16px;">Before then, you can read the latest practical guides or explore the course if you want a more structured learning path.</p>`,
+    renderButton({ href: blogUrl, label: "Read the latest guides" }),
+    `<p style="margin:22px 0 0;color:#4b5563;font-size:14px;line-height:1.65;">If you are thinking about AI training for your school, team, or business, you can also reply to this email or contact me here: <a href="${escapeHtml(contactUrl)}" style="color:#1a2849;font-weight:800;text-decoration:none;">${escapeHtml(contactUrl)}</a></p>`,
+    `<p style="margin:14px 0 0;color:#4b5563;font-size:14px;line-height:1.65;">For children and families, the current practical learning path is here: <a href="${escapeHtml(coursesUrl)}" style="color:#1a2849;font-weight:800;text-decoration:none;">Prompt to Profit</a>.</p>`,
+  ].filter(Boolean).join("");
+  return {
+    subject,
+    html: body,
+    text: stripHtml(body),
+  };
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return json(405, { ok: false, error: "Method not allowed" });
@@ -207,12 +243,25 @@ exports.handler = async function (event) {
     } catch (error) {
       console.error("blog_lead_magnet_delivery_email_failed", error && error.message ? error.message : error);
     }
+  } else {
+    try {
+      const mail = buildSiteWelcomeEmail({
+        firstName,
+        pageType,
+        pathname: clean(body.pathname, 500),
+      });
+      await sendEmail({ to: email, subject: mail.subject, html: mail.html, text: mail.text });
+      deliveryEmailSent = true;
+    } catch (error) {
+      console.error("site_lead_welcome_email_failed", error && error.message ? error.message : error);
+    }
   }
 
   return json(200, {
     ok: true,
     listId,
     message: leadMagnet ? "Subscription successful. Your PDF is ready." : "Subscription successful.",
+    welcomeEmailSent: !leadMagnet ? deliveryEmailSent : undefined,
     leadMagnet: leadMagnet ? {
       title: leadMagnet.title,
       slug: leadMagnet.slug,
