@@ -68,19 +68,66 @@
     return textarea.value;
   }
 
+  function nodeText(node) {
+    if (!node) return "";
+    if (node.nodeType === 3) return node.nodeValue || "";
+    if (node.nodeType !== 1) return "";
+    const tag = String(node.tagName || "").toLowerCase();
+    if (tag === "br") return "\n";
+    if (tag === "a") {
+      const label = Array.prototype.slice.call(node.childNodes).map(nodeText).join("").replace(/\s+/g, " ").trim();
+      const href = String(node.getAttribute("href") || "").trim();
+      return href && label ? `[${label}](${href})` : label;
+    }
+    if (tag === "strong" || tag === "b") return `**${Array.prototype.slice.call(node.childNodes).map(nodeText).join("").trim()}**`;
+    if (tag === "em" || tag === "i") return `*${Array.prototype.slice.call(node.childNodes).map(nodeText).join("").trim()}*`;
+    if (tag === "code") return "`" + Array.prototype.slice.call(node.childNodes).map(nodeText).join("").trim() + "`";
+    return Array.prototype.slice.call(node.childNodes).map(nodeText).join("");
+  }
+
   function htmlToPlainText(html) {
-    const input = String(html || "")
-      .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, "\n")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<li\b[^>]*>/gi, "- ")
-      .replace(/<h([1-6])\b[^>]*>/gi, "\n# ");
     const container = document.createElement("div");
-    container.innerHTML = input;
-    return decodeHtml(container.textContent || "")
+    container.innerHTML = String(html || "");
+    const blocks = [];
+    Array.prototype.slice.call(container.childNodes).forEach(function (node) {
+      if (node.nodeType === 3) {
+        const text = String(node.nodeValue || "").trim();
+        if (text) blocks.push(text);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      const tag = String(node.tagName || "").toLowerCase();
+      if (/^h[1-6]$/.test(tag)) {
+        const level = Math.min(6, Math.max(1, Number(tag.slice(1)) || 2));
+        blocks.push("#".repeat(level) + " " + nodeText(node).replace(/\s+/g, " ").trim());
+        return;
+      }
+      if (tag === "ul" || tag === "ol") {
+        const items = Array.prototype.slice.call(node.children)
+          .filter(function (child) { return String(child.tagName || "").toLowerCase() === "li"; })
+          .map(function (child) { return "- " + nodeText(child).replace(/\s+/g, " ").trim(); })
+          .filter(function (item) { return item !== "-"; });
+        if (items.length) blocks.push(items.join("\n"));
+        return;
+      }
+      const text = nodeText(node).replace(/\s+/g, " ").trim();
+      if (text) blocks.push(text);
+    });
+    return decodeHtml(blocks.join("\n\n"))
       .replace(/\u00a0/g, " ")
       .replace(/[ \t]+\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
+  }
+
+  function renderInlineMarkdown(text) {
+    return escapeHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_match, label, href) {
+        return `<a href="${escapeHtml(href)}">${label}</a>`;
+      });
   }
 
   function plainTextToHtml(text) {
@@ -91,7 +138,7 @@
 
     function flushParagraph() {
       if (!paragraph.length) return;
-      html.push(`<p>${escapeHtml(paragraph.join(" "))}</p>`);
+      html.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
       paragraph = [];
     }
 
@@ -112,7 +159,7 @@
         flushParagraph();
         closeList();
         const level = Math.min(3, line.match(/^#+/)[0].length);
-        html.push(`<h${level}>${escapeHtml(line.replace(/^#{1,3}\s+/, ""))}</h${level}>`);
+        html.push(`<h${level}>${renderInlineMarkdown(line.replace(/^#{1,3}\s+/, ""))}</h${level}>`);
         return;
       }
       if (/^-\s+/.test(line)) {
@@ -121,7 +168,7 @@
           html.push("<ul>");
           inList = true;
         }
-        html.push(`<li>${escapeHtml(line.replace(/^-\s+/, ""))}</li>`);
+        html.push(`<li>${renderInlineMarkdown(line.replace(/^-\s+/, ""))}</li>`);
         return;
       }
       closeList();
