@@ -84,6 +84,8 @@ const SETTINGS_DEFINITIONS = [
   { key: "GEMINI_MODEL", category: "Leadpage AI", secret: false },
   { key: "OPENAI_API_KEY", category: "Leadpage AI", secret: true },
   { key: "OPENAI_MODEL", category: "Leadpage AI", secret: false },
+  { key: "OPENAI_IMAGE_MODEL", category: "Leadpage AI", secret: false },
+  { key: "OPENAI_IMAGE_TIMEOUT_MS", category: "Leadpage AI", secret: false },
 
   { key: "CLOUDFLARE_ACCOUNT_ID", category: "Cloudflare Stream", secret: false },
   { key: "CLOUDFLARE_STREAM_API_TOKEN", category: "Cloudflare Stream", secret: true },
@@ -278,12 +280,14 @@ function buildEffectiveSettings(rows) {
     const envValue = clean(process.env[key], 5000);
     const value = overrideValue || envValue || "";
     const source = overrideValue ? "override" : envValue ? "env" : "empty";
+    const isSecret = Boolean(def.secret);
     return {
       key,
       category: def.category,
-      secret: Boolean(def.secret),
+      secret: isSecret,
       restartSensitive: Boolean(def.restartSensitive),
-      value,
+      value: isSecret ? "" : value,
+      isSet: Boolean(value),
       source,
     };
   });

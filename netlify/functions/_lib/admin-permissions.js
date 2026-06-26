@@ -3,6 +3,7 @@ const ALL_INTERNAL_PAGE_PATHS = [
   "/internal/manual-payments/",
   "/internal/installments/",
   "/internal/marketing/",
+  "/internal/blog/",
   "/internal/domain-management/",
   "/internal/video-library/",
   "/internal/learning-progress/",

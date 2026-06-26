@@ -248,6 +248,10 @@ function getPostImageUrl(post) {
   return absoluteAssetUrl(post && post.image) || `${SITE_URL}/assets/Proof/tochukwunkwocha-desktop.png`;
 }
 
+function getPostText(post) {
+  return String((post && (post.contentHtml || post.body)) || '');
+}
+
 function getSeoTitle(post) {
   return clean(post && post.seoTitle) || `${clean(post && post.title)} | Prompt to Profit`;
 }
@@ -399,6 +403,41 @@ function pageShell(opts) {
         font-size: clamp(1.1rem, 2vw, 1.25rem);
         line-height: 1.75;
         font-weight: 300;
+      }
+      .blog-hero-image {
+        margin-top: 2rem;
+        aspect-ratio: 16 / 9;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .blog-hero-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .blog-card-image {
+        position: relative;
+        z-index: 10;
+        aspect-ratio: 16 / 9;
+        margin: -0.5rem -0.5rem 1.5rem;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .blog-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.5s ease;
+      }
+      .blog-card:hover .blog-card-image img {
+        transform: scale(1.04);
       }
       .blog-meta {
         display: flex;
@@ -635,9 +674,14 @@ function writePost(post, posts) {
     .map((tag) => `<span class="blog-chip">${escapeHtml(tag)}</span>`)
     .join('');
   const isoDate = toIsoDate(post.date);
-  const readTime = estimateReadTimeMinutes(post.body);
+  const readTime = estimateReadTimeMinutes(getPostText(post));
   const humanDate = formatDateForHumans(post.date);
   const relatedPosts = renderRelatedPosts(post, posts || []);
+  const postImageUrl = getPostImageUrl(post);
+  const heroImage = post.image ? `
+        <figure class="blog-hero-image">
+          <img src="${escapeHtml(postImageUrl)}" alt="${escapeHtml(post.imageAlt || post.title)}" loading="eager" />
+        </figure>` : '';
   const article = `
     <section class="mt-6 sm:mt-0 blog-hero relative z-10 group perspective-1000">
       <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2.5rem] opacity-30 group-hover:opacity-50 transition-opacity duration-700 blur-2xl -z-10"></div>
@@ -653,6 +697,7 @@ function writePost(post, posts) {
         
         <h1 class="blog-title">${escapeHtml(post.title)}</h1>
         <p class="blog-excerpt">${escapeHtml(post.excerpt || '')}</p>
+        ${heroImage}
         
         <div class="blog-meta mt-10 pt-6 border-t border-white/10">
           <span class="blog-chip">
@@ -674,12 +719,11 @@ function writePost(post, posts) {
         Back to Insights
       </a>
       <div class="blog-content mt-10 sm:mt-12">
-        ${injectInArticleCta(markdownToHtml(post.body))}
+        ${injectInArticleCta(post.contentHtml ? String(post.contentHtml) : markdownToHtml(post.body))}
         ${relatedPosts}
       </div>
     </article>
   `;
-  const postImageUrl = getPostImageUrl(post);
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -745,15 +789,21 @@ function getIndexTag(post) {
 }
 
 function renderIndexCard(post, index) {
-  const readTime = estimateReadTimeMinutes(post.body);
+  const readTime = estimateReadTimeMinutes(getPostText(post));
   const humanDate = formatDateForHumans(post.date);
   const tag = getIndexTag(post);
   const accent = getIndexAccentClass(index);
+  const imageUrl = post.image ? getPostImageUrl(post) : '';
+  const image = imageUrl ? `
+            <a href="/blog/${post.slug}/" class="blog-card-image relative z-10 mb-6 -mx-2 block aspect-[16/9] overflow-hidden rounded-3xl border border-white/10 bg-white/5 focus:outline-none">
+              <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(post.imageAlt || post.title)}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+            </a>` : '';
   return `
         <article class="blog-card group flex flex-col h-full relative">
           <div class="absolute -inset-0.5 bg-gradient-to-br from-brand-400 to-purple-600 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm -z-10"></div>
           <div class="relative h-full bg-[#0d1117]/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] border border-white/10 flex flex-col z-10 overflow-hidden transition-transform duration-500 group-hover:-translate-y-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full ${accent} blur-3xl transition-colors duration-500 pointer-events-none"></div>
+            ${image}
 
             <div class="flex flex-wrap items-center justify-between gap-3 mb-8 relative z-10">
               <span class="inline-flex items-center px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-lg shadow-sm">
@@ -870,9 +920,8 @@ function writeBlogSitemap(posts) {
   fs.writeFileSync(path.join(OUTPUT_DIR, 'sitemap.xml'), xml, 'utf8');
 }
 
-function build() {
+function readMarkdownPosts(now) {
   ensureDir(CONTENT_DIR);
-  const now = buildNow();
   const includeFuturePosts = String(process.env.BLOG_INCLUDE_FUTURE || '').toLowerCase() === '1';
   let scheduledCount = 0;
   const scheduledSlugs = [];
@@ -900,6 +949,7 @@ function build() {
       author: clean(parsed.data.author) || 'Tochukwu Tech and AI Academy',
       seoTitle: clean(parsed.data.seoTitle) || clean(parsed.data.metaTitle) || '',
       image: clean(parsed.data.image) || clean(parsed.data.heroImage) || '',
+      imageAlt: clean(parsed.data.imageAlt) || clean(parsed.data.heroImageAlt) || '',
       body: parsed.body,
     });
   }
@@ -908,12 +958,67 @@ function build() {
     fs.rmSync(path.join(OUTPUT_DIR, scheduledSlug), { recursive: true, force: true });
   }
 
-  posts.sort((a, b) => (a.date < b.date ? 1 : -1));
-  writeIndex(posts);
-  posts.forEach((post) => writePost(post, posts));
-  writeRss(posts);
-  writeBlogSitemap(posts);
-  console.log(`Built blog: ${posts.length} published post(s)${scheduledCount ? `, ${scheduledCount} scheduled future post(s) skipped` : ''}`);
+  return { posts, scheduledCount };
 }
 
-build();
+async function readCmsPosts() {
+  const hasDbEnv = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'].every((name) => clean(process.env[name]));
+  if (!hasDbEnv || String(process.env.BLOG_CMS_SOURCE || '1') === '0') return [];
+  const { getPool } = require('../netlify/functions/_lib/db');
+  const { listPosts, getBlogImageUrl } = require('../netlify/functions/_lib/blog-cms');
+  const pool = getPool();
+  try {
+    const result = await listPosts(pool, { status: 'published', limit: 200 });
+    return (result.posts || []).map((post) => {
+      const seo = post.seo && typeof post.seo === 'object' ? post.seo : {};
+      const date = post.createdAt ? String(post.createdAt).slice(0, 10) : '';
+      return {
+        title: clean(post.blogTitle),
+        slug: clean(post.blogSlug),
+        date,
+        excerpt: clean(post.excerpt),
+        tags: Array.isArray(post.tags) ? post.tags : [],
+        author: clean(post.blogBy) || 'Tochukwu Tech and AI Academy',
+        seoTitle: clean(seo.metaTitle) || clean(post.blogTitle),
+        image: getBlogImageUrl(post.blogImage),
+        imageAlt: clean(seo.imageAlt) || clean(post.blogTitle),
+        contentHtml: String(post.blogContent || ''),
+      };
+    }).filter((post) => post.title && post.slug);
+  } finally {
+    await pool.end().catch(() => {});
+  }
+}
+
+async function build() {
+  ensureDir(CONTENT_DIR);
+  const now = buildNow();
+  let cmsPosts = [];
+  try {
+    cmsPosts = await readCmsPosts();
+  } catch (error) {
+    console.warn(`CMS blog source unavailable, using Markdown fallback: ${error && error.message ? error.message : error}`);
+  }
+  const markdown = readMarkdownPosts(now);
+  const useCmsOnly = cmsPosts.length > 0 && String(process.env.BLOG_INCLUDE_MARKDOWN || '').toLowerCase() !== '1';
+  const posts = useCmsOnly ? cmsPosts : cmsPosts.concat(markdown.posts);
+
+  const seenSlugs = new Set();
+  const uniquePosts = posts.filter((post) => {
+    if (!post.slug || seenSlugs.has(post.slug)) return false;
+    seenSlugs.add(post.slug);
+    return true;
+  });
+
+  uniquePosts.sort((a, b) => (a.date < b.date ? 1 : -1));
+  writeIndex(uniquePosts);
+  uniquePosts.forEach((post) => writePost(post, uniquePosts));
+  writeRss(uniquePosts);
+  writeBlogSitemap(uniquePosts);
+  console.log(`Built blog: ${uniquePosts.length} published post(s)${markdown.scheduledCount ? `, ${markdown.scheduledCount} scheduled future post(s) skipped` : ''}${cmsPosts.length ? `, ${cmsPosts.length} CMS post(s)` : ''}`);
+}
+
+build().catch((error) => {
+  console.error('build_blog_failed', error && error.message ? error.message : error);
+  process.exit(1);
+});

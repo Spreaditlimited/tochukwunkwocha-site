@@ -150,6 +150,10 @@
           .map(function (item) {
             const key = String(item.key || "");
             const inputType = item.secret ? "password" : "text";
+            const isSet = Boolean(item.isSet || item.value);
+            const placeholder = item.secret
+              ? (isSet ? "Saved secret is hidden" : "Secret value")
+              : "Value";
             return `
               <div class="rounded-xl border border-gray-200 bg-white p-4">
                 <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
@@ -162,9 +166,11 @@
                 <input
                   type="${inputType}"
                   data-key="${escapeHtml(key)}"
+                  data-secret="${item.secret ? "1" : "0"}"
+                  data-is-set="${isSet ? "1" : "0"}"
                   value="${escapeHtml(item.value || "")}"
                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
-                  placeholder="${item.secret ? "Secret value" : "Value"}"
+                  placeholder="${escapeHtml(placeholder)}"
                 />
               </div>
             `;
@@ -538,7 +544,12 @@
     mainInputs.forEach(function (input) {
       const key = String(input.getAttribute("data-key") || "");
       if (!key) return;
-      merged.set(key, String(input.value || "").trim());
+      const value = String(input.value || "").trim();
+      const isHiddenSavedSecret = input.getAttribute("data-secret") === "1"
+        && input.getAttribute("data-is-set") === "1"
+        && !value;
+      if (isHiddenSavedSecret) return;
+      merged.set(key, value);
     });
     return Array.from(merged.entries()).map(function (entry) {
       return { key: entry[0], value: entry[1] };

@@ -81,6 +81,41 @@
         line-height: 1.75;
         font-weight: 300;
       }
+      .blog-hero-image {
+        margin-top: 2rem;
+        aspect-ratio: 16 / 9;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .blog-hero-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .blog-card-image {
+        position: relative;
+        z-index: 10;
+        aspect-ratio: 16 / 9;
+        margin: -0.5rem -0.5rem 1.5rem;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .blog-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.5s ease;
+      }
+      .blog-card:hover .blog-card-image img {
+        transform: scale(1.04);
+      }
       .blog-meta {
         display: flex;
         flex-wrap: wrap;
@@ -278,6 +313,10 @@
         
         <h1 class="blog-title">How Nigerian Schools Can Launch an AI Program Without Overwhelming Teachers</h1>
         <p class="blog-excerpt">A practical rollout plan for Nigerian school owners who want AI education without adding confusion, workload, or technical stress for teachers.</p>
+        
+        <figure class="blog-hero-image">
+          <img src="https://tochukwunkwocha.com/assets/blog/nigeria-school-ai-rollout-plan.jpg" alt="How Nigerian Schools Can Launch an AI Program Without Overwhelming Teachers" loading="eager" />
+        </figure>
         
         <div class="blog-meta mt-10 pt-6 border-t border-white/10">
           <span class="blog-chip">

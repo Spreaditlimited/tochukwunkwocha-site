@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/internal-preflight.css?v=20260615a" />
+    <title>Blog Preview | Internal</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/internal-dashboard.css?v=20260615a" />
+    <style>
+      .blog-preview-content h1,
+      .blog-preview-content h2,
+      .blog-preview-content h3 {
+        margin: 2rem 0 0.8rem;
+        color: #111827;
+        font-family: Manrope, Inter, sans-serif;
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1.18;
+      }
+
+      .blog-preview-content h1 { font-size: clamp(1.9rem, 3vw, 2.5rem); }
+      .blog-preview-content h2 { font-size: clamp(1.55rem, 2.4vw, 2rem); }
+      .blog-preview-content h3 { font-size: clamp(1.25rem, 2vw, 1.55rem); }
+
+      .blog-preview-content p,
+      .blog-preview-content li {
+        color: #374151;
+        font-size: 1.03rem;
+        line-height: 1.85;
+      }
+
+      .blog-preview-content p { margin: 1.1rem 0; }
+      .blog-preview-content ul,
+      .blog-preview-content ol {
+        margin: 1.2rem 0;
+        padding-left: 1.35rem;
+      }
+
+      .blog-preview-content ul { list-style: disc; }
+      .blog-preview-content ol { list-style: decimal; }
+      .blog-preview-content a { color: #14213d; font-weight: 700; text-decoration: underline; }
+      .blog-preview-content blockquote {
+        margin: 1.5rem 0;
+        border-left: 4px solid #14213d;
+        border-radius: 0 1rem 1rem 0;
+        background: #f8fafc;
+        padding: 1rem 1.25rem;
+      }
+    </style>
+  </head>
+  <body class="bg-[#F3F4F6] text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
+    <div class="flex h-full w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+          <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="h-8 w-8 rounded object-contain bg-white p-0.5 mr-3" />
+          <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
+        </div>
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+          <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Dashboard Home</a>
+          <a href="/internal/blog/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium">Blog CMS</a>
+        </div>
+        <div class="p-4 border-t border-white/10 shrink-0">
+          <button type="button" data-admin-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
+        </div>
+      </aside>
+
+      <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
+          <div class="flex min-w-0 items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <div class="min-w-0">
+              <h2 class="truncate text-xl font-heading font-extrabold text-gray-900 tracking-tight">Blog Preview</h2>
+              <p class="hidden text-xs text-gray-500 sm:block">Internal light-theme preview of the public post layout.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/internal/blog/" class="hidden rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">Back to CMS</a>
+            <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Sign out</button>
+          </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div id="blogPreviewMessage" class="mx-auto max-w-5xl rounded-2xl border border-gray-200 bg-white p-5 text-sm font-semibold text-gray-600 shadow-sm">Loading preview...</div>
+          <article id="blogPreview" class="mx-auto hidden max-w-5xl pb-12"></article>
+        </main>
+      </div>
+    </div>
+
+    <script src="/assets/bundles/bundle-0e520f32b7ff.min.js" defer></script>
+  </body>
+</html>

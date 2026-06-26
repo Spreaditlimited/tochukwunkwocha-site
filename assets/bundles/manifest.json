@@ -224,5 +224,12 @@
   "bundle-63b0482c3bac.min.js": [
     "assets/internal-nav.js",
     "assets/admin-marketing.js"
+  ],
+  "bundle-33d651b7f39e.min.js": [
+    "assets/internal-nav.js",
+    "assets/admin-blog.js"
+  ],
+  "bundle-0e520f32b7ff.min.js": [
+    "assets/admin-blog-preview.js"
   ]
 }

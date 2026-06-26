@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/internal-preflight.css?v=20260615a" />
+    <title>Blog CMS | Internal</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/internal-dashboard.css?v=20260615a" />
+  </head>
+  <body class="bg-[#F3F4F6] text-gray-900 font-sans antialiased h-screen w-full overflow-hidden">
+    <div class="flex h-full w-full">
+      <input type="checkbox" id="mobile-menu-toggle" class="peer hidden" />
+      <label for="mobile-menu-toggle" class="fixed inset-0 bg-gray-900/80 z-40 hidden peer-checked:block md:hidden cursor-pointer backdrop-blur-sm transition-opacity"></label>
+
+      <aside class="fixed inset-y-0 left-0 z-50 w-72 bg-brand-800 text-white flex flex-col transform -translate-x-full peer-checked:translate-x-0 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <div class="h-16 flex items-center px-6 bg-brand-900/50 border-b border-white/5 shrink-0">
+          <img src="/assets/tochukwu-tech-logo-icon.png" alt="Tochukwu Tech" class="h-8 w-8 rounded object-contain bg-white p-0.5 mr-3" />
+          <span class="font-heading font-bold text-lg tracking-tight">Admin Portal</span>
+        </div>
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <p class="px-2 text-xs font-bold uppercase tracking-wider text-brand-300 mb-2">Menu</p>
+          <a href="/internal/" class="flex items-center gap-3 px-3 py-2.5 text-brand-100 hover:bg-white/5 rounded-lg font-medium">Dashboard Home</a>
+          <a href="/internal/blog/" class="flex items-center gap-3 px-3 py-2.5 bg-brand-600/40 text-white rounded-lg font-medium">Blog CMS</a>
+        </div>
+        <div class="p-4 border-t border-white/10 shrink-0">
+          <button type="button" data-admin-signout class="w-full inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">Sign out</button>
+        </div>
+      </aside>
+
+      <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sm:px-8 shrink-0 z-10">
+          <div class="flex min-w-0 items-center gap-4">
+            <label for="mobile-menu-toggle" class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </label>
+            <div class="min-w-0">
+              <h2 class="truncate text-xl font-heading font-extrabold text-gray-900 tracking-tight">Blog CMS</h2>
+              <p class="hidden text-xs text-gray-500 sm:block">Manage article drafts, publishing, scheduling, and featured images.</p>
+            </div>
+          </div>
+          <button type="button" data-admin-signout class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">Sign out</button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div class="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]">
+            <section class="min-w-0">
+              <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-brand-600">Publishing</p>
+                  <h1 class="mt-1 text-2xl font-heading font-extrabold tracking-tight text-gray-900">Blog posts</h1>
+                </div>
+                <div class="grid w-full gap-2 sm:w-auto sm:grid-cols-[minmax(14rem,20rem)_11rem_auto] sm:items-center sm:justify-end">
+                  <input id="blogSearch" type="search" placeholder="Search posts" class="min-w-0 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                  <div class="w-full sm:w-44">
+                    <select id="blogStatus" class="premium-picker bg-white">
+                      <option value="">All</option>
+                      <option value="published">Published</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="draft">Drafts</option>
+                    </select>
+                  </div>
+                  <button id="blogNewBtn" type="button" class="w-full whitespace-nowrap rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500 sm:w-auto">New post</button>
+                </div>
+              </div>
+
+              <p id="blogMessage" class="hidden mb-4 rounded-xl border px-4 py-3 text-sm font-semibold"></p>
+
+              <section class="grid gap-4 sm:grid-cols-4">
+                <article class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Total</p><p id="blogStatTotal" class="mt-2 text-2xl font-heading font-extrabold">--</p></article>
+                <article class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Published</p><p id="blogStatPublished" class="mt-2 text-2xl font-heading font-extrabold">--</p></article>
+                <article class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Scheduled</p><p id="blogStatScheduled" class="mt-2 text-2xl font-heading font-extrabold">--</p></article>
+                <article class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Drafts</p><p id="blogStatDraft" class="mt-2 text-2xl font-heading font-extrabold">--</p></article>
+              </section>
+
+              <section id="blogRows" class="mt-5 grid gap-4">
+                <p class="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500">Loading posts...</p>
+              </section>
+              <nav id="blogPagination" class="mt-5 hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm" aria-label="Blog post pagination">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p id="blogPaginationSummary" class="text-sm font-semibold text-gray-600">Showing posts</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class="w-28">
+                      <select id="blogPageSize" class="premium-picker bg-white" aria-label="Posts per page">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                      </select>
+                    </div>
+                    <button id="blogPrevPage" type="button" class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+                    <span id="blogPageLabel" class="min-w-[6rem] text-center text-sm font-bold text-gray-700">Page 1</span>
+                    <button id="blogNextPage" type="button" class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+                  </div>
+                </div>
+              </nav>
+            </section>
+
+            <aside class="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div class="border-b border-gray-200 px-5 py-4">
+                <h2 id="blogEditorTitle" class="text-lg font-heading font-extrabold text-gray-900">New post</h2>
+                <p class="text-sm text-gray-500">Write naturally. Use # for headings and - for list items.</p>
+              </div>
+              <form id="blogForm" class="space-y-4 p-5">
+                <input id="blogPid" type="hidden" />
+                <div>
+                  <label for="blogTitle" class="text-sm font-semibold text-gray-700">Title</label>
+                  <input id="blogTitle" required class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="blogAuthor" class="text-sm font-semibold text-gray-700">Author</label>
+                    <input id="blogAuthor" value="Tochukwu Nkwocha" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                  </div>
+                  <div>
+                    <label for="blogDate" class="text-sm font-semibold text-gray-700">Publish date</label>
+                    <input id="blogDate" type="datetime-local" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                  </div>
+                </div>
+                <div>
+                  <label for="blogExcerpt" class="text-sm font-semibold text-gray-700">Excerpt</label>
+                  <textarea id="blogExcerpt" rows="2" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"></textarea>
+                </div>
+                <div>
+                  <label for="blogTags" class="text-sm font-semibold text-gray-700">Tags</label>
+                  <input id="blogTags" placeholder="AI, schools, business" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                </div>
+                <div>
+                  <label for="blogImage" class="text-sm font-semibold text-gray-700">Featured image</label>
+                  <input id="blogImage" type="file" accept="image/*" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm" />
+                  <button id="blogGenerateImageBtn" type="button" class="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60">Generate image</button>
+                  <p class="mt-1 text-xs text-gray-500">Creates a modern no-human image matched to this post and attaches it automatically.</p>
+                  <img id="blogImagePreview" alt="" class="mt-3 hidden aspect-[16/9] w-full rounded-xl border border-gray-200 object-cover" />
+                </div>
+                <div>
+                  <label for="blogVideo" class="text-sm font-semibold text-gray-700">Video URL</label>
+                  <input id="blogVideo" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <label class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"><input id="blogPublished" type="checkbox" class="h-4 w-4" /> Published</label>
+                  <label class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"><input id="blogFeatured" type="checkbox" class="h-4 w-4" /> Featured</label>
+                </div>
+                <div>
+                  <label for="blogContent" class="text-sm font-semibold text-gray-700">Content</label>
+                  <textarea id="blogContent" required rows="16" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm leading-6 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"></textarea>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button id="blogSaveBtn" type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500">Save post</button>
+                  <a id="blogPreviewBtn" target="_blank" rel="noopener" class="hidden rounded-xl bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800">Preview</a>
+                  <button id="blogResetBtn" type="button" class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">Reset</button>
+                  <button id="blogDeleteBtn" type="button" class="hidden rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500">Delete</button>
+                </div>
+              </form>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/assets/bundles/bundle-33d651b7f39e.min.js" defer></script>
+  </body>
+</html>
