@@ -8,6 +8,40 @@ function clean(value, max) {
   return String(value || "").trim().slice(0, max || 1000);
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateForSql(date) {
+  return [
+    date.getFullYear(),
+    pad2(date.getMonth() + 1),
+    pad2(date.getDate()),
+  ].join("-") + " " + [
+    pad2(date.getHours()),
+    pad2(date.getMinutes()),
+    pad2(date.getSeconds()),
+  ].join(":");
+}
+
+function normalizeSqlDateTime(value, fallback) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return formatDateForSql(value);
+
+  const raw = String(value || "").trim();
+  if (raw) {
+    const sqlMatch = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2})(?::(\d{2}))?)?/);
+    if (sqlMatch) return `${sqlMatch[1]} ${sqlMatch[2] || "00:00"}:${sqlMatch[3] || "00"}`;
+
+    const parsed = new Date(raw);
+    if (Number.isFinite(parsed.getTime())) return formatDateForSql(parsed);
+  }
+
+  if (fallback instanceof Date && Number.isFinite(fallback.getTime())) return formatDateForSql(fallback);
+  const fallbackRaw = String(fallback || "").trim();
+  if (fallbackRaw && fallbackRaw !== raw) return normalizeSqlDateTime(fallbackRaw, "");
+  return nowSql();
+}
+
 function slugify(input) {
   return clean(input, 240)
     .toLowerCase()
@@ -204,7 +238,7 @@ async function savePost(pool, input) {
   const published = data.blogPublished === true || String(data.blogPublished) === "true" || String(data.blogPublished) === "1";
   const featured = data.blogFeatured === true || String(data.blogFeatured) === "true" || String(data.blogFeatured) === "1";
   const image = clean(data.blogImage, 500) || (existing && existing.blogImage) || "";
-  const createdAt = clean(data.createdAt, 40) || (existing && existing.createdAt) || nowSql();
+  const createdAt = normalizeSqlDateTime(data.createdAt, existing && existing.createdAt);
   const values = {
     pidBlog,
     blogTitle,

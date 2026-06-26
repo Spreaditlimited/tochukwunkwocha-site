@@ -19,6 +19,7 @@ const { ensureSchoolTables } = require("../netlify/functions/_lib/schools");
 const { ensureFamilyTables } = require("../netlify/functions/_lib/families");
 const { ensureMarketingLeadsTable } = require("../netlify/functions/_lib/marketing-leads");
 const { ensureBlogTables } = require("../netlify/functions/_lib/blog-cms");
+const { ensureBlogImageJobsTable } = require("../netlify/functions/_lib/blog-image-generation");
 
 async function run() {
   const pool = getPool();
@@ -38,6 +39,7 @@ async function run() {
     await ensureFamilyTables(pool);
     await ensureMarketingLeadsTable(pool);
     await ensureBlogTables(pool);
+    await ensureBlogImageJobsTable(pool);
     console.log("db_migrate_ok");
   } finally {
     await pool.end();

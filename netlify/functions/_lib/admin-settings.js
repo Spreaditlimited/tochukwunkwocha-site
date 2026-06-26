@@ -85,6 +85,8 @@ const SETTINGS_DEFINITIONS = [
   { key: "OPENAI_API_KEY", category: "Leadpage AI", secret: true },
   { key: "OPENAI_MODEL", category: "Leadpage AI", secret: false },
   { key: "OPENAI_IMAGE_MODEL", category: "Leadpage AI", secret: false },
+  { key: "OPENAI_IMAGE_SIZE", category: "Leadpage AI", secret: false },
+  { key: "OPENAI_IMAGE_QUALITY", category: "Leadpage AI", secret: false },
   { key: "OPENAI_IMAGE_TIMEOUT_MS", category: "Leadpage AI", secret: false },
 
   { key: "CLOUDFLARE_ACCOUNT_ID", category: "Cloudflare Stream", secret: false },

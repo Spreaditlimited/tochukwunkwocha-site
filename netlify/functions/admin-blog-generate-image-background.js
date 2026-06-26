@@ -2,8 +2,7 @@ const { json, badMethod } = require("./_lib/http");
 const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
-const { getPost } = require("./_lib/blog-cms");
-const { createBlogImageJob } = require("./_lib/blog-image-generation");
+const { processBlogImageJob } = require("./_lib/blog-image-generation");
 
 function clean(value, max) {
   return String(value || "").trim().slice(0, max || 1000);
@@ -22,21 +21,15 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: "Invalid JSON body" });
   }
 
-  const pidBlog = clean(body.pidBlog, 80);
-  if (!pidBlog) return json(400, { ok: false, error: "Blog ID is required. Save the post before generating an image." });
+  const jobUuid = clean(body.jobUuid, 80);
+  if (!jobUuid) return json(400, { ok: false, error: "jobUuid is required." });
 
   const pool = getPool();
   try {
-    try { await applyRuntimeSettings(pool); } catch (_error) {}
-    const post = await getPost(pool, { pidBlog });
-    if (!post) return json(404, { ok: false, error: "Blog post not found." });
-    const job = await createBlogImageJob(pool, pidBlog);
-    return json(202, {
-      ok: true,
-      status: "queued",
-      job,
-    });
+    try { await applyRuntimeSettings(pool, { force: true }); } catch (_error) {}
+    const job = await processBlogImageJob(pool, jobUuid);
+    return json(200, { ok: true, job });
   } catch (error) {
-    return json(error.statusCode || 500, { ok: false, error: error.message || "Could not start blog image generation." });
+    return json(error.statusCode || 500, { ok: false, error: error.message || "Could not generate blog image." });
   }
 };

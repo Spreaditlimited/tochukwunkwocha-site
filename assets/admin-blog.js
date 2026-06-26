@@ -352,12 +352,15 @@
         body: JSON.stringify({ pidBlog }),
       });
       if (!data) return;
-      const post = data.data || {};
-      if (post.imageUrl && els.imagePreview) {
-        els.imagePreview.src = post.imageUrl;
-        els.imagePreview.classList.remove("hidden");
-      }
-      setMessage("Generated and attached a new blog image.", "success");
+      const jobUuid = data.job && data.job.jobUuid ? String(data.job.jobUuid) : "";
+      if (!jobUuid) throw new Error("Image job did not start.");
+      fetch("/.netlify/functions/admin-blog-generate-image-background", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ jobUuid }),
+      }).catch(function () {});
+      await pollImageJob(jobUuid);
       await loadPosts();
     } catch (error) {
       setMessage(error.message || "Could not generate image.", "error");
@@ -367,6 +370,30 @@
         els.generateImage.textContent = "Generate image";
       }
     }
+  }
+
+  async function pollImageJob(jobUuid) {
+    const startedAt = Date.now();
+    const maxWaitMs = 4 * 60 * 1000;
+    while (Date.now() - startedAt < maxWaitMs) {
+      await new Promise(function (resolve) { window.setTimeout(resolve, 3000); });
+      const data = await requestJson(`/.netlify/functions/admin-blog-image-job?jobUuid=${encodeURIComponent(jobUuid)}`);
+      if (!data) return;
+      const job = data.job || {};
+      const status = String(job.status || "").toLowerCase();
+      if (status === "failed") throw new Error(job.errorMessage || "Image generation failed.");
+      if (status === "succeeded") {
+        if (job.imageUrl && els.imagePreview) {
+          els.imagePreview.src = job.imageUrl;
+          els.imagePreview.classList.remove("hidden");
+        }
+        setMessage("Generated and attached a new blog image.", "success");
+        if (els.pid && els.pid.value) await editPost(els.pid.value);
+        return;
+      }
+      setMessage(status === "running" ? "Generating image..." : "Image generation queued...", "success");
+    }
+    throw new Error("Image generation is still running. Check again shortly.");
   }
 
   async function deleteCurrentPost() {

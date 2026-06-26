@@ -54,6 +54,11 @@
   ];
   const LEADPAGE_VISIBLE_KEYS = new Set([
     "LEADPAGE_DOMAIN_PROVIDER",
+    "OPENAI_API_KEY",
+    "OPENAI_IMAGE_MODEL",
+    "OPENAI_IMAGE_SIZE",
+    "OPENAI_IMAGE_QUALITY",
+    "OPENAI_IMAGE_TIMEOUT_MS",
   ]);
 
   let items = [];
