@@ -33,7 +33,6 @@ exports.handler = async function (event) {
 
     const result = await generateLeadMagnetForPost(pool, post, {
       timeoutMs: Math.max(15000, Number(process.env.OPENAI_LEAD_MAGNET_TIMEOUT_MS || "120000") || 120000),
-      chromePath: process.env.CHROME_PATH,
       model: process.env.OPENAI_LEAD_MAGNET_MODEL || process.env.OPENAI_MODEL,
     });
 

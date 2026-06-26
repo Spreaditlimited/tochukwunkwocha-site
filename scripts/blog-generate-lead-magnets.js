@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
-const { spawn } = require("child_process");
+const chromium = require("@sparticuz/chromium").default;
+const puppeteer = require("puppeteer-core");
 
 const { getPool } = require("../netlify/functions/_lib/db");
 const { applyRuntimeSettings } = require("../netlify/functions/_lib/runtime-settings");
@@ -15,7 +15,6 @@ const {
   saveLeadMagnetForPost,
 } = require("../netlify/functions/_lib/blog-lead-magnets");
 
-const DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const DEFAULT_MODEL = "gpt-4.1";
 const LOCAL_DOWNLOAD_DIR = path.join(process.cwd(), "assets", "downloads", "blog-lead-magnets");
 
@@ -91,7 +90,6 @@ function parseArgs() {
     dryRun: boolArg("dry-run"),
     localOnly: boolArg("local-only"),
     status: clean(arg("status", "published"), 40),
-    chromePath: arg("chrome", process.env.CHROME_PATH || DEFAULT_CHROME),
     model: arg("model", process.env.OPENAI_LEAD_MAGNET_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL),
     timeoutMs: Math.max(15000, Number(arg("timeout-ms", process.env.OPENAI_LEAD_MAGNET_TIMEOUT_MS || "120000")) || 120000),
   };
@@ -466,89 +464,39 @@ function renderPdfHtml(item, post) {
 </html>`;
 }
 
-function runChromePrint(chromePath, sourceHtml, outPdf) {
-  return new Promise((resolve, reject) => {
-    if (!fs.existsSync(chromePath)) {
-      reject(new Error(`Chrome not found at ${chromePath}. Pass --chrome=/path/to/chrome`));
-      return;
-    }
-    const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "chrome-headless-lead-magnet-"));
-    const timeoutMs = Math.max(10000, Number(process.env.PDF_EXPORT_TIMEOUT_MS || "60000") || 60000);
-    const proc = spawn(chromePath, [
-      "--headless",
-      "--disable-gpu",
-      "--disable-dev-shm-usage",
-      "--no-sandbox",
-      "--no-first-run",
-      "--no-default-browser-check",
-      `--user-data-dir=${profileDir}`,
-      `--print-to-pdf=${outPdf}`,
-      `file://${sourceHtml}`,
-    ], { stdio: "pipe" });
-    let stderr = "";
-    let settled = false;
-    function pdfIsReady() {
-      try {
-        return fs.existsSync(outPdf) && fs.statSync(outPdf).size > 1000;
-      } catch (_error) {
-        return false;
-      }
-    }
-    function resolveIfReady() {
-      if (settled || !pdfIsReady()) return false;
-      settled = true;
-      clearTimeout(timer);
-      clearInterval(readyInterval);
-      proc.kill("SIGKILL");
-      resolve();
-      return true;
-    }
-    const timer = setTimeout(() => {
-      if (settled) return;
-      if (resolveIfReady()) return;
-      settled = true;
-      proc.kill("SIGKILL");
-      reject(new Error(`Chrome PDF export timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-    const readyInterval = setInterval(resolveIfReady, 500);
-    proc.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-      resolveIfReady();
-    });
-    proc.on("error", (error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      clearInterval(readyInterval);
-      reject(error);
-    });
-    proc.on("close", (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      clearInterval(readyInterval);
-      if (code !== 0) reject(new Error(`Chrome PDF export failed (${code}): ${stderr}`));
-      else resolve();
-    });
+async function renderPdfBuffer(html) {
+  const executablePath = await chromium.executablePath();
+  if (!executablePath) throw new Error("Packaged Chromium executable was not found. Ensure @sparticuz/chromium is installed in production dependencies.");
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
+    headless: chromium.headless == null ? true : chromium.headless,
   });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0", timeout: Math.max(10000, Number(process.env.PDF_EXPORT_TIMEOUT_MS || "60000") || 60000) });
+    return Buffer.from(await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
+    }));
+  } finally {
+    await browser.close().catch(() => {});
+  }
 }
 
-async function createPdfBuffer(item, post, chromePath) {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "blog-lead-magnet-"));
+async function createPdfBuffer(item, post) {
   const slug = slugify(post.blogSlug || post.blogTitle) || `lead-magnet-${Date.now()}`;
-  const htmlPath = path.join(tmpRoot, `${slug}.html`);
-  const pdfPath = path.join(tmpRoot, `${slug}.pdf`);
-  fs.writeFileSync(htmlPath, renderPdfHtml(item, post), "utf8");
-  await runChromePrint(chromePath, htmlPath, pdfPath);
   return {
-    buffer: fs.readFileSync(pdfPath),
+    buffer: await renderPdfBuffer(renderPdfHtml(item, post)),
     filename: `${slug}-guide.pdf`,
   };
 }
 
 async function generateLeadMagnetForPost(pool, post, optionsInput) {
   const options = optionsInput && typeof optionsInput === "object" ? optionsInput : {};
-  const chromePath = options.chromePath || process.env.CHROME_PATH || DEFAULT_CHROME;
   const model = options.model || process.env.OPENAI_LEAD_MAGNET_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL;
   const timeoutMs = Math.max(15000, Number(options.timeoutMs || process.env.OPENAI_LEAD_MAGNET_TIMEOUT_MS || "120000") || 120000);
   const localOnly = options.localOnly === true;
@@ -566,7 +514,7 @@ async function generateLeadMagnetForPost(pool, post, optionsInput) {
     generated.pdf.subtitle = existing.description ? compact(existing.description, 140, generated.pdf.subtitle) : generated.pdf.subtitle;
   }
 
-  const pdf = await createPdfBuffer(generated, post, chromePath);
+  const pdf = await createPdfBuffer(generated, post);
   let pdfUrl = "";
   let pdfResourceType = "database";
   if (localOnly) {

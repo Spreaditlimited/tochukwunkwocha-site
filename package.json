@@ -18,9 +18,11 @@
     "build:images": "node scripts/build-images.js"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^149.0.0",
     "docx": "^9.6.1",
     "mysql2": "^3.11.3",
-    "nodemailer": "^9.0.0"
+    "nodemailer": "^9.0.0",
+    "puppeteer-core": "^25.2.1"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
