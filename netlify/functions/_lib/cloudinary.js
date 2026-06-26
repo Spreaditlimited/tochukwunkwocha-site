@@ -24,6 +24,7 @@ async function uploadBufferToCloudinary(buffer, options) {
   const apiKey = required("CLOUDINARY_API_KEY");
   const apiSecret = required("CLOUDINARY_API_SECRET");
   const opts = options && typeof options === "object" ? options : {};
+  const resourceType = clean(opts.resourceType, 40) || "image";
   const timestamp = Math.floor(Date.now() / 1000);
   const publicId = clean(opts.publicId, 180);
   const folder = clean(opts.folder, 220);
@@ -43,7 +44,7 @@ async function uploadBufferToCloudinary(buffer, options) {
   form.append("api_key", apiKey);
   form.append("signature", signature(params, apiSecret));
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${encodeURIComponent(resourceType)}/upload`, {
     method: "POST",
     body: form,
   });
@@ -54,9 +55,11 @@ async function uploadBufferToCloudinary(buffer, options) {
   return { publicId: json.public_id, secureUrl: json.secure_url };
 }
 
-async function destroyCloudinaryAsset(publicId) {
+async function destroyCloudinaryAsset(publicId, options) {
   const value = clean(publicId, 500);
   if (!value) return null;
+  const opts = options && typeof options === "object" ? options : {};
+  const resourceType = clean(opts.resourceType, 40) || "image";
   const cloudName = required("CLOUDINARY_CLOUD_NAME");
   const apiKey = required("CLOUDINARY_API_KEY");
   const apiSecret = required("CLOUDINARY_API_SECRET");
@@ -67,7 +70,7 @@ async function destroyCloudinaryAsset(publicId) {
   form.append("timestamp", String(timestamp));
   form.append("api_key", apiKey);
   form.append("signature", signature(params, apiSecret));
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/destroy`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${encodeURIComponent(resourceType)}/destroy`, {
     method: "POST",
     body: form,
   });

@@ -3718,3 +3718,33 @@ body.public-page--prompt-to-profit-children .site-header {
     justify-content: center;
   }
 }
+/* Keep generated blog article/prose list markers from leaking into the PDF CTA card. */
+.blog-lead-magnet-cta .blog-lead-magnet-benefits {
+  list-style: none !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.blog-lead-magnet-cta .blog-lead-magnet-benefit {
+  list-style: none !important;
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0 !important;
+  padding-left: 0 !important;
+}
+
+.blog-lead-magnet-cta .blog-lead-magnet-benefit::before,
+.blog-lead-magnet-cta .blog-lead-magnet-benefit::marker {
+  content: none !important;
+}
+
+.blog-lead-magnet-cta .blog-lead-magnet-benefit-dot {
+  flex: 0 0 0.45rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.55em;
+  border-radius: 999px;
+  background: #99a9cc;
+  box-shadow: 0 0 0 3px rgba(153, 169, 204, 0.12);
+}

@@ -16,6 +16,21 @@
     imagePreview: document.getElementById("blogImagePreview"),
     generateImage: document.getElementById("blogGenerateImageBtn"),
     video: document.getElementById("blogVideo"),
+    generateLeadMagnet: document.getElementById("blogGenerateLeadMagnetBtn"),
+    leadMagnetEnabled: document.getElementById("leadMagnetEnabled"),
+    leadMagnetTitle: document.getElementById("leadMagnetTitle"),
+    leadMagnetOfferHeadline: document.getElementById("leadMagnetOfferHeadline"),
+    leadMagnetDescription: document.getElementById("leadMagnetDescription"),
+    leadMagnetBullets: document.getElementById("leadMagnetBullets"),
+    leadMagnetButtonText: document.getElementById("leadMagnetButtonText"),
+    leadMagnetEmailSubject: document.getElementById("leadMagnetEmailSubject"),
+    leadMagnetDeliveryMessage: document.getElementById("leadMagnetDeliveryMessage"),
+    leadMagnetFile: document.getElementById("leadMagnetFile"),
+    leadMagnetPdfUrl: document.getElementById("leadMagnetPdfUrl"),
+    leadMagnetPdfPublicId: document.getElementById("leadMagnetPdfPublicId"),
+    leadMagnetPdfResourceType: document.getElementById("leadMagnetPdfResourceType"),
+    leadMagnetPdfFilename: document.getElementById("leadMagnetPdfFilename"),
+    leadMagnetCurrentFile: document.getElementById("leadMagnetCurrentFile"),
     published: document.getElementById("blogPublished"),
     featured: document.getElementById("blogFeatured"),
     content: document.getElementById("blogContent"),
@@ -164,6 +179,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700">${escapeHtml(status)}</span>
               ${post.blogFeatured ? '<span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Featured</span>' : ""}
+              ${post.leadMagnet && post.leadMagnet.active ? '<span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">PDF offer</span>' : ""}
               <span class="text-xs text-gray-500">${escapeHtml(formatDate(post.createdAt))}</span>
             </div>
             <h3 class="mt-2 text-lg font-heading font-extrabold text-gray-900">${escapeHtml(post.blogTitle)}</h3>
@@ -264,6 +280,19 @@
     }
     els.imagePreview.classList.add("hidden");
     els.imagePreview.removeAttribute("src");
+    if (els.leadMagnetEnabled) els.leadMagnetEnabled.checked = false;
+    if (els.leadMagnetTitle) els.leadMagnetTitle.value = "";
+    if (els.leadMagnetOfferHeadline) els.leadMagnetOfferHeadline.value = "";
+    if (els.leadMagnetDescription) els.leadMagnetDescription.value = "";
+    if (els.leadMagnetBullets) els.leadMagnetBullets.value = "";
+    if (els.leadMagnetButtonText) els.leadMagnetButtonText.value = "Send me the PDF";
+    if (els.leadMagnetEmailSubject) els.leadMagnetEmailSubject.value = "";
+    if (els.leadMagnetDeliveryMessage) els.leadMagnetDeliveryMessage.value = "";
+    if (els.leadMagnetPdfUrl) els.leadMagnetPdfUrl.value = "";
+    if (els.leadMagnetPdfPublicId) els.leadMagnetPdfPublicId.value = "";
+    if (els.leadMagnetPdfResourceType) els.leadMagnetPdfResourceType.value = "";
+    if (els.leadMagnetPdfFilename) els.leadMagnetPdfFilename.value = "";
+    if (els.leadMagnetCurrentFile) els.leadMagnetCurrentFile.textContent = "No PDF attached.";
   }
 
   async function editPost(pidBlog) {
@@ -278,6 +307,24 @@
       els.excerpt.value = post.excerpt || "";
       els.tags.value = Array.isArray(post.tags) ? post.tags.join(", ") : "";
       els.video.value = post.blogExt1 || "";
+      const leadMagnet = post.leadMagnet || {};
+      if (els.leadMagnetEnabled) els.leadMagnetEnabled.checked = Boolean(leadMagnet.active);
+      if (els.leadMagnetTitle) els.leadMagnetTitle.value = leadMagnet.title || "";
+      if (els.leadMagnetOfferHeadline) els.leadMagnetOfferHeadline.value = leadMagnet.offerHeadline || "";
+      if (els.leadMagnetDescription) els.leadMagnetDescription.value = leadMagnet.description || "";
+      if (els.leadMagnetBullets) els.leadMagnetBullets.value = Array.isArray(leadMagnet.bullets) ? leadMagnet.bullets.map(function (item) { return "- " + item; }).join("\n") : "";
+      if (els.leadMagnetButtonText) els.leadMagnetButtonText.value = leadMagnet.buttonText || "Send me the PDF";
+      if (els.leadMagnetEmailSubject) els.leadMagnetEmailSubject.value = leadMagnet.emailSubject || "";
+      if (els.leadMagnetDeliveryMessage) els.leadMagnetDeliveryMessage.value = leadMagnet.deliveryMessage || "";
+      if (els.leadMagnetPdfUrl) els.leadMagnetPdfUrl.value = leadMagnet.pdfUrl || "";
+      if (els.leadMagnetPdfPublicId) els.leadMagnetPdfPublicId.value = leadMagnet.pdfPublicId || "";
+      if (els.leadMagnetPdfResourceType) els.leadMagnetPdfResourceType.value = leadMagnet.pdfResourceType || "image";
+      if (els.leadMagnetPdfFilename) els.leadMagnetPdfFilename.value = leadMagnet.pdfFilename || "";
+      if (els.leadMagnetCurrentFile) {
+        els.leadMagnetCurrentFile.innerHTML = leadMagnet.pdfUrl
+          ? `Current PDF: <a class="font-bold text-brand-700 underline" href="${escapeHtml(leadMagnet.pdfUrl)}" target="_blank" rel="noopener">${escapeHtml(leadMagnet.pdfFilename || "Open PDF")}</a>`
+          : "No PDF attached.";
+      }
       els.published.checked = Boolean(post.blogPublished);
       els.featured.checked = Boolean(post.blogFeatured);
       els.content.value = htmlToPlainText(post.blogContent || "");
@@ -316,9 +363,22 @@
       form.append("excerpt", els.excerpt.value);
       form.append("tags", els.tags.value);
       form.append("blogExt1", els.video.value);
+      form.append("leadMagnetEnabled", els.leadMagnetEnabled && els.leadMagnetEnabled.checked ? "true" : "false");
+      form.append("leadMagnetTitle", els.leadMagnetTitle ? els.leadMagnetTitle.value : "");
+      form.append("leadMagnetOfferHeadline", els.leadMagnetOfferHeadline ? els.leadMagnetOfferHeadline.value : "");
+      form.append("leadMagnetDescription", els.leadMagnetDescription ? els.leadMagnetDescription.value : "");
+      form.append("leadMagnetBullets", els.leadMagnetBullets ? els.leadMagnetBullets.value : "");
+      form.append("leadMagnetButtonText", els.leadMagnetButtonText ? els.leadMagnetButtonText.value : "");
+      form.append("leadMagnetEmailSubject", els.leadMagnetEmailSubject ? els.leadMagnetEmailSubject.value : "");
+      form.append("leadMagnetDeliveryMessage", els.leadMagnetDeliveryMessage ? els.leadMagnetDeliveryMessage.value : "");
+      form.append("leadMagnetPdfUrl", els.leadMagnetPdfUrl ? els.leadMagnetPdfUrl.value : "");
+      form.append("leadMagnetPdfPublicId", els.leadMagnetPdfPublicId ? els.leadMagnetPdfPublicId.value : "");
+      form.append("leadMagnetPdfResourceType", els.leadMagnetPdfResourceType ? els.leadMagnetPdfResourceType.value : "");
+      form.append("leadMagnetPdfFilename", els.leadMagnetPdfFilename ? els.leadMagnetPdfFilename.value : "");
       form.append("blogPublished", els.published.checked ? "true" : "false");
       form.append("blogFeatured", els.featured.checked ? "true" : "false");
       if (els.image.files && els.image.files[0]) form.append("file", els.image.files[0]);
+      if (els.leadMagnetFile && els.leadMagnetFile.files && els.leadMagnetFile.files[0]) form.append("leadMagnetFile", els.leadMagnetFile.files[0]);
       const data = await requestJson("/.netlify/functions/admin-blog-save", { method: "POST", body: form, headers: { Accept: "application/json" } });
       if (!data) return;
       setMessage("Blog post saved.", "success");
@@ -396,6 +456,37 @@
     throw new Error("Image generation is still running. Check again shortly.");
   }
 
+  async function generateLeadMagnetForCurrentPost() {
+    const pidBlog = els.pid && els.pid.value ? els.pid.value : "";
+    if (!pidBlog) {
+      setMessage("Save the post before generating a PDF lead magnet.", "error");
+      return;
+    }
+    if (els.generateLeadMagnet) {
+      els.generateLeadMagnet.disabled = true;
+      els.generateLeadMagnet.textContent = "Generating...";
+    }
+    setMessage("Generating lead magnet and PDF. This can take up to two minutes.", "success");
+    try {
+      const data = await requestJson("/.netlify/functions/admin-blog-generate-lead-magnet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ pidBlog }),
+      });
+      if (!data) return;
+      setMessage("Generated and attached the PDF lead magnet.", "success");
+      if (els.pid && els.pid.value) await editPost(els.pid.value);
+      await loadPosts();
+    } catch (error) {
+      setMessage(error.message || "Could not generate PDF lead magnet.", "error");
+    } finally {
+      if (els.generateLeadMagnet) {
+        els.generateLeadMagnet.disabled = false;
+        els.generateLeadMagnet.textContent = "Generate PDF and lead magnet";
+      }
+    }
+  }
+
   async function deleteCurrentPost() {
     const pidBlog = els.pid.value;
     if (!pidBlog) return;
@@ -418,6 +509,7 @@
   }
   if (els.form) els.form.addEventListener("submit", savePost);
   if (els.generateImage) els.generateImage.addEventListener("click", generateImageForCurrentPost);
+  if (els.generateLeadMagnet) els.generateLeadMagnet.addEventListener("click", generateLeadMagnetForCurrentPost);
   if (els.reset) els.reset.addEventListener("click", resetForm);
   if (els.del) els.del.addEventListener("click", deleteCurrentPost);
   if (els.newBtn) els.newBtn.addEventListener("click", resetForm);
@@ -438,6 +530,12 @@
       if (!file) return;
       els.imagePreview.src = URL.createObjectURL(file);
       els.imagePreview.classList.remove("hidden");
+    });
+  }
+  if (els.leadMagnetFile) {
+    els.leadMagnetFile.addEventListener("change", function () {
+      const file = els.leadMagnetFile.files && els.leadMagnetFile.files[0];
+      if (els.leadMagnetCurrentFile && file) els.leadMagnetCurrentFile.textContent = `Selected PDF: ${file.name}`;
     });
   }
 

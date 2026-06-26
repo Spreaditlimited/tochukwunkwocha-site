@@ -4,6 +4,25 @@ const path = require('path');
 const ROOT = process.cwd();
 const CONTENT_DIR = path.join(ROOT, 'content', 'blogs');
 const OUTPUT_DIR = path.join(ROOT, 'blog');
+
+function loadEnv(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) continue;
+    const key = trimmed.slice(0, idx).trim();
+    let value = trimmed.slice(idx + 1).trim();
+    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+    if (key && process.env[key] == null) process.env[key] = value;
+  }
+}
+
+loadEnv(path.join(ROOT, '.env'));
+loadEnv(path.join(ROOT, '.env.local'));
+
 const SITE_URL = clean(process.env.SITE_URL || 'https://tochukwunkwocha.com').replace(/\/+$/, '');
 
 function ensureDir(dir) {
@@ -170,13 +189,53 @@ function markdownToHtml(md) {
   return html.join('\n');
 }
 
-function injectInArticleCta(html) {
-  const input = String(html || '');
-  const blocks = input.match(/<(p|h[1-6]|ul)\b[\s\S]*?<\/\1>/gi) || [];
-  if (!blocks.length) return input;
-  const insertAfter = Math.max(2, Math.floor(blocks.length / 2));
-  let seen = 0;
-  const cta = `
+function renderLeadMagnetCta(leadMagnet) {
+  const magnet = leadMagnet && typeof leadMagnet === 'object' ? leadMagnet : null;
+  if (!magnet || !magnet.active || !magnet.title) return '';
+  const bullets = Array.isArray(magnet.bullets) ? magnet.bullets.filter(Boolean).slice(0, 4) : [];
+  const headline = clean(magnet.offerHeadline) || `Get the 2-page PDF for this article`;
+  const description = clean(magnet.description) || 'A practical, mobile-friendly guide you can save and use after reading.';
+  const buttonText = clean(magnet.buttonText) || 'Send me the PDF';
+  return `
+<section class="blog-lead-magnet-cta my-10 sm:my-12" data-blog-lead-cta data-lead-magnet-slug="${escapeHtml(magnet.slug)}">
+  <div class="rounded-2xl border border-brand-400/30 bg-gradient-to-br from-[#101827] to-[#0d1117] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.38)] sm:p-7">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <p class="!mt-0 text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-300">Free 2-page PDF</p>
+        <h3 class="mt-2 text-xl font-heading font-extrabold leading-tight text-white sm:text-2xl">${escapeHtml(headline)}</h3>
+        <p class="!mt-3 text-sm leading-7 text-slate-300">${escapeHtml(description)}</p>
+        ${bullets.length ? `<ul class="blog-lead-magnet-benefits mt-4 grid gap-2 text-sm text-slate-300">${bullets.map((item) => `<li class="blog-lead-magnet-benefit"><span class="blog-lead-magnet-benefit-dot" aria-hidden="true"></span><span>${escapeHtml(item)}</span></li>`).join('')}</ul>` : ''}
+      </div>
+      <button type="button" data-lead-magnet-open data-lead-magnet-slug="${escapeHtml(magnet.slug)}" style="text-decoration:none;" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-brand-500 to-purple-600 px-5 py-3 text-sm font-extrabold !text-white shadow-[0_0_25px_rgba(102,126,178,0.35)] transition hover:from-brand-400 hover:to-purple-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
+        ${escapeHtml(buttonText)}
+      </button>
+    </div>
+  </div>
+</section>`;
+}
+
+function renderLeadMagnetConfigScript(post) {
+  const magnet = post && post.leadMagnet && post.leadMagnet.active ? post.leadMagnet : null;
+  if (!magnet || !magnet.slug || !magnet.title) return "";
+  const payload = {
+    mode: "blog_lead_magnet",
+    blogSlug: post.slug,
+    blogTitle: post.title,
+    leadMagnet: {
+      slug: magnet.slug,
+      title: magnet.title,
+      offerHeadline: magnet.offerHeadline || `Get the 2-page PDF for this article`,
+      description: magnet.description || "A practical, mobile-friendly guide you can save and use after reading.",
+      buttonText: magnet.buttonText || "Send me the PDF",
+      bullets: Array.isArray(magnet.bullets) ? magnet.bullets.filter(Boolean).slice(0, 4) : [],
+      pdfUrl: magnet.pdfUrl || "",
+    },
+  };
+  return `<script type="application/json" id="tnBlogLeadMagnetConfig">${JSON.stringify(payload).replace(/</g, "\\u003c")}</script>`;
+}
+
+function renderGenericInArticleCta() {
+  return `
 <section class="my-10 sm:my-12 rounded-2xl border border-white/10 bg-[#0d1117]/80 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
@@ -189,6 +248,15 @@ function injectInArticleCta(html) {
     </a>
   </div>
 </section>`;
+}
+
+function injectInArticleCta(html, post) {
+  const input = String(html || '');
+  const blocks = input.match(/<(p|h[1-6]|ul)\b[\s\S]*?<\/\1>/gi) || [];
+  if (!blocks.length) return input;
+  const insertAfter = Math.max(2, Math.floor(blocks.length / 2));
+  let seen = 0;
+  const cta = renderLeadMagnetCta(post && post.leadMagnet) || renderGenericInArticleCta();
   return input.replace(/<(p|h[1-6]|ul)\b[\s\S]*?<\/\1>/gi, function (m) {
     seen += 1;
     if (seen === insertAfter) return `${m}\n${cta}`;
@@ -719,10 +787,11 @@ function writePost(post, posts) {
         Back to Insights
       </a>
       <div class="blog-content mt-10 sm:mt-12">
-        ${injectInArticleCta(post.contentHtml ? String(post.contentHtml) : markdownToHtml(post.body))}
+        ${injectInArticleCta(post.contentHtml ? String(post.contentHtml) : markdownToHtml(post.body), post)}
         ${relatedPosts}
       </div>
     </article>
+    ${renderLeadMagnetConfigScript(post)}
   `;
   const articleJsonLd = {
     '@context': 'https://schema.org',
@@ -967,14 +1036,18 @@ async function readCmsPosts() {
   const { getPool } = require('../netlify/functions/_lib/db');
   const { applyRuntimeSettings } = require('../netlify/functions/_lib/runtime-settings');
   const { listPosts, getBlogImageUrl } = require('../netlify/functions/_lib/blog-cms');
+  const { listLeadMagnetsForPosts } = require('../netlify/functions/_lib/blog-lead-magnets');
   const pool = getPool();
   try {
     await applyRuntimeSettings(pool, { force: true });
     const result = await listPosts(pool, { status: 'published', limit: 200 });
+    const leadMagnets = await listLeadMagnetsForPosts(pool, (result.posts || []).map((post) => post.pidBlog), { activeOnly: true });
     return (result.posts || []).map((post) => {
       const seo = post.seo && typeof post.seo === 'object' ? post.seo : {};
       const date = post.createdAt ? String(post.createdAt).slice(0, 10) : '';
+      const leadMagnet = leadMagnets.get(post.pidBlog) || null;
       return {
+        pidBlog: post.pidBlog,
         title: clean(post.blogTitle),
         slug: clean(post.blogSlug),
         date,
@@ -985,6 +1058,7 @@ async function readCmsPosts() {
         image: getBlogImageUrl(post.blogImage),
         imageAlt: clean(seo.imageAlt) || clean(post.blogTitle),
         contentHtml: String(post.blogContent || ''),
+        leadMagnet,
       };
     }).filter((post) => post.title && post.slug);
   } finally {

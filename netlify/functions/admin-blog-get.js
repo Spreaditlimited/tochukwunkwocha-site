@@ -3,6 +3,7 @@ const { getPool } = require("./_lib/db");
 const { applyRuntimeSettings } = require("./_lib/runtime-settings");
 const { requireAdminSession } = require("./_lib/admin-auth");
 const { getPost, getBlogImageUrl } = require("./_lib/blog-cms");
+const { getLeadMagnetForPost } = require("./_lib/blog-lead-magnets");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "GET") return badMethod();
@@ -14,7 +15,8 @@ exports.handler = async function (event) {
     try { await applyRuntimeSettings(pool); } catch (_error) {}
     const post = await getPost(pool, { pidBlog: params.get("pidBlog"), slug: params.get("slug") });
     if (!post) return json(404, { ok: false, error: "Blog post not found." });
-    return json(200, { ok: true, data: Object.assign({}, post, { imageUrl: getBlogImageUrl(post.blogImage) }) });
+    const leadMagnet = await getLeadMagnetForPost(pool, post.pidBlog).catch(() => null);
+    return json(200, { ok: true, data: Object.assign({}, post, { imageUrl: getBlogImageUrl(post.blogImage), leadMagnet }) });
   } catch (error) {
     return json(500, { ok: false, error: error.message || "Could not load blog post." });
   }

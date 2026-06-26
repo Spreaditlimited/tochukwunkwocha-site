@@ -253,6 +253,19 @@
     };
 
     const currentPath = window.location.pathname || "/";
+    const readBlogLeadMagnetConfig = () => {
+      const el = document.getElementById("tnBlogLeadMagnetConfig");
+      if (!el) return null;
+      try {
+        const data = JSON.parse(el.textContent || "{}");
+        return data && data.leadMagnet && data.leadMagnet.slug ? data : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const blogLeadConfig = readBlogLeadMagnetConfig();
+    const activeLeadMagnet = blogLeadConfig && blogLeadConfig.leadMagnet ? blogLeadConfig.leadMagnet : null;
+    const leadStorageSuffix = activeLeadMagnet && activeLeadMagnet.slug ? "_" + activeLeadMagnet.slug : "";
 
     // 2. Early Exits
     if (CONFIG.excludedPrefixes.some(prefix => currentPath.startsWith(prefix))) return;
@@ -267,10 +280,45 @@
         try { window[type].setItem(key, value); } catch (e) {}
       }
     };
+    const escapeLeadHtml = (value) => String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const leadClaimKey = "tn_lead_magnet_claimed" + leadStorageSuffix;
+    const leadClaimDataKey = "tn_lead_magnet_claimed_data" + leadStorageSuffix;
+    const getClaimedLeadMagnet = () => {
+      if (!activeLeadMagnet) return null;
+      const subscribed = storage.get('localStorage', CONFIG.keys.subscribed) === "true";
+      const claimed = storage.get('localStorage', leadClaimKey) === "true";
+      if (!subscribed && !claimed) return null;
+      try {
+        const data = JSON.parse(storage.get('localStorage', leadClaimDataKey) || "{}");
+        if (claimed && data && data.pdfUrl) return Object.assign({}, data, { alreadyClaimed: true });
+      } catch (e) {
+      }
+      return activeLeadMagnet.pdfUrl ? {
+        slug: activeLeadMagnet.slug,
+        title: activeLeadMagnet.title || "",
+        pdfUrl: activeLeadMagnet.pdfUrl,
+        alreadyClaimed: claimed,
+      } : null;
+    };
+    const saveClaimedLeadMagnet = (data) => {
+      if (!activeLeadMagnet || !data || !data.pdfUrl) return;
+      storage.set('localStorage', CONFIG.keys.subscribed, "true");
+      storage.set('localStorage', leadClaimKey, "true");
+      storage.set('localStorage', leadClaimDataKey, JSON.stringify({
+        slug: activeLeadMagnet.slug,
+        title: activeLeadMagnet.title || "",
+        pdfUrl: data.pdfUrl,
+        claimedAt: new Date().toISOString(),
+      }));
+    };
 
     // Check if user has already subscribed or dismissed this session
-    if (storage.get('localStorage', CONFIG.keys.subscribed) === "true") return;
-    if (storage.get('sessionStorage', CONFIG.keys.sessionDismissed) === "true") return;
+    if (!activeLeadMagnet && storage.get('localStorage', CONFIG.keys.subscribed) === "true") return;
+    const autoSuppressed = Boolean(
+      storage.get('localStorage', CONFIG.keys.subscribed) === "true" ||
+      (activeLeadMagnet && storage.get('localStorage', leadClaimKey) === "true") ||
+      storage.get('sessionStorage', CONFIG.keys.sessionDismissed + leadStorageSuffix) === "true"
+    );
 
     // Mark first seen
     if (!storage.get('localStorage', CONFIG.keys.firstSeen)) {
@@ -280,7 +328,19 @@
     // 4. Utility Functions
     const getPageType = () => currentPath.startsWith("/blog") ? "blog" : "site";
 
-    const getPopupMessage = () => getPageType() === "blog" 
+    const getPopupTitle = () => activeLeadMagnet
+      ? (activeLeadMagnet.offerHeadline || activeLeadMagnet.title || "Get the PDF guide for this article")
+      : "Practical AI and building lessons, minus the noise.";
+
+    const getPopupEyebrow = () => activeLeadMagnet ? "Free 2-page PDF" : "Weekly practical notes";
+
+    const getSubmitText = () => activeLeadMagnet
+      ? (activeLeadMagnet.buttonText || "Send me the PDF")
+      : "Subscribe to Insights";
+
+    const getPopupMessage = () => activeLeadMagnet
+      ? (activeLeadMagnet.description || "Get the concise PDF guide that goes with this article.")
+      : getPageType() === "blog" 
       ? "Get practical AI and business-building insights sent directly to your inbox."
       : "Join practical builders getting clear AI lessons, tools, and updates from Tochukwu.";
 
@@ -294,10 +354,13 @@
     const getAttributionPayload = () => {
       const params = new URLSearchParams(window.location.search);
       return {
-        source: "lead_capture_popup",
+        source: activeLeadMagnet ? "blog_lead_magnet" : "lead_capture_popup",
         pageType: getPageType(),
         pageUrl: window.location.href,
         pathname: currentPath,
+        blogSlug: blogLeadConfig && blogLeadConfig.blogSlug ? blogLeadConfig.blogSlug : "",
+        blogTitle: blogLeadConfig && blogLeadConfig.blogTitle ? blogLeadConfig.blogTitle : "",
+        leadMagnetSlug: activeLeadMagnet && activeLeadMagnet.slug ? activeLeadMagnet.slug : "",
         referrer: document.referrer || "",
         utmSource: params.get("utm_source") || "",
         utmMedium: params.get("utm_medium") || "",
@@ -308,6 +371,20 @@
         fbp: getCookie("_fbp"),
         fbc: getCookie("_fbc"),
       };
+    };
+
+    const trackLeadEvent = (eventName) => {
+      if (!activeLeadMagnet || !activeLeadMagnet.slug) return;
+      const payload = Object.assign({}, getAttributionPayload(), {
+        eventName,
+        leadMagnetSlug: activeLeadMagnet.slug,
+      });
+      fetch("/.netlify/functions/blog-lead-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(function () {});
     };
 
     // 5. CSS & HTML Injection
@@ -354,7 +431,7 @@
       const currentCount = Number(storage.get('localStorage', CONFIG.keys.dismissCount) || "0");
       storage.set('localStorage', CONFIG.keys.dismissCount, String(currentCount + 1));
       storage.set('localStorage', CONFIG.keys.lastDismissed, new Date().toISOString());
-      storage.set('sessionStorage', CONFIG.keys.sessionDismissed, "true");
+      storage.set('sessionStorage', CONFIG.keys.sessionDismissed + leadStorageSuffix, "true");
 
       const popup = document.getElementById("tnLeadCapturePopup");
       if (popup) {
@@ -391,60 +468,77 @@
 
         // Success
         storage.set('localStorage', CONFIG.keys.subscribed, "true");
+        if (activeLeadMagnet) storage.set('localStorage', leadClaimKey, "true");
 
         if (typeof window.fbq === "function") {
           window.fbq("track", "Lead", {
-            content_name: "Tochukwu Website Lead Capture Popup",
+            content_name: activeLeadMagnet ? activeLeadMagnet.title : "Tochukwu Website Lead Capture Popup",
             content_category: getPageType(),
           });
         }
 
+        if (activeLeadMagnet && data.leadMagnet && data.leadMagnet.pdfUrl) {
+          saveClaimedLeadMagnet({ pdfUrl: data.leadMagnet.pdfUrl });
+          const link = successWrap.querySelector("[data-lead-download]");
+          if (link) {
+            link.href = data.leadMagnet.pdfUrl;
+            link.style.display = "inline-flex";
+          }
+          const successText = successWrap.querySelector("[data-lead-success-text]");
+          if (successText) successText.textContent = data.leadMagnet.deliveryEmailSent ? "The PDF has been emailed to you. You can also download it now." : "You can download the PDF now. I will also send practical notes after this.";
+        }
+
         formWrap.style.display = "none";
         successWrap.style.display = "flex";
-        setTimeout(handleClose, 2600);
+        if (!activeLeadMagnet) setTimeout(handleClose, 2600);
 
       } catch (error) {
         errorEl.textContent = error.message;
         errorEl.style.display = "block";
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Subscribe to Insights";
+        submitBtn.textContent = getSubmitText();
       }
     };
 
-    const renderPopup = () => {
+    const renderPopup = (options) => {
       if (document.getElementById("tnLeadCapturePopup")) return;
+      const opts = options && typeof options === "object" ? options : {};
+      const claimedLeadMagnet = opts.forceDownload ? getClaimedLeadMagnet() : null;
       injectStyles();
+      trackLeadEvent("popup_open");
 
       const markup = `
         <div class="tn-lead-popup" id="tnLeadCapturePopup">
           <div class="tn-lead-card" role="dialog" aria-modal="false" aria-labelledby="tnLeadTitle">
             <button type="button" class="tn-lead-close" aria-label="Close lead capture popup">&times;</button>
             
-            <div class="tn-lead-success" data-lead-success>
-              <div class="tn-lead-success-icon">&#10003;</div>
-              <h2>You’re on the list.</h2>
-              <p>Practical AI and building insights will arrive in your inbox shortly.</p>
+              <div class="tn-lead-success" data-lead-success>
+                <div class="tn-lead-success-icon">&#10003;</div>
+              <h2>${activeLeadMagnet ? "Your PDF is ready." : "You’re on the list."}</h2>
+              <p data-lead-success-text>${activeLeadMagnet ? "The PDF is ready to download." : "Practical AI and building insights will arrive in your inbox shortly."}</p>
+              <a data-lead-download href="#" target="_blank" rel="noopener" style="display:none;margin-top:16px;align-items:center;justify-content:center;border-radius:999px;background:#667eb2;color:#fff;text-decoration:none;padding:11px 16px;font-size:12px;font-weight:900;">Download PDF</a>
             </div>
             
             <div data-lead-form-wrap>
               <div class="tn-lead-person">
                 <img class="tn-lead-avatar" src="/assets/optimized/tochukwu-portrait.webp" alt="Tochukwu Nkwocha" loading="lazy" />
                 <div>
-                  <div class="tn-lead-eyebrow">Weekly practical notes</div>
+                  <div class="tn-lead-eyebrow">${escapeLeadHtml(getPopupEyebrow())}</div>
                   <div class="tn-lead-name">Tochukwu Nkwocha</div>
                   <div class="tn-lead-role">Founder, builder, practical AI educator</div>
                 </div>
               </div>
               
-              <h2 class="tn-lead-title" id="tnLeadTitle">Practical AI and building lessons, minus the noise.</h2>
-              <p class="tn-lead-copy">${getPopupMessage()}</p>
+              <h2 class="tn-lead-title" id="tnLeadTitle">${escapeLeadHtml(getPopupTitle())}</h2>
+              <p class="tn-lead-copy">${escapeLeadHtml(getPopupMessage())}</p>
+              ${activeLeadMagnet && Array.isArray(activeLeadMagnet.bullets) && activeLeadMagnet.bullets.length ? `<ul style="margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px;">${activeLeadMagnet.bullets.slice(0, 4).map(function (item) { return `<li style="display:flex;gap:8px;color:#cbd5e1;font-size:12px;line-height:1.5;"><span style="margin-top:7px;height:5px;width:5px;border-radius:999px;background:#a5d6ff;flex:0 0 auto;"></span><span>${escapeLeadHtml(item)}</span></li>`; }).join("")}</ul>` : ""}
               
               <form class="tn-lead-form" data-lead-form novalidate>
                 <input class="tn-lead-input" name="firstName" autocomplete="given-name" placeholder="First name" required />
                 <input class="tn-lead-input" name="email" type="email" autocomplete="email" placeholder="Email address" required />
                 <p class="tn-lead-error" data-lead-error></p>
-                <button class="tn-lead-button" type="submit" data-lead-submit>Subscribe to Insights</button>
+                <button class="tn-lead-button" type="submit" data-lead-submit>${escapeLeadHtml(getSubmitText())}</button>
               </form>
               
               <div class="tn-lead-foot">
@@ -470,13 +564,65 @@
 
       popup.querySelector(".tn-lead-close").addEventListener("click", handleClose);
       elements.form.addEventListener("submit", (e) => handleFormSubmit(e, elements));
+      if (claimedLeadMagnet && claimedLeadMagnet.pdfUrl) {
+        const alreadyClaimed = claimedLeadMagnet.alreadyClaimed === true;
+        if (!alreadyClaimed) saveClaimedLeadMagnet({ pdfUrl: claimedLeadMagnet.pdfUrl });
+        elements.formWrap.style.display = "none";
+        elements.successWrap.style.display = "flex";
+        const link = elements.successWrap.querySelector("[data-lead-download]");
+        if (link) {
+          link.href = claimedLeadMagnet.pdfUrl;
+          link.style.display = "inline-flex";
+        }
+        const successText = elements.successWrap.querySelector("[data-lead-success-text]");
+        if (successText) {
+          successText.textContent = alreadyClaimed
+            ? "You already requested this PDF. Download it again below."
+            : "Your details are already saved. Download this PDF below.";
+        }
+      }
     };
+
+    document.addEventListener("click", function (event) {
+      const triggerButton = event.target && event.target.closest ? event.target.closest("[data-lead-magnet-open]") : null;
+      if (!triggerButton) return;
+      event.preventDefault();
+      trackLeadEvent("cta_click");
+      storage.set('sessionStorage', CONFIG.keys.sessionDismissed + leadStorageSuffix, "");
+      renderPopup({ forceDownload: true });
+    });
+
+    const claimedForButton = getClaimedLeadMagnet();
+    if (activeLeadMagnet && claimedForButton && claimedForButton.alreadyClaimed) {
+      document.querySelectorAll("[data-lead-magnet-open]").forEach(function (button) {
+        button.textContent = "Download PDF again";
+      });
+    }
+
+    if (activeLeadMagnet && document.querySelector("[data-blog-lead-cta]")) {
+      if ("IntersectionObserver" in window) {
+        let trackedView = false;
+        const observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!trackedView && entry.isIntersecting) {
+              trackedView = true;
+              trackLeadEvent("cta_view");
+              observer.disconnect();
+            }
+          });
+        }, { threshold: 0.35 });
+        document.querySelectorAll("[data-blog-lead-cta]").forEach(function (el) { observer.observe(el); });
+      } else {
+        window.setTimeout(function () { trackLeadEvent("cta_view"); }, 1200);
+      }
+    }
 
     // 7. Triggers (Time & Scroll)
     let isTriggered = false;
 
     const trigger = () => {
       if (isTriggered) return;
+      if (autoSuppressed) return;
       isTriggered = true;
       renderPopup();
     };

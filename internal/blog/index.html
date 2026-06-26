@@ -139,6 +139,62 @@
                   <label for="blogVideo" class="text-sm font-semibold text-gray-700">Video URL</label>
                   <input id="blogVideo" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
                 </div>
+                <section class="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-xs font-bold uppercase tracking-wider text-brand-700">Lead magnet</p>
+                      <h3 class="mt-1 text-base font-heading font-extrabold text-gray-900">Blog PDF capture offer</h3>
+                      <p class="mt-1 text-xs leading-5 text-gray-600">Use this for the embedded CTA and blog-specific popup. Leave disabled to use the generic site popup.</p>
+                    </div>
+                    <label class="flex shrink-0 items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-800">
+                      <input id="leadMagnetEnabled" type="checkbox" class="h-4 w-4" />
+                      Active
+                    </label>
+                  </div>
+                  <div class="mt-4 grid gap-3">
+                    <button id="blogGenerateLeadMagnetBtn" type="button" class="inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60">Generate PDF and lead magnet</button>
+                    <p class="text-xs leading-5 text-gray-500">Creates the lead capture copy, generates the two-page PDF, activates the offer, and attaches it to this post.</p>
+                    <div>
+                      <label for="leadMagnetTitle" class="text-sm font-semibold text-gray-700">PDF title</label>
+                      <input id="leadMagnetTitle" placeholder="2-page AI readiness checklist for school owners" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                    </div>
+                    <div>
+                      <label for="leadMagnetOfferHeadline" class="text-sm font-semibold text-gray-700">CTA headline</label>
+                      <input id="leadMagnetOfferHeadline" placeholder="Get the practical 2-page checklist for this topic" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                    </div>
+                    <div>
+                      <label for="leadMagnetDescription" class="text-sm font-semibold text-gray-700">CTA description</label>
+                      <textarea id="leadMagnetDescription" rows="2" placeholder="A concise PDF your reader can use immediately after reading this article." class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"></textarea>
+                    </div>
+                    <div>
+                      <label for="leadMagnetBullets" class="text-sm font-semibold text-gray-700">Benefit bullets</label>
+                      <textarea id="leadMagnetBullets" rows="3" placeholder="- What to check first&#10;- What mistakes to avoid&#10;- What to do next" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"></textarea>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label for="leadMagnetButtonText" class="text-sm font-semibold text-gray-700">Button text</label>
+                        <input id="leadMagnetButtonText" placeholder="Send me the PDF" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                      </div>
+                      <div>
+                        <label for="leadMagnetEmailSubject" class="text-sm font-semibold text-gray-700">Delivery email subject</label>
+                        <input id="leadMagnetEmailSubject" placeholder="Your PDF guide is ready" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" />
+                      </div>
+                    </div>
+                    <div>
+                      <label for="leadMagnetDeliveryMessage" class="text-sm font-semibold text-gray-700">Delivery email intro</label>
+                      <textarea id="leadMagnetDeliveryMessage" rows="2" placeholder="Here is the guide I promised in the article. Use it as a quick checklist before taking the next step." class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"></textarea>
+                    </div>
+                    <div>
+                      <label for="leadMagnetFile" class="text-sm font-semibold text-gray-700">PDF file</label>
+                      <input id="leadMagnetFile" type="file" accept="application/pdf,.pdf" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm" />
+                      <input id="leadMagnetPdfUrl" type="hidden" />
+                      <input id="leadMagnetPdfPublicId" type="hidden" />
+                      <input id="leadMagnetPdfResourceType" type="hidden" />
+                      <input id="leadMagnetPdfFilename" type="hidden" />
+                      <p id="leadMagnetCurrentFile" class="mt-1 text-xs text-gray-500">No PDF attached.</p>
+                    </div>
+                  </div>
+                </section>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"><input id="blogPublished" type="checkbox" class="h-4 w-4" /> Published</label>
                   <label class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"><input id="blogFeatured" type="checkbox" class="h-4 w-4" /> Featured</label>

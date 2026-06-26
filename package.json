@@ -12,6 +12,8 @@
     "brevo:ai-lessons:templates": "node scripts/brevo-create-ai-lesson-templates.js",
     "db:migrate": "node scripts/db-migrate.js",
     "blog:import-markdown": "node scripts/import-blog-markdown-to-cms.js",
+    "blog:lead-magnets": "node scripts/blog-generate-lead-magnets.js",
+    "blog:lead-magnets:dry": "node scripts/blog-generate-lead-magnets.js --dry-run",
     "db:school-student-codes:backfill": "node scripts/school-student-codes-backfill.js",
     "build:images": "node scripts/build-images.js"
   },

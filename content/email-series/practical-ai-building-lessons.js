@@ -1,3 +1,5 @@
+const { renderBrandedEmail, stripHtml } = require("../../netlify/functions/_lib/branded-email");
+
 const BASE_URL = "https://tochukwunkwocha.com";
 
 const links = {
@@ -15,30 +17,12 @@ const links = {
 };
 
 function lessonHtml(title, body) {
-  return `
-    <div style="margin:0;padding:0;background:#f6f7fb;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f7fb;">
-        <tr>
-          <td align="center" style="padding:28px 16px;">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;font-family:Inter,Arial,sans-serif;color:#111827;">
-              <tr>
-                <td style="padding:26px 28px;background:#0f172a;color:#ffffff;">
-                  <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#a5d6ff;font-weight:800;">Practical AI Building Lessons</p>
-                  <h1 style="margin:0;font-size:26px;line-height:1.2;color:#ffffff;">${title}</h1>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:28px;font-size:16px;line-height:1.68;color:#1f2937;">
-                  ${body}
-                  <p style="margin:30px 0 0;color:#374151;">Tochukwu Nkwocha</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `.trim();
+  return renderBrandedEmail({
+    title,
+    subject: title,
+    eyebrow: "Practical AI Building Lessons",
+    bodyHtml: body,
+  });
 }
 
 const lessons = [
@@ -445,22 +429,6 @@ For each day, give me:
     ),
   },
 ];
-
-function stripHtml(html) {
-  return String(html || "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<\/(p|div|h1|h2|li|ol|ul|pre|tr)>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
 
 module.exports = {
   seriesName: "Practical AI Building Lessons",
