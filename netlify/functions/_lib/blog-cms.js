@@ -261,6 +261,7 @@ function getBlogImageUrl(publicId) {
   const value = clean(publicId, 500);
   if (!value) return "";
   if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return value;
   const base = getCloudinaryBaseUrl();
   return base ? `${base}/${value}` : value;
 }

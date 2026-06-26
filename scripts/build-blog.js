@@ -965,9 +965,11 @@ async function readCmsPosts() {
   const hasDbEnv = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'].every((name) => clean(process.env[name]));
   if (!hasDbEnv || String(process.env.BLOG_CMS_SOURCE || '1') === '0') return [];
   const { getPool } = require('../netlify/functions/_lib/db');
+  const { applyRuntimeSettings } = require('../netlify/functions/_lib/runtime-settings');
   const { listPosts, getBlogImageUrl } = require('../netlify/functions/_lib/blog-cms');
   const pool = getPool();
   try {
+    await applyRuntimeSettings(pool, { force: true });
     const result = await listPosts(pool, { status: 'published', limit: 200 });
     return (result.posts || []).map((post) => {
       const seo = post.seo && typeof post.seo === 'object' ? post.seo : {};
