@@ -27,6 +27,14 @@
       intro:
         "Secure your seat for the next quarterly cohort. Once payment is confirmed, you will be added to the onboarding list immediately.",
     },
+    "prompt-to-profit-holiday": {
+      slug: "prompt-to-profit-holiday",
+      name: "Prompt to Profit Holiday",
+      landingPath: "/courses/prompt-to-profit",
+      defaultBatchKey: "ptph-batch-1",
+      intro:
+        "Pay now to reserve your place. You will be added to the enrolment list and onboarded before launch.",
+    },
   };
 
   function detectCourseSlug() {
@@ -1001,6 +1009,92 @@
     });
   }
 
+  function normalizeBooleanFlag(value) {
+    if (value === true) return true;
+    if (value === false) return false;
+    if (typeof value === "number") return value === 1;
+    const text = String(value || "").trim().toLowerCase();
+    return text === "true" || text === "1" || text === "yes";
+  }
+
+  function normalizePositiveInt(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return Math.round(parsed);
+  }
+
+  function normalizeNonNegativeInt(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return Math.round(parsed);
+  }
+
+  function isBatchFull(item) {
+    if (!item || typeof item !== "object") return false;
+    const seatLimit = normalizePositiveInt(item.seatLimit);
+    const remainingSeats = normalizeNonNegativeInt(item.remainingSeats);
+    if (seatLimit !== null && remainingSeats !== null) return remainingSeats <= 0;
+    return normalizeBooleanFlag(item.isFull);
+  }
+
+  function compareBatchStart(a, b) {
+    const ad = parseBatchStart(a && a.batchStartAt);
+    const bd = parseBatchStart(b && b.batchStartAt);
+    const at = ad ? ad.getTime() : Number.POSITIVE_INFINITY;
+    const bt = bd ? bd.getTime() : Number.POSITIVE_INFINITY;
+    if (at !== bt) return at - bt;
+    return String((a && a.batchKey) || "").localeCompare(String((b && b.batchKey) || ""));
+  }
+
+  async function loadOpenBatchForPageFields(courseSlug) {
+    const res = await fetch(`/.netlify/functions/course-open-batches?course_slug=${encodeURIComponent(courseSlug)}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok || !Array.isArray(json.batches)) return null;
+    const batches = json.batches.filter(function (item) {
+      return !isBatchFull(item);
+    }).sort(compareBatchStart);
+    return batches.length ? batches[0] : null;
+  }
+
+  async function loadActiveBatchForPageFields(courseSlug) {
+    const slug = String(courseSlug || "").trim();
+    if (!slug) return null;
+    if (slug === "prompt-to-profit-holiday") return loadOpenBatchForPageFields(slug);
+
+    const res = await fetch(`/.netlify/functions/course-active-batch?course_slug=${encodeURIComponent(slug)}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const json = await res.json().catch(function () {
+      return null;
+    });
+    if (!res.ok || !json || !json.ok || !json.activeBatch) return null;
+    return json.activeBatch;
+  }
+
+  async function hydrateActiveBatchPageFields() {
+    const currentSlug = String(currentCourseConfig().slug || "").trim();
+    const slugs = Array.prototype.slice.call(document.querySelectorAll("[data-active-batch-course]"))
+      .map(function (el) {
+        return String(el.getAttribute("data-active-batch-course") || "").trim();
+      })
+      .filter(function (slug, index, all) {
+        return slug && slug !== currentSlug && all.indexOf(slug) === index;
+      });
+
+    await Promise.all(slugs.map(async function (slug) {
+      const active = await loadActiveBatchForPageFields(slug).catch(function () {
+        return null;
+      });
+      if (active) applyActiveBatchPageFields(slug, active);
+    }));
+  }
+
   function applyCourseLabels() {
     const cfg = currentCourseConfig();
     if (enrolCourseLabel) enrolCourseLabel.textContent = cfg.name;
@@ -1449,6 +1543,9 @@
   }
 
   loadActiveBatch().catch(function () {
+    return null;
+  });
+  hydrateActiveBatchPageFields().catch(function () {
     return null;
   });
 
